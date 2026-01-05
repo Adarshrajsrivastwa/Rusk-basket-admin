@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: white;
+}
+
+
+/* Custom orange big scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 12px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f3f4f6; /* light gray */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #d0cdcc; /* orange */
+  border-radius: 6px;
+  border: 2px solid #f3f4f6;
+}
+
+
+@keyframes popupIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-popupIn {
+  animation: popupIn 0.35s ease-out forwards;
+}
