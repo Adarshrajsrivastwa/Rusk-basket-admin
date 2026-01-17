@@ -181,31 +181,37 @@
 import React, { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 
-const API_URL = "https://rush-basket.onrender.com/api/v1/categories";
+const API_URL = "http://46.202.164.93/api/category";
 
-const AddCategoryModal = ({ isOpen, onClose, onSuccess, editData = null }) => {
+const AddCategoryModal = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  isEdit = false,
+  categoryData = null,
+}) => {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const animationDuration = 300;
   const closeTimerRef = useRef(null);
 
-  // Form states
+  // Form state
   const [categoryName, setCategoryName] = useState("");
   const [categoryDesc, setCategoryDesc] = useState("");
   const [categoryImage, setCategoryImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Populate form on edit
+  // Populate edit data
   useEffect(() => {
-    if (editData && isOpen) {
-      setCategoryName(editData.name || "");
-      setCategoryDesc(editData.description || "");
-      setImagePreview(editData.image || null);
+    if (categoryData && isOpen) {
+      setCategoryName(categoryData.category || categoryData.name || "");
+      setCategoryDesc(categoryData.rawData?.description || "");
+      setImagePreview(categoryData.image || null);
     } else if (!isOpen) {
       resetForm();
     }
-  }, [editData, isOpen]);
+  }, [categoryData, isOpen]);
 
   const resetForm = () => {
     setCategoryName("");
@@ -241,13 +247,13 @@ const AddCategoryModal = ({ isOpen, onClose, onSuccess, editData = null }) => {
     }, animationDuration);
   };
 
-  // Image preview (local file)
+  // Image selection
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Please upload a valid image file");
+      alert("Please upload a valid image");
       return;
     }
 
@@ -258,7 +264,7 @@ const AddCategoryModal = ({ isOpen, onClose, onSuccess, editData = null }) => {
     reader.readAsDataURL(file);
   };
 
-  // Submit handler
+  // Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -267,45 +273,63 @@ const AddCategoryModal = ({ isOpen, onClose, onSuccess, editData = null }) => {
       return;
     }
 
-    // Prepare JSON payload
-    const payload = {
-      name: categoryName.trim(),
-      description: categoryDesc.trim(),
-      image: imagePreview || "", // URL string
-    };
+    if (!categoryImage && !isEdit) {
+      alert("Category image is required");
+      return;
+    }
 
     try {
       setLoading(true);
-      const method = editData ? "PUT" : "POST";
-      const url = editData
-        ? `${API_URL}/${editData.id || editData._id}`
-        : API_URL;
+
+      const formData = new FormData();
+      formData.append("name", categoryName.trim());
+      formData.append("description", categoryDesc.trim());
+
+      if (categoryImage) {
+        formData.append("image", categoryImage);
+      }
+
+      // Get token from localStorage
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
+
+      const headers = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const method = isEdit ? "PUT" : "POST";
+
+      // FIXED: Removed /update from the path for PUT request
+      const url = isEdit
+        ? `${API_URL}/${categoryData.id}`
+        : `${API_URL}/create`;
 
       const res = await fetch(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        credentials: "include",
+        headers: headers,
+        body: formData,
       });
 
       const data = await res.json();
 
-      if (!res.ok) {
-        console.error("Server error:", data);
-        throw new Error(data.message || "Something went wrong");
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to save category");
       }
 
-      // Pass new or updated category to parent
-      const categoryObj = { ...data.data, id: data.data._id };
-      onSuccess && onSuccess(categoryObj);
+      alert(`Category ${isEdit ? "updated" : "created"} successfully`);
+
+      // Call onSuccess with the response data
+      if (onSuccess) {
+        onSuccess(data.data);
+      }
 
       resetForm();
       handleClose();
-      alert(`Category ${editData ? "updated" : "added"} successfully`);
-    } catch (error) {
-      console.error("Error:", error);
-      alert(error.message || "Something went wrong");
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -325,78 +349,86 @@ const AddCategoryModal = ({ isOpen, onClose, onSuccess, editData = null }) => {
 
       {/* Modal */}
       <div
-        className={`relative bg-white rounded-sm shadow-xl w-[600px] p-4 transform transition-all duration-300
-        ${
-          visible
-            ? "opacity-100 scale-100 translate-y-0"
-            : "opacity-0 scale-95 translate-y-3"
+        className={`relative bg-white rounded shadow-xl w-[600px] max-w-[95%] p-4 transform transition-all duration-300 ${
+          visible ? "opacity-100 scale-100" : "opacity-0 scale-95 translate-y-3"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close button */}
         <button
           onClick={handleClose}
-          className="absolute top-3 right-3 text-orange-500"
+          className="absolute top-3 right-3 text-orange-500 hover:text-orange-700"
         >
           <X size={18} />
         </button>
 
         <h2 className="text-lg font-semibold mb-3 border-b-4 border-orange-400 inline-block">
-          {editData ? "Edit Category" : "Add Category"}
+          {isEdit ? "Edit Category" : "Add Category"}
         </h2>
 
         <div className="space-y-3">
-          {/* Name */}
-          <div>
-            <label className="text-sm font-medium">Category Name *</label>
-            <input
-              type="text"
-              value={categoryName}
-              onChange={(e) => setCategoryName(e.target.value)}
-              className="w-full border border-orange-400 px-2 py-1 text-sm"
-            />
-          </div>
+          <input
+            type="text"
+            placeholder="Category Name"
+            value={categoryName}
+            onChange={(e) => setCategoryName(e.target.value)}
+            className="w-full border px-3 py-2 rounded focus:outline-none focus:border-orange-400"
+          />
 
-          {/* Description */}
-          <div>
-            <label className="text-sm font-medium">Description</label>
-            <textarea
-              value={categoryDesc}
-              onChange={(e) => setCategoryDesc(e.target.value)}
-              className="w-full border border-orange-400 px-2 py-1 text-sm h-16 resize-none"
-            />
-          </div>
+          <textarea
+            placeholder="Description"
+            value={categoryDesc}
+            onChange={(e) => setCategoryDesc(e.target.value)}
+            className="w-full border px-3 py-2 h-20 rounded focus:outline-none focus:border-orange-400"
+          />
 
-          {/* Image */}
           <div>
-            <label className="text-sm font-medium">
-              Category Image (100×100)
+            <label className="block text-sm text-gray-600 mb-1">
+              Category Image{" "}
+              {!isEdit && <span className="text-red-500">*</span>}
             </label>
-            <div className="flex gap-3 items-start">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="text-sm file:bg-orange-500 file:text-white file:px-4 file:py-1.5"
-              />
-              {imagePreview && (
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="w-[100px] h-[100px] border object-cover"
-                />
-              )}
-            </div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="w-full"
+            />
           </div>
 
-          {/* Submit button */}
-          <div className="flex justify-end">
+          {imagePreview && (
+            <div className="relative inline-block">
+              <img
+                src={imagePreview}
+                alt="preview"
+                className="w-[100px] h-[100px] object-cover border rounded"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setImagePreview(null);
+                  setCategoryImage(null);
+                }}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="border px-6 py-2 rounded hover:bg-gray-100"
+              disabled={loading}
+            >
+              Cancel
+            </button>
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="bg-orange-500 text-white px-6 py-1.5 text-sm hover:bg-orange-600 disabled:opacity-50"
+              className="bg-orange-500 text-white px-6 py-2 rounded disabled:opacity-50 hover:bg-orange-600"
             >
-              {loading ? "Saving..." : editData ? "Update" : "Submit"}
+              {loading ? "Saving..." : isEdit ? "Update" : "Create"}
             </button>
           </div>
         </div>

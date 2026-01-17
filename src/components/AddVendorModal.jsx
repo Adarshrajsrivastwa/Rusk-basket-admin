@@ -640,12 +640,805 @@
 // };
 
 // export default AddVendorModal;
+// import React, { useState, useEffect } from "react";
+// import { X, User, MapPin, FileText, Banknote } from "lucide-react";
+
+// const AddVendorModal = ({ isOpen, onClose }) => {
+//   const [step, setStep] = useState(1);
+//   const [otp, setOtp] = useState(["", "", "", ""]);
+//   const [formData, setFormData] = useState({
+//     vendorName: "",
+//     contactNumber: "",
+//     altContactNumber: "",
+//     email: "",
+//     gender: "",
+//     dob: "",
+//     age: "",
+//     storeId: "",
+//     storeName: "",
+//     storeImage: null,
+//     storeAddress1: "",
+//     storeAddress2: "",
+//     pinCode: "",
+//     city: "",
+//     state: "",
+//     storeLat: "",
+//     storeLong: "",
+//     panCardFront: null,
+//     panCardBack: null,
+//     aadharFront: null,
+//     aadharBack: null,
+//     ifscCode: "",
+//     accountNumber: "",
+//     bankName: "",
+//     cancelCheque: null,
+//   });
+//   const [errors, setErrors] = useState({});
+
+//   useEffect(() => {
+//     if (isOpen) {
+//       generateStoreId();
+//     }
+//   }, [isOpen]);
+
+//   useEffect(() => {
+//     if (formData.dob) {
+//       const birthDate = new Date(formData.dob);
+//       const today = new Date();
+//       let age = today.getFullYear() - birthDate.getFullYear();
+//       const monthDiff = today.getMonth() - birthDate.getMonth();
+//       if (
+//         monthDiff < 0 ||
+//         (monthDiff === 0 && today.getDate() < birthDate.getDate())
+//       ) {
+//         age--;
+//       }
+//       setFormData((prev) => ({ ...prev, age: age.toString() }));
+//     }
+//   }, [formData.dob]);
+
+//   const generateStoreId = () => {
+//     const randomNum = Math.floor(100000 + Math.random() * 900000);
+//     setFormData((prev) => ({ ...prev, storeId: `RB${randomNum}` }));
+//   };
+
+//   const getCurrentLocation = () => {
+//     if (navigator.geolocation) {
+//       navigator.geolocation.getCurrentPosition(
+//         (position) => {
+//           setFormData((prev) => ({
+//             ...prev,
+//             storeLat: position.coords.latitude.toFixed(6),
+//             storeLong: position.coords.longitude.toFixed(6),
+//           }));
+//           alert("Location fetched successfully!");
+//         },
+//         () => {
+//           alert("Unable to fetch location. Please enter manually.");
+//         }
+//       );
+//     } else {
+//       alert("Geolocation is not supported by this browser.");
+//     }
+//   };
+
+//   const fetchCityState = async (pinCode) => {
+//     if (pinCode.length === 6) {
+//       try {
+//         const response = await fetch(
+//           `https://api.postalpincode.in/pincode/${pinCode}`
+//         );
+//         const data = await response.json();
+//         if (data[0].Status === "Success") {
+//           const postOffice = data[0].PostOffice[0];
+//           setFormData((prev) => ({
+//             ...prev,
+//             city: postOffice.District,
+//             state: postOffice.State,
+//           }));
+//           setErrors((prev) => ({ ...prev, pinCode: "" }));
+//         } else {
+//           setErrors((prev) => ({ ...prev, pinCode: "Invalid PIN code" }));
+//         }
+//       } catch {
+//         setErrors((prev) => ({ ...prev, pinCode: "Error fetching location" }));
+//       }
+//     }
+//   };
+
+//   useEffect(() => {
+//     if (formData.pinCode.length === 6) {
+//       fetchCityState(formData.pinCode);
+//     }
+//   }, [formData.pinCode]);
+
+//   const validateForm = () => {
+//     const newErrors = {};
+//     if (!formData.vendorName.trim())
+//       newErrors.vendorName = "Vendor name is required";
+//     if (!formData.contactNumber.trim()) {
+//       newErrors.contactNumber = "Contact number is required";
+//     } else if (!/^\d{10}$/.test(formData.contactNumber)) {
+//       newErrors.contactNumber = "Contact number must be 10 digits";
+//     }
+//     if (
+//       formData.altContactNumber &&
+//       !/^\d{10}$/.test(formData.altContactNumber)
+//     ) {
+//       newErrors.altContactNumber = "Alt. contact must be 10 digits";
+//     }
+//     if (!formData.email.trim()) {
+//       newErrors.email = "Email is required";
+//     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+//       newErrors.email = "Invalid email";
+//     }
+//     if (!formData.gender) newErrors.gender = "Select gender";
+//     if (!formData.dob) newErrors.dob = "Date of birth required";
+//     if (!formData.storeName.trim()) newErrors.storeName = "Store name required";
+//     if (!formData.storeAddress1.trim())
+//       newErrors.storeAddress1 = "Address required";
+//     if (!formData.pinCode.trim()) {
+//       newErrors.pinCode = "PIN code required";
+//     } else if (!/^\d{6}$/.test(formData.pinCode)) {
+//       newErrors.pinCode = "PIN must be 6 digits";
+//     }
+//     if (!formData.ifscCode.trim()) newErrors.ifscCode = "IFSC required";
+//     if (!formData.accountNumber.trim())
+//       newErrors.accountNumber = "Account number required";
+//     if (!formData.bankName.trim()) newErrors.bankName = "Bank name required";
+//     setErrors(newErrors);
+//     return Object.keys(newErrors).length === 0;
+//   };
+
+//   const handleInputChange = (e) => {
+//     const { id, value } = e.target;
+//     setFormData((prev) => ({ ...prev, [id]: value }));
+//     if (errors[id]) setErrors((prev) => ({ ...prev, [id]: "" }));
+//   };
+
+//   const handleFileChange = (e) => {
+//     const { id, files } = e.target;
+//     if (files[0]) setFormData((prev) => ({ ...prev, [id]: files[0] }));
+//   };
+
+//   const handleRadioChange = (e) => {
+//     const { name, value } = e.target;
+//     setFormData((prev) => ({ ...prev, [name]: value }));
+//     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+//   };
+
+//   const handleNextClick = () => {
+//     if (validateForm()) setStep(2);
+//   };
+
+//   const handleOtpChange = (index, value) => {
+//     if (!/^\d*$/.test(value)) return;
+//     const newOtp = [...otp];
+//     newOtp[index] = value.slice(-1);
+//     setOtp(newOtp);
+//     if (value && index < 3) {
+//       document.getElementById(`vendor-otp-${index + 1}`)?.focus();
+//     }
+//   };
+
+//   const handleOtpKeyDown = (index, e) => {
+//     if (e.key === "Backspace" && !otp[index] && index > 0) {
+//       document.getElementById(`vendor-otp-${index - 1}`)?.focus();
+//     }
+//   };
+
+//   const handleVerifyOtp = () => {
+//     const enteredOtp = otp.join("");
+//     if (enteredOtp.length === 4) {
+//       alert("Vendor added successfully!");
+//       onClose();
+//     } else {
+//       alert("Please enter complete OTP");
+//     }
+//   };
+
+//   if (!isOpen) return null;
+
+//   return (
+//     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50 p-4">
+//       <div
+//         className="bg-white shadow-lg w-full max-w-6xl relative"
+//         style={{ maxHeight: "95vh", display: "flex", flexDirection: "column" }}
+//       >
+//         <div className="flex items-center justify-between px-6 py-4 border-b">
+//           <h2 className="text-lg font-bold text-gray-800 underline decoration-[#FF7B1D] decoration-4 underline-offset-4">
+//             {step === 1 ? "Add Vendor" : "Verify Contact Number"}
+//           </h2>
+//           <button
+//             onClick={onClose}
+//             className="text-gray-500 hover:text-gray-800"
+//           >
+//             <X className="h-6 w-6" />
+//           </button>
+//         </div>
+
+//         {step === 1 && (
+//           <div className="overflow-y-auto flex-1 px-6 py-4">
+//             <div>
+//               <h3 className="text-md font-bold text-gray-700 mb-4 flex items-center gap-2">
+//                 <User className="w-5 h-5 text-[#FF7B1D]" />
+//                 Personal Information
+//               </h3>
+
+//               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     Vendor Name
+//                   </label>
+//                   <input
+//                     id="vendorName"
+//                     type="text"
+//                     value={formData.vendorName}
+//                     onChange={handleInputChange}
+//                     placeholder="Enter Vendor Name"
+//                     className={`w-full px-3 py-2 text-sm border ${
+//                       errors.vendorName ? "border-red-500" : "border-orange-400"
+//                     } rounded focus:ring-1 focus:ring-orange-400 outline-none`}
+//                   />
+//                   {errors.vendorName && (
+//                     <p className="text-red-500 text-xs mt-1">
+//                       {errors.vendorName}
+//                     </p>
+//                   )}
+//                 </div>
+
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     Contact Number (For Login)
+//                   </label>
+//                   <input
+//                     id="contactNumber"
+//                     type="text"
+//                     value={formData.contactNumber}
+//                     onChange={handleInputChange}
+//                     placeholder="Enter 10-digit number"
+//                     maxLength="10"
+//                     className={`w-full px-3 py-2 text-sm border ${
+//                       errors.contactNumber
+//                         ? "border-red-500"
+//                         : "border-orange-400"
+//                     } rounded focus:ring-1 focus:ring-orange-400 outline-none`}
+//                   />
+//                   {errors.contactNumber && (
+//                     <p className="text-red-500 text-xs mt-1">
+//                       {errors.contactNumber}
+//                     </p>
+//                   )}
+//                 </div>
+
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     Alt. Contact Number
+//                   </label>
+//                   <input
+//                     id="altContactNumber"
+//                     type="text"
+//                     value={formData.altContactNumber}
+//                     onChange={handleInputChange}
+//                     placeholder="Enter alternate number"
+//                     maxLength="10"
+//                     className={`w-full px-3 py-2 text-sm border ${
+//                       errors.altContactNumber
+//                         ? "border-red-500"
+//                         : "border-orange-400"
+//                     } rounded focus:ring-1 focus:ring-orange-400 outline-none`}
+//                   />
+//                   {errors.altContactNumber && (
+//                     <p className="text-red-500 text-xs mt-1">
+//                       {errors.altContactNumber}
+//                     </p>
+//                   )}
+//                 </div>
+//               </div>
+
+//               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     Email ID
+//                   </label>
+//                   <input
+//                     id="email"
+//                     type="email"
+//                     value={formData.email}
+//                     onChange={handleInputChange}
+//                     placeholder="Enter email"
+//                     className={`w-full px-3 py-2 text-sm border ${
+//                       errors.email ? "border-red-500" : "border-orange-400"
+//                     } rounded focus:ring-1 focus:ring-orange-400 outline-none`}
+//                   />
+//                   {errors.email && (
+//                     <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+//                   )}
+//                 </div>
+
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     Gender
+//                   </label>
+//                   <div className="flex items-center gap-6 py-2">
+//                     <label className="flex items-center gap-2">
+//                       <input
+//                         type="radio"
+//                         name="gender"
+//                         value="male"
+//                         checked={formData.gender === "male"}
+//                         onChange={handleRadioChange}
+//                         className="w-4 h-4 text-[#FF7B1D] focus:ring-[#FF7B1D]"
+//                       />
+//                       <span className="text-sm">Male</span>
+//                     </label>
+//                     <label className="flex items-center gap-2">
+//                       <input
+//                         type="radio"
+//                         name="gender"
+//                         value="female"
+//                         checked={formData.gender === "female"}
+//                         onChange={handleRadioChange}
+//                         className="w-4 h-4 text-[#FF7B1D] focus:ring-[#FF7B1D]"
+//                       />
+//                       <span className="text-sm">Female</span>
+//                     </label>
+//                   </div>
+//                   {errors.gender && (
+//                     <p className="text-red-500 text-xs mt-1">{errors.gender}</p>
+//                   )}
+//                 </div>
+
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     Date of Birth
+//                   </label>
+//                   <input
+//                     id="dob"
+//                     type="date"
+//                     value={formData.dob}
+//                     onChange={handleInputChange}
+//                     className={`w-full px-3 py-2 text-sm border ${
+//                       errors.dob ? "border-red-500" : "border-orange-400"
+//                     } rounded focus:ring-1 focus:ring-orange-400 outline-none`}
+//                   />
+//                   {errors.dob && (
+//                     <p className="text-red-500 text-xs mt-1">{errors.dob}</p>
+//                   )}
+//                 </div>
+
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     Age
+//                   </label>
+//                   <input
+//                     id="age"
+//                     type="text"
+//                     value={formData.age}
+//                     readOnly
+//                     placeholder="Auto calculated"
+//                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-gray-100 outline-none"
+//                   />
+//                 </div>
+//               </div>
+
+//               <h3 className="text-md font-bold text-gray-700 mb-4 flex items-center gap-2">
+//                 <MapPin className="w-5 h-5 text-[#FF7B1D]" />
+//                 Store Information
+//               </h3>
+
+//               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     Store ID
+//                   </label>
+//                   <input
+//                     id="storeId"
+//                     type="text"
+//                     value={formData.storeId}
+//                     readOnly
+//                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-gray-100 outline-none"
+//                   />
+//                 </div>
+
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     Store Name
+//                   </label>
+//                   <input
+//                     id="storeName"
+//                     type="text"
+//                     value={formData.storeName}
+//                     onChange={handleInputChange}
+//                     placeholder="Enter store name"
+//                     className={`w-full px-3 py-2 text-sm border ${
+//                       errors.storeName ? "border-red-500" : "border-orange-400"
+//                     } rounded focus:ring-1 focus:ring-orange-400 outline-none`}
+//                   />
+//                   {errors.storeName && (
+//                     <p className="text-red-500 text-xs mt-1">
+//                       {errors.storeName}
+//                     </p>
+//                   )}
+//                 </div>
+
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     Store Image
+//                   </label>
+//                   <input
+//                     id="storeImage"
+//                     type="file"
+//                     accept="image/*"
+//                     onChange={handleFileChange}
+//                     className="w-full px-3 py-2 text-sm border border-orange-400 rounded focus:ring-1 focus:ring-orange-400 outline-none"
+//                   />
+//                 </div>
+//               </div>
+
+//               <div className="mb-4">
+//                 <label className="block text-sm text-gray-700 font-bold mb-1">
+//                   Store Address Line 1
+//                 </label>
+//                 <input
+//                   id="storeAddress1"
+//                   type="text"
+//                   value={formData.storeAddress1}
+//                   onChange={handleInputChange}
+//                   placeholder="Enter store address"
+//                   className={`w-full px-3 py-2 text-sm border ${
+//                     errors.storeAddress1
+//                       ? "border-red-500"
+//                       : "border-orange-400"
+//                   } rounded focus:ring-1 focus:ring-orange-400 outline-none`}
+//                 />
+//                 {errors.storeAddress1 && (
+//                   <p className="text-red-500 text-xs mt-1">
+//                     {errors.storeAddress1}
+//                   </p>
+//                 )}
+//               </div>
+
+//               <div className="mb-4">
+//                 <label className="block text-sm text-gray-700 font-bold mb-1">
+//                   Store Address Line 2
+//                 </label>
+//                 <input
+//                   id="storeAddress2"
+//                   type="text"
+//                   value={formData.storeAddress2}
+//                   onChange={handleInputChange}
+//                   placeholder="Enter additional address"
+//                   className="w-full px-3 py-2 text-sm border border-orange-400 rounded focus:ring-1 focus:ring-orange-400 outline-none"
+//                 />
+//               </div>
+
+//               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     PIN Code
+//                   </label>
+//                   <input
+//                     id="pinCode"
+//                     type="text"
+//                     value={formData.pinCode}
+//                     onChange={handleInputChange}
+//                     placeholder="Enter 6-digit PIN"
+//                     maxLength="6"
+//                     className={`w-full px-3 py-2 text-sm border ${
+//                       errors.pinCode ? "border-red-500" : "border-orange-400"
+//                     } rounded focus:ring-1 focus:ring-orange-400 outline-none`}
+//                   />
+//                   {errors.pinCode && (
+//                     <p className="text-red-500 text-xs mt-1">
+//                       {errors.pinCode}
+//                     </p>
+//                   )}
+//                 </div>
+
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     City
+//                   </label>
+//                   <input
+//                     id="city"
+//                     type="text"
+//                     value={formData.city}
+//                     readOnly
+//                     placeholder="Auto-fetched"
+//                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-gray-100 outline-none"
+//                   />
+//                 </div>
+
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     State
+//                   </label>
+//                   <input
+//                     id="state"
+//                     type="text"
+//                     value={formData.state}
+//                     readOnly
+//                     placeholder="Auto-fetched"
+//                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-gray-100 outline-none"
+//                   />
+//                 </div>
+//               </div>
+
+//               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     Store Current Location (Lat.)
+//                   </label>
+//                   <input
+//                     id="storeLat"
+//                     type="text"
+//                     value={formData.storeLat}
+//                     onChange={handleInputChange}
+//                     placeholder="Enter Latitude"
+//                     className="w-full px-3 py-2 text-sm border border-orange-400 rounded focus:ring-1 focus:ring-orange-400 outline-none"
+//                   />
+//                 </div>
+
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     Store Current Location (Long.)
+//                   </label>
+//                   <input
+//                     id="storeLong"
+//                     type="text"
+//                     value={formData.storeLong}
+//                     onChange={handleInputChange}
+//                     placeholder="Enter Longitude"
+//                     className="w-full px-3 py-2 text-sm border border-orange-400 rounded focus:ring-1 focus:ring-orange-400 outline-none"
+//                   />
+//                 </div>
+//               </div>
+
+//               <div className="mb-6">
+//                 <button
+//                   onClick={getCurrentLocation}
+//                   className="w-full md:w-auto px-6 py-2 bg-[#FF7B1D] text-white font-semibold rounded hover:bg-orange-600 transition"
+//                 >
+//                   📍 Get Current Location
+//                 </button>
+//               </div>
+
+//               <h3 className="text-md font-bold text-gray-700 mb-4 flex items-center gap-2">
+//                 <FileText className="w-5 h-5 text-[#FF7B1D]" />
+//                 Document Upload
+//               </h3>
+
+//               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     PAN Card (Front)
+//                   </label>
+//                   <input
+//                     id="panCardFront"
+//                     type="file"
+//                     accept="image/*"
+//                     onChange={handleFileChange}
+//                     className="w-full px-3 py-2 text-sm border border-orange-400 rounded outline-none"
+//                   />
+//                 </div>
+
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     PAN Card (Back)
+//                   </label>
+//                   <input
+//                     id="panCardBack"
+//                     type="file"
+//                     accept="image/*"
+//                     onChange={handleFileChange}
+//                     className="w-full px-3 py-2 text-sm border border-orange-400 rounded outline-none"
+//                   />
+//                 </div>
+
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     Aadhar Card (Front)
+//                   </label>
+//                   <input
+//                     id="aadharFront"
+//                     type="file"
+//                     accept="image/*"
+//                     onChange={handleFileChange}
+//                     className="w-full px-3 py-2 text-sm border border-orange-400 rounded outline-none"
+//                   />
+//                 </div>
+
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     Aadhar Card (Back)
+//                   </label>
+//                   <input
+//                     id="aadharBack"
+//                     type="file"
+//                     accept="image/*"
+//                     onChange={handleFileChange}
+//                     className="w-full px-3 py-2 text-sm border border-orange-400 rounded outline-none"
+//                   />
+//                 </div>
+//               </div>
+
+//               <h3 className="text-md font-bold text-gray-700 mb-4 flex items-center gap-2">
+//                 <Banknote className="w-5 h-5 text-[#FF7B1D]" />
+//                 Bank Details
+//               </h3>
+
+//               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     IFSC Code
+//                   </label>
+//                   <input
+//                     id="ifscCode"
+//                     type="text"
+//                     value={formData.ifscCode}
+//                     onChange={handleInputChange}
+//                     placeholder="Enter IFSC"
+//                     className={`w-full px-3 py-2 text-sm border ${
+//                       errors.ifscCode ? "border-red-500" : "border-orange-400"
+//                     } rounded focus:ring-1 focus:ring-orange-400 outline-none`}
+//                   />
+//                   {errors.ifscCode && (
+//                     <p className="text-red-500 text-xs mt-1">
+//                       {errors.ifscCode}
+//                     </p>
+//                   )}
+//                 </div>
+
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     Account Number
+//                   </label>
+//                   <input
+//                     id="accountNumber"
+//                     type="text"
+//                     value={formData.accountNumber}
+//                     onChange={handleInputChange}
+//                     placeholder="Enter account number"
+//                     className={`w-full px-3 py-2 text-sm border ${
+//                       errors.accountNumber
+//                         ? "border-red-500"
+//                         : "border-orange-400"
+//                     } rounded focus:ring-1 focus:ring-orange-400 outline-none`}
+//                   />
+//                   {errors.accountNumber && (
+//                     <p className="text-red-500 text-xs mt-1">
+//                       {errors.accountNumber}
+//                     </p>
+//                   )}
+//                 </div>
+
+//                 <div>
+//                   <label className="block text-sm text-gray-700 font-bold mb-1">
+//                     Bank Name
+//                   </label>
+//                   <input
+//                     id="bankName"
+//                     type="text"
+//                     value={formData.bankName}
+//                     onChange={handleInputChange}
+//                     placeholder="Enter bank name"
+//                     className={`w-full px-3 py-2 text-sm border ${
+//                       errors.bankName ? "border-red-500" : "border-orange-400"
+//                     } rounded focus:ring-1 focus:ring-orange-400 outline-none`}
+//                   />
+//                   {errors.bankName && (
+//                     <p className="text-red-500 text-xs mt-1">
+//                       {errors.bankName}
+//                     </p>
+//                   )}
+//                 </div>
+//               </div>
+
+//               <div className="mb-6">
+//                 <label className="block text-sm text-gray-700 font-bold mb-1">
+//                   Upload Cancelled Cheque
+//                 </label>
+//                 <input
+//                   id="cancelCheque"
+//                   type="file"
+//                   accept="image/*"
+//                   onChange={handleFileChange}
+//                   className="w-full px-3 py-2 text-sm border border-orange-400 rounded outline-none"
+//                 />
+//               </div>
+
+//               <div className="flex justify-end gap-3">
+//                 <button
+//                   onClick={onClose}
+//                   className="px-8 py-2 bg-gray-200 text-gray-700 font-semibold rounded hover:bg-gray-300 transition"
+//                 >
+//                   Cancel
+//                 </button>
+//                 <button
+//                   onClick={handleNextClick}
+//                   className="px-8 py-2 bg-[#FF7B1D] text-white font-semibold rounded hover:bg-orange-600 transition"
+//                 >
+//                   Next - Verify Contact
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         )}
+
+//         {step === 2 && (
+//           <div className="flex-1 flex items-center justify-center p-8">
+//             <div className="max-w-md w-full">
+//               <div className="text-center mb-8">
+//                 <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+//                   <User className="w-10 h-10 text-[#FF7B1D]" />
+//                 </div>
+//                 <h3 className="text-xl font-bold text-gray-900 mb-2">
+//                   Verify Contact Number
+//                 </h3>
+//                 <p className="text-gray-600 text-sm">
+//                   OTP sent to{" "}
+//                   <span className="font-semibold">
+//                     +91 {formData.contactNumber}
+//                   </span>
+//                 </p>
+//               </div>
+
+//               <div className="mb-6">
+//                 <label className="block text-sm font-bold text-gray-800 mb-3 text-center">
+//                   Enter 4-Digit OTP
+//                 </label>
+//                 <div className="flex gap-3 justify-center mb-6">
+//                   {otp.map((digit, index) => (
+//                     <input
+//                       key={index}
+//                       id={`vendor-otp-${index}`}
+//                       type="tel"
+//                       value={digit}
+//                       onChange={(e) => handleOtpChange(index, e.target.value)}
+//                       onKeyDown={(e) => handleOtpKeyDown(index, e)}
+//                       maxLength="1"
+//                       className="w-16 h-16 text-center text-2xl font-bold bg-white border-2 border-orange-400 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none"
+//                     />
+//                   ))}
+//                 </div>
+//               </div>
+
+//               <button
+//                 onClick={handleVerifyOtp}
+//                 className="w-full bg-[#FF7B1D] text-white py-3.5 rounded-xl font-semibold hover:bg-orange-600 transition shadow-lg"
+//               >
+//                 Verify & Add Vendor
+//               </button>
+
+//               <div className="text-center mt-4">
+//                 <button
+//                   onClick={() => setStep(1)}
+//                   className="text-gray-600 hover:text-gray-900 text-sm font-medium"
+//                 >
+//                   ← Back to Form
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default AddVendorModal;
+
+
 import React, { useState, useEffect } from "react";
 import { X, User, MapPin, FileText, Banknote } from "lucide-react";
 
 const AddVendorModal = ({ isOpen, onClose }) => {
   const [step, setStep] = useState(1);
   const [otp, setOtp] = useState(["", "", "", ""]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [formData, setFormData] = useState({
     vendorName: "",
     contactNumber: "",
@@ -668,6 +1461,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
     panCardBack: null,
     aadharFront: null,
     aadharBack: null,
+    drivingLicense: null,
     ifscCode: "",
     accountNumber: "",
     bankName: "",
@@ -708,8 +1502,8 @@ const AddVendorModal = ({ isOpen, onClose }) => {
         (position) => {
           setFormData((prev) => ({
             ...prev,
-            storeLat: position.coords.latitude.toFixed(6),
-            storeLong: position.coords.longitude.toFixed(6),
+            storeLat: position.coords.latitude.toFixed(4),
+            storeLong: position.coords.longitude.toFixed(4),
           }));
           alert("Location fetched successfully!");
         },
@@ -807,8 +1601,108 @@ const AddVendorModal = ({ isOpen, onClose }) => {
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
+  const sendOtp = async () => {
+    try {
+      setIsLoading(true);
+      setError("");
+      setSuccess("");
+
+      // Validate phone number format
+      const phoneRegex = /^[6-9]\d{9}$/;
+      if (!phoneRegex.test(formData.contactNumber)) {
+        setError(
+          "Contact number must be a valid 10-digit Indian mobile number starting with 6-9"
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      // Get auth token from localStorage
+      const authToken = localStorage.getItem("authToken") || localStorage.getItem("token");
+
+      // Normalize contact number (remove spaces, ensure it's a string)
+      const normalizedContactNumber = String(formData.contactNumber).trim().replace(/\s+/g, '');
+
+      const requestBody = {
+        contactNumber: normalizedContactNumber,
+      };
+
+      // Prepare headers
+      const headers = {
+        "Content-Type": "application/json",
+      };
+
+      // Add Authorization header if token exists
+      if (authToken) {
+        headers["Authorization"] = `Bearer ${authToken}`;
+      }
+
+      console.log("=== SEND OTP REQUEST ===");
+      console.log("URL:", "http://46.202.164.93/api/vendor/send-otp");
+      console.log("Method:", "POST");
+      console.log("Headers:", headers);
+      console.log("Body:", JSON.stringify(requestBody));
+      console.log("Body String Length:", JSON.stringify(requestBody).length);
+      console.log("Auth Token:", authToken ? "Present" : "Missing");
+
+      const response = await fetch("http://46.202.164.93/api/vendor/send-otp", {
+        method: "POST",
+        headers: headers,
+        credentials: "include", // Include cookies if needed
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log("=== SEND OTP RESPONSE ===");
+      console.log("Status:", response.status);
+      console.log("Status Text:", response.statusText);
+      console.log("OK:", response.ok);
+      console.log("Headers:", Object.fromEntries(response.headers.entries()));
+
+      // Try to get response text first
+      const responseText = await response.text();
+      console.log("Response Text:", responseText);
+      console.log("Response Text Length:", responseText.length);
+
+      // Parse JSON
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        console.log("Parsed Response Data:", data);
+      } catch (e) {
+        console.error("JSON Parse Error:", e);
+        console.error("Raw Response:", responseText);
+        setError(
+          `Server returned invalid response: ${responseText.substring(0, 100)}`
+        );
+        return;
+      }
+
+      if (response.ok && data.success) {
+        setSuccess(
+          `OTP sent to ${data.contactNumber || formData.contactNumber}`
+        );
+        setStep(2);
+      } else {
+        const errorMsg =
+          data.message || data.error || `Server error (${response.status})`;
+        console.error("API Error:", errorMsg);
+        setError(errorMsg);
+      }
+    } catch (error) {
+      console.error("=== SEND OTP NETWORK ERROR ===");
+      console.error("Error Type:", error.constructor.name);
+      console.error("Error Message:", error.message);
+      console.error("Error Stack:", error.stack);
+      setError(`Network error: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleNextClick = () => {
-    if (validateForm()) setStep(2);
+    if (validateForm()) {
+      sendOtp();
+    }
   };
 
   const handleOtpChange = (index, value) => {
@@ -827,13 +1721,456 @@ const AddVendorModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleVerifyOtp = () => {
+  const createVendor = async () => {
+    try {
+      setIsLoading(true);
+      setError("");
+
+      const formDataToSend = new FormData();
+
+      console.log("Creating vendor with data:", {
+        vendorName: formData.vendorName,
+        contactNumber: formData.contactNumber,
+        email: formData.email,
+        storeName: formData.storeName,
+      });
+
+      // Normalize contact number (remove spaces, ensure it's a string)
+      const normalizedContactNumber = String(formData.contactNumber).trim().replace(/\s+/g, '');
+
+      // Add text fields (trim all string values)
+      formDataToSend.append("vendorName", String(formData.vendorName || "").trim());
+      formDataToSend.append("contactNumber", normalizedContactNumber);
+      if (formData.altContactNumber) {
+        formDataToSend.append("altContactNumber", String(formData.altContactNumber).trim().replace(/\s+/g, ''));
+      }
+      formDataToSend.append("email", String(formData.email || "").trim().toLowerCase());
+      formDataToSend.append("gender", String(formData.gender || "").trim());
+      formDataToSend.append("dateOfBirth", String(formData.dob || "").trim());
+      if (formData.age) {
+        formDataToSend.append("age", String(formData.age).trim());
+      }
+      // Don't send storeId - backend auto-generates it
+      formDataToSend.append("storeName", String(formData.storeName || "").trim());
+
+      // Add store address (using flat field names as expected by backend)
+      formDataToSend.append("storeAddressLine1", String(formData.storeAddress1 || "").trim());
+      if (formData.storeAddress2) {
+        formDataToSend.append("storeAddressLine2", String(formData.storeAddress2).trim());
+      }
+      formDataToSend.append("pinCode", String(formData.pinCode || "").trim());
+      if (formData.city) {
+        formDataToSend.append("city", String(formData.city).trim());
+      }
+      if (formData.state) {
+        formDataToSend.append("state", String(formData.state).trim());
+      }
+      if (formData.storeLat) {
+        formDataToSend.append("latitude", String(formData.storeLat).trim());
+      }
+      if (formData.storeLong) {
+        formDataToSend.append("longitude", String(formData.storeLong).trim());
+      }
+
+      // Add bank details (using flat field names as expected by backend)
+      // IFSC should be uppercase as per validation pattern
+      formDataToSend.append("ifsc", String(formData.ifscCode || "").trim().toUpperCase());
+      formDataToSend.append("accountNumber", String(formData.accountNumber || "").trim());
+      // Bank name is required (backend accepts bankName or bank_name)
+      formDataToSend.append("bankName", String(formData.bankName || "").trim());
+
+      // Add files with size validation (10MB limit per file)
+      const maxFileSize = 10 * 1024 * 1024; // 10MB in bytes
+      const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      const allowedPdfType = 'application/pdf';
+      const allowedTypes = [...allowedImageTypes, allowedPdfType];
+
+      const validateFile = (file, fieldName) => {
+        if (!file) return null;
+        
+        // Check file size
+        if (file.size > maxFileSize) {
+          throw new Error(`${fieldName} file size exceeds 10MB limit. Please upload a smaller file.`);
+        }
+        
+        // Check file type
+        if (!allowedTypes.includes(file.type)) {
+          throw new Error(`${fieldName} must be a JPEG, JPG, PNG image or PDF file.`);
+        }
+        
+        return true;
+      };
+
+      // Validate and append files
+      try {
+        if (formData.storeImage) {
+          validateFile(formData.storeImage, "Store Image");
+          formDataToSend.append("storeImage", formData.storeImage);
+        }
+        if (formData.panCardFront) {
+          validateFile(formData.panCardFront, "PAN Card Front");
+          formDataToSend.append("panCardFront", formData.panCardFront);
+        }
+        if (formData.panCardBack) {
+          validateFile(formData.panCardBack, "PAN Card Back");
+          formDataToSend.append("panCardBack", formData.panCardBack);
+        }
+        if (formData.aadharFront) {
+          validateFile(formData.aadharFront, "Aadhar Card Front");
+          formDataToSend.append("aadharCardFront", formData.aadharFront);
+        }
+        if (formData.aadharBack) {
+          validateFile(formData.aadharBack, "Aadhar Card Back");
+          formDataToSend.append("aadharCardBack", formData.aadharBack);
+        }
+        if (formData.drivingLicense) {
+          validateFile(formData.drivingLicense, "Driving License");
+          formDataToSend.append("drivingLicense", formData.drivingLicense);
+        }
+        if (formData.cancelCheque) {
+          validateFile(formData.cancelCheque, "Cancel Cheque");
+          formDataToSend.append("cancelCheque", formData.cancelCheque);
+        }
+      } catch (fileError) {
+        setError(fileError.message);
+        setIsLoading(false);
+        return;
+      }
+
+      // Get auth token from localStorage
+      const authToken = localStorage.getItem("authToken") || localStorage.getItem("token");
+
+      // Prepare headers for FormData (don't set Content-Type, browser will set it with boundary)
+      const headers = {};
+      
+      // Add Authorization header if token exists
+      if (authToken) {
+        headers["Authorization"] = `Bearer ${authToken}`;
+      }
+
+      console.log("=== CREATE VENDOR REQUEST ===");
+      console.log("URL:", "http://46.202.164.93/api/vendor/create");
+      console.log("Auth Token:", authToken ? "Present" : "Missing");
+      
+      // Log FormData contents (for debugging)
+      console.log("FormData entries:");
+      let totalFileSize = 0;
+      for (let pair of formDataToSend.entries()) {
+        if (pair[1] instanceof File) {
+          const fileSizeMB = (pair[1].size / (1024 * 1024)).toFixed(2);
+          totalFileSize += pair[1].size;
+          console.log(pair[0] + ": [File: " + pair[1].name + ", Size: " + fileSizeMB + " MB]");
+        } else {
+          console.log(pair[0] + ": " + pair[1]);
+        }
+      }
+      const totalSizeMB = (totalFileSize / (1024 * 1024)).toFixed(2);
+      console.log("Total file size: " + totalSizeMB + " MB");
+      
+      if (totalFileSize > 50 * 1024 * 1024) { // 50MB warning
+        console.warn("Warning: Total file size exceeds 50MB. This may cause timeout issues.");
+      }
+
+      // Create AbortController for timeout handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes timeout
+
+      let response;
+      try {
+        response = await fetch("http://46.202.164.93/api/vendor/create", {
+          method: "POST",
+          headers: headers,
+          credentials: "include", // Include cookies for authentication
+          body: formDataToSend,
+          signal: controller.signal, // Add abort signal for timeout
+        });
+        clearTimeout(timeoutId);
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          console.error("Request timeout - file upload took too long");
+          setError("Request timeout. The files may be too large. Please try again or reduce file sizes.");
+          setIsLoading(false);
+          return;
+        } else if (fetchError.message.includes('Failed to fetch') || fetchError.message.includes('NetworkError')) {
+          console.error("Network error:", fetchError);
+          setError("Network error. Please check your internet connection and try again. If the problem persists, the files may be too large.");
+          setIsLoading(false);
+          return;
+        } else {
+          throw fetchError; // Re-throw other errors
+        }
+      }
+
+      console.log("=== CREATE VENDOR RESPONSE ===");
+      console.log("Status:", response.status);
+      console.log("Status Text:", response.statusText);
+      console.log("OK:", response.ok);
+
+      // Get response text first to handle non-JSON responses
+      const responseText = await response.text();
+      console.log("Response Text:", responseText);
+
+      let data;
+      try {
+        // Check if response is HTML (error page)
+        if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+          console.error("Server returned HTML error page instead of JSON");
+          
+          // Try to extract error message from HTML
+          const errorMatch = responseText.match(/Error: ([^<]+)/i) || 
+                            responseText.match(/<pre>([^<]+)<\/pre>/i) ||
+                            responseText.match(/<title>([^<]+)<\/title>/i);
+          
+          const extractedError = errorMatch ? errorMatch[1].trim() : "Server error occurred";
+          
+          // Check for specific error messages
+          if (extractedError.includes("post office") || extractedError.includes("Failed to fetch post office")) {
+            setError("Invalid PIN code or unable to verify address. Please check your PIN code and try again.");
+          } else if (extractedError.includes("PIN code") || extractedError.includes("pinCode")) {
+            setError("Invalid PIN code. Please enter a valid 6-digit PIN code.");
+          } else {
+            setError(`Server error: ${extractedError}. Please try again or contact support.`);
+          }
+          
+          setIsLoading(false);
+          return;
+        }
+        
+        data = JSON.parse(responseText);
+        console.log("Create Vendor Response Data:", data);
+      } catch (e) {
+        console.error("JSON Parse Error:", e);
+        console.error("Raw Response:", responseText);
+        
+        // Try to extract meaningful error from HTML
+        if (responseText.includes("Error:") || responseText.includes("<pre>")) {
+          const errorMatch = responseText.match(/Error: ([^<\n]+)/i) || 
+                            responseText.match(/<pre>([^<]+)<\/pre>/i);
+          const extractedError = errorMatch ? errorMatch[1].trim() : "Unknown server error";
+          
+          if (extractedError.includes("post office") || extractedError.includes("Failed to fetch post office")) {
+            setError("Invalid PIN code or address verification failed. Please check your PIN code and address details.");
+          } else {
+            setError(`Server error: ${extractedError}`);
+          }
+        } else {
+          setError(`Server returned invalid response. Please try again or contact support.`);
+        }
+        
+        setIsLoading(false);
+        return;
+      }
+
+      if (response.ok && data.success) {
+        setSuccess("Vendor registered successfully!");
+        setTimeout(() => {
+          onClose();
+          // Reset form
+          setFormData({
+            vendorName: "",
+            contactNumber: "",
+            altContactNumber: "",
+            email: "",
+            gender: "",
+            dob: "",
+            age: "",
+            storeId: "",
+            storeName: "",
+            storeImage: null,
+            storeAddress1: "",
+            storeAddress2: "",
+            pinCode: "",
+            city: "",
+            state: "",
+            storeLat: "",
+            storeLong: "",
+            panCardFront: null,
+            panCardBack: null,
+            aadharFront: null,
+            aadharBack: null,
+            drivingLicense: null,
+            ifscCode: "",
+            accountNumber: "",
+            bankName: "",
+            cancelCheque: null,
+          });
+          setOtp(["", "", "", ""]);
+          setStep(1);
+          setError("");
+          setSuccess("");
+        }, 2000);
+      } else {
+        // Handle specific error cases
+        const errorMsg = data.error || data.message || "Failed to register vendor";
+        
+        console.error("Create vendor error:", errorMsg);
+        console.error("Full error response:", data);
+        
+        if (errorMsg.includes("verify your contact number") || 
+            errorMsg.includes("Vendor not found") ||
+            errorMsg.includes("contactNumberVerified")) {
+          setError("Contact number not verified. Please verify OTP again.");
+          // Reset to OTP step
+          setStep(2);
+          setOtp(["", "", "", ""]);
+        } else if (errorMsg.includes("File size too large") || 
+                   errorMsg.includes("file size") ||
+                   errorMsg.includes("LIMIT_FILE_SIZE")) {
+          setError("One or more files exceed the 10MB size limit. Please reduce file sizes and try again.");
+        } else if (errorMsg.includes("Unexpected field") || 
+                   errorMsg.includes("file upload error") ||
+                   errorMsg.includes("MulterError")) {
+          setError(`File upload error: ${errorMsg}. Please check file names and try again.`);
+        } else if (errorMsg.includes("Only image files") || 
+                   errorMsg.includes("PDF files are allowed")) {
+          setError("Invalid file type. Please upload only JPEG, JPG, PNG images or PDF files.");
+        } else if (errorMsg.includes("already registered") || 
+                   errorMsg.includes("already exists")) {
+          setError(errorMsg);
+        } else {
+          setError(errorMsg);
+        }
+      }
+    } catch (error) {
+      console.error("Vendor Creation Error:", error);
+      console.error("Error name:", error.name);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+      
+      // Provide more specific error messages
+      if (error.name === 'AbortError' || error.message.includes('timeout')) {
+        setError("Request timeout. The upload is taking too long. Please try again with smaller files.");
+      } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        setError("Network error. Please check your connection. If uploading large files, try reducing their size.");
+      } else if (error.message.includes('CORS')) {
+        setError("CORS error. Please contact the administrator.");
+      } else {
+        setError(`Error creating vendor: ${error.message || "Please try again."}`);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
     const enteredOtp = otp.join("");
-    if (enteredOtp.length === 4) {
-      alert("Vendor added successfully!");
-      onClose();
-    } else {
-      alert("Please enter complete OTP");
+    if (enteredOtp.length !== 4) {
+      setError("Please enter complete 4-digit OTP");
+      return;
+    }
+
+    // Validate OTP is numeric
+    if (!/^\d{4}$/.test(enteredOtp)) {
+      setError("OTP must be 4 digits");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError("");
+
+      // Get auth token from localStorage
+      const authToken = localStorage.getItem("authToken") || localStorage.getItem("token");
+
+      // Normalize contact number (remove spaces, ensure it's a string)
+      const normalizedContactNumber = String(formData.contactNumber).trim().replace(/\s+/g, '');
+
+      const requestBody = {
+        contactNumber: normalizedContactNumber,
+        otp: String(enteredOtp).trim(),
+      };
+
+      // Prepare headers
+      const headers = {
+        "Content-Type": "application/json",
+      };
+
+      // Add Authorization header if token exists
+      if (authToken) {
+        headers["Authorization"] = `Bearer ${authToken}`;
+      }
+
+      console.log("=== VERIFY OTP REQUEST ===");
+      console.log("URL:", "http://46.202.164.93/api/vendor/verify-otp");
+      console.log("Method:", "POST");
+      console.log("Headers:", headers);
+      console.log("Body:", JSON.stringify(requestBody));
+      console.log("Auth Token:", authToken ? "Present" : "Missing");
+
+      const response = await fetch(
+        "http://46.202.164.93/api/vendor/verify-otp",
+        {
+          method: "POST",
+          headers: headers,
+          credentials: "include", // Include cookies if needed
+          body: JSON.stringify(requestBody),
+        }
+      );
+
+      console.log("=== VERIFY OTP RESPONSE ===");
+      console.log("Status:", response.status);
+      console.log("Status Text:", response.statusText);
+      console.log("OK:", response.ok);
+
+      // Try to get response text first
+      const responseText = await response.text();
+      console.log("Response Text:", responseText);
+
+      // Parse JSON
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        console.log("Parsed Response Data:", data);
+      } catch (e) {
+        console.error("JSON Parse Error:", e);
+        console.error("Raw Response:", responseText);
+        setError(
+          `Server returned invalid response: ${responseText.substring(0, 100)}`
+        );
+        return;
+      }
+
+      if (response.ok && data.success) {
+        setSuccess("OTP verified successfully! Contact number verified.");
+        console.log("OTP verified successfully. Response:", data);
+        console.log("Vendor should now have contactNumberVerified: true");
+        
+        // Small delay to ensure backend has saved contactNumberVerified: true
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        console.log("Proceeding to create vendor...");
+        // OTP verified and contactNumberVerified should be true, now create vendor
+        await createVendor();
+      } else {
+        const errorMsg =
+          data.message || data.error || `Invalid OTP (${response.status})`;
+        console.error("API Error:", errorMsg);
+        console.error("Full error response:", data);
+        
+        // Provide more helpful error messages and allow resending OTP
+        if (errorMsg.includes("expired") || errorMsg.includes("Expired")) {
+          setError("OTP has expired (valid for 10 minutes). Please request a new OTP.");
+          // Clear OTP input and allow resending
+          setOtp(["", "", "", ""]);
+          // Optionally reset to step 1 to allow resending OTP
+          // setStep(1);
+        } else if (errorMsg.includes("Invalid") || errorMsg.includes("invalid")) {
+          setError("Invalid OTP. Please check the code and try again, or request a new OTP.");
+          // Clear OTP input
+          setOtp(["", "", "", ""]);
+        } else {
+          setError(errorMsg);
+        }
+      }
+    } catch (error) {
+      console.error("=== VERIFY OTP NETWORK ERROR ===");
+      console.error("Error Type:", error.constructor.name);
+      console.error("Error Message:", error.message);
+      console.error("Error Stack:", error.stack);
+      setError(`Network error: ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -850,12 +2187,56 @@ const AddVendorModal = ({ isOpen, onClose }) => {
             {step === 1 ? "Add Vendor" : "Verify Contact Number"}
           </h2>
           <button
-            onClick={onClose}
+            onClick={() => {
+              setError("");
+              setSuccess("");
+              onClose();
+            }}
             className="text-gray-500 hover:text-gray-800"
+            disabled={isLoading}
           >
             <X className="h-6 w-6" />
           </button>
         </div>
+
+        {/* Error/Success Messages */}
+        {error && (
+          <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+            <svg
+              className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span className="text-sm text-red-700">{error}</span>
+          </div>
+        )}
+
+        {success && (
+          <div className="mx-6 mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
+            <svg
+              className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span className="text-sm text-green-700">{success}</span>
+          </div>
+        )}
 
         {step === 1 && (
           <div className="overflow-y-auto flex-1 px-6 py-4">
@@ -1261,6 +2642,19 @@ const AddVendorModal = ({ isOpen, onClose }) => {
                     className="w-full px-3 py-2 text-sm border border-orange-400 rounded outline-none"
                   />
                 </div>
+
+                <div>
+                  <label className="block text-sm text-gray-700 font-bold mb-1">
+                    Driving License
+                  </label>
+                  <input
+                    id="drivingLicense"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="w-full px-3 py-2 text-sm border border-orange-400 rounded outline-none"
+                  />
+                </div>
               </div>
 
               <h3 className="text-md font-bold text-gray-700 mb-4 flex items-center gap-2">
@@ -1352,14 +2746,16 @@ const AddVendorModal = ({ isOpen, onClose }) => {
                 <button
                   onClick={onClose}
                   className="px-8 py-2 bg-gray-200 text-gray-700 font-semibold rounded hover:bg-gray-300 transition"
+                  disabled={isLoading}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleNextClick}
-                  className="px-8 py-2 bg-[#FF7B1D] text-white font-semibold rounded hover:bg-orange-600 transition"
+                  className="px-8 py-2 bg-[#FF7B1D] text-white font-semibold rounded hover:bg-orange-600 transition disabled:bg-orange-300"
+                  disabled={isLoading}
                 >
-                  Next - Verify Contact
+                  {isLoading ? "Sending OTP..." : "Next - Verify Contact"}
                 </button>
               </div>
             </div>
@@ -1399,6 +2795,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
                       onKeyDown={(e) => handleOtpKeyDown(index, e)}
                       maxLength="1"
                       className="w-16 h-16 text-center text-2xl font-bold bg-white border-2 border-orange-400 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none"
+                      disabled={isLoading}
                     />
                   ))}
                 </div>
@@ -1406,17 +2803,36 @@ const AddVendorModal = ({ isOpen, onClose }) => {
 
               <button
                 onClick={handleVerifyOtp}
-                className="w-full bg-[#FF7B1D] text-white py-3.5 rounded-xl font-semibold hover:bg-orange-600 transition shadow-lg"
+                disabled={isLoading}
+                className="w-full bg-[#FF7B1D] text-white py-3.5 rounded-xl font-semibold hover:bg-orange-600 transition shadow-lg disabled:bg-orange-300 disabled:cursor-not-allowed mb-3"
               >
-                Verify & Add Vendor
+                {isLoading ? "Verifying..." : "Verify & Add Vendor"}
               </button>
 
-              <div className="text-center mt-4">
+              <div className="flex items-center justify-between mt-4">
                 <button
-                  onClick={() => setStep(1)}
+                  onClick={() => {
+                    setStep(1);
+                    setError("");
+                    setSuccess("");
+                    setOtp(["", "", "", ""]);
+                  }}
                   className="text-gray-600 hover:text-gray-900 text-sm font-medium"
+                  disabled={isLoading}
                 >
                   ← Back to Form
+                </button>
+                <button
+                  onClick={() => {
+                    setOtp(["", "", "", ""]);
+                    setError("");
+                    setSuccess("");
+                    sendOtp();
+                  }}
+                  disabled={isLoading}
+                  className="text-sm text-[#FF7B1D] hover:text-orange-600 font-semibold underline disabled:text-gray-400 disabled:cursor-not-allowed"
+                >
+                  Resend OTP
                 </button>
               </div>
             </div>

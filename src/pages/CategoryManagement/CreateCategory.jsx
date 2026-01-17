@@ -376,7 +376,10 @@ import { Eye, Edit, Trash2 } from "lucide-react";
 import AddCategoryModal from "../../components/AddCategoryModal";
 import { useNavigate } from "react-router-dom";
 
-const CreateCategory = () => {
+const API_GET_ALL = "http://46.202.164.93/api/category";
+const API_DELETE = "http://46.202.164.93/api/category";
+
+const Category = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -395,9 +398,20 @@ const CreateCategory = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(
-        "https://rush-basket.onrender.com/api/v1/categories"
-      );
+      // Get token from localStorage
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
+
+      const headers = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(API_GET_ALL, {
+        method: "GET",
+        credentials: "include",
+        headers: headers,
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -405,23 +419,26 @@ const CreateCategory = () => {
 
       const data = await response.json();
 
+      if (!data.success) {
+        throw new Error(data.message || "Failed to fetch categories");
+      }
+
       // Transform API data to match component structure
-      const transformedCategories = data.data.map((cat, index) => ({
-        id: cat._id || `CT${index + 101}`,
-        image: cat.image || cat.categoryImage || null,
-        category: cat.name || cat.categoryName || "Unknown",
-        products: cat.productCount || cat.products || "0",
-        subCategory: cat.subCategoryCount || cat.subCategories?.length || "0",
-        status:
-          cat.isActive !== undefined
-            ? cat.isActive
-              ? "Active"
-              : "Inactive"
-            : "Active",
-        rawData: cat, // Keep original data for reference
+      const transformedCategories = data.data.map((cat) => ({
+        id: cat._id,
+        image: cat.image?.url || null,
+        category: cat.name || "Unknown",
+        products: cat.productCount || "0",
+        subCategory: cat.subCategoryCount || "0",
+        status: cat.isActive ? "Active" : "Inactive",
+        rawData: cat,
       }));
 
       setCategories(transformedCategories);
+      console.log(
+        "Categories fetched successfully:",
+        transformedCategories.length
+      );
     } catch (err) {
       console.error("Error fetching categories:", err);
       setError(err.message);
@@ -432,6 +449,63 @@ const CreateCategory = () => {
 
   useEffect(() => {
     fetchCategories();
+
+    // Set up interval to refresh data every 30 seconds
+    const refreshInterval = setInterval(() => {
+      console.log("Auto-refreshing categories...");
+      fetchCategories();
+    }, 30000); // 30 seconds
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(refreshInterval);
+  }, []);
+
+  // Add visibility change listener to refetch when tab becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        console.log("Tab visible - refreshing categories...");
+        fetchCategories();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
+
+  // Listen for subcategory creation/deletion events
+  useEffect(() => {
+    const handleSubCategoryCreated = (event) => {
+      console.log("SubCategory created event detected:", event.detail);
+      console.log("Refreshing categories to update counts...");
+      fetchCategories();
+    };
+
+    const handleSubCategoryDeleted = (event) => {
+      console.log("SubCategory deleted event detected:", event.detail);
+      console.log("Refreshing categories to update counts...");
+      fetchCategories();
+    };
+
+    // Add event listeners
+    window.addEventListener("subcategoryCreated", handleSubCategoryCreated);
+    window.addEventListener("subcategoryDeleted", handleSubCategoryDeleted);
+
+    console.log("Event listeners registered for subcategory changes");
+
+    // Cleanup
+    return () => {
+      window.removeEventListener(
+        "subcategoryCreated",
+        handleSubCategoryCreated
+      );
+      window.removeEventListener(
+        "subcategoryDeleted",
+        handleSubCategoryDeleted
+      );
+      console.log("Event listeners removed");
+    };
   }, []);
 
   const statusColors = {
@@ -443,23 +517,33 @@ const CreateCategory = () => {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this category?")) {
       try {
-        const response = await fetch(
-          `https://rush-basket.onrender.com/api/v1/categories/${id}`,
-          {
-            method: "DELETE",
-          }
-        );
+        const token =
+          localStorage.getItem("token") || localStorage.getItem("authToken");
 
-        if (!response.ok) {
-          throw new Error("Failed to delete category");
+        const headers = {
+          "Content-Type": "application/json",
+        };
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
         }
 
-        // Remove from local state
+        const response = await fetch(`${API_DELETE}/${id}`, {
+          method: "DELETE",
+          credentials: "include",
+          headers: headers,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || "Failed to delete category");
+        }
+
         setCategories((prev) => prev.filter((cat) => cat.id !== id));
         alert("Category deleted successfully!");
       } catch (err) {
         console.error("Error deleting category:", err);
-        alert("Failed to delete category. Please try again.");
+        alert(err.message || "Failed to delete category. Please try again.");
       }
     }
   };
@@ -477,7 +561,7 @@ const CreateCategory = () => {
 
   // Handler for successful add/edit
   const handleCategorySuccess = () => {
-    fetchCategories(); // Refresh the list
+    fetchCategories();
     setIsModalOpen(false);
     setIsEditModalOpen(false);
     setEditingCategory(null);
@@ -593,8 +677,8 @@ const CreateCategory = () => {
           </div>
         </div>
 
-        {/* Add Button */}
-        <div className="w-full md:w-auto flex justify-start md:justify-end mt-2 md:mt-0">
+        {/* Add Button & Refresh */}
+        <div className="w-full md:w-auto flex justify-start md:justify-end gap-2 mt-2 md:mt-0">
           <button
             onClick={() => setIsModalOpen(true)}
             className="bg-black text-white w-52 sm:w-60 px-4 sm:px-5 py-2 rounded-sm shadow hover:bg-orange-600 text-xs sm:text-sm flex items-center justify-center whitespace-nowrap"
@@ -766,4 +850,4 @@ const CreateCategory = () => {
   );
 };
 
-export default CreateCategory;
+export default Category;

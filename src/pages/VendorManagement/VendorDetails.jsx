@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
@@ -11,22 +11,53 @@ import {
   UserIcon,
 } from "@heroicons/react/24/outline";
 
-const VendorDashboard = () => {
+const VendorDetails = () => {
   const { id } = useParams();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [vendor, setVendor] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock vendor data
-  const vendor = {
-    id: id,
-    name: "Manish Kumar",
-    performance: 99,
-    storeId: "STO101",
-    contact: "6203689042",
-    city: "Noida",
-    pincode: "201301",
-    status: "Approved",
-  };
+  const BASE_URL = "http://46.202.164.93";
+
+  // Fetch vendor data from API
+  useEffect(() => {
+    const fetchVendor = async () => {
+      try {
+        setLoading(true);
+        const authToken =
+          localStorage.getItem("authToken") || localStorage.getItem("token");
+
+        const response = await fetch(`${BASE_URL}/api/vendor/${id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            ...(authToken && { Authorization: `Bearer ${authToken}` }),
+          },
+          credentials: "include",
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          setVendor(result.data);
+        } else {
+          setError(result.message || "Failed to fetch vendor data");
+          console.error("Failed to fetch vendor:", result.message);
+        }
+      } catch (error) {
+        console.error("Error fetching vendor:", error);
+        setError("Error fetching vendor data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchVendor();
+    }
+  }, [id]);
 
   // Pie chart data (order overview)
   const chartData = [
@@ -230,6 +261,45 @@ const VendorDashboard = () => {
     },
   ];
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-[70vh]">
+          <p className="text-lg text-gray-600">Loading vendor details...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error || !vendor) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center h-[70vh]">
+          <p className="text-lg text-gray-600 mb-4">
+            {error || "Vendor not found"}
+          </p>
+          <button
+            onClick={() => window.history.back()}
+            className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded"
+          >
+            Go Back
+          </button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Format date helper
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
   return (
     <DashboardLayout>
       <div>
@@ -279,16 +349,18 @@ const VendorDashboard = () => {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-black">Store ID</p>
-                    <p className="text-gray-400">RUSH905</p>
+                    <p className="text-gray-400">{vendor.storeId || "N/A"}</p>
                   </div>
                 </div>
 
                 {/* Right Section */}
                 <div className="flex flex-col items-start sm:items-end mt-3 sm:mt-0 w-full sm:w-auto">
                   <p className="text-gray-500 font-semibold text-xs sm:text-sm">
-                    Performance
+                    Status
                   </p>
-                  <p className="text-lg font-bold text-orange-500">99%</p>
+                  <p className={`text-lg font-bold ${vendor.isActive ? "text-green-500" : "text-red-500"}`}>
+                    {vendor.isActive ? "Active" : "Inactive"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -297,7 +369,17 @@ const VendorDashboard = () => {
           {/* Store Image */}
           <div className="mb-4">
             <h2 className="font-semibold text-gray-700 mb-2">Store Image</h2>
-            <div className="border rounded-sm shadow p-4 bg-gray-100 text-center min-h-[150px] sm:min-h-[120px] flex items-center justify-center"></div>
+            <div className="border rounded-sm shadow p-4 bg-gray-100 text-center min-h-[150px] sm:min-h-[120px] flex items-center justify-center">
+              {vendor.storeImage && vendor.storeImage.length > 0 ? (
+                <img
+                  src={vendor.storeImage[0].url}
+                  alt="Store"
+                  className="max-w-full max-h-full object-contain rounded"
+                />
+              ) : (
+                <span className="text-gray-400">No image available</span>
+              )}
+            </div>
           </div>
 
           {/* Store Location */}
@@ -313,26 +395,35 @@ const VendorDashboard = () => {
             <h2 className="font-semibold text-gray-700 mb-2">Store Details</h2>
             <div className="border border-orange-500 rounded-lg shadow p-4 bg-[#FEF0E9] text-sm space-y-1">
               <p>
-                <strong>Lat :</strong> 878947.7876 &nbsp;{" "}
-                <strong>Long :</strong> 878947.7876
+                <strong>Lat :</strong> {vendor.storeAddress?.latitude || "N/A"} &nbsp;{" "}
+                <strong>Long :</strong> {vendor.storeAddress?.longitude || "N/A"}
               </p>
               <p>
-                <strong>Authorized Person :</strong> Manish Kumar
+                <strong>Authorized Person :</strong> {vendor.vendorName || "N/A"}
               </p>
               <p>
-                <strong>Contact :</strong> +91 6203689042
+                <strong>Contact :</strong> {vendor.contactNumber || "N/A"}
+                {vendor.contactNumberVerified && (
+                  <span className="ml-1 text-green-600">✓</span>
+                )}
               </p>
               <p>
-                <strong>Alt Contact :</strong> +91 6203689042
+                <strong>Alt Contact :</strong> {vendor.altContactNumber || "N/A"}
               </p>
               <p>
-                <strong>Email :</strong> sritam@gmail.com
+                <strong>Email :</strong> {vendor.email || "N/A"}
               </p>
               <p>
-                <strong>DOB :</strong> 26 Sept 2025
+                <strong>DOB :</strong> {formatDate(vendor.dateOfBirth)}
               </p>
               <p>
-                <strong>Gender :</strong> Male
+                <strong>Age :</strong> {vendor.age || "N/A"}
+              </p>
+              <p>
+                <strong>Gender :</strong> {vendor.gender ? vendor.gender.charAt(0).toUpperCase() + vendor.gender.slice(1) : "N/A"}
+              </p>
+              <p>
+                <strong>Service Radius :</strong> {vendor.serviceRadius || "N/A"} km
               </p>
             </div>
           </div>
@@ -342,19 +433,19 @@ const VendorDashboard = () => {
             <h2 className="font-semibold text-gray-700 mb-2">Store Address</h2>
             <div className="border rounded-lg shadow p-4 bg-[#9797FD] text-sm space-y-1">
               <p>
-                <strong>Address 1 :</strong>
+                <strong>Address 1 :</strong> {vendor.storeAddress?.line1 || "N/A"}
               </p>
               <p>
-                <strong>Address 2 :</strong>
+                <strong>Address 2 :</strong> {vendor.storeAddress?.line2 || "N/A"}
               </p>
               <p>
-                <strong>City :</strong>
+                <strong>City :</strong> {vendor.storeAddress?.city || "N/A"}
               </p>
               <p>
-                <strong>State :</strong>
+                <strong>State :</strong> {vendor.storeAddress?.state || "N/A"}
               </p>
               <p>
-                <strong>PIN :</strong>
+                <strong>PIN :</strong> {vendor.storeAddress?.pinCode || "N/A"}
               </p>
             </div>
           </div>
@@ -388,7 +479,7 @@ const VendorDashboard = () => {
 
         {/* Column 2 - Main Info & Charts */}
         <div className="space-y-4">
-          {/* Vendor Info Card (Duplicate, consider removing one) */}
+          {/* Vendor Info Card */}
           <div className="flex border-2 border-orange-300 rounded-md p-2.5 bg-[#FEF0E9] h-20 relative items-center justify-between">
             {/* Orange Badge Icon */}
             <div className="absolute top-2 left-2 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-white">
@@ -404,23 +495,31 @@ const VendorDashboard = () => {
 
             {/* Left: Vendor Info */}
             <div className="flex items-center gap-2 ml-6">
-              <img
-                src="https://i.pravatar.cc/50"
-                alt="Vendor"
-                className="w-8 h-8 rounded-full object-cover"
-              />
+              {vendor.storeImage && vendor.storeImage.length > 0 ? (
+                <img
+                  src={vendor.storeImage[0].url}
+                  alt="Vendor"
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs">
+                  {vendor.vendorName?.charAt(0) || "V"}
+                </div>
+              )}
               <div>
                 <h3 className="text-sm font-semibold text-gray-800">
-                  Daniel Esbella
+                  {vendor.vendorName || "N/A"}
                 </h3>
-                <p className="text-xs text-gray-600">iOS Developer</p>
+                <p className="text-xs text-gray-600">{vendor.storeName || "Store"}</p>
               </div>
             </div>
 
-            {/* Right: Performance */}
+            {/* Right: Status */}
             <div className="text-right mr-2">
-              <p className="text-xs text-gray-500 font-semibold">Performance</p>
-              <p className="text-lg font-bold text-orange-600">99%</p>
+              <p className="text-xs text-gray-500 font-semibold">Status</p>
+              <p className={`text-lg font-bold ${vendor.isActive ? "text-green-600" : "text-red-600"}`}>
+                {vendor.isActive ? "Active" : "Inactive"}
+              </p>
             </div>
           </div>
 
@@ -555,7 +654,7 @@ const VendorDashboard = () => {
 
         {/* Column 3 - Stat Cards */}
         <div className="space-y-4">
-          {/* Vendor Info Card (Duplicate, consider removing one) */}
+          {/* Vendor Info Card */}
           <div className="flex border-2 border-orange-300 rounded-md p-2.5 bg-[#FEF0E9] h-20 relative items-center justify-between">
             {/* Orange Badge Icon */}
             <div className="absolute top-2 left-2 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-white">
@@ -571,23 +670,31 @@ const VendorDashboard = () => {
 
             {/* Left: Vendor Info */}
             <div className="flex items-center gap-2 ml-6">
-              <img
-                src="https://i.pravatar.cc/50"
-                alt="Vendor"
-                className="w-8 h-8 rounded-full object-cover"
-              />
+              {vendor.storeImage && vendor.storeImage.length > 0 ? (
+                <img
+                  src={vendor.storeImage[0].url}
+                  alt="Vendor"
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs">
+                  {vendor.vendorName?.charAt(0) || "V"}
+                </div>
+              )}
               <div>
                 <h3 className="text-sm font-semibold text-gray-800">
-                  Daniel Esbella
+                  {vendor.vendorName || "N/A"}
                 </h3>
-                <p className="text-xs text-gray-600">iOS Developer</p>
+                <p className="text-xs text-gray-600">{vendor.storeName || "Store"}</p>
               </div>
             </div>
 
-            {/* Right: Performance */}
+            {/* Right: Status */}
             <div className="text-right mr-2">
-              <p className="text-xs text-gray-500 font-semibold">Performance</p>
-              <p className="text-lg font-bold text-orange-600">99%</p>
+              <p className="text-xs text-gray-500 font-semibold">Status</p>
+              <p className={`text-lg font-bold ${vendor.isActive ? "text-green-600" : "text-red-600"}`}>
+                {vendor.isActive ? "Active" : "Inactive"}
+              </p>
             </div>
           </div>
 
@@ -869,4 +976,4 @@ const VendorDashboard = () => {
   );
 };
 
-export default VendorDashboard;
+export default VendorDetails;

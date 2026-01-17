@@ -623,9 +623,20 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
   const fetchCategories = async () => {
     setLoadingCategories(true);
     try {
-      const response = await fetch(
-        "https://rush-basket.onrender.com/api/v1/categories"
-      );
+      // Get token from localStorage
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
+
+      const headers = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch("http://46.202.164.93/api/category", {
+        method: "GET",
+        credentials: "include",
+        headers: headers,
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch categories");
@@ -680,18 +691,6 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
     setImagePreview(null);
   };
 
-  // Convert image file to base64
-  const convertToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        resolve(reader.result);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
   // Handle image upload
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -732,57 +731,58 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
       return;
     }
 
+    if (!subCategoryImage) {
+      alert("Please upload an image");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Find selected category name
-      const selectedCategory = categories.find((cat) => cat._id === categoryId);
-      const categoryName =
-        selectedCategory?.name || selectedCategory?.categoryName || "";
+      // Prepare FormData according to API requirements
+      const formData = new FormData();
+      formData.append("name", subCategoryName.trim());
+      formData.append("description", subCategoryDesc.trim() || "");
+      formData.append("category", categoryId); // Send category ID directly
+      formData.append("image", subCategoryImage); // Send file directly
 
-      // Convert image to base64 if exists
-      let base64Image = null;
-      if (subCategoryImage) {
-        base64Image = await convertToBase64(subCategoryImage);
-      }
-
-      // Prepare payload according to API requirements
-      const payload = {
-        category: categoryName,
-        categoryId: categoryId,
+      console.log("Sending form data with:", {
         name: subCategoryName.trim(),
-        description: subCategoryDesc.trim() || "",
-      };
+        description: subCategoryDesc.trim(),
+        category: categoryId,
+        image: subCategoryImage.name,
+      });
 
-      // Add image only if it exists
-      if (base64Image) {
-        payload.image = base64Image;
+      // Get token from localStorage
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
+
+      const headers = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
       }
 
-      console.log("Sending payload:", payload);
-
-      // Send POST request
+      // Send POST request with FormData
       const response = await fetch(
-        "https://rush-basket.onrender.com/api/v1/sub-categories",
+        "http://46.202.164.93/api/subcategory/create",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
+          credentials: "include",
+          headers: headers,
+          body: formData, // Don't set Content-Type header - browser will set it with boundary
         }
       );
 
       const result = await response.json();
 
-      if (!response.ok) {
+      if (!response.ok || !result.success) {
         throw new Error(result.message || "Failed to create sub-category");
       }
 
       console.log("✅ Sub Category Created:", result);
       alert("Sub-category created successfully!");
 
-      // Call success callback
+      // Call success callback with the created data
       if (onSuccess) {
         onSuccess(result.data);
       }
@@ -896,7 +896,8 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
           {/* Sub Category Image */}
           <div>
             <label className="block text-sm font-medium mb-0.5">
-              Sub Category Image (100px × 100px)
+              Sub Category Image (100px × 100px){" "}
+              <span className="text-red-500">*</span>
             </label>
             <div className="flex items-start gap-3">
               <input

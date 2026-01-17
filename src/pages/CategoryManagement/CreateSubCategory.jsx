@@ -401,6 +401,7 @@ const CreateSubCategory = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedSubCategory, setSelectedSubCategory] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -413,9 +414,22 @@ const CreateSubCategory = () => {
   const fetchSubCategories = async () => {
     setLoading(true);
     try {
-      const response = await fetch(
-        "https://rush-basket.onrender.com/api/v1/sub-categories"
-      );
+      // Get token from localStorage
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
+
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch("http://46.202.164.93/api/subcategory", {
+        method: "GET",
+        credentials: "include",
+        headers: headers,
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch sub-categories");
@@ -427,13 +441,14 @@ const CreateSubCategory = () => {
       // Transform API data to match our table structure
       const transformedData = (data.data || []).map((item) => ({
         id: item._id,
-        image: item.image || "https://i.pravatar.cc/50",
-        subCategory: item.name,
+        image: item.image?.url || "https://i.pravatar.cc/50",
+        subCategory: item.name || "N/A",
         products: item.products?.length?.toString() || "0",
-        category:
-          typeof item.category === "object"
-            ? item.category?.name || "N/A"
-            : item.category || "N/A",
+        category: item.category
+          ? typeof item.category === "object"
+            ? item.category.name
+            : item.category
+          : "N/A",
         status: item.isActive ? "Active" : "Inactive",
       }));
 
@@ -449,6 +464,44 @@ const CreateSubCategory = () => {
   // Fetch data on component mount
   useEffect(() => {
     fetchSubCategories();
+
+    // Set up interval to refresh data every 30 seconds
+    const refreshInterval = setInterval(() => {
+      fetchSubCategories();
+    }, 30000);
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(refreshInterval);
+  }, []);
+
+  // Add visibility change listener to refetch when tab becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchSubCategories();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
+
+  // Listen for subcategory creation events from modal
+  useEffect(() => {
+    const handleSubCategoryCreated = () => {
+      console.log("SubCategory created - refreshing list...");
+      fetchSubCategories();
+    };
+
+    window.addEventListener("subcategoryCreated", handleSubCategoryCreated);
+
+    return () => {
+      window.removeEventListener(
+        "subcategoryCreated",
+        handleSubCategoryCreated
+      );
+    };
   }, []);
 
   const statusColors = {
@@ -459,20 +512,37 @@ const CreateSubCategory = () => {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this Sub Category?")) {
       try {
+        const token =
+          localStorage.getItem("token") || localStorage.getItem("authToken");
+
+        const headers = {
+          "Content-Type": "application/json",
+        };
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
         const response = await fetch(
-          `https://rush-basket.onrender.com/api/v1/sub-categories/${id}`,
+          `http://46.202.164.93/api/subcategory/${id}`,
           {
             method: "DELETE",
+            credentials: "include",
+            headers: headers,
           }
         );
 
-        if (!response.ok) {
-          throw new Error("Failed to delete sub-category");
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Failed to delete sub-category");
         }
 
         // Remove from local state
         setSubCategories((prev) => prev.filter((item) => item.id !== id));
         alert("Sub-category deleted successfully!");
+
+        // Trigger event to refresh category page counts
+        window.dispatchEvent(new CustomEvent("subcategoryDeleted"));
       } catch (err) {
         console.error("Error deleting sub-category:", err);
         alert("Failed to delete sub-category. Please try again.");
@@ -484,14 +554,51 @@ const CreateSubCategory = () => {
     navigate(`/category/subview/${id}`);
   };
 
-  const handleEdit = (item) => {
-    setIsEditModalOpen(true);
+  const handleEdit = async (item) => {
+    try {
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
+
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      // Fetch the full subcategory details
+      const response = await fetch(
+        `http://46.202.164.93/api/subcategory/${item.id}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: headers,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch sub-category details");
+      }
+
+      const result = await response.json();
+
+      // Store the selected subcategory data
+      setSelectedSubCategory(result.data);
+      // Open edit modal
+      setIsEditModalOpen(true);
+    } catch (err) {
+      console.error("Error fetching sub-category details:", err);
+      alert("Failed to load sub-category details. Please try again.");
+    }
   };
 
   // Handle success callback from modal
   const handleAddSuccess = (newSubCategory) => {
-    // Refresh the list after successful addition
+    // Refresh the list after successful addition/edit
     fetchSubCategories();
+
+    // Trigger event to refresh category page counts
+    window.dispatchEvent(new CustomEvent("subcategoryCreated"));
   };
 
   // Filter + Search
@@ -595,8 +702,8 @@ const CreateSubCategory = () => {
           </div>
         </div>
 
-        {/* Add Button */}
-        <div className="w-full md:w-auto flex justify-start md:justify-end mt-2 md:mt-0">
+        {/* Add Button & Refresh */}
+        <div className="w-full md:w-auto flex justify-start md:justify-end gap-2 mt-2 md:mt-0">
           <button
             onClick={() => setIsModalOpen(true)}
             className="bg-black text-white w-52 sm:w-60 px-4 sm:px-5 py-2 rounded-sm shadow hover:bg-orange-600 text-xs sm:text-sm flex items-center justify-center whitespace-nowrap"
@@ -688,12 +795,8 @@ const CreateSubCategory = () => {
         <div className="flex justify-end items-center gap-6 mt-8 max-w-[95%] mx-auto">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600"
             disabled={currentPage === 1}
-            className={`px-10 py-3 text-sm font-medium transition ${
-              currentPage === 1
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-[#FF7B1D] text-white hover:bg-orange-600"
-            }`}
           >
             Back
           </button>
@@ -723,10 +826,10 @@ const CreateSubCategory = () => {
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`px-1 transition ${
+                    className={`px-1 ${
                       currentPage === page
                         ? "text-orange-600 font-semibold"
-                        : "text-black hover:text-orange-600"
+                        : ""
                     }`}
                   >
                     {page}
@@ -740,12 +843,8 @@ const CreateSubCategory = () => {
             onClick={() =>
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }
+            className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800"
             disabled={currentPage === totalPages}
-            className={`px-10 py-3 text-sm font-medium transition ${
-              currentPage === totalPages
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-[#247606] text-white hover:bg-green-800"
-            }`}
           >
             Next
           </button>
@@ -760,8 +859,13 @@ const CreateSubCategory = () => {
       />
       <AddSubCategoryModal
         isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedSubCategory(null);
+        }}
         isEdit={true}
+        subCategoryData={selectedSubCategory}
+        onSuccess={handleAddSuccess}
       />
     </DashboardLayout>
   );

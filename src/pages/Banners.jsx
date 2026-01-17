@@ -2,13 +2,11 @@ import React, { useEffect, useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import { Plus, Pencil, Trash2, X, Loader2 } from "lucide-react";
 
-// ⚠️ IMPORTANT: Update these URLs to match your actual backend
-const API_URL = "https://rush-basket.onrender.com/api/v1/banners";
-const BASE_URL = "https://rush-basket.onrender.com";
+// ⚠️ CORRECTED API URLs - Updated to match your backend endpoints
+const API_URL = "http://46.202.164.93/api/banner";
 
-// If running backend locally, uncomment and update:
-// const API_URL = "http://localhost:5000/api/v1/banners";
-// const BASE_URL = "http://localhost:5000";
+// For production deployment, use:
+// const API_URL = "https://rush-basket.onrender.com/api/banner";
 
 const BannerManagement = () => {
   const [banners, setBanners] = useState([]);
@@ -23,16 +21,32 @@ const BannerManagement = () => {
     imagePreview: null,
   });
 
+  // Helper function to get authorization headers
+  const getAuthHeaders = () => {
+    const token =
+      localStorage.getItem("token") || localStorage.getItem("authToken");
+    const headers = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    return headers;
+  };
+
   // ================= FETCH BANNERS =================
   const loadBanners = async () => {
     setLoading(true);
     try {
-      const res = await fetch(API_URL);
+      const res = await fetch(API_URL, {
+        method: "GET",
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
       const result = await res.json();
 
       console.log("API Response:", result);
 
       if (result.success) {
+        // Handle the nested data structure from API
         setBanners(result.data || []);
         console.log("Banners loaded:", result.data);
       } else {
@@ -68,7 +82,8 @@ const BannerManagement = () => {
     setFormData({
       name: banner.name,
       image: null,
-      imagePreview: `${BASE_URL}${banner.image}`,
+      // Use the full Cloudinary URL from image.url
+      imagePreview: banner.image?.url || banner.image,
     });
     setIsModalOpen(true);
   };
@@ -113,30 +128,40 @@ const BannerManagement = () => {
     setSubmitting(true);
     try {
       let res;
+      const headers = getAuthHeaders();
+
       if (editingBanner) {
+        // PUT request for updating
         res = await fetch(`${API_URL}/${editingBanner._id}`, {
           method: "PUT",
+          credentials: "include",
+          headers: headers,
           body: data,
         });
       } else {
-        res = await fetch(API_URL, {
+        // POST request for creating
+        res = await fetch(`${API_URL}/create`, {
           method: "POST",
+          credentials: "include",
+          headers: headers,
           body: data,
         });
       }
 
       const result = await res.json();
 
-      if (result.success) {
-        setIsModalOpen(false);
-        loadBanners();
-        alert(result.message || "Banner saved successfully");
-      } else {
-        alert(result.message || "Failed to save banner");
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || "Failed to save banner");
       }
+
+      setIsModalOpen(false);
+      loadBanners();
+      alert(result.message || "Banner saved successfully");
     } catch (error) {
       console.error("Error saving banner:", error);
-      alert("Failed to save banner. Check if backend is running.");
+      alert(
+        error.message || "Failed to save banner. Check if backend is running."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -149,19 +174,21 @@ const BannerManagement = () => {
     try {
       const res = await fetch(`${API_URL}/${id}`, {
         method: "DELETE",
+        credentials: "include",
+        headers: getAuthHeaders(),
       });
 
       const result = await res.json();
 
-      if (result.success) {
-        loadBanners();
-        alert(result.message || "Banner deleted successfully");
-      } else {
-        alert(result.message || "Failed to delete banner");
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || "Failed to delete banner");
       }
+
+      loadBanners();
+      alert(result.message || "Banner deleted successfully");
     } catch (error) {
       console.error("Error deleting banner:", error);
-      alert("Delete failed. Check if backend is running.");
+      alert(error.message || "Delete failed. Check if backend is running.");
     }
   };
 
@@ -200,16 +227,14 @@ const BannerManagement = () => {
                 >
                   <div className="relative h-48 bg-gray-200">
                     <img
-                      src={`${BASE_URL}${banner.image}`}
+                      // Use the full Cloudinary URL from image.url
+                      src={banner.image?.url || banner.image}
                       alt={banner.name}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         console.error("❌ Image failed to load");
-                        console.error("Path from API:", banner.image);
+                        console.error("Image object:", banner.image);
                         console.error("Full URL attempted:", e.target.src);
-                        console.error(
-                          "Check if backend is serving static files!"
-                        );
                         e.target.src =
                           "https://placehold.co/400x200/orange/white?text=Image+Not+Found";
                       }}
@@ -227,12 +252,12 @@ const BannerManagement = () => {
                       Created: {new Date(banner.createdAt).toLocaleDateString()}
                     </p>
                     <div className="flex gap-2">
-                      <button
+                      {/* <button
                         onClick={() => handleEditClick(banner)}
                         className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
                       >
                         <Pencil size={16} /> Edit
-                      </button>
+                      </button> */}
                       <button
                         onClick={() => handleDelete(banner._id)}
                         className="flex-1 bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center gap-2"

@@ -68,16 +68,17 @@ const Sidebar = () => {
       name: "Product Management",
       icon: <Package size={16} />,
       subItems: [
-        { name: "Product", path: "/products/all", hasDot: true },
-        { name: "All Product", path: "/products/all" },
-        { name: "Trending Product", path: "/products/trending" },
+        // { name: "Product", path: "/products/all", hasDot: true },
+        // { name: "All Product", path: "/products/all" },
+        // { name: "Trending Product", path: "/products/trending" },
+        { name: "Pending Product", path: "/products/pending" },
       ],
     },
-    {
-      name: "Inventory",
-      icon: <Boxes size={16} />,
-      path: "/inventory",
-    },
+    // {
+    //   name: "Inventory",
+    //   icon: <Boxes size={16} />,
+    //   path: "/inventory",
+    // },
     {
       name: "Order Management",
       icon: <ShoppingCart size={16} />,
@@ -109,8 +110,8 @@ const Sidebar = () => {
       icon: <TicketPercent size={16} />,
       subItems: [
         { name: "All Coupons", path: "/coupons/all" },
-        { name: "Create Coupons", path: "/coupons/create" },
-        { name: "Prepaid Offer (%)", path: "/coupons/prepaid" },
+        // { name: "Create Coupons", path: "/coupons/create" },
+        // { name: "Prepaid Offer (%)", path: "/coupons/prepaid" },
       ],
     },
     {
@@ -126,9 +127,9 @@ const Sidebar = () => {
       name: "Analytics",
       icon: <BarChart3 size={16} />,
       subItems: [
-        { name: "Sales Report", path: "/analytics/sales" },
-        { name: "Vendor Report", path: "/analytics/vendor" },
-        { name: "Analytics Dashboard", path: "/analytics/dashboard" },
+        { name: "All Report", path: "/analytics/all" },
+        // { name: "Vendor Report", path: "/analytics/vendor" },
+        // { name: "Analytics Dashboard", path: "/analytics/dashboard" },
       ],
     },
     {
@@ -137,7 +138,7 @@ const Sidebar = () => {
       subItems: [
         { name: "All Vendor", path: "/vendor/all" },
         { name: "Add Vendor", path: "/vendor/add", isModal: true },
-        { name: "Vendor Dashboard", path: "/vendor/details" },
+        // { name: "Vendor Dashboard", path: "/vendor/details" },
       ],
     },
     {

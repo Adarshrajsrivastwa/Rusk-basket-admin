@@ -216,58 +216,79 @@ const VendorPermissionPage = () => {
   const { id } = useParams(); // vendor ID from URL
   const navigate = useNavigate();
 
-  // Mock vendor data (in a real app this can come from API or context)
-  const vendorList = [
-    {
-      id: "NO101",
-      name: "Manish Kumar",
-      city: "Noida",
-      pincode: "201301",
-      contact: "6203689042",
-      status: "Approved",
-    },
-    {
-      id: "NO102",
-      name: "Anita Verma",
-      city: "Gurgaon",
-      pincode: "122001",
-      contact: "9123456780",
-      status: "Suspended",
-    },
-    {
-      id: "NO103",
-      name: "Suresh Yadav",
-      city: "Noida",
-      pincode: "201301",
-      contact: "9988776655",
-      status: "Approved",
-    },
-  ];
-
-  // Find current vendor by ID
   const [vendor, setVendor] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  const BASE_URL = "http://46.202.164.93";
+
+  // Fetch vendor data from API
   useEffect(() => {
-    const found = vendorList.find((v) => v.id === id);
-    setVendor(found || null);
+    const fetchVendor = async () => {
+      try {
+        setLoading(true);
+        const authToken =
+          localStorage.getItem("authToken") || localStorage.getItem("token");
+
+        const response = await fetch(`${BASE_URL}/api/vendor/${id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            ...(authToken && { Authorization: `Bearer ${authToken}` }),
+          },
+          credentials: "include",
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          setVendor(result.data);
+        } else {
+          setError(result.message || "Failed to fetch vendor data");
+          console.error("Failed to fetch vendor:", result.message);
+        }
+      } catch (error) {
+        console.error("Error fetching vendor:", error);
+        setError("Error fetching vendor data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchVendor();
+    }
   }, [id]);
 
-  // Permission structure
+  // Permission structure - map to API permissions
   const permissions = [
-    { name: "Edit Product Details", key: "edit" },
-    { name: "Change Pricing", key: "pricing" },
-    { name: "Manage Inventory", key: "inventory" },
-    { name: "Access Analytics", key: "analytics" },
-    { name: "Enable/Disable Product", key: "enable_disable" },
+    { name: "Manage Products", key: "canManageProducts", apiKey: "canManageProducts" },
+    { name: "Manage Orders", key: "canManageOrders", apiKey: "canManageOrders" },
+    { name: "Manage Inventory", key: "canManageInventory", apiKey: "canManageInventory" },
+    { name: "View Analytics", key: "canViewAnalytics", apiKey: "canViewAnalytics" },
+    { name: "Manage Discounts", key: "canManageDiscounts", apiKey: "canManageDiscounts" },
+    { name: "Manage Promotions", key: "canManagePromotions", apiKey: "canManagePromotions" },
+    { name: "Export Data", key: "canExportData", apiKey: "canExportData" },
+    { name: "Manage Reviews", key: "canManageReviews", apiKey: "canManageReviews" },
   ];
 
   const [granted, setGranted] = useState({
-    edit: true,
-    pricing: false,
-    inventory: true,
-    analytics: false,
-    enable_disable: true,
+    canManageProducts: false,
+    canManageOrders: false,
+    canManageInventory: false,
+    canViewAnalytics: false,
+    canManageDiscounts: false,
+    canManagePromotions: false,
+    canExportData: false,
+    canManageReviews: false,
   });
+
+  // Initialize permissions from vendor data
+  useEffect(() => {
+    if (vendor && vendor.permissions) {
+      setGranted(vendor.permissions);
+    }
+  }, [vendor]);
 
   // Commission settings
   const [commission, setCommission] = useState({
@@ -310,12 +331,22 @@ const VendorPermissionPage = () => {
     );
   };
 
-  if (!vendor) {
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-[70vh]">
+          <p className="text-lg text-gray-600">Loading vendor permissions...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error || !vendor) {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-[70vh]">
           <p className="text-lg text-gray-600 mb-4">
-            Vendor not found for ID: <span className="font-semibold">{id}</span>
+            {error || `Vendor not found for ID: ${id}`}
           </p>
           <button
             onClick={() => navigate(-1)}
@@ -348,36 +379,51 @@ const VendorPermissionPage = () => {
         <div className="bg-gray-50 p-4 rounded-sm mb-6 border border-gray-200">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-sm text-gray-700">
             <p>
-              <span className="font-semibold text-gray-900">Vendor ID:</span>{" "}
-              {vendor.id}
+              <span className="font-semibold text-gray-900">Store ID:</span>{" "}
+              {vendor.storeId || vendor._id || "N/A"}
             </p>
             <p>
-              <span className="font-semibold text-gray-900">Name:</span>{" "}
-              {vendor.name}
+              <span className="font-semibold text-gray-900">Vendor Name:</span>{" "}
+              {vendor.vendorName || "N/A"}
+            </p>
+            <p>
+              <span className="font-semibold text-gray-900">Store Name:</span>{" "}
+              {vendor.storeName || "N/A"}
             </p>
             <p>
               <span className="font-semibold text-gray-900">City:</span>{" "}
-              {vendor.city}
+              {vendor.storeAddress?.city || "N/A"}
             </p>
             <p>
               <span className="font-semibold text-gray-900">Pincode:</span>{" "}
-              {vendor.pincode}
+              {vendor.storeAddress?.pinCode || "N/A"}
             </p>
             <p>
               <span className="font-semibold text-gray-900">Contact:</span>{" "}
-              {vendor.contact}
+              {vendor.contactNumber || "N/A"}
+              {vendor.contactNumberVerified && (
+                <span className="ml-1 text-green-600">✓</span>
+              )}
+            </p>
+            <p>
+              <span className="font-semibold text-gray-900">Email:</span>{" "}
+              {vendor.email || "N/A"}
             </p>
             <p>
               <span className="font-semibold text-gray-900">Status:</span>{" "}
               <span
                 className={
-                  vendor.status === "Approved"
+                  vendor.isActive
                     ? "text-green-600 font-semibold"
-                    : "text-gray-600 font-semibold"
+                    : "text-red-600 font-semibold"
                 }
               >
-                {vendor.status === "Approved" ? "Active" : "Suspended"}
+                {vendor.isActive ? "Active" : "Inactive"}
               </span>
+            </p>
+            <p>
+              <span className="font-semibold text-gray-900">Service Radius:</span>{" "}
+              {vendor.serviceRadius || "N/A"} km
             </p>
           </div>
         </div>

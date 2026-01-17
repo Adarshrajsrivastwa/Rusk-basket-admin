@@ -157,81 +157,58 @@ import {
   useLocation,
 } from "react-router-dom";
 
-// Dashboard part
 import Dashboard from "./pages/SuperAdminDashboard/Dashboard";
 import ViewAllNotification from "./pages/SuperAdminDashboard/ViewAllNotification";
-
-// Product management part
+import VendorDashboard from "./pages/VendorDashboard/Dashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
 import AllProduct from "./pages/ProductManagement/AllProduct";
+import PendingProduct from "./pages/ProductManagement/PendingProduct";
 import SingleProduct from "./pages/ProductManagement/SingleProduct";
 import AddProduct from "./components/AddProduct";
 import TrendingProduct from "./pages/ProductManagement/TrendingProduct";
-
-// Inventory management part
 import Inventory from "./pages/InventoryManagement/Inventory";
-
-// Vendor management part
 import AllVendor from "./pages/VendorManagement/AllVendor";
 import VendorDetails from "./pages/VendorManagement/VendorDetails";
 import VendorPermissionPage from "./pages/VendorManagement/VendorPermissionPage";
-
-// Vendor support part
 import VendorSupport from "./pages/VendorSupportManagement/VendorSupport";
-
-// Category management part
 import AllCategory from "./pages/CategoryManagement/AllCategory";
 import AllCategoryView from "./pages/CategoryManagement/AllCategoryView";
 import CreateCategory from "./pages/CategoryManagement/CreateCategory";
 import CategoryView from "./pages/CategoryManagement/CategoryView";
 import CreateSubCategory from "./pages/CategoryManagement/CreateSubCategory";
 import SubCategoryView from "./pages/CategoryManagement/SubCategoryView";
-
-// Banners Part
 import Banners from "./pages/Banners";
-// Order management part
 import AllOrder from "./pages/OrderManagement/AllOrder";
 import SingleOrder from "./pages/OrderManagement/SingleOrder";
 import Invoice from "./pages/OrderManagement/Invoice";
 import InvoiceView from "./pages/OrderManagement/InvoiceView";
 import BagQRScan from "./pages/OrderManagement/BagQr";
-
-// Rider Management
 import AllRider from "./pages/RiderManagement/AllRider";
-
-// Coupon management part
 import AllCoupon from "./pages/CoupanOffer/AllCoupon";
+import SingleOffer from "./pages/CoupanOffer/SingleOffer.jsx";
 import CreateCoupon from "./components/CreateCoupon";
-
-// Notification part
 import Notification from "./pages/NotificationManagement/Notification";
 import SingleNotification from "./pages/NotificationManagement/SingleNotification.jsx";
 import PushNotification from "./components/PushNotification";
 import BulkAudiance from "./components/BulkAudiencePopup";
-
-// Analytics part
-import SalesReport from "./pages/Analytics/SalesReport/VendorWiseSalesReport.jsx";
+import SalesReport from "./pages/Analytics/SalesReport/VendorWiseSalesReport";
 import VendorReport from "./pages/Analytics/VendorReport.jsx";
 import AnalyticsDashboard from "./pages/Analytics/AnalyticsDashboard.jsx";
-
-// Authentication part
 import Login from "./pages/Login";
-
-// Top bar Notifications
 import TopBarNotification from "./pages/TopBarComponents/TopBarNotification";
 import TopBarMail from "./pages/TopBarComponents/TopBarMail";
-import TopBarChat from "./pages/TopBarComponents/TopBarChat.jsx";
-
-// New Order Popup
+import TopBarChat from "./pages/TopBarComponents/TopBarChat";
 import NewOrderPopup from "./components/NewOrderPopup";
-
-/* ---------------- App Content ---------------- */
-
+import Products from "./pages/VendorProductManagement/Products";
+import SingleProducts from "./pages/VendorProductManagement/SingleProducts";
+import VendorInventory from "./pages/VendorInventoryManagement/VendorInventory";
+import VendorOrder from "./pages/VendorOrderManagement/VendorOrder";
+import VendorAnalytics from "./pages/VendorAnalytics/VendorAnalytics.jsx";
 function AppContent() {
   const [showPopup, setShowPopup] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
-    // Do NOT show popup on login page
     if (location.pathname !== "/") {
       const timer = setTimeout(() => {
         setShowPopup(true);
@@ -245,33 +222,150 @@ function AppContent() {
     <>
       <Routes>
         <Route path="/" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/notifications/view-all"
-          element={<ViewAllNotification />}
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <ViewAllNotification />
+            </ProtectedRoute>
+          }
         />
 
-        {/* Product Management */}
-        <Route path="/products/all" element={<AllProduct />} />
-        <Route path="/products/:id" element={<SingleProduct />} />
-        <Route path="/products/add" element={<AddProduct />} />
-        <Route path="/products/trending" element={<TrendingProduct />} />
+        <Route
+          path="/products/all"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AllProduct />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/products/pending"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <PendingProduct />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Inventory Management */}
-        <Route path="/inventory" element={<Inventory />} />
+        <Route
+          path="/products/:id"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <SingleProduct />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/products/add"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AddProduct />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/products/trending"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <TrendingProduct />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Vendor Management */}
-        <Route path="/vendor/all" element={<AllVendor />} />
-        <Route path="/vendor/:id" element={<VendorDetails />} />
+        <Route
+          path="/inventory"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <Inventory />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/vendor/all"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AllVendor />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/products"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "vendor"]}>
+              <Products />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/products/:id"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "vendor"]}>
+              <SingleProducts />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/inventory"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "vendor"]}>
+              <VendorInventory />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/orders"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "vendor"]}>
+              <VendorOrder />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/analytics"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "vendor"]}>
+              <VendorAnalytics />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["vendor"]}>
+              <VendorDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/:id"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <VendorDetails />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/vendors/:id/settings"
-          element={<VendorPermissionPage />}
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <VendorPermissionPage />
+            </ProtectedRoute>
+          }
         />
 
-        {/* Vendor Support */}
         <Route path="/vendor-support" element={<VendorSupport />} />
 
-        {/* Category Management */}
         <Route path="/category/all" element={<AllCategory />} />
         <Route path="/category/view-all/:id" element={<AllCategoryView />} />
         <Route path="/category/create" element={<CreateCategory />} />
@@ -279,41 +373,42 @@ function AppContent() {
         <Route path="/category/create-sub" element={<CreateSubCategory />} />
         <Route path="/category/subview/:id" element={<SubCategoryView />} />
 
-        {/* Banners */}
         <Route path="/banners" element={<Banners />} />
 
-        {/* Order Management */}
         <Route path="/orders/all" element={<AllOrder />} />
         <Route path="/order/:id" element={<SingleOrder />} />
         <Route path="/invoice" element={<Invoice />} />
         <Route path="/invoice/view" element={<InvoiceView />} />
         <Route path="/orders/:id/bag-qr-scan" element={<BagQRScan />} />
 
-        {/* Rider Management */}
         <Route path="/Rider" element={<AllRider />} />
 
-        {/* Coupon Management */}
         <Route path="/coupons/all" element={<AllCoupon />} />
+        <Route path="/coupons/:id" element={<SingleOffer />} />
         <Route path="/coupons/create" element={<CreateCoupon />} />
 
-        {/* Notifications */}
         <Route path="/notification" element={<Notification />} />
         <Route path="/notification/:id" element={<SingleNotification />} />
         <Route path="/notification/push" element={<PushNotification />} />
         <Route path="/notification/bulk" element={<BulkAudiance />} />
 
-        {/* Analytics */}
         <Route path="/analytics/sales" element={<SalesReport />} />
-        <Route path="/analytics/vendor" element={<VendorReport />} />
+        <Route path="/analytics/all" element={<VendorReport />} />
         <Route path="/analytics/dashboard" element={<AnalyticsDashboard />} />
 
-        {/* Top Bar */}
         <Route path="/topbar-notifications" element={<TopBarNotification />} />
         <Route path="/mail" element={<TopBarMail />} />
         <Route path="/chat" element={<TopBarChat />} />
+        <Route
+          path="/vendor/notifications"
+          element={
+            <ProtectedRoute allowedRoles={["vendor"]}>
+              <div className="p-4">Vendor Notifications Page - Coming Soon</div>
+            </ProtectedRoute>
+          }
+        />
       </Routes>
 
-      {/* ✅ Popup (NOT on Login page) */}
       {location.pathname !== "/" && (
         <NewOrderPopup
           visible={showPopup}
@@ -323,8 +418,6 @@ function AppContent() {
     </>
   );
 }
-
-/* ---------------- Main App ---------------- */
 
 function App() {
   return (

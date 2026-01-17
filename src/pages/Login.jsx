@@ -845,13 +845,17 @@ import {
   Send,
   CheckCircle,
   AlertCircle,
+  ShoppingCart,
+  Package,
+  TrendingUp,
+  Bell,
 } from "lucide-react";
 
 export default function Login() {
   const [showOtp, setShowOtp] = useState(false);
   const [formData, setFormData] = useState({
     mobile: "",
-    role: "ADMIN",
+    role: "admin",
     otp: "",
   });
   const [loading, setLoading] = useState(true);
@@ -863,14 +867,13 @@ export default function Login() {
   const [timer, setTimer] = useState(0);
 
   const navigate = useNavigate();
-  const BASE_URL = "https://rush-basket.onrender.com";
+  const BASE_URL = "http://46.202.164.93";
 
   useEffect(() => {
     const loadTimer = setTimeout(() => setLoading(false), 300);
     return () => clearTimeout(loadTimer);
   }, []);
 
-  // Countdown timer for resend OTP
   useEffect(() => {
     if (timer > 0) {
       const countdown = setInterval(() => {
@@ -903,7 +906,7 @@ export default function Login() {
     setSuccess("");
 
     try {
-      const response = await fetch(`${BASE_URL}/api/v1/auth/send-otp`, {
+      const response = await fetch(`${BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -919,7 +922,7 @@ export default function Login() {
       if (response.ok && data.success) {
         setOtpSent(true);
         setSuccess("OTP sent successfully to your mobile number");
-        setTimer(60); // 60 seconds countdown
+        setTimer(60);
       } else {
         setError(data.message || "Failed to send OTP. Please try again.");
       }
@@ -942,7 +945,7 @@ export default function Login() {
     setError("");
 
     try {
-      const response = await fetch(`${BASE_URL}/api/v1/auth/verify-otp`, {
+      const response = await fetch(`${BASE_URL}/api/auth/verify-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -956,18 +959,15 @@ export default function Login() {
 
       const data = await response.json();
 
-      if (response.ok && data.success) {
+      if (response.ok && data.success !== false) {
         setSuccess("Login successful! Redirecting...");
-
-        // Store auth data if needed
-        if (data.token) {
-          localStorage.setItem("authToken", data.token);
-        }
-        localStorage.setItem("userRole", formData.role);
-        localStorage.setItem("userMobile", formData.mobile);
-
         setTimeout(() => {
-          navigate("/dashboard");
+          const role = formData.role;
+          if (role === "vendor") {
+            navigate("/vendor/dashboard");
+          } else {
+            navigate("/dashboard");
+          }
         }, 1000);
       } else {
         setError(data.message || "Invalid OTP. Please try again.");
@@ -997,15 +997,15 @@ export default function Login() {
 
   const LoginSkeleton = () => (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 p-4 animate-pulse">
-      <div className="w-full max-w-5xl bg-white rounded-sm shadow-sm overflow-hidden flex">
-        <div className="w-1/2 p-12 bg-gradient-to-br from-orange-50 via-white to-amber-50">
-          <div className="h-10 w-40 bg-gray-200 rounded mb-8"></div>
+      <div className="w-full max-w-6xl bg-white rounded-lg shadow-xl overflow-hidden flex flex-col lg:flex-row">
+        <div className="w-full lg:w-1/2 p-6 sm:p-8 lg:p-12">
+          <div className="h-20 w-20 bg-gray-200 rounded-full mb-8 mx-auto lg:mx-0"></div>
           <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
           <div className="h-12 bg-gray-200 rounded mb-4"></div>
           <div className="h-12 bg-gray-200 rounded mb-4"></div>
           <div className="h-12 bg-gray-200 rounded"></div>
         </div>
-        <div className="w-1/2 bg-orange-500 p-12"></div>
+        <div className="w-full lg:w-1/2 bg-orange-500 p-6 sm:p-8 lg:p-12 min-h-[300px] lg:min-h-0"></div>
       </div>
     </div>
   );
@@ -1014,23 +1014,23 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
-      <div className="w-full max-w-5xl bg-white rounded-sm shadow-sm overflow-hidden flex">
+      <div className="w-full max-w-6xl bg-white rounded-lg shadow-xl overflow-hidden flex flex-col lg:flex-row">
         {/* Left Side - Login Form */}
-        <div className="w-1/2 p-12 bg-gradient-to-br from-orange-50 via-white to-amber-50">
+        <div className="w-full lg:w-1/2 p-6 sm:p-8 lg:p-12 bg-gradient-to-br from-orange-50 via-white to-amber-50">
           {/* Brand Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-center mb-8">
+          <div className="mb-6 sm:mb-8">
+            <div className="flex items-center justify-center mb-6 sm:mb-8">
               <img
                 src={logo}
                 alt="RushBaskets Logo"
-                className="h-24 mix-blend-multiply"
+                className="h-16 sm:h-20 lg:h-24 object-contain mix-blend-multiply"
               />
             </div>
 
-            <h2 className="text-xl font-bold text-gray-900 mb-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
               Admin Login
             </h2>
-            <p className="text-xs text-gray-600 mb-4">
+            <p className="text-xs sm:text-sm text-gray-600 mb-4">
               This panel is strictly for authorized administrators. Unauthorized
               access is prohibited.
             </p>
@@ -1051,10 +1051,7 @@ export default function Login() {
             </div>
           )}
 
-          <form
-            onSubmit={otpSent ? handleVerifyOTP : handleSendOTP}
-            className="space-y-5"
-          >
+          <div className="space-y-4 sm:space-y-5">
             {/* Role Selection */}
             <div>
               <label className="block text-sm font-bold text-gray-800 mb-2">
@@ -1065,10 +1062,10 @@ export default function Login() {
                 value={formData.role}
                 onChange={handleChange}
                 disabled={otpSent}
-                className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-800 transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-200 focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-800 transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-200 focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed text-sm sm:text-base"
               >
-                <option value="ADMIN">Admin</option>
-                <option value="VENDOR">Vendor</option>
+                <option value="admin">Admin</option>
+                <option value="vendor">Vendor</option>
               </select>
             </div>
 
@@ -1088,12 +1085,12 @@ export default function Login() {
                   onKeyPress={handleKeyPress}
                   disabled={otpSent}
                   maxLength="10"
-                  className="w-full pl-10 pr-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-200 focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full pl-10 pr-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-200 focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed text-sm sm:text-base"
                 />
               </div>
             </div>
 
-            {/* OTP Field - Only shown after OTP is sent */}
+            {/* OTP Field */}
             {otpSent && (
               <div>
                 <label className="block text-sm font-bold text-gray-800 mb-2">
@@ -1109,7 +1106,7 @@ export default function Login() {
                     onChange={handleChange}
                     onKeyPress={handleKeyPress}
                     maxLength="4"
-                    className="w-full pl-10 pr-10 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-200 focus:outline-none"
+                    className="w-full pl-10 pr-10 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-200 focus:outline-none text-sm sm:text-base"
                   />
                   <button
                     type="button"
@@ -1125,7 +1122,7 @@ export default function Login() {
                 </div>
 
                 {/* Resend OTP */}
-                <div className="mt-2 flex items-center justify-between text-sm">
+                <div className="mt-2 flex items-center justify-between text-xs sm:text-sm">
                   <span className="text-gray-600">Didn't receive OTP?</span>
                   {timer > 0 ? (
                     <span className="text-gray-500">Resend in {timer}s</span>
@@ -1144,9 +1141,9 @@ export default function Login() {
 
             {/* Submit Button */}
             <button
-              type="submit"
+              onClick={otpSent ? handleVerifyOTP : handleSendOTP}
               disabled={sending || verifying}
-              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3.5 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02] mt-12 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 sm:py-3.5 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02] mt-6 sm:mt-12 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2 text-sm sm:text-base"
             >
               {sending || verifying ? (
                 <>
@@ -1174,37 +1171,66 @@ export default function Login() {
                   setSuccess("");
                   setTimer(0);
                 }}
-                className="w-full text-center text-sm text-gray-600 hover:text-orange-600 transition mt-4"
+                className="w-full text-center text-xs sm:text-sm text-gray-600 hover:text-orange-600 transition mt-4"
               >
                 Change Mobile Number
               </button>
             )}
-          </form>
+          </div>
         </div>
 
-        {/* Right Side - RushBaskets Illustration */}
-        <div className="w-1/2 flex flex-col items-center justify-center p-12 bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600 text-center relative overflow-hidden">
+        {/* Right Side - Illustration */}
+        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 sm:p-8 lg:p-12 bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600 text-center relative overflow-hidden min-h-[400px] sm:min-h-[500px] lg:min-h-0">
           {/* Animated background elements */}
           <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-20 right-20 w-40 h-40 bg-yellow-200 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute top-1/2 left-1/4 w-24 h-24 bg-white rounded-full blur-2xl animate-pulse"></div>
+            <div className="absolute top-10 left-10 w-24 sm:w-32 h-24 sm:h-32 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-20 right-20 w-32 sm:w-40 h-32 sm:h-40 bg-yellow-200 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute top-1/2 left-1/4 w-20 sm:w-24 h-20 sm:h-24 bg-white rounded-full blur-2xl animate-pulse"></div>
           </div>
 
           <div className="mb-6 relative z-10">
-            <h3 className="text-orange-100 text-sm font-medium mb-3 uppercase tracking-wide">
+            <h3 className="text-orange-100 text-xs sm:text-sm font-medium mb-3 uppercase tracking-wide">
               E-Commerce Management System
             </h3>
-            <h2 className="text-white text-4xl font-bold mb-4">Welcome Back</h2>
+            <h2 className="text-white text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">
+              Welcome Back
+            </h2>
           </div>
 
-          <div className="relative w-full max-w-md z-10">
+          {/* Icon Grid for smaller screens */}
+          <div className="grid grid-cols-2 gap-4 sm:gap-6 w-full max-w-md relative z-10 lg:hidden">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 flex flex-col items-center justify-center">
+              <ShoppingCart className="w-8 h-8 sm:w-12 sm:h-12 text-white mb-2" />
+              <p className="text-white text-xs sm:text-sm font-semibold">
+                Orders
+              </p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 flex flex-col items-center justify-center">
+              <Package className="w-8 h-8 sm:w-12 sm:h-12 text-white mb-2" />
+              <p className="text-white text-xs sm:text-sm font-semibold">
+                Inventory
+              </p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 flex flex-col items-center justify-center">
+              <TrendingUp className="w-8 h-8 sm:w-12 sm:h-12 text-white mb-2" />
+              <p className="text-white text-xs sm:text-sm font-semibold">
+                Analytics
+              </p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 flex flex-col items-center justify-center">
+              <Bell className="w-8 h-8 sm:w-12 sm:h-12 text-white mb-2" />
+              <p className="text-white text-xs sm:text-sm font-semibold">
+                Updates
+              </p>
+            </div>
+          </div>
+
+          {/* SVG Illustration for larger screens */}
+          <div className="relative w-full max-w-md z-10 hidden lg:block">
             <svg viewBox="0 0 500 400" className="w-full h-auto">
-              {/* Background decorative circles */}
               <circle cx="250" cy="200" r="190" fill="#FFFFFF" opacity="0.05" />
               <circle cx="250" cy="200" r="140" fill="#FFFFFF" opacity="0.08" />
 
-              {/* Desk/Table */}
               <ellipse
                 cx="250"
                 cy="320"
@@ -1223,7 +1249,7 @@ export default function Login() {
                 opacity="0.3"
               />
 
-              {/* Left Person - Warehouse Worker with Box */}
+              {/* Left Person */}
               <rect
                 x="155"
                 y="265"
@@ -1243,23 +1269,6 @@ export default function Login() {
               <ellipse cx="170" cy="235" rx="25" ry="35" fill="#8B5CF6" />
               <circle cx="170" cy="195" r="22" fill="#FCD34D" />
               <ellipse cx="170" cy="185" rx="24" ry="18" fill="#7C3AED" />
-              <ellipse
-                cx="145"
-                cy="240"
-                rx="10"
-                ry="28"
-                fill="#FCD34D"
-                transform="rotate(-25 145 240)"
-              />
-              <ellipse
-                cx="195"
-                cy="235"
-                rx="10"
-                ry="28"
-                fill="#FCD34D"
-                transform="rotate(25 195 235)"
-              />
-              {/* Box */}
               <rect
                 x="135"
                 y="220"
@@ -1269,24 +1278,8 @@ export default function Login() {
                 fill="#A78BFA"
                 opacity="0.9"
               />
-              <line
-                x1="135"
-                y1="235"
-                x2="165"
-                y2="235"
-                stroke="#7C3AED"
-                strokeWidth="2"
-              />
-              <line
-                x1="150"
-                y1="220"
-                x2="150"
-                y2="250"
-                stroke="#7C3AED"
-                strokeWidth="2"
-              />
 
-              {/* Center Person - Admin with Tablet */}
+              {/* Center Person */}
               <rect
                 x="240"
                 y="260"
@@ -1305,27 +1298,6 @@ export default function Login() {
               />
               <ellipse cx="255" cy="225" rx="28" ry="35" fill="#A78BFA" />
               <circle cx="255" cy="185" r="24" fill="#FDE68A" />
-              <path
-                d="M 235 180 Q 245 165 255 165 Q 265 165 275 180 L 275 185 Q 265 173 255 173 Q 245 173 235 185 Z"
-                fill="#6366F1"
-              />
-              <ellipse
-                cx="230"
-                cy="230"
-                rx="10"
-                ry="28"
-                fill="#FDE68A"
-                transform="rotate(-30 230 230)"
-              />
-              <ellipse
-                cx="280"
-                cy="230"
-                rx="10"
-                ry="28"
-                fill="#FDE68A"
-                transform="rotate(30 280 230)"
-              />
-              {/* Tablet */}
               <rect
                 x="225"
                 y="240"
@@ -1343,32 +1315,8 @@ export default function Login() {
                 rx="2"
                 fill="#3B82F6"
               />
-              <rect
-                x="238"
-                y="252"
-                width="15"
-                height="3"
-                fill="#FFFFFF"
-                rx="1"
-              />
-              <rect
-                x="238"
-                y="258"
-                width="20"
-                height="3"
-                fill="#FFFFFF"
-                rx="1"
-              />
-              <rect
-                x="238"
-                y="264"
-                width="12"
-                height="3"
-                fill="#FFFFFF"
-                rx="1"
-              />
 
-              {/* Right Person - Delivery Driver */}
+              {/* Right Person */}
               <rect
                 x="330"
                 y="270"
@@ -1388,27 +1336,8 @@ export default function Login() {
               <ellipse cx="345" cy="240" rx="24" ry="32" fill="#C4B5FD" />
               <circle cx="345" cy="205" r="20" fill="#FCD34D" />
               <ellipse cx="345" cy="195" rx="22" ry="16" fill="#A78BFA" />
-              <ellipse
-                cx="323"
-                cy="245"
-                rx="9"
-                ry="26"
-                fill="#FCD34D"
-                transform="rotate(-20 323 245)"
-              />
-              <ellipse
-                cx="367"
-                cy="245"
-                rx="9"
-                ry="26"
-                fill="#FCD34D"
-                transform="rotate(20 367 245)"
-              />
-              {/* Cap */}
-              <ellipse cx="345" cy="193" rx="24" ry="8" fill="#EF4444" />
-              <rect x="335" y="188" width="20" height="5" fill="#EF4444" />
 
-              {/* Shopping Cart - Top Left */}
+              {/* Decorative icons */}
               <g transform="translate(50, 80)">
                 <rect
                   x="0"
@@ -1421,18 +1350,8 @@ export default function Login() {
                 />
                 <circle cx="15" cy="35" r="4" fill="#6366F1" />
                 <circle cx="45" cy="35" r="4" fill="#6366F1" />
-                <path
-                  d="M 10 10 L 15 10 L 20 25 L 50 25 L 53 15 L 20 15"
-                  fill="none"
-                  stroke="#8B5CF6"
-                  strokeWidth="2"
-                />
-                <rect x="22" y="18" width="8" height="6" fill="#F59E0B" />
-                <rect x="33" y="18" width="8" height="6" fill="#10B981" />
-                <rect x="44" y="18" width="6" height="6" fill="#EF4444" />
               </g>
 
-              {/* Sales Graph - Top Right */}
               <g transform="translate(395, 70)">
                 <rect
                   x="0"
@@ -1447,418 +1366,11 @@ export default function Login() {
                 <rect x="23" y="30" width="9" height="20" fill="#F59E0B" />
                 <rect x="36" y="22" width="9" height="28" fill="#10B981" />
                 <rect x="49" y="15" width="9" height="35" fill="#3B82F6" />
-                <path
-                  d="M 14 38 L 27 30 L 40 22 L 53 15"
-                  fill="none"
-                  stroke="#8B5CF6"
-                  strokeWidth="2"
-                />
-                <circle cx="14" cy="38" r="2" fill="#8B5CF6" />
-                <circle cx="27" cy="30" r="2" fill="#8B5CF6" />
-                <circle cx="40" cy="22" r="2" fill="#8B5CF6" />
-                <circle cx="53" cy="15" r="2" fill="#8B5CF6" />
               </g>
-
-              {/* Order Status - Left Middle */}
-              <g transform="translate(55, 200)">
-                <rect
-                  x="0"
-                  y="0"
-                  width="70"
-                  height="55"
-                  rx="4"
-                  fill="#FFFFFF"
-                  opacity="0.95"
-                />
-                <circle cx="15" cy="15" r="8" fill="#10B981" />
-                <text
-                  x="12"
-                  y="19"
-                  fill="#FFFFFF"
-                  fontSize="10"
-                  fontWeight="bold"
-                >
-                  ✓
-                </text>
-                <rect
-                  x="27"
-                  y="10"
-                  width="35"
-                  height="3"
-                  rx="1"
-                  fill="#9CA3AF"
-                />
-                <rect
-                  x="27"
-                  y="16"
-                  width="28"
-                  height="3"
-                  rx="1"
-                  fill="#9CA3AF"
-                />
-                <circle cx="15" cy="35" r="8" fill="#3B82F6" />
-                <rect
-                  x="18"
-                  y="32"
-                  width="3"
-                  height="6"
-                  rx="1"
-                  fill="#FFFFFF"
-                />
-                <rect
-                  x="27"
-                  y="30"
-                  width="35"
-                  height="3"
-                  rx="1"
-                  fill="#9CA3AF"
-                />
-                <rect
-                  x="27"
-                  y="36"
-                  width="25"
-                  height="3"
-                  rx="1"
-                  fill="#9CA3AF"
-                />
-              </g>
-
-              {/* Delivery Truck - Right Top */}
-              <g transform="translate(385, 180)">
-                <rect
-                  x="0"
-                  y="0"
-                  width="70"
-                  height="50"
-                  rx="4"
-                  fill="#FFFFFF"
-                  opacity="0.95"
-                />
-                <rect
-                  x="15"
-                  y="15"
-                  width="30"
-                  height="18"
-                  rx="2"
-                  fill="#3B82F6"
-                />
-                <rect
-                  x="45"
-                  y="20"
-                  width="15"
-                  height="13"
-                  rx="2"
-                  fill="#6366F1"
-                />
-                <circle cx="23" cy="37" r="5" fill="#1F2937" />
-                <circle cx="52" cy="37" r="5" fill="#1F2937" />
-                <path d="M 50 25 L 55 25 L 55 30 L 50 30" fill="#8B5CF6" />
-              </g>
-
-              {/* Product Cards - Bottom Left */}
-              <g transform="translate(70, 110)">
-                <rect
-                  x="0"
-                  y="0"
-                  width="75"
-                  height="50"
-                  rx="4"
-                  fill="#FFFFFF"
-                  opacity="0.95"
-                />
-                <rect
-                  x="5"
-                  y="5"
-                  width="20"
-                  height="20"
-                  rx="2"
-                  fill="#C4B5FD"
-                />
-                <rect
-                  x="5"
-                  y="10"
-                  width="20"
-                  height="10"
-                  fill="#8B5CF6"
-                  opacity="0.5"
-                />
-                <rect
-                  x="29"
-                  y="7"
-                  width="40"
-                  height="3"
-                  rx="1"
-                  fill="#9CA3AF"
-                />
-                <rect
-                  x="29"
-                  y="13"
-                  width="30"
-                  height="3"
-                  rx="1"
-                  fill="#9CA3AF"
-                />
-                <rect
-                  x="29"
-                  y="19"
-                  width="35"
-                  height="3"
-                  rx="1"
-                  fill="#10B981"
-                />
-                <rect
-                  x="5"
-                  y="30"
-                  width="20"
-                  height="15"
-                  rx="2"
-                  fill="#FCD34D"
-                />
-                <rect
-                  x="29"
-                  y="32"
-                  width="40"
-                  height="3"
-                  rx="1"
-                  fill="#9CA3AF"
-                />
-                <rect
-                  x="29"
-                  y="38"
-                  width="25"
-                  height="3"
-                  rx="1"
-                  fill="#9CA3AF"
-                />
-              </g>
-
-              {/* Inventory Dashboard - Top Center */}
-              <g transform="translate(205, 50)">
-                <rect
-                  x="0"
-                  y="0"
-                  width="90"
-                  height="60"
-                  rx="4"
-                  fill="#FFFFFF"
-                  opacity="0.95"
-                />
-                <rect x="8" y="8" width="74" height="4" rx="2" fill="#10B981" />
-                <rect
-                  x="8"
-                  y="16"
-                  width="60"
-                  height="4"
-                  rx="2"
-                  fill="#3B82F6"
-                />
-                <rect
-                  x="8"
-                  y="24"
-                  width="50"
-                  height="4"
-                  rx="2"
-                  fill="#F59E0B"
-                />
-                <rect
-                  x="8"
-                  y="32"
-                  width="68"
-                  height="4"
-                  rx="2"
-                  fill="#8B5CF6"
-                />
-                <text
-                  x="10"
-                  y="48"
-                  fill="#6366F1"
-                  fontSize="11"
-                  fontWeight="bold"
-                >
-                  STOCK
-                </text>
-                <text
-                  x="50"
-                  y="48"
-                  fill="#10B981"
-                  fontSize="11"
-                  fontWeight="bold"
-                >
-                  1,247
-                </text>
-              </g>
-
-              {/* Customer Reviews - Right Bottom */}
-              <g transform="translate(380, 280)">
-                <rect
-                  x="0"
-                  y="0"
-                  width="70"
-                  height="50"
-                  rx="4"
-                  fill="#FFFFFF"
-                  opacity="0.95"
-                />
-                <path
-                  d="M 12 15 L 14 21 L 20 21 L 15 25 L 17 31 L 12 27 L 7 31 L 9 25 L 4 21 L 10 21 Z"
-                  fill="#FBBF24"
-                />
-                <path
-                  d="M 27 15 L 29 21 L 35 21 L 30 25 L 32 31 L 27 27 L 22 31 L 24 25 L 19 21 L 25 21 Z"
-                  fill="#FBBF24"
-                />
-                <path
-                  d="M 42 15 L 44 21 L 50 21 L 45 25 L 47 31 L 42 27 L 37 31 L 39 25 L 34 21 L 40 21 Z"
-                  fill="#FBBF24"
-                />
-                <path
-                  d="M 57 15 L 59 21 L 65 21 L 60 25 L 62 31 L 57 27 L 52 31 L 54 25 L 49 21 L 55 21 Z"
-                  fill="#FBBF24"
-                />
-                <text
-                  x="25"
-                  y="44"
-                  fill="#10B981"
-                  fontSize="12"
-                  fontWeight="bold"
-                >
-                  4.8/5
-                </text>
-              </g>
-
-              {/* Package Icon - Left Bottom */}
-              <g transform="translate(90, 340)">
-                <rect
-                  x="0"
-                  y="0"
-                  width="55"
-                  height="45"
-                  rx="3"
-                  fill="#FFFFFF"
-                  opacity="0.95"
-                />
-                <rect
-                  x="10"
-                  y="10"
-                  width="35"
-                  height="25"
-                  rx="2"
-                  fill="#8B5CF6"
-                  opacity="0.7"
-                />
-                <line
-                  x1="10"
-                  y1="22"
-                  x2="45"
-                  y2="22"
-                  stroke="#6366F1"
-                  strokeWidth="2"
-                />
-                <line
-                  x1="27"
-                  y1="10"
-                  x2="27"
-                  y2="35"
-                  stroke="#6366F1"
-                  strokeWidth="2"
-                />
-                <rect
-                  x="20"
-                  y="28"
-                  width="14"
-                  height="3"
-                  rx="1"
-                  fill="#FFFFFF"
-                />
-              </g>
-
-              {/* Notification Badge - Bottom Right */}
-              <g transform="translate(380, 340)">
-                <rect
-                  x="0"
-                  y="0"
-                  width="50"
-                  height="45"
-                  rx="3"
-                  fill="#FFFFFF"
-                  opacity="0.95"
-                />
-                <circle cx="25" cy="18" r="10" fill="#EF4444" />
-                <text
-                  x="20"
-                  y="23"
-                  fill="#FFFFFF"
-                  fontSize="12"
-                  fontWeight="bold"
-                >
-                  12
-                </text>
-                <rect
-                  x="8"
-                  y="30"
-                  width="34"
-                  height="3"
-                  rx="1"
-                  fill="#9CA3AF"
-                />
-                <rect
-                  x="8"
-                  y="36"
-                  width="28"
-                  height="3"
-                  rx="1"
-                  fill="#9CA3AF"
-                />
-              </g>
-
-              {/* Decorative elements */}
-              <circle cx="120" cy="120" r="5" fill="#FCD34D" opacity="0.6" />
-              <circle cx="380" cy="150" r="6" fill="#C4B5FD" opacity="0.7" />
-              <circle cx="430" cy="250" r="4" fill="#FCD34D" opacity="0.5" />
-              <circle cx="70" cy="270" r="5" fill="#A78BFA" opacity="0.6" />
-
-              {/* Stars */}
-              <path
-                d="M 450 230 L 453 238 L 461 238 L 455 243 L 457 251 L 450 246 L 443 251 L 445 243 L 439 238 L 447 238 Z"
-                fill="#FCD34D"
-                opacity="0.7"
-              />
-              <path
-                d="M 60 140 L 62 146 L 68 146 L 63 150 L 65 156 L 60 152 L 55 156 L 57 150 L 52 146 L 58 146 Z"
-                fill="#A78BFA"
-                opacity="0.7"
-              />
-              <path
-                d="M 430 100 L 432 105 L 437 105 L 433 108 L 435 113 L 430 110 L 425 113 L 427 108 L 423 105 L 428 105 Z"
-                fill="#FCD34D"
-                opacity="0.6"
-              />
-
-              {/* Connection lines */}
-              <line
-                x1="170"
-                y1="235"
-                x2="255"
-                y2="225"
-                stroke="#FFFFFF"
-                strokeWidth="2"
-                opacity="0.2"
-                strokeDasharray="5,5"
-              />
-              <line
-                x1="255"
-                y1="225"
-                x2="345"
-                y2="240"
-                stroke="#FFFFFF"
-                strokeWidth="2"
-                opacity="0.2"
-                strokeDasharray="5,5"
-              />
             </svg>
           </div>
 
-          <p className="text-orange-50 text-sm mt-6 max-w-sm relative z-10">
+          <p className="text-orange-50 text-xs sm:text-sm mt-6 max-w-sm relative z-10 px-4">
             Streamline your e-commerce operations with{" "}
             <span className="font-semibold text-white">RushBaskets</span>
           </p>
