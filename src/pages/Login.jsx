@@ -960,24 +960,58 @@ export default function Login() {
 
       console.log("VERIFY OTP RESPONSE", res.data);
       console.log("Response Status:", res.status);
-      console.log("Token in response:", res.data?.token ? "Present" : "Missing");
+      console.log("Full Response Object:", JSON.stringify(res.data, null, 2));
 
-      // Check if response is successful
-      if (res.data && res.data.success && res.data.token) {
-        // ✅ SAVE TOKEN
+      // Check if token exists in response
+      if (!res.data) {
+        console.error("❌ No data in response");
+        setError("No data received from server. Please try again.");
+        return;
+      }
+
+      if (!res.data.token) {
+        console.error("❌ Token missing in response");
+        console.error("Response keys:", Object.keys(res.data));
+        setError("Token not received from server. Please contact support.");
+        return;
+      }
+
+      // ✅ SAVE TOKEN - Direct save without strict condition check
+      try {
         const token = res.data.token;
+        console.log("Attempting to save token:", token.substring(0, 30) + "...");
+        
         localStorage.setItem("token", token);
         localStorage.setItem("authToken", token);
-        console.log("✅ Token saved to localStorage:", token.substring(0, 20) + "...");
+        
+        // Verify token was saved
+        const savedToken = localStorage.getItem("token");
+        if (savedToken === token) {
+          console.log("✅ Token successfully saved to localStorage");
+        } else {
+          console.error("❌ Token save verification failed!");
+          console.error("Expected:", token);
+          console.error("Got:", savedToken);
+        }
+      } catch (storageError) {
+        console.error("❌ Error saving token to localStorage:", storageError);
+        setError("Failed to save authentication token. Please check browser settings.");
+        return;
+      }
 
-        // Save user data
+      // Save user data
+      try {
         if (res.data.data) {
           localStorage.setItem("user", JSON.stringify(res.data.data));
           localStorage.setItem("userData", JSON.stringify(res.data.data));
           console.log("✅ User data saved to localStorage");
         }
+      } catch (storageError) {
+        console.error("❌ Error saving user data:", storageError);
+      }
 
-        // Save user role to localStorage (use role from response data if available)
+      // Save user role to localStorage (use role from response data if available)
+      try {
         const role = res.data.data?.role || formData.role;
         localStorage.setItem("userRole", role);
         console.log("✅ User role saved:", role);
@@ -990,9 +1024,9 @@ export default function Login() {
             navigate("/dashboard");
           }
         }, 1000);
-      } else {
-        console.error("❌ Invalid response structure:", res.data);
-        setError(res.data?.message || "Invalid response from server. Please try again.");
+      } catch (storageError) {
+        console.error("❌ Error saving user role:", storageError);
+        setError("Failed to save user data. Please try again.");
       }
     } catch (err) {
       console.error("❌ Verify OTP Error:", err);
