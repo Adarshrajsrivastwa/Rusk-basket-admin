@@ -961,16 +961,40 @@ export default function Login() {
       console.log("=== VERIFY OTP RESPONSE ===");
       console.log("Full Response:", res.data);
       
-      // ✅ SAVE TOKEN - ULTRA SIMPLE DIRECT SAVE
-      const token = res.data.token;
-      console.log("TOKEN VALUE:", token);
-      
-      localStorage.setItem("token", token);
-      localStorage.setItem("authToken", token);
-      console.log("TOKEN SAVED TO LOCALSTORAGE");
-      
-      const saved = localStorage.getItem("token");
-      console.log("VERIFIED SAVED TOKEN:", saved ? "YES" : "NO");
+      try {
+        // ✅ SAVE TOKEN - ULTRA SIMPLE DIRECT SAVE
+        const token = res.data.token;
+        console.log("TOKEN EXTRACTED:", token);
+        
+        localStorage.setItem("token", token);
+        localStorage.setItem("authToken", token);
+        console.log("TOKEN SAVED");
+        
+        const saved = localStorage.getItem("token");
+        console.log("TOKEN VERIFIED:", saved ? "YES ✅" : "NO ❌");
+        
+        // Save user data
+        if (res.data?.data) {
+          localStorage.setItem("user", JSON.stringify(res.data.data));
+          localStorage.setItem("userData", JSON.stringify(res.data.data));
+        }
+        
+        // Save user role
+        const role = res.data?.data?.role || formData.role;
+        localStorage.setItem("userRole", role);
+        
+        setSuccess("Login successful! Redirecting...");
+        setTimeout(() => {
+          if (role === "vendor") {
+            navigate("/vendor/dashboard");
+          } else {
+            navigate("/dashboard");
+          }
+        }, 1000);
+      } catch (error) {
+        console.error("ERROR IN TOKEN SAVE:", error);
+        setError("Failed to save authentication data.");
+      }
 
       // Save user data
       if (res.data?.data) {
