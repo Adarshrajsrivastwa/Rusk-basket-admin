@@ -4,19 +4,13 @@ import axios from "axios";
 // Base URL configuration
 export const BASE_URL = "https://api.rushbaskets.com";
 
-const api = axios.create({`n  baseURL: BASE_URL,`n});`n`n// Interceptor to automatically convert HTTP URLs to HTTPS`napi.interceptors.request.use(`n  (config) => {`n    // Convert HTTP to HTTPS in URL`n    if (config.url && config.url.startsWith("http://")) {`n      config.url = config.url.replace("http://", "https://");`n    }`n    if (config.baseURL && config.baseURL.startsWith("http://")) {`n      config.baseURL = config.baseURL.replace("http://", "https://");`n    }`n    return config;`n  },`n  (error) => {`n    return Promise.reject(error);`n  }`n);
+const api = axios.create({
+  baseURL: BASE_URL,
+});
 
 // Request interceptor to add JWT token and ensure HTTPS
 api.interceptors.request.use(
   (config) => {
-    // Convert HTTP to HTTPS in URL to prevent mixed content errors
-    if (config.url && config.url.startsWith("http://")) {
-      config.url = config.url.replace("http://", "https://");
-    }
-    if (config.baseURL && config.baseURL.startsWith("http://")) {
-      config.baseURL = config.baseURL.replace("http://", "https://");
-    }
-    
     // Convert HTTP to HTTPS in URL to prevent mixed content errors
     if (config.url && config.url.startsWith("http://")) {
       config.url = config.url.replace("http://", "https://");
