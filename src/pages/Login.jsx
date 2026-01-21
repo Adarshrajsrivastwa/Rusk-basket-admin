@@ -959,22 +959,42 @@ export default function Login() {
       );
 
       console.log("=== VERIFY OTP RESPONSE ===");
-      console.log("Full Response:", res.data);
+      console.log("Full Response:", JSON.stringify(res.data, null, 2));
       console.log("Response Status:", res.status);
+      console.log("Token exists:", !!res.data?.token);
+      console.log("Token value:", res.data?.token);
 
       // ✅ SAVE TOKEN - Direct save
       const token = res.data?.token;
       if (token) {
-        console.log("Token found, saving to localStorage...");
-        localStorage.setItem("token", token);
-        localStorage.setItem("authToken", token);
+        console.log("🔵 Step 1: Token found, attempting to save...");
+        console.log("🔵 Step 2: Token length:", token.length);
         
-        // Verify immediately
-        const savedToken = localStorage.getItem("token");
-        console.log("Token saved:", savedToken ? "YES ✅" : "NO ❌");
-        console.log("Saved token preview:", savedToken?.substring(0, 30) + "...");
+        try {
+          localStorage.setItem("token", token);
+          localStorage.setItem("authToken", token);
+          console.log("🔵 Step 3: localStorage.setItem called");
+          
+          // Verify immediately
+          const savedToken = localStorage.getItem("token");
+          console.log("🔵 Step 4: Retrieved from localStorage");
+          console.log("Token saved:", savedToken ? "YES ✅" : "NO ❌");
+          
+          if (savedToken) {
+            console.log("✅ Token successfully saved!");
+            console.log("Saved token preview:", savedToken.substring(0, 50) + "...");
+            console.log("Tokens match:", savedToken === token ? "YES ✅" : "NO ❌");
+          } else {
+            console.error("❌ Token was NOT saved to localStorage!");
+          }
+        } catch (error) {
+          console.error("❌ Error saving token:", error);
+          setError("Failed to save token. Please check browser settings.");
+          return;
+        }
       } else {
         console.error("❌ Token not found in response!");
+        console.error("Response data keys:", Object.keys(res.data || {}));
         setError("Token not received from server. Please contact support.");
         return;
       }
