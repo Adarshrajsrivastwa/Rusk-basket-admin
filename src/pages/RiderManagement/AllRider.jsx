@@ -21,7 +21,6 @@
 //   Loader2,
 // } from "lucide-react";
 
-// const API_BASE_URL = "http://46.202.164.93/api/rider";
 
 // const RiderManagement = () => {
 //   const [riders, setRiders] = useState([]);

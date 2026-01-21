@@ -272,10 +272,6 @@
 // import React, { useState, useEffect } from "react";
 // import { Upload, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 
-// // Get base URL from environment variable or use default
-// const getBaseURL = () => {
-//   return import.meta.env.VITE_API_BASE_URL || "http://46.202.164.93";
-// };
 
 // export default function AddProductPopup({ isOpen, onClose, onSuccess }) {
 //   const [formData, setFormData] = useState({

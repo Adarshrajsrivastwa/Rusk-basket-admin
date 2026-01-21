@@ -11,7 +11,6 @@
 // } from "lucide-react";
 // import { useNavigate } from "react-router-dom";
 
-// const API_BASE_URL = "http://46.202.164.93/api";
 
 // const AllCategory = () => {
 //   const [activeTab, setActiveTab] = useState("all");
