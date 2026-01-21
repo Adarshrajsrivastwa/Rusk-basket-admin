@@ -10,10 +10,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import JsBarcode from "jsbarcode";
-import axios from "axios";
-import { BASE_URL } from "../../api/api";
-
-const API_BASE_URL = `${BASE_URL}/api`;
+import api from "../../api/api";
 
 const PendingProduct = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,22 +30,11 @@ const PendingProduct = () => {
   const fetchPendingProducts = async (page = 1) => {
     setLoading(true);
     try {
-      // Get token from localStorage
-      const token =
-        localStorage.getItem("token") || localStorage.getItem("authToken");
-
-      const headers = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
-      const response = await axios.get(`${API_BASE_URL}/product/pending`, {
+      const response = await api.get(`/api/product/pending`, {
         params: {
           page: page,
           limit: itemsPerPage,
         },
-        headers: headers,
-        withCredentials: true,
       });
 
       if (response.data.success) {
@@ -82,22 +68,9 @@ const PendingProduct = () => {
     setProcessingId(productId);
 
     try {
-      // Get token from localStorage
-      const token =
-        localStorage.getItem("token") || localStorage.getItem("authToken");
-
-      const headers = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
-      const response = await axios.put(
-        `${API_BASE_URL}/product/approve/${productId}`,
-        {},
-        {
-          headers: headers,
-          withCredentials: true,
-        }
+      const response = await api.put(
+        `/api/product/approve/${productId}`,
+        {}
       );
 
       if (response.data.success) {
@@ -129,23 +102,10 @@ const PendingProduct = () => {
     setProcessingId(productId);
 
     try {
-      // Get token from localStorage
-      const token =
-        localStorage.getItem("token") || localStorage.getItem("authToken");
-
-      const headers = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
-      const response = await axios.put(
-        `${API_BASE_URL}/product/reject/${productId}`,
+      const response = await api.put(
+        `/api/product/reject/${productId}`,
         {
           rejectionReason: reason || "No reason provided",
-        },
-        {
-          headers: headers,
-          withCredentials: true,
         }
       );
 
