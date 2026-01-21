@@ -960,25 +960,49 @@ export default function Login() {
 
       console.log("=== VERIFY OTP RESPONSE ===");
       console.log("Full Response:", res.data);
+      console.log("Response exists:", !!res);
+      console.log("Response.data exists:", !!res.data);
       
-      // ✅ SAVE TOKEN - Direct save without any conditions
+      // Check if response and data exist
+      if (!res || !res.data) {
+        console.error("❌ Invalid response structure");
+        setError("Invalid response from server.");
+        return;
+      }
+      
+      console.log("Response check passed, extracting token...");
+      
+      // ✅ SAVE TOKEN - Direct save
       const token = res.data.token;
-      console.log("STEP 1: Token extracted:", token ? "YES" : "NO");
+      console.log("Token extracted:", token ? `YES (${token.length} chars)` : "NO");
+      
+      if (!token) {
+        console.error("❌ Token is missing!");
+        setError("Token not received from server.");
+        return;
+      }
+      
+      console.log("Saving token to localStorage...");
       
       // Save token immediately
-      localStorage.setItem("token", token);
-      localStorage.setItem("authToken", token);
-      console.log("STEP 2: Token saved to localStorage");
+      try {
+        localStorage.setItem("token", token);
+        localStorage.setItem("authToken", token);
+        console.log("✅ localStorage.setItem called successfully");
+      } catch (e) {
+        console.error("❌ Error saving to localStorage:", e);
+        setError("Failed to save token. Please check browser settings.");
+        return;
+      }
       
       // Verify immediately
       const checkToken = localStorage.getItem("token");
-      console.log("STEP 3: Verification - Token in storage:", checkToken ? "YES ✅" : "NO ❌");
+      console.log("Verification - Token retrieved:", checkToken ? `YES (${checkToken.length} chars)` : "NO");
       
-      if (checkToken) {
-        console.log("STEP 4: ✅ SUCCESS - Token is saved!");
-        console.log("Token preview:", checkToken.substring(0, 50) + "...");
+      if (checkToken && checkToken === token) {
+        console.log("✅✅✅ TOKEN SAVED AND VERIFIED SUCCESSFULLY!");
       } else {
-        console.error("STEP 4: ❌ FAILED - Token not in storage!");
+        console.error("❌❌❌ TOKEN SAVE FAILED!");
       }
 
       // Save user data
