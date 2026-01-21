@@ -960,36 +960,25 @@ export default function Login() {
 
       console.log("=== VERIFY OTP RESPONSE ===");
       console.log("Full Response:", res.data);
-      console.log("Response Status:", res.status);
-
-      // ✅ SAVE TOKEN - Direct save
-      const token = res.data?.token;
       
-      if (!token) {
-        console.error("❌ Token missing in response!");
-        setError("Token not received from server.");
-        return;
-      }
-      
-      console.log("Token found, saving...");
+      // ✅ SAVE TOKEN - Direct save without any conditions
+      const token = res.data.token;
+      console.log("STEP 1: Token extracted:", token ? "YES" : "NO");
       
       // Save token immediately
       localStorage.setItem("token", token);
       localStorage.setItem("authToken", token);
-      console.log("localStorage.setItem('token') called");
+      console.log("STEP 2: Token saved to localStorage");
       
-      // Verify it was saved
-      const savedToken = localStorage.getItem("token");
-      console.log("Verification check - savedToken exists:", !!savedToken);
+      // Verify immediately
+      const checkToken = localStorage.getItem("token");
+      console.log("STEP 3: Verification - Token in storage:", checkToken ? "YES ✅" : "NO ❌");
       
-      if (savedToken && savedToken === token) {
-        console.log("✅ Token saved and verified successfully!");
+      if (checkToken) {
+        console.log("STEP 4: ✅ SUCCESS - Token is saved!");
+        console.log("Token preview:", checkToken.substring(0, 50) + "...");
       } else {
-        console.error("❌ Token save failed or mismatch!");
-        console.error("Expected:", token.substring(0, 30));
-        console.error("Got:", savedToken?.substring(0, 30));
-        setError("Failed to save authentication token.");
-        return;
+        console.error("STEP 4: ❌ FAILED - Token not in storage!");
       }
 
       // Save user data
