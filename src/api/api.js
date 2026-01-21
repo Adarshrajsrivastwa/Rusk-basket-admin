@@ -6,7 +6,7 @@ export const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://46.202.164.
 
 const api = axios.create({
   baseURL: BASE_URL,
-  withCredentials: true, // Enable sending cookies with cross-origin requests
+  withCredentials: false, // Disabled to avoid CORS error - using localStorage for token instead
 });
 
 // Request interceptor to add JWT token from localStorage to all requests

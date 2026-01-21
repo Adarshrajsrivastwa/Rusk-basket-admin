@@ -951,7 +951,7 @@ export default function Login() {
         `${BASE_URL}/api/auth/verify-otp`,
         payload,
         {
-          withCredentials: true, // Enable sending cookies
+          withCredentials: false, // Temporarily disable to avoid CORS error
           headers: {
             "Content-Type": "application/json",
           },
