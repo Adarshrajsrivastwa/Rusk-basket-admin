@@ -378,7 +378,7 @@ import DashboardLayout from "../../components/DashboardLayout";
 import { Eye, Edit, Trash2, Settings } from "lucide-react";
 import AddVendorModal from "../../components/AddVendorModal";
 import { useNavigate } from "react-router-dom";
-import { BASE_URL } from "../../api/api";
+import api from "../../api/api";
 
 const AllVendor = () => {
   const [activeTab, setActiveTab] = useState("all");
@@ -406,26 +406,15 @@ const AllVendor = () => {
 
       console.log("Fetching vendors...");
       console.log("Page:", page, "Limit:", limit);
-      console.log("Auth token available:", authToken ? "Yes" : "No");
 
-      const response = await fetch(
-        `${BASE_URL}/api/vendor?page=${page}&limit=${limit}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            ...(authToken && { Authorization: `Bearer ${authToken}` }),
-          },
-          credentials: "include",
-        }
-      );
+      const response = await api.get(`/vendor?page=${page}&limit=${limit}`);
 
       console.log("Fetch vendors response status:", response.status);
 
-      const result = await response.json();
+      const result = response.data;
       console.log("Fetch vendors response:", result);
 
-      if (response.ok && result.success) {
+      if (result.success) {
         setVendors(result.data || []);
         setPagination(
           result.pagination || {
@@ -466,21 +455,11 @@ const AllVendor = () => {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this vendor?")) {
       try {
-        const authToken =
-          localStorage.getItem("authToken") || localStorage.getItem("token");
+        const response = await api.delete(`/vendor/${id}`);
 
-        const response = await fetch(`${BASE_URL}/api/vendor/${id}`, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            ...(authToken && { Authorization: `Bearer ${authToken}` }),
-          },
-          credentials: "include",
-        });
+        const result = response.data;
 
-        const result = await response.json();
-
-        if (response.ok && result.success) {
+        if (result.success) {
           alert("Vendor deleted successfully");
           refreshVendors();
         } else {
@@ -488,7 +467,7 @@ const AllVendor = () => {
         }
       } catch (error) {
         console.error("Error deleting vendor:", error);
-        alert("Error deleting vendor");
+        alert(error.response?.data?.message || "Error deleting vendor");
       }
     }
   };
