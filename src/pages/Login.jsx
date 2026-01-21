@@ -952,35 +952,52 @@ export default function Login() {
         payload,
         {
           withCredentials: true, // Enable sending cookies
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
       );
 
       console.log("VERIFY OTP RESPONSE", res.data);
+      console.log("Response Status:", res.status);
+      console.log("Token in response:", res.data?.token ? "Present" : "Missing");
 
-      // ✅ SAVE TOKEN
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("authToken", res.data.token);
+      // Check if response is successful
+      if (res.data && res.data.success && res.data.token) {
+        // ✅ SAVE TOKEN
+        const token = res.data.token;
+        localStorage.setItem("token", token);
+        localStorage.setItem("authToken", token);
+        console.log("✅ Token saved to localStorage:", token.substring(0, 20) + "...");
 
-      // (optional) save user data
-      if (res.data.data) {
-        localStorage.setItem("user", JSON.stringify(res.data.data));
-        localStorage.setItem("userData", JSON.stringify(res.data.data));
-      }
-
-      // Save user role to localStorage
-      const role = formData.role;
-      localStorage.setItem("userRole", role);
-
-      setSuccess("Login successful! Redirecting...");
-      setTimeout(() => {
-        if (role === "vendor") {
-          navigate("/vendor/dashboard");
-        } else {
-          navigate("/dashboard");
+        // Save user data
+        if (res.data.data) {
+          localStorage.setItem("user", JSON.stringify(res.data.data));
+          localStorage.setItem("userData", JSON.stringify(res.data.data));
+          console.log("✅ User data saved to localStorage");
         }
-      }, 1000);
+
+        // Save user role to localStorage (use role from response data if available)
+        const role = res.data.data?.role || formData.role;
+        localStorage.setItem("userRole", role);
+        console.log("✅ User role saved:", role);
+
+        setSuccess("Login successful! Redirecting...");
+        setTimeout(() => {
+          if (role === "vendor") {
+            navigate("/vendor/dashboard");
+          } else {
+            navigate("/dashboard");
+          }
+        }, 1000);
+      } else {
+        console.error("❌ Invalid response structure:", res.data);
+        setError(res.data?.message || "Invalid response from server. Please try again.");
+      }
     } catch (err) {
-      setError(err.response?.data?.message || "Network error. Please check your connection and try again.");
+      console.error("❌ Verify OTP Error:", err);
+      console.error("Error Response:", err.response?.data);
+      setError(err.response?.data?.message || err.message || "Network error. Please check your connection and try again.");
     } finally {
       setVerifying(false);
     }
