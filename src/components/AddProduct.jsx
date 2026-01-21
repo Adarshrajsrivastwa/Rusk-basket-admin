@@ -979,6 +979,7 @@
 // }
 import React, { useState, useEffect } from "react";
 import { Upload } from "lucide-react";
+import { BASE_URL } from "../api/api";
 
 export default function AddProductPopup({
   isOpen,
@@ -1127,7 +1128,7 @@ export default function AddProductPopup({
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch("http://46.202.164.93/api/category", {
+      const response = await fetch(`${BASE_URL}/api/category`, {
         credentials: "include",
         headers: headers,
       });
@@ -1158,7 +1159,7 @@ export default function AddProductPopup({
       }
 
       const response = await fetch(
-        `http://46.202.164.93/api/subcategory/by-category/${categoryId}`,
+        `${BASE_URL}/api/subcategory/by-category/${categoryId}`,
         {
           credentials: "include",
           headers: headers,
@@ -1292,8 +1293,8 @@ export default function AddProductPopup({
       const productId =
         editingProduct?.id || editingProduct?._id || editingProduct?.productId;
       const apiUrl = isEditMode
-        ? `http://46.202.164.93/api/product/update/${productId}`
-        : "http://46.202.164.93/api/product/add";
+        ? `${BASE_URL}/api/product/update/${productId}`
+        : `${BASE_URL}/api/product/add`;
 
       const method = isEditMode ? "PUT" : "POST";
 

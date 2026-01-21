@@ -837,6 +837,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/image 1.png";
+import { BASE_URL } from "../api/api";
 import {
   Eye,
   EyeOff,
@@ -867,7 +868,6 @@ export default function Login() {
   const [timer, setTimer] = useState(0);
 
   const navigate = useNavigate();
-  const BASE_URL = "http://46.202.164.93";
 
   useEffect(() => {
     const loadTimer = setTimeout(() => setLoading(false), 300);

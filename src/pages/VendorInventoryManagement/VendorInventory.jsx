@@ -405,8 +405,9 @@ import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Download, Eye, Edit2, Trash2, Plus } from "lucide-react";
 import ProductModal from "../../pages/InventoryManagement/ProductModal";
+import { BASE_URL } from "../../api/api";
 
-const API_URL = "http://46.202.164.93/api/vendor/inventory";
+const API_URL = `${BASE_URL}/api/vendor/inventory`;
 
 const InventoryManagement = () => {
   const [activeTab, setActiveTab] = useState("all");

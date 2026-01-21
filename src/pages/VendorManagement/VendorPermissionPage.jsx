@@ -211,6 +211,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, CheckSquare, XSquare } from "lucide-react";
 import DashboardLayout from "../../components/DashboardLayout";
+import { BASE_URL } from "../../api/api";
 
 const VendorPermissionPage = () => {
   const { id } = useParams(); // vendor ID from URL
@@ -219,8 +220,6 @@ const VendorPermissionPage = () => {
   const [vendor, setVendor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const BASE_URL = "http://46.202.164.93";
 
   // Fetch vendor data from API
   useEffect(() => {

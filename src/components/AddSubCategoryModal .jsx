@@ -597,6 +597,7 @@
 // export default AddSubCategoryModal;
 import React, { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { BASE_URL } from "../api/api";
 
 const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
   const [mounted, setMounted] = useState(false);
@@ -632,7 +633,7 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch("http://46.202.164.93/api/category", {
+      const response = await fetch(`${BASE_URL}/api/category`, {
         method: "GET",
         credentials: "include",
         headers: headers,
@@ -764,7 +765,7 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
 
       // Send POST request with FormData
       const response = await fetch(
-        "http://46.202.164.93/api/subcategory/create",
+        `${BASE_URL}/api/subcategory/create`,
         {
           method: "POST",
           credentials: "include",

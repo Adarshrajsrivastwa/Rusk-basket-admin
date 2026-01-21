@@ -23,9 +23,10 @@ import {
   Bar,
   Cell,
 } from "recharts";
+import { BASE_URL } from "../../api/api";
 
 // API Base URL - Update this to your actual API URL
-const API_BASE_URL = "http://46.202.164.93/api/analytics/admin";
+const API_BASE_URL = `${BASE_URL}/api/analytics/admin`;
 
 // Custom tooltip for the Line Chart
 const CustomLineTooltip = ({ active, payload, label }) => {

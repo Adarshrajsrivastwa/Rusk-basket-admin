@@ -1,8 +1,11 @@
 // src/api/api.js
 import axios from "axios";
 
+// Base URL configuration
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://api.rushbaskets.com";
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://46.202.164.93",
+  baseURL: BASE_URL,
 });
 
 // Request interceptor to add JWT token from localStorage to all requests
@@ -46,3 +49,4 @@ api.interceptors.response.use(
 );
 
 export default api;
+export { BASE_URL };

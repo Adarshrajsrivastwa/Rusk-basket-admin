@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Download, Eye, Truck } from "lucide-react";
+import { BASE_URL } from "../../api/api";
 
 const AllOrder = () => {
   const navigate = useNavigate();
@@ -51,7 +52,7 @@ const AllOrder = () => {
         }
 
         const response = await fetch(
-          `http://46.202.164.93/api/checkout/vendor/orders?page=${currentPage}&limit=${itemsPerPage}`,
+          `${BASE_URL}/api/checkout/vendor/orders?page=${currentPage}&limit=${itemsPerPage}`,
           {
             method: "GET",
             credentials: "include", // Same as AddCategoryModal

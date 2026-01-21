@@ -12,8 +12,9 @@ import {
   AlertCircle,
 } from "lucide-react";
 import DashboardLayout from "../../components/DashboardLayout";
+import { BASE_URL } from "../../api/api";
 
-const API_BASE_URL = "http://46.202.164.93/api";
+const API_BASE_URL = `${BASE_URL}/api`;
 
 // Edit SubCategory Modal Component
 const EditSubCategoryModal = ({

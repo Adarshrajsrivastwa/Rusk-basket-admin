@@ -4,9 +4,10 @@ import { Eye, Edit, Trash2, Download } from "lucide-react";
 import AddProductModal from "../../components/AddProduct";
 import { useNavigate } from "react-router-dom";
 import JsBarcode from "jsbarcode";
+import { BASE_URL } from "../../api/api";
 
 // API Base URL - Make sure this matches your AddProduct component
-const API_BASE_URL = "http://46.202.164.93/api";
+const API_BASE_URL = `${BASE_URL}/api`;
 
 const AllProduct = () => {
   const [activeTab, setActiveTab] = useState("all");

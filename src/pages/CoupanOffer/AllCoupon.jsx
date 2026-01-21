@@ -3,8 +3,9 @@ import DashboardLayout from "../../components/DashboardLayout";
 import { Eye, Edit, Trash2 } from "lucide-react";
 import CreateOfferPopup from "../../components/CreateCoupon";
 import OfferViewModal from "../../pages/CoupanOffer/SingleOffer";
+import { BASE_URL } from "../../api/api";
 
-const API_URL = "http://46.202.164.93/api/coupon";
+const API_URL = `${BASE_URL}/api/coupon`;
 
 const AllOffer = () => {
   const [activeTab, setActiveTab] = useState("all");

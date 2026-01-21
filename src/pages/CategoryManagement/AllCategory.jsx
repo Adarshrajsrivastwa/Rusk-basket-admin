@@ -526,8 +526,9 @@ import {
 import { useNavigate } from "react-router-dom";
 import AddCategoryModal from "../../components/AddCategoryModal";
 import AddSubCategoryModal from "../../components/AddSubCategoryModal ";
+import { BASE_URL } from "../../api/api";
 
-const API_BASE_URL = "http://46.202.164.93/api";
+const API_BASE_URL = `${BASE_URL}/api`;
 
 const AllCategory = () => {
   const [activeTab, setActiveTab] = useState("all");

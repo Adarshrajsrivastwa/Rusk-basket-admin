@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
+import { BASE_URL } from "../../api/api";
 import {
   Package,
   QrCode,
@@ -281,7 +282,7 @@ const BagQRScan = () => {
         }
 
         const response = await fetch(
-          `http://46.202.164.93/api/checkout/vendor/order/${id}`,
+          `${BASE_URL}/api/checkout/vendor/order/${id}`,
           {
             method: "GET",
             credentials: "include",
@@ -338,11 +339,11 @@ const BagQRScan = () => {
       console.log("Updating order status:", {
         orderId: orderId,
         status: status,
-        url: `http://46.202.164.93/api/checkout/vendor/order/${orderId}/status`,
+        url: `${BASE_URL}/api/checkout/vendor/order/${orderId}/status`,
       });
 
       const response = await fetch(
-        `http://46.202.164.93/api/checkout/vendor/order/${orderId}/status`,
+        `${BASE_URL}/api/checkout/vendor/order/${orderId}/status`,
         {
           method: "PUT",
           credentials: "include",

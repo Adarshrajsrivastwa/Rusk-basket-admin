@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import AddVendorModal from "../../components/AddVendorModal";
+import { BASE_URL } from "../../api/api";
 
 import {
   ChartBarIcon,
@@ -18,8 +19,6 @@ const VendorDetails = () => {
   const [vendor, setVendor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const BASE_URL = "http://46.202.164.93";
 
   // Fetch vendor data from API
   useEffect(() => {

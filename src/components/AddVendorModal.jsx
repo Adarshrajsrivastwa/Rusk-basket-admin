@@ -1432,6 +1432,7 @@
 
 import React, { useState, useEffect } from "react";
 import { X, User, MapPin, FileText, Banknote } from "lucide-react";
+import { BASE_URL } from "../api/api";
 
 const AddVendorModal = ({ isOpen, onClose }) => {
   const [step, setStep] = useState(1);
@@ -1638,14 +1639,14 @@ const AddVendorModal = ({ isOpen, onClose }) => {
       }
 
       console.log("=== SEND OTP REQUEST ===");
-      console.log("URL:", "http://46.202.164.93/api/vendor/send-otp");
+      console.log("URL:", `${BASE_URL}/api/vendor/send-otp`);
       console.log("Method:", "POST");
       console.log("Headers:", headers);
       console.log("Body:", JSON.stringify(requestBody));
       console.log("Body String Length:", JSON.stringify(requestBody).length);
       console.log("Auth Token:", authToken ? "Present" : "Missing");
 
-      const response = await fetch("http://46.202.164.93/api/vendor/send-otp", {
+      const response = await fetch(`${BASE_URL}/api/vendor/send-otp`, {
         method: "POST",
         headers: headers,
         credentials: "include", // Include cookies if needed
@@ -1849,7 +1850,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
       }
 
       console.log("=== CREATE VENDOR REQUEST ===");
-      console.log("URL:", "http://46.202.164.93/api/vendor/create");
+      console.log("URL:", `${BASE_URL}/api/vendor/create`);
       console.log("Auth Token:", authToken ? "Present" : "Missing");
       
       // Log FormData contents (for debugging)
@@ -1877,7 +1878,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
 
       let response;
       try {
-        response = await fetch("http://46.202.164.93/api/vendor/create", {
+        response = await fetch(`${BASE_URL}/api/vendor/create`, {
           method: "POST",
           headers: headers,
           credentials: "include", // Include cookies for authentication
@@ -2092,14 +2093,14 @@ const AddVendorModal = ({ isOpen, onClose }) => {
       }
 
       console.log("=== VERIFY OTP REQUEST ===");
-      console.log("URL:", "http://46.202.164.93/api/vendor/verify-otp");
+      console.log("URL:", `${BASE_URL}/api/vendor/verify-otp`);
       console.log("Method:", "POST");
       console.log("Headers:", headers);
       console.log("Body:", JSON.stringify(requestBody));
       console.log("Auth Token:", authToken ? "Present" : "Missing");
 
       const response = await fetch(
-        "http://46.202.164.93/api/vendor/verify-otp",
+        `${BASE_URL}/api/vendor/verify-otp`,
         {
           method: "POST",
           headers: headers,

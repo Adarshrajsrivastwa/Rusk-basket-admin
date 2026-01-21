@@ -24,9 +24,10 @@ import {
   Area,
   AreaChart,
 } from "recharts";
+import { BASE_URL } from "../../api/api";
 
 // API Base URL
-const API_BASE_URL = "http://46.202.164.93/api/analytics/vendor";
+const API_BASE_URL = `${BASE_URL}/api/analytics/vendor`;
 
 const AnalyticsDashboard = () => {
   const [loading, setLoading] = useState(true);

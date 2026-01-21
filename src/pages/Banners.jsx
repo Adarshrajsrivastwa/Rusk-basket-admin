@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import { Plus, Pencil, Trash2, X, Loader2 } from "lucide-react";
+import { BASE_URL } from "../api/api";
 
 // ⚠️ CORRECTED API URLs - Updated to match your backend endpoints
-const API_URL = "http://46.202.164.93/api/banner";
-
-// For production deployment, use:
-// const API_URL = "https://rush-basket.onrender.com/api/banner";
+const API_URL = `${BASE_URL}/api/banner`;
 
 const BannerManagement = () => {
   const [banners, setBanners] = useState([]);

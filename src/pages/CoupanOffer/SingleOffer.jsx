@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X, Loader2 } from "lucide-react";
+import { BASE_URL } from "../../api/api";
 
 export default function OfferViewModal({
   isOpen,
@@ -30,7 +31,7 @@ export default function OfferViewModal({
 
     try {
       const response = await fetch(
-        `http://46.202.164.93/api/coupon/${offerIdProp}`
+        `${BASE_URL}/api/coupon/${offerIdProp}`
       );
 
       if (!response.ok) {

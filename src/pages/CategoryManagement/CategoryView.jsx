@@ -612,8 +612,9 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Edit, Trash2, Package, Layers, X } from "lucide-react";
 import DashboardLayout from "../../components/DashboardLayout";
+import { BASE_URL } from "../../api/api";
 
-const API_URL = "http://46.202.164.93/api/category";
+const API_URL = `${BASE_URL}/api/category`;
 
 // Edit Category Modal Component
 const EditCategoryModal = ({ isOpen, onClose, category, onSave }) => {

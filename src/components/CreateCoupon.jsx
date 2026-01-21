@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { BASE_URL } from "../api/api";
 
 export default function CreateOfferPopup({
   isOpen,
@@ -126,8 +127,8 @@ export default function CreateOfferPopup({
       // Determine if creating or updating
       const isEdit = editData && editData._id;
       const url = isEdit
-        ? `http://46.202.164.93/api/coupon/${editData._id}`
-        : "http://46.202.164.93/api/coupon/create";
+        ? `${BASE_URL}/api/coupon/${editData._id}`
+        : `${BASE_URL}/api/coupon/create`;
       const method = isEdit ? "PUT" : "POST";
 
       const response = await fetch(url, {

@@ -395,6 +395,7 @@ import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Eye, Edit, Trash2 } from "lucide-react";
 import AddSubCategoryModal from "../../components/AddSubCategoryModal ";
+import { BASE_URL } from "../../api/api";
 import { useNavigate } from "react-router-dom";
 
 const CreateSubCategory = () => {
@@ -425,7 +426,7 @@ const CreateSubCategory = () => {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch("http://46.202.164.93/api/subcategory", {
+      const response = await fetch(`${BASE_URL}/api/subcategory`, {
         method: "GET",
         credentials: "include",
         headers: headers,
@@ -523,7 +524,7 @@ const CreateSubCategory = () => {
         }
 
         const response = await fetch(
-          `http://46.202.164.93/api/subcategory/${id}`,
+          `${BASE_URL}/api/subcategory/${id}`,
           {
             method: "DELETE",
             credentials: "include",
@@ -568,7 +569,7 @@ const CreateSubCategory = () => {
 
       // Fetch the full subcategory details
       const response = await fetch(
-        `http://46.202.164.93/api/subcategory/${item.id}`,
+        `${BASE_URL}/api/subcategory/${item.id}`,
         {
           method: "GET",
           credentials: "include",

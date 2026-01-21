@@ -378,6 +378,7 @@ import DashboardLayout from "../../components/DashboardLayout";
 import { Eye, Edit, Trash2, Settings } from "lucide-react";
 import AddVendorModal from "../../components/AddVendorModal";
 import { useNavigate } from "react-router-dom";
+import { BASE_URL } from "../../api/api";
 
 const AllVendor = () => {
   const [activeTab, setActiveTab] = useState("all");
@@ -395,8 +396,6 @@ const AllVendor = () => {
     limit: 10,
   });
   const navigate = useNavigate();
-
-  const BASE_URL = "http://46.202.164.93";
 
   // Fetch vendors from API
   const fetchVendors = async (page = 1, limit = 10) => {

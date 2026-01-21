@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
+import { BASE_URL } from "../../api/api";
 import {
   MapPin,
   Briefcase,
@@ -28,7 +29,7 @@ const RiderJobPostManagement = () => {
     type: "",
   });
 
-  const API_BASE_URL = "http://46.202.164.93/api";
+  const API_BASE_URL = `${BASE_URL}/api`;
 
   // Form state
   const [formData, setFormData] = useState({

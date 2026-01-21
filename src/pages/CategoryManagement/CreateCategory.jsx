@@ -375,9 +375,10 @@ import DashboardLayout from "../../components/DashboardLayout";
 import { Eye, Edit, Trash2 } from "lucide-react";
 import AddCategoryModal from "../../components/AddCategoryModal";
 import { useNavigate } from "react-router-dom";
+import { BASE_URL } from "../../api/api";
 
-const API_GET_ALL = "http://46.202.164.93/api/category";
-const API_DELETE = "http://46.202.164.93/api/category";
+const API_GET_ALL = `${BASE_URL}/api/category`;
+const API_DELETE = `${BASE_URL}/api/category`;
 
 const Category = () => {
   const [activeTab, setActiveTab] = useState("all");

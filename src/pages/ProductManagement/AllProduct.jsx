@@ -786,6 +786,7 @@ import React, { useState, useEffect, useRef } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Eye, Edit, Trash2, Download } from "lucide-react";
 import AddProductModal from "../../components/AddProduct";
+import { BASE_URL } from "../../api/api";
 import { useNavigate } from "react-router-dom";
 import JsBarcode from "jsbarcode";
 
@@ -818,7 +819,7 @@ const AllProduct = () => {
       }
 
       const response = await fetch(
-        "http://46.202.164.93/api/product?latitude=23.2599&longitude=77.4126&page=1&limit=100",
+        `${BASE_URL}/api/product?latitude=23.2599&longitude=77.4126&page=1&limit=100`,
         {
           credentials: "include",
           headers: headers,
@@ -915,7 +916,7 @@ const AllProduct = () => {
           headers["Authorization"] = `Bearer ${token}`;
         }
 
-        const response = await fetch(`http://46.202.164.93/api/product/${id}`, {
+        const response = await fetch(`${BASE_URL}/api/product/${id}`, {
           method: "DELETE",
           credentials: "include",
           headers: headers,

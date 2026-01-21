@@ -992,8 +992,9 @@ import {
   CheckSquare,
   Loader2,
 } from "lucide-react";
+import { BASE_URL } from "../../api/api";
 
-const API_BASE_URL = "http://46.202.164.93/api/rider";
+const API_BASE_URL = `${BASE_URL}/api/rider`;
 
 const RiderManagement = () => {
   const [riders, setRiders] = useState([]);

@@ -180,8 +180,9 @@
 // src/components/AddCategoryModal.jsx
 import React, { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { BASE_URL } from "../api/api";
 
-const API_URL = "http://46.202.164.93/api/category";
+const API_URL = `${BASE_URL}/api/category`;
 
 const AddCategoryModal = ({
   isOpen,
