@@ -959,43 +959,36 @@ export default function Login() {
       );
 
       console.log("=== VERIFY OTP RESPONSE ===");
-      console.log("Full Response:", JSON.stringify(res.data, null, 2));
+      console.log("Full Response:", res.data);
       console.log("Response Status:", res.status);
-      console.log("Token exists:", !!res.data?.token);
-      console.log("Token value:", res.data?.token);
 
       // ✅ SAVE TOKEN - Direct save
       const token = res.data?.token;
-      if (token) {
-        console.log("🔵 Step 1: Token found, attempting to save...");
-        console.log("🔵 Step 2: Token length:", token.length);
-        
-        try {
-          localStorage.setItem("token", token);
-          localStorage.setItem("authToken", token);
-          console.log("🔵 Step 3: localStorage.setItem called");
-          
-          // Verify immediately
-          const savedToken = localStorage.getItem("token");
-          console.log("🔵 Step 4: Retrieved from localStorage");
-          console.log("Token saved:", savedToken ? "YES ✅" : "NO ❌");
-          
-          if (savedToken) {
-            console.log("✅ Token successfully saved!");
-            console.log("Saved token preview:", savedToken.substring(0, 50) + "...");
-            console.log("Tokens match:", savedToken === token ? "YES ✅" : "NO ❌");
-          } else {
-            console.error("❌ Token was NOT saved to localStorage!");
-          }
-        } catch (error) {
-          console.error("❌ Error saving token:", error);
-          setError("Failed to save token. Please check browser settings.");
-          return;
-        }
+      
+      if (!token) {
+        console.error("❌ Token missing in response!");
+        setError("Token not received from server.");
+        return;
+      }
+      
+      console.log("Token found, saving...");
+      
+      // Save token immediately
+      localStorage.setItem("token", token);
+      localStorage.setItem("authToken", token);
+      console.log("localStorage.setItem('token') called");
+      
+      // Verify it was saved
+      const savedToken = localStorage.getItem("token");
+      console.log("Verification check - savedToken exists:", !!savedToken);
+      
+      if (savedToken && savedToken === token) {
+        console.log("✅ Token saved and verified successfully!");
       } else {
-        console.error("❌ Token not found in response!");
-        console.error("Response data keys:", Object.keys(res.data || {}));
-        setError("Token not received from server. Please contact support.");
+        console.error("❌ Token save failed or mismatch!");
+        console.error("Expected:", token.substring(0, 30));
+        console.error("Got:", savedToken?.substring(0, 30));
+        setError("Failed to save authentication token.");
         return;
       }
 
