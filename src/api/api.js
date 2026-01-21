@@ -3,7 +3,6 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://46.202.164.93",
-  withCredentials: true, // Enable sending cookies with cross-origin requests
 });
 
 // Request interceptor to add JWT token from localStorage to all requests
@@ -47,3 +46,16 @@ api.interceptors.response.use(
 );
 
 export default api;
+      localStorage.removeItem("userData");
+      
+      // Redirect to login page
+      if (window.location.pathname !== "/") {
+        window.location.href = "/";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default api;
+
