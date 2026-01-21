@@ -2,7 +2,7 @@
 import axios from "axios";
 
 // Export BASE_URL for use in other components
-export const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://46.202.164.93";
+export const BASE_URL = "https://api.rushbaskets.com";
 
 const api = axios.create({
   baseURL: BASE_URL,
