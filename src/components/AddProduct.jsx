@@ -975,7 +975,7 @@
 // }
 import React, { useState, useEffect } from "react";
 import { Upload } from "lucide-react";
-import { BASE_URL } from "../api/api";
+import api from "../api/api";
 
 export default function AddProductPopup({
   isOpen,
@@ -1119,21 +1119,9 @@ export default function AddProductPopup({
     try {
       const token = getAuthToken();
 
-      const headers = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
+      const response = await api.get("/category");
 
-      const response = await fetch(`${BASE_URL}/api/category`, {
-        credentials: "include",
-        headers: headers,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
+      const result = response.data;
       if (result.success) {
         setCategories(result.data);
       } else {
@@ -1149,24 +1137,9 @@ export default function AddProductPopup({
     try {
       const token = getAuthToken();
 
-      const headers = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
+      const response = await api.get(`/subcategory/by-category/${categoryId}`);
 
-      const response = await fetch(
-        `${BASE_URL}/api/subcategory/by-category/${categoryId}`,
-        {
-          credentials: "include",
-          headers: headers,
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
+      const result = response.data;
       if (result.success) {
         setSubCategories(result.data);
       } else {
@@ -1288,52 +1261,40 @@ export default function AddProductPopup({
       // Determine API endpoint and method based on mode
       const productId =
         editingProduct?.id || editingProduct?._id || editingProduct?.productId;
-      const apiUrl = isEditMode
-        ? `${BASE_URL}/api/product/update/${productId}`
-        : `${BASE_URL}/api/product/add`;
-
-      const method = isEditMode ? "PUT" : "POST";
+      const apiEndpoint = isEditMode
+        ? `/product/update/${productId}`
+        : `/product/add`;
 
       console.log(`${isEditMode ? "Updating" : "Adding"} product...`);
-      console.log("API URL:", apiUrl);
-      console.log("Method:", method);
+      console.log("API Endpoint:", apiEndpoint);
+      console.log("Method:", isEditMode ? "PUT" : "POST");
       console.log("Product ID:", productId);
 
       // Make the API request
-      const response = await fetch(apiUrl, {
-        method: method,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formDataToSend,
-      });
+      let response;
+      if (isEditMode) {
+        response = await api.put(apiEndpoint, formDataToSend);
+      } else {
+        response = await api.post(apiEndpoint, formDataToSend);
+      }
 
       // Parse response
-      const result = await response.json();
+      const result = response.data;
 
       console.log("Response status:", response.status);
       console.log("Response data:", result);
 
       // Handle different error status codes
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error("Session expired. Please log in again.");
-        } else if (response.status === 403) {
-          throw new Error(
-            "Access denied. You may not have permission to perform this action."
-          );
-        } else if (response.status === 400) {
-          throw new Error(
-            result.message || "Invalid product data. Please check all fields."
-          );
-        } else {
-          throw new Error(
-            result.message ||
-              `Failed to ${isEditMode ? "update" : "add"} product (Status: ${
-                response.status
-              })`
-          );
-        }
+      if (response.status === 401) {
+        throw new Error("Session expired. Please log in again.");
+      } else if (response.status === 403) {
+        throw new Error(
+          "Access denied. You may not have permission to perform this action."
+        );
+      } else if (response.status === 400) {
+        throw new Error(
+          result.message || "Invalid product data. Please check all fields."
+        );
       }
 
       if (!result.success) {
@@ -1385,7 +1346,8 @@ export default function AddProductPopup({
         err
       );
       setError(
-        err.message ||
+        err.response?.data?.message ||
+          err.message ||
           `Failed to ${
             isEditMode ? "update" : "submit"
           } product. Please try again.`
