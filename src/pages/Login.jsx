@@ -837,7 +837,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/image 1.png";
-import { BASE_URL } from "../api/api";
+import api from "../api/api";
 import {
   Eye,
   EyeOff,
@@ -906,20 +906,14 @@ export default function Login() {
     setSuccess("");
 
     try {
-      const response = await fetch(`${BASE_URL}/api/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          mobile: formData.mobile,
-          role: formData.role,
-        }),
-      });
+      const loginData = {
+        mobile: formData.mobile,
+        role: formData.role,
+      };
+      const response = await api.post("/auth/login", loginData);
+      const data = response.data;
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
+      if (data.success) {
         setOtpSent(true);
         setSuccess("OTP sent successfully to your mobile number");
         setTimer(60);
@@ -927,7 +921,7 @@ export default function Login() {
         setError(data.message || "Failed to send OTP. Please try again.");
       }
     } catch (err) {
-      setError("Network error. Please check your connection and try again.");
+      setError(err.response?.data?.message || "Network error. Please check your connection and try again.");
     } finally {
       setSending(false);
     }
@@ -945,25 +939,19 @@ export default function Login() {
     setError("");
 
     try {
-      const response = await fetch(`${BASE_URL}/api/auth/verify-otp`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          mobile: formData.mobile,
-          otp: formData.otp,
-          role: formData.role,
-        }),
-      });
-
-      const data = await response.json();
+      const verifyData = {
+        mobile: formData.mobile,
+        otp: formData.otp,
+        role: formData.role,
+      };
+      const response = await api.post("/auth/verify-otp", verifyData);
+      const data = response.data;
       
       console.log("=== VERIFY OTP RESPONSE ===");
       console.log("Full Response:", data);
       console.log("Response Headers:", Object.fromEntries(response.headers.entries()));
 
-      if (response.ok && data.success !== false) {
+      if (data.success !== false) {
         // Extract JWT token from response (check multiple possible locations for JWT)
         // Common JWT response formats:
         // - data.token
@@ -985,7 +973,7 @@ export default function Login() {
         
         // Also check Authorization header if token not in body
         if (!token) {
-          const authHeader = response.headers.get("Authorization");
+          const authHeader = response.headers.authorization || response.headers.Authorization;
           if (authHeader && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7); // Remove "Bearer " prefix
             console.log("Token found in Authorization header");
@@ -1046,7 +1034,7 @@ export default function Login() {
         setError(data.message || "Invalid OTP. Please try again.");
       }
     } catch (err) {
-      setError("Network error. Please check your connection and try again.");
+      setError(err.response?.data?.message || "Network error. Please check your connection and try again.");
     } finally {
       setVerifying(false);
     }
