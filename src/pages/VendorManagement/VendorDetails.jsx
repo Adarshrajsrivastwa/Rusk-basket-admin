@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import AddVendorModal from "../../components/AddVendorModal";
-import { BASE_URL } from "../../api/api";
+import api from "../../api/api";
 
 import {
   ChartBarIcon,
@@ -25,21 +25,12 @@ const VendorDetails = () => {
     const fetchVendor = async () => {
       try {
         setLoading(true);
-        const authToken =
-          localStorage.getItem("authToken") || localStorage.getItem("token");
 
-        const response = await fetch(`${BASE_URL}/api/vendor/${id}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            ...(authToken && { Authorization: `Bearer ${authToken}` }),
-          },
-          credentials: "include",
-        });
+        const response = await api.get(`/vendor/${id}`);
 
-        const result = await response.json();
+        const result = response.data;
 
-        if (response.ok && result.success) {
+        if (result.success) {
           setVendor(result.data);
         } else {
           setError(result.message || "Failed to fetch vendor data");
@@ -47,7 +38,7 @@ const VendorDetails = () => {
         }
       } catch (error) {
         console.error("Error fetching vendor:", error);
-        setError("Error fetching vendor data");
+        setError(error.response?.data?.message || "Error fetching vendor data");
       } finally {
         setLoading(false);
       }
