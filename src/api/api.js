@@ -4,7 +4,15 @@ import axios from "axios";
  * Base URL of backend API (HTTPS ONLY)
  * Make sure SSL is enabled on backend
  */
-export const BASE_URL = "https://api.rushbaskets.com";
+let baseUrl = "https://api.rushbaskets.com";
+
+// Ensure BASE_URL always uses HTTPS (security requirement)
+if (baseUrl.startsWith("http://")) {
+  baseUrl = baseUrl.replace("http://", "https://");
+  console.warn("⚠️ BASE_URL was changed from HTTP to HTTPS for security");
+}
+
+export const BASE_URL = baseUrl;
 
 const api = axios.create({
   baseURL: BASE_URL,
