@@ -910,7 +910,7 @@ export default function Login() {
         mobile: formData.mobile,
         role: formData.role,
       };
-      const response = await api.post("/auth/login", loginData);
+      const response = await api.post("/api/auth/login", loginData);
       const data = response.data;
 
       if (data.success) {
@@ -944,7 +944,7 @@ export default function Login() {
         otp: formData.otp,
         role: formData.role,
       };
-      const response = await api.post("/auth/verify-otp", verifyData);
+      const response = await api.post("/api/auth/verify-otp", verifyData);
       const data = response.data;
       
       console.log("=== VERIFY OTP RESPONSE ===");
