@@ -203,7 +203,9 @@ import Products from "./pages/VendorProductManagement/Products";
 import SingleProducts from "./pages/VendorProductManagement/SingleProducts";
 import VendorInventory from "./pages/VendorInventoryManagement/VendorInventory";
 import VendorOrder from "./pages/VendorOrderManagement/VendorOrder";
-import VendorAnalytics from "./pages/VendorAnalytics/VendorAnalytics.jsx";
+import VendorAnalytics from "./pages/VendorAnalytics/VendorAnalytics";
+import RiderJobs from "./pages/RiderJobsManagement/RiderJobs";
+import Jobs from "./pages/AdminRiderJobsManagement/Jobs.jsx";
 function AppContent() {
   const [showPopup, setShowPopup] = useState(false);
   const location = useLocation();
@@ -340,6 +342,14 @@ function AppContent() {
           }
         />
         <Route
+          path="/vendor/jobs"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "vendor"]}>
+              <RiderJobs />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/vendor/dashboard"
           element={
             <ProtectedRoute allowedRoles={["vendor"]}>
@@ -382,6 +392,7 @@ function AppContent() {
         <Route path="/orders/:id/bag-qr-scan" element={<BagQRScan />} />
 
         <Route path="/Rider" element={<AllRider />} />
+        <Route path="/jobs" element={<Jobs />} />
 
         <Route path="/coupons/all" element={<AllCoupon />} />
         <Route path="/coupons/:id" element={<SingleOffer />} />

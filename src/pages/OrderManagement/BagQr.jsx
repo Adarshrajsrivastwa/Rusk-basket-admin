@@ -30,6 +30,7 @@ const BagQRScan = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("packing");
   const [loading, setLoading] = useState(true);
+  const [orderData, setOrderData] = useState(null);
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
   const [isDeliveryModalOpen, setIsDeliveryModalOpen] = useState(false);
   const [isAddExtraItemModalOpen, setIsAddExtraItemModalOpen] = useState(false);
@@ -37,6 +38,7 @@ const BagQRScan = () => {
   const [searchPartner, setSearchPartner] = useState("");
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [assignmentStatus, setAssignmentStatus] = useState("pending");
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   // Realistic Order Products
   const [orderProducts] = useState([
@@ -86,7 +88,7 @@ const BagQRScan = () => {
     },
   ]);
 
-  // Available products for adding extra items (simulating warehouse inventory)
+  // Available products for adding extra items
   const [availableProducts] = useState([
     {
       id: 101,
@@ -266,6 +268,44 @@ const BagQRScan = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  // Fetch order data on mount to get order number
+  useEffect(() => {
+    const fetchOrderData = async () => {
+      try {
+        const token =
+          localStorage.getItem("token") || localStorage.getItem("authToken");
+
+        const headers = {};
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(
+          `http://46.202.164.93/api/checkout/vendor/order/${id}`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: headers,
+          },
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setOrderData(data.data);
+            console.log("Order data fetched:", data.data);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching order data:", error);
+      }
+    };
+
+    if (id) {
+      fetchOrderData();
+    }
+  }, [id]);
+
   // Calculate packing progress
   const totalItems = products.reduce((sum, p) => sum + p.quantity, 0);
   const scannedItems = products.reduce((sum, p) => sum + p.scanned, 0);
@@ -274,6 +314,67 @@ const BagQRScan = () => {
 
   // Calculate order value
   const orderValue = products.reduce((sum, p) => sum + p.price * p.quantity, 0);
+
+  // API Function to Update Order Status
+  const updateOrderStatus = async (status) => {
+    setIsUpdatingStatus(true);
+    try {
+      // Get token from localStorage
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
+
+      const headers = {
+        "Content-Type": "application/json",
+      };
+
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      // Use orderNumber if available, otherwise use id
+      const orderId = orderData?.orderNumber || id;
+
+      // Log the request details for debugging
+      console.log("Updating order status:", {
+        orderId: orderId,
+        status: status,
+        url: `http://46.202.164.93/api/checkout/vendor/order/${orderId}/status`,
+      });
+
+      const response = await fetch(
+        `http://46.202.164.93/api/checkout/vendor/order/${orderId}/status`,
+        {
+          method: "PUT",
+          credentials: "include",
+          headers: headers,
+          body: JSON.stringify({
+            status: status,
+          }),
+        },
+      );
+
+      // Log response for debugging
+      console.log("Response status:", response.status);
+
+      const data = await response.json();
+      console.log("Response data:", data);
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || `Failed to update order status: ${response.status}`,
+        );
+      }
+
+      console.log("Order status updated successfully:", data);
+      return { success: true, data: data.data };
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      alert(`Failed to update order status: ${error.message}`);
+      return { success: false, error: error.message };
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
 
   // Handle Add Extra Item
   const handleAddExtraItem = (product, quantity) => {
@@ -299,7 +400,7 @@ const BagQRScan = () => {
     setScanHistory([newScan, ...scanHistory]);
 
     alert(
-      `✅ Extra Item Added!\n\n${product.name}\nQuantity: ${quantity}\n\nRemember to scan these items before sealing the bag.`
+      `✅ Extra Item Added!\n\n${product.name}\nQuantity: ${quantity}\n\nRemember to scan these items before sealing the bag.`,
     );
     setIsAddExtraItemModalOpen(false);
   };
@@ -309,7 +410,7 @@ const BagQRScan = () => {
     const product = products.find((p) => p.id === productId);
     if (
       confirm(
-        `🗑️ Remove extra item?\n\n${product.name}\n\nThis action cannot be undone.`
+        `🗑️ Remove extra item?\n\n${product.name}\n\nThis action cannot be undone.`,
       )
     ) {
       setProducts(products.filter((p) => p.id !== productId));
@@ -329,7 +430,7 @@ const BagQRScan = () => {
     const productIndex = products.findIndex(
       (p) =>
         p.qrCode.toUpperCase() === scannedCode ||
-        p.sku.toUpperCase() === scannedCode
+        p.sku.toUpperCase() === scannedCode,
     );
 
     if (productIndex === -1) {
@@ -342,7 +443,7 @@ const BagQRScan = () => {
 
     if (product.scanned >= product.quantity) {
       alert(
-        `⚠️ ${product.name}\nAlready fully scanned! (${product.scanned}/${product.quantity})`
+        `⚠️ ${product.name}\nAlready fully scanned! (${product.scanned}/${product.quantity})`,
       );
       setScanInput("");
       return;
@@ -373,7 +474,7 @@ const BagQRScan = () => {
     alert(
       `✅ Item Scanned Successfully!\n${product.name}\nScanned: ${
         product.scanned + 1
-      }/${product.quantity}${product.isExtra ? " (EXTRA ITEM)" : ""}`
+      }/${product.quantity}${product.isExtra ? " (EXTRA ITEM)" : ""}`,
     );
     setScanInput("");
     setIsScanModalOpen(false);
@@ -404,8 +505,8 @@ const BagQRScan = () => {
     setProducts(updatedProducts);
   };
 
-  // Handle Complete Packing & Seal Bag
-  const handleCompletePacking = () => {
+  // Handle Complete Packing & Seal Bag with API Integration
+  const handleCompletePacking = async () => {
     if (!isPackingComplete) {
       alert("⚠️ Please scan all items before sealing the bag!");
       return;
@@ -413,6 +514,16 @@ const BagQRScan = () => {
 
     const bagNumber = `BAG${Date.now().toString().slice(-8)}`;
     const qrCode = `FKMP${Date.now().toString().slice(-10)}`;
+
+    // Update order status to "ready" via API
+    const result = await updateOrderStatus("ready");
+
+    if (!result.success) {
+      alert(
+        `❌ Failed to update order status!\n\nError: ${result.error}\n\nPlease try again.`,
+      );
+      return;
+    }
 
     setBagDetails({
       ...bagDetails,
@@ -430,7 +541,7 @@ const BagQRScan = () => {
         : "";
 
     alert(
-      `✅ Bag Packed & Sealed Successfully!\n\nBag Number: ${bagNumber}\nQR Code: ${qrCode}${extraItemsText}\n\nBag is now ready for delivery partner assignment.`
+      `✅ Bag Packed & Sealed Successfully!\n\nBag Number: ${bagNumber}\nQR Code: ${qrCode}${extraItemsText}\n\n🔄 Order status updated to "ready" in the system.\n\nBag is now ready for delivery partner assignment.`,
     );
   };
 
@@ -481,7 +592,7 @@ const BagQRScan = () => {
         `Phone: ${selectedPartner.phone}\n` +
         `Vehicle: ${selectedPartner.vehicle} (${selectedPartner.vehicleNo})\n` +
         `Bag: ${bagDetails.bagNo}\n\n` +
-        `The delivery partner will arrive at the hub shortly.`
+        `The delivery partner will arrive at the hub shortly.`,
     );
   };
 
@@ -499,7 +610,7 @@ const BagQRScan = () => {
       alert(
         `✅ Bag Picked Up!\n\n` +
           `Bag ${bagDetails.bagNo} has been picked up by ${selectedPartner.name}.\n` +
-          `The package is now out for delivery.`
+          `The package is now out for delivery.`,
       );
     }
   };
@@ -508,7 +619,7 @@ const BagQRScan = () => {
   const availablePartners = deliveryPartners.filter(
     (p) =>
       p.status === "available" &&
-      p.name.toLowerCase().includes(searchPartner.toLowerCase())
+      p.name.toLowerCase().includes(searchPartner.toLowerCase()),
   );
 
   const handleGoBack = () => {
@@ -705,9 +816,9 @@ const BagQRScan = () => {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <button
             onClick={() => setIsAddExtraItemModalOpen(true)}
-            disabled={bagDetails.sealed}
+            disabled={bagDetails.sealed || isUpdatingStatus}
             className={`${
-              bagDetails.sealed
+              bagDetails.sealed || isUpdatingStatus
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-purple-500 hover:bg-purple-600"
             } text-white px-6 py-5 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all text-lg flex items-center justify-center gap-2`}
@@ -717,9 +828,9 @@ const BagQRScan = () => {
           </button>
           <button
             onClick={() => setIsScanModalOpen(true)}
-            disabled={bagDetails.sealed}
+            disabled={bagDetails.sealed || isUpdatingStatus}
             className={`${
-              bagDetails.sealed
+              bagDetails.sealed || isUpdatingStatus
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-orange-500 hover:bg-orange-600"
             } text-white px-6 py-5 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all text-lg flex items-center justify-center gap-2`}
@@ -729,15 +840,26 @@ const BagQRScan = () => {
           </button>
           <button
             onClick={handleCompletePacking}
-            disabled={!isPackingComplete || bagDetails.sealed}
+            disabled={
+              !isPackingComplete || bagDetails.sealed || isUpdatingStatus
+            }
             className={`${
-              !isPackingComplete || bagDetails.sealed
+              !isPackingComplete || bagDetails.sealed || isUpdatingStatus
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-green-600 hover:bg-green-700"
             } text-white px-6 py-5 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all text-lg flex items-center justify-center gap-2`}
           >
-            <CheckCircle size={24} />
-            {bagDetails.sealed ? "Bag Sealed" : "Seal Bag"}
+            {isUpdatingStatus ? (
+              <>
+                <RefreshCw size={24} className="animate-spin" />
+                Updating...
+              </>
+            ) : (
+              <>
+                <CheckCircle size={24} />
+                {bagDetails.sealed ? "Bag Sealed" : "Seal Bag"}
+              </>
+            )}
           </button>
           <button
             onClick={handleAssignPartner}
@@ -755,7 +877,12 @@ const BagQRScan = () => {
           </button>
           <button
             onClick={handleResetPacking}
-            className="bg-red-600 hover:bg-red-700 text-white px-6 py-5 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all text-lg flex items-center justify-center gap-2"
+            disabled={isUpdatingStatus}
+            className={`${
+              isUpdatingStatus
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-red-600 hover:bg-red-700"
+            } text-white px-6 py-5 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all text-lg flex items-center justify-center gap-2`}
           >
             <RefreshCw size={24} />
             Reset

@@ -3,107 +3,153 @@ import DashboardLayout from "../../components/DashboardLayout";
 import { useParams, useNavigate } from "react-router-dom";
 import AssignDeliveryBoyModal from "../../components/AssignDeliveryBoyModal";
 
+const API_BASE_URL = "http://46.202.164.93/api";
+
 const SingleOrder = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [orderData, setOrderData] = useState(null);
+  const [error, setError] = useState(null);
 
+  // Fetch order data from API
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setOrderData({
-        id: id || "RUSH8038403",
-        date: "23 Aug 2025",
-        time: "10:30 AM",
-        vendor: {
-          id: "VD78468817",
-          name: "Abnish Kumar",
-          authorizedPerson: "Abnish Kumar",
-          contact: "6208089024",
-          altContact: "7845984080",
-          whatsapp: "6208089024",
-          email: "abnish@vendor.com",
-          registrationDate: "15/01/2024",
-          totalOrders: 156,
-          leaderboardPosition: 245,
-          turnover: 584919,
-        },
-        buyer: {
-          id: "US78468817",
-          name: "NK Yadav",
-          userType: "Regular Customer",
-          mobile: "9876543210",
-          altMobile: "8765432109",
-          email: "nkyadav@gmail.com",
-          registrationDate: "10/03/2024",
-          totalOrders: 23,
-          leaderboardPosition: 8894,
-          turnover: 84919,
-        },
-        deliveryAddress: {
-          contactPerson: "NK Yadav",
-          mobile: "9876543210",
-          altMobile: "8765432109",
-          address1: "Road Number 3, Patna Nehru Nagar",
-          address2: "Near Medical College",
-          city: "Patna",
-          pinCode: "800013",
-          distance: "8 KM",
-          expectedTime: "25 min",
-        },
-        products: [
+    const fetchOrderData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Get token from localStorage
+        const token =
+          localStorage.getItem("token") || localStorage.getItem("authToken");
+
+        const headers = {
+          "Content-Type": "application/json",
+        };
+
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(
+          `${API_BASE_URL}/checkout/vendor/order/${id}`,
           {
-            name: "Face Wash Himalaya Purifying Neem 150ml with Natural Ingredients",
-            quantity: 2,
-            amount: 358,
-            sku: "FW150NM",
-            stock: 156,
-            rating: 4.5,
+            method: "GET",
+            credentials: "include",
+            headers: headers,
           },
-          {
-            name: "Body Lotion Nivea Soft Light Moisturizer 200ml",
-            quantity: 3,
-            amount: 1485,
-            sku: "BL200NV",
-            stock: 89,
-            rating: 4.3,
-          },
-          {
-            name: "Shampoo Pantene Pro-V Silky Smooth Care 340ml",
-            quantity: 1,
-            amount: 425,
-            sku: "SH340PT",
-            stock: 234,
-            rating: 4.6,
-          },
-          {
-            name: "Toothpaste Colgate Total Advanced Health 200g Pack",
-            quantity: 4,
-            amount: 680,
-            sku: "TP200CG",
-            stock: 456,
-            rating: 4.4,
-          },
-        ],
-        cartValue: 5222,
-        payment: {
-          mode: "COD",
-          productValue: 4948,
-          handlingCost: 50,
-          tax: 124,
-          deliveryCost: 100,
-          additional: 0,
-          total: 5222,
-        },
-        status: "New Order",
-        couponCode: null,
-        rider: null,
-      });
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
+        );
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Failed to fetch order data");
+        }
+
+        // Transform API response to match component structure
+        const transformedData = transformOrderData(result.data);
+        setOrderData(transformedData);
+      } catch (err) {
+        console.error("Error fetching order:", err);
+        setError(err.message || "Failed to load order data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchOrderData();
+    }
   }, [id]);
+
+  // Transform API response to component structure
+  const transformOrderData = (apiData) => {
+    const orderDate = new Date(apiData.createdAt);
+    const formattedDate = orderDate.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+    const formattedTime = orderDate.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+    // Extract vendor info from first item (assuming all items from same vendor)
+    const firstItem = apiData.items[0];
+    const vendorInfo = firstItem?.vendor || {};
+
+    return {
+      id: apiData.orderNumber || apiData._id,
+      date: formattedDate,
+      time: formattedTime,
+      vendor: {
+        id: vendorInfo.storeId || "N/A",
+        name: vendorInfo.storeName || "N/A",
+        authorizedPerson: vendorInfo.storeName || "N/A",
+        contact: apiData.user?.contactNumber || "N/A",
+        altContact: "N/A",
+        whatsapp: apiData.user?.contactNumber || "N/A",
+        email: "N/A",
+        registrationDate: "N/A",
+        totalOrders: 0,
+        leaderboardPosition: 0,
+        turnover: 0,
+      },
+      buyer: {
+        id: apiData.user?._id || "N/A",
+        name: "Customer", // Not provided in API
+        userType: "Customer",
+        mobile: apiData.user?.contactNumber || "N/A",
+        altMobile: apiData.shippingAddress?.phone || "N/A",
+        email: "N/A",
+        registrationDate: "N/A",
+        totalOrders: 0,
+        leaderboardPosition: 0,
+        turnover: 0,
+      },
+      deliveryAddress: {
+        contactPerson: "Customer", // Not provided in API
+        mobile: apiData.shippingAddress?.phone || "N/A",
+        altMobile: apiData.user?.contactNumber || "N/A",
+        address1: apiData.shippingAddress?.line1 || "N/A",
+        address2: apiData.shippingAddress?.line2 || "",
+        city: apiData.shippingAddress?.city || "N/A",
+        pinCode: apiData.shippingAddress?.pinCode || "N/A",
+        distance: "N/A", // Calculate if needed
+        expectedTime: "N/A", // Not provided in API
+      },
+      products: apiData.items.map((item) => ({
+        name:
+          item.productName || item.product?.productName || "Unknown Product",
+        quantity: item.quantity,
+        amount: item.totalPrice,
+        sku: item.sku || "N/A",
+        stock: "N/A", // Not provided in API
+        rating: 0, // Not provided in API
+        thumbnail: item.thumbnail?.url || item.product?.thumbnail?.url || null,
+      })),
+      cartValue: apiData.pricing?.total || 0,
+      payment: {
+        mode: apiData.payment?.method?.toUpperCase() || "COD",
+        productValue: apiData.pricing?.subtotal || 0,
+        handlingCost: 0, // Not explicitly provided
+        tax: apiData.pricing?.tax || 0,
+        deliveryCost: apiData.pricing?.shipping || 0,
+        additional: 0,
+        total: apiData.pricing?.total || 0,
+        discount: apiData.pricing?.discount || 0,
+        cashback: apiData.pricing?.totalCashback || 0,
+      },
+      status: apiData.status || "pending",
+      couponCode: apiData.coupon?.code || null,
+      rider: null, // Not provided in API response
+      notes: apiData.notes || "",
+      rawApiData: apiData, // Keep raw data for reference
+    };
+  };
 
   // Function to navigate to Bag & QR Scan page
   const handleBagQRScan = () => {
@@ -136,7 +182,50 @@ const SingleOrder = () => {
   );
 
   if (loading) return <SkeletonLoader />;
-  if (!orderData) return <div className="p-4">Order not found</div>;
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="p-4">
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <span className="text-2xl">⚠️</span>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  Error Loading Order
+                </h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>{error}</p>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm font-semibold"
+                  >
+                    Retry
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!orderData) {
+    return (
+      <DashboardLayout>
+        <div className="p-4">
+          <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
+            <p className="text-yellow-800 font-semibold">Order not found</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -157,8 +246,26 @@ const SingleOrder = () => {
                 <span className="w-1.5 h-1.5 bg-[#FF7B1D] rounded-full"></span>
                 <span className="font-semibold">{orderData.time}</span>
               </div>
+              {orderData.status && (
+                <div className="mt-2">
+                  <span
+                    className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                      orderData.status === "pending"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : orderData.status === "confirmed"
+                          ? "bg-green-100 text-green-800"
+                          : orderData.status === "delivered"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-gray-100 text-gray-800"
+                    }`}
+                  >
+                    Status: {orderData.status.toUpperCase()}
+                  </span>
+                </div>
+              )}
             </div>
-            {orderData.status === "New Order" && (
+            {(orderData.status === "New Order" ||
+              orderData.status === "pending") && (
               <div className="flex gap-3 flex-wrap">
                 <button className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 font-bold rounded-sm shadow-sm hover:shadow-xl transition-all duration-200 transform hover:scale-105">
                   Cancel Order
@@ -225,28 +332,36 @@ const SingleOrder = () => {
                   value={orderData.buyer.altMobile}
                 />
                 <InfoRow label="Email" value={orderData.buyer.email} />
-                <InfoRow
-                  label="Registration"
-                  value={orderData.buyer.registrationDate}
-                />
-                <InfoRow
-                  label="Total Orders"
-                  value={orderData.buyer.totalOrders}
-                  badge
-                />
-                <InfoRow
-                  label="Leaderboard"
-                  value={`#${orderData.buyer.leaderboardPosition}`}
-                />
-                <InfoRow
-                  label="Turnover"
-                  value={`₹${orderData.buyer.turnover.toLocaleString()}`}
-                  highlight
-                />
+                {orderData.buyer.registrationDate !== "N/A" && (
+                  <InfoRow
+                    label="Registration"
+                    value={orderData.buyer.registrationDate}
+                  />
+                )}
+                {orderData.buyer.totalOrders > 0 && (
+                  <InfoRow
+                    label="Total Orders"
+                    value={orderData.buyer.totalOrders}
+                    badge
+                  />
+                )}
+                {orderData.buyer.leaderboardPosition > 0 && (
+                  <InfoRow
+                    label="Leaderboard"
+                    value={`#${orderData.buyer.leaderboardPosition}`}
+                  />
+                )}
+                {orderData.buyer.turnover > 0 && (
+                  <InfoRow
+                    label="Turnover"
+                    value={`₹${orderData.buyer.turnover.toLocaleString()}`}
+                    highlight
+                  />
+                )}
               </div>
-              <button className="w-full bg-gray-900 hover:bg-black text-white py-2.5 rounded-sm text-xs font-bold mt-4 transition-all duration-200 shadow-md hover:shadow-lg">
+              {/* <button className="w-full bg-gray-900 hover:bg-black text-white py-2.5 rounded-sm text-xs font-bold mt-4 transition-all duration-200 shadow-md hover:shadow-lg">
                 View Full Profile →
-              </button>
+              </button> */}
             </div>
           </div>
 
@@ -273,28 +388,36 @@ const SingleOrder = () => {
                 />
                 <InfoRow label="WhatsApp" value={orderData.vendor.whatsapp} />
                 <InfoRow label="Email" value={orderData.vendor.email} />
-                <InfoRow
-                  label="Registration"
-                  value={orderData.vendor.registrationDate}
-                />
-                <InfoRow
-                  label="Total Orders"
-                  value={orderData.vendor.totalOrders}
-                  badge
-                />
-                <InfoRow
-                  label="Leaderboard"
-                  value={`#${orderData.vendor.leaderboardPosition}`}
-                />
-                <InfoRow
-                  label="Turnover"
-                  value={`₹${orderData.vendor.turnover.toLocaleString()}`}
-                  highlight
-                />
+                {orderData.vendor.registrationDate !== "N/A" && (
+                  <InfoRow
+                    label="Registration"
+                    value={orderData.vendor.registrationDate}
+                  />
+                )}
+                {orderData.vendor.totalOrders > 0 && (
+                  <InfoRow
+                    label="Total Orders"
+                    value={orderData.vendor.totalOrders}
+                    badge
+                  />
+                )}
+                {orderData.vendor.leaderboardPosition > 0 && (
+                  <InfoRow
+                    label="Leaderboard"
+                    value={`#${orderData.vendor.leaderboardPosition}`}
+                  />
+                )}
+                {orderData.vendor.turnover > 0 && (
+                  <InfoRow
+                    label="Turnover"
+                    value={`₹${orderData.vendor.turnover.toLocaleString()}`}
+                    highlight
+                  />
+                )}
               </div>
-              <button className="w-full bg-gray-900 hover:bg-black text-white py-2.5 rounded-sm text-xs font-bold mt-4 transition-all duration-200 shadow-md hover:shadow-lg">
+              {/* <button className="w-full bg-gray-900 hover:bg-black text-white py-2.5 rounded-sm text-xs font-bold mt-4 transition-all duration-200 shadow-md hover:shadow-lg">
                 View Full Profile →
-              </button>
+              </button> */}
             </div>
           </div>
 
@@ -313,8 +436,16 @@ const SingleOrder = () => {
                     key={idx}
                     className="flex items-center gap-3 border-2 border-gray-200 rounded-sm p-3 bg-white hover:border-[#FF7B1D] hover:shadow-md transition-all"
                   >
-                    <div className="w-[90px] h-[80px] bg-gradient-to-br from-orange-50 to-orange-100 rounded-sm flex items-center justify-center flex-shrink-0 border-2 border-[#FF7B1D]">
-                      <span className="text-4xl">📦</span>
+                    <div className="w-[90px] h-[80px] bg-gradient-to-br from-orange-50 to-orange-100 rounded-sm flex items-center justify-center flex-shrink-0 border-2 border-[#FF7B1D] overflow-hidden">
+                      {product.thumbnail ? (
+                        <img
+                          src={product.thumbnail}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-4xl">📦</span>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-gray-900 mb-1 line-clamp-1">
@@ -337,23 +468,29 @@ const SingleOrder = () => {
                           SKU:{" "}
                           <strong className="text-black">{product.sku}</strong>
                         </span>
-                        <span>
-                          Stock:{" "}
-                          <strong className="text-[#FF7B1D]">
-                            {product.stock}
-                          </strong>
-                        </span>
+                        {product.stock !== "N/A" && (
+                          <span>
+                            Stock:{" "}
+                            <strong className="text-[#FF7B1D]">
+                              {product.stock}
+                            </strong>
+                          </span>
+                        )}
                       </div>
                       <div className="flex gap-1.5 flex-wrap">
                         <button className="bg-[#FF7B1D] hover:bg-[#E66A0D] text-white px-3 py-1 text-xs font-bold rounded transition">
                           View
                         </button>
-                        <span className="bg-green-600 text-white px-3 py-1 text-xs font-bold rounded">
-                          {product.stock} Stock
-                        </span>
-                        <span className="bg-gray-900 text-white px-3 py-1 text-xs font-bold rounded">
-                          ⭐ {product.rating}
-                        </span>
+                        {product.stock !== "N/A" && (
+                          <span className="bg-green-600 text-white px-3 py-1 text-xs font-bold rounded">
+                            {product.stock} Stock
+                          </span>
+                        )}
+                        {product.rating > 0 && (
+                          <span className="bg-gray-900 text-white px-3 py-1 text-xs font-bold rounded">
+                            ⭐ {product.rating}
+                          </span>
+                        )}
                         <button className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 text-xs font-bold rounded transition">
                           Remove
                         </button>
@@ -431,25 +568,41 @@ const SingleOrder = () => {
                     Delivery Address
                   </p>
                   <p className="text-sm text-gray-900 leading-relaxed font-semibold">
-                    {orderData.deliveryAddress.address1},{" "}
-                    {orderData.deliveryAddress.address2}
+                    {orderData.deliveryAddress.address1}
+                    {orderData.deliveryAddress.address2 && (
+                      <>, {orderData.deliveryAddress.address2}</>
+                    )}
                     <br />
                     {orderData.deliveryAddress.city} -{" "}
                     {orderData.deliveryAddress.pinCode}
                   </p>
                 </div>
-                <div className="bg-orange-50 border-2 border-[#FF7B1D] rounded-sm p-3 text-center">
-                  <p className="text-xs text-[#FF7B1D] font-bold">Distance</p>
-                  <p className="font-bold text-black text-lg">
-                    {orderData.deliveryAddress.distance}
-                  </p>
-                </div>
-                <div className="bg-green-50 border-2 border-green-500 rounded-sm p-3 text-center">
-                  <p className="text-xs text-green-600 font-bold">ETA</p>
-                  <p className="font-bold text-black text-lg">
-                    {orderData.deliveryAddress.expectedTime}
-                  </p>
-                </div>
+                {orderData.deliveryAddress.distance !== "N/A" && (
+                  <div className="bg-orange-50 border-2 border-[#FF7B1D] rounded-sm p-3 text-center">
+                    <p className="text-xs text-[#FF7B1D] font-bold">Distance</p>
+                    <p className="font-bold text-black text-lg">
+                      {orderData.deliveryAddress.distance}
+                    </p>
+                  </div>
+                )}
+                {orderData.deliveryAddress.expectedTime !== "N/A" && (
+                  <div className="bg-green-50 border-2 border-green-500 rounded-sm p-3 text-center">
+                    <p className="text-xs text-green-600 font-bold">ETA</p>
+                    <p className="font-bold text-black text-lg">
+                      {orderData.deliveryAddress.expectedTime}
+                    </p>
+                  </div>
+                )}
+                {orderData.notes && (
+                  <div className="col-span-2 bg-blue-50 border-2 border-blue-300 rounded-sm p-3">
+                    <p className="text-xs text-blue-600 mb-1 font-bold">
+                      Order Notes
+                    </p>
+                    <p className="text-sm text-gray-900 font-semibold">
+                      {orderData.notes}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -515,21 +668,39 @@ const SingleOrder = () => {
                   label="Product Value"
                   value={orderData.payment.productValue}
                 />
-                <PriceRow
-                  label="Handling Cost"
-                  value={orderData.payment.handlingCost}
-                />
+                {orderData.payment.handlingCost > 0 && (
+                  <PriceRow
+                    label="Handling Cost"
+                    value={orderData.payment.handlingCost}
+                  />
+                )}
                 <PriceRow label="Tax (GST)" value={orderData.payment.tax} />
+                {orderData.payment.discount > 0 && (
+                  <PriceRow
+                    label="Discount"
+                    value={-orderData.payment.discount}
+                    isDiscount
+                  />
+                )}
               </div>
               <div className="space-y-3 text-sm">
                 <PriceRow
                   label="Delivery Cost"
                   value={orderData.payment.deliveryCost}
                 />
-                <PriceRow
-                  label="Additional"
-                  value={orderData.payment.additional || 0}
-                />
+                {orderData.payment.additional > 0 && (
+                  <PriceRow
+                    label="Additional"
+                    value={orderData.payment.additional}
+                  />
+                )}
+                {orderData.payment.cashback > 0 && (
+                  <PriceRow
+                    label="Cashback"
+                    value={orderData.payment.cashback}
+                    isCashback
+                  />
+                )}
                 <div className="pt-3 mt-2 border-t-4 border-[#FF7B1D]">
                   <PriceRow
                     label="Total Amount"
@@ -587,8 +758,8 @@ const InfoRow = ({ label, value, highlight = false, badge = false }) => (
         highlight
           ? "font-bold text-[#FF7B1D]"
           : badge
-          ? "font-bold text-black bg-orange-50 px-2 py-1 rounded"
-          : "font-semibold text-gray-900"
+            ? "font-bold text-black bg-orange-50 px-2 py-1 rounded"
+            : "font-semibold text-gray-900"
       } text-right`}
     >
       {value}
@@ -596,7 +767,14 @@ const InfoRow = ({ label, value, highlight = false, badge = false }) => (
   </div>
 );
 
-const PriceRow = ({ label, value, highlight = false, large = false }) => (
+const PriceRow = ({
+  label,
+  value,
+  highlight = false,
+  large = false,
+  isDiscount = false,
+  isCashback = false,
+}) => (
   <div className="flex justify-between items-center">
     <span
       className={`${highlight ? "font-bold" : "font-semibold"} ${
@@ -607,10 +785,19 @@ const PriceRow = ({ label, value, highlight = false, large = false }) => (
     </span>
     <span
       className={`${
-        highlight ? "font-bold text-[#FF7B1D]" : "font-bold text-black"
+        highlight
+          ? "font-bold text-[#FF7B1D]"
+          : isDiscount
+            ? "font-bold text-red-600"
+            : isCashback
+              ? "font-bold text-green-600"
+              : "font-bold text-black"
       } ${large ? "text-2xl" : "text-base"}`}
     >
-      ₹{typeof value === "number" ? value.toLocaleString() : value}
+      {isDiscount && value > 0 ? "-" : ""}₹
+      {Math.abs(
+        typeof value === "number" ? value : parseFloat(value) || 0,
+      ).toLocaleString()}
     </span>
   </div>
 );

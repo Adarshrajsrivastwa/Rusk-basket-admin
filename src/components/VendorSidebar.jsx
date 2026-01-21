@@ -348,6 +348,11 @@ const VendorSidebar = () => {
       path: "/vendor/analytics",
     },
     {
+      name: "Rider Jobs",
+      icon: <Boxes size={16} />,
+      path: "/vendor/jobs",
+    },
+    {
       name: "Notifications",
       icon: <Bell size={16} />,
       path: "/vendor/notifications",
@@ -377,9 +382,9 @@ const VendorSidebar = () => {
         item.subItems &&
         item.subItems.some((sub) =>
           (location.pathname + location.search).startsWith(
-            sub.path.split("?")[0]
-          )
-        )
+            sub.path.split("?")[0],
+          ),
+        ),
     );
     if (openItem) setOpenDropdown(openItem.name);
   }, [location.pathname, location.search]);
@@ -412,7 +417,7 @@ const VendorSidebar = () => {
                 activeItem === item.path ||
                 (item.subItems &&
                   item.subItems.some((sub) =>
-                    activeItem.startsWith(sub.path.split("?")[0])
+                    activeItem.startsWith(sub.path.split("?")[0]),
                   ));
               const isDropdownOpen = openDropdown === item.name;
 

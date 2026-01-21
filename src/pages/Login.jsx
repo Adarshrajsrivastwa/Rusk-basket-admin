@@ -958,11 +958,84 @@ export default function Login() {
       });
 
       const data = await response.json();
+      
+      console.log("=== VERIFY OTP RESPONSE ===");
+      console.log("Full Response:", data);
+      console.log("Response Headers:", Object.fromEntries(response.headers.entries()));
 
       if (response.ok && data.success !== false) {
+        // Extract JWT token from response (check multiple possible locations for JWT)
+        // Common JWT response formats:
+        // - data.token
+        // - data.accessToken
+        // - data.jwt
+        // - data.data.token
+        // - data.data.accessToken
+        // - data.data.jwt
+        // - Authorization header (Bearer token)
+        let token = 
+          data.token || 
+          data.accessToken || 
+          data.jwt || 
+          data.data?.token || 
+          data.data?.accessToken || 
+          data.data?.jwt ||
+          data.authToken || 
+          data.data?.authToken;
+        
+        // Also check Authorization header if token not in body
+        if (!token) {
+          const authHeader = response.headers.get("Authorization");
+          if (authHeader && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7); // Remove "Bearer " prefix
+            console.log("Token found in Authorization header");
+          }
+        }
+        
+        console.log("Extracted Token:", token ? "Token found" : "Token NOT found");
+        console.log("Response structure:", {
+          hasToken: !!data.token,
+          hasAccessToken: !!data.accessToken,
+          hasJwt: !!data.jwt,
+          hasDataToken: !!data.data?.token,
+          hasDataAccessToken: !!data.data?.accessToken,
+          hasDataJwt: !!data.data?.jwt,
+          hasAuthToken: !!data.authToken,
+          hasDataAuthToken: !!data.data?.authToken,
+        });
+        
+        // Validate JWT token format (JWT tokens have 3 parts separated by dots)
+        if (token) {
+          const jwtParts = token.split('.');
+          if (jwtParts.length !== 3) {
+            console.warn("⚠️ Token doesn't appear to be a valid JWT format");
+          }
+          
+          // Save JWT token to localStorage (save as both 'token' and 'authToken' for compatibility)
+          localStorage.setItem("token", token);
+          localStorage.setItem("authToken", token);
+          console.log("✅ JWT Token saved to localStorage");
+        } else {
+          console.error("❌ JWT Token not found in response!");
+          console.error("Available keys in response:", Object.keys(data));
+          if (data.data) {
+            console.error("Available keys in data:", Object.keys(data.data));
+          }
+          setError("Token not received from server. Please contact support.");
+          return;
+        }
+        
+        // Save user role to localStorage
+        const role = formData.role;
+        localStorage.setItem("userRole", role);
+        
+        // Save user data if available
+        if (data.data?.user) {
+          localStorage.setItem("userData", JSON.stringify(data.data.user));
+        }
+        
         setSuccess("Login successful! Redirecting...");
         setTimeout(() => {
-          const role = formData.role;
           if (role === "vendor") {
             navigate("/vendor/dashboard");
           } else {

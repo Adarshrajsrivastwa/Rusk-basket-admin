@@ -79,7 +79,7 @@ export const AddExtraItemModal = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [searchBy, setSearchBy] = useState("all"); // all, sku, category, name
+  const [searchBy, setSearchBy] = useState("all");
 
   if (!isOpen) return null;
 
@@ -141,7 +141,6 @@ export const AddExtraItemModal = ({
           </p>
         </div>
 
-        {/* Search Filters */}
         <div className="mb-4 space-y-3">
           <div className="flex gap-2 flex-wrap">
             <button
@@ -203,7 +202,6 @@ export const AddExtraItemModal = ({
           </div>
         </div>
 
-        {/* Product List */}
         <div className="space-y-3 mb-6 max-h-80 overflow-y-auto">
           {filteredProducts.length === 0 ? (
             <div className="text-center py-8">
@@ -259,7 +257,6 @@ export const AddExtraItemModal = ({
           )}
         </div>
 
-        {/* Quantity Selector */}
         {selectedProduct && (
           <div className="bg-purple-50 border-2 border-purple-500 p-4 rounded-lg mb-4">
             <h4 className="font-bold text-purple-900 mb-3">
@@ -296,7 +293,6 @@ export const AddExtraItemModal = ({
           </div>
         )}
 
-        {/* Action Buttons */}
         <div className="flex gap-3">
           <button
             onClick={onClose}
@@ -362,7 +358,6 @@ export const PackingTab = ({
       </div>
     </div>
 
-    {/* Product List */}
     <div className="space-y-4">
       {products.map((product) => {
         const isComplete = product.scanned === product.quantity;
@@ -377,10 +372,10 @@ export const PackingTab = ({
               isExtra
                 ? "bg-purple-50 border-purple-500"
                 : isComplete
-                ? "bg-green-50 border-green-500"
-                : isPartial
-                ? "bg-yellow-50 border-yellow-500"
-                : "bg-white border-gray-200"
+                  ? "bg-green-50 border-green-500"
+                  : isPartial
+                    ? "bg-yellow-50 border-yellow-500"
+                    : "bg-white border-gray-200"
             } hover:shadow-lg transition-all`}
           >
             <div className="flex justify-between items-start gap-4">
@@ -427,10 +422,10 @@ export const PackingTab = ({
                       isExtra
                         ? "bg-purple-600 text-white"
                         : isComplete
-                        ? "bg-green-600 text-white"
-                        : isPartial
-                        ? "bg-yellow-600 text-white"
-                        : "bg-gray-300 text-gray-700"
+                          ? "bg-green-600 text-white"
+                          : isPartial
+                            ? "bg-yellow-600 text-white"
+                            : "bg-gray-300 text-gray-700"
                     }`}
                   >
                     Scanned: {product.scanned}/{product.quantity}
@@ -508,15 +503,15 @@ export const HistoryTab = ({ scanHistory }) => (
                       scan.status === "scanned"
                         ? "bg-green-100 text-green-700 border border-green-300"
                         : scan.status === "extra_added"
-                        ? "bg-purple-100 text-purple-700 border border-purple-300"
-                        : "bg-blue-100 text-blue-700 border border-blue-300"
+                          ? "bg-purple-100 text-purple-700 border border-purple-300"
+                          : "bg-blue-100 text-blue-700 border border-blue-300"
                     }`}
                   >
                     {scan.status === "scanned"
                       ? "✓ SCANNED"
                       : scan.status === "extra_added"
-                      ? "➕ EXTRA ADDED"
-                      : "✓ MANUAL"}
+                        ? "➕ EXTRA ADDED"
+                        : "✓ MANUAL"}
                   </span>
                   <p className="font-bold text-gray-900">{scan.productName}</p>
                 </div>
@@ -657,7 +652,6 @@ export const DeliveryTab = ({
     {(assignmentStatus === "assigned" || assignmentStatus === "picked_up") &&
       selectedPartner && (
         <div className="space-y-6">
-          {/* Assigned Partner Card */}
           <div className="bg-gradient-to-br from-green-50 to-white p-6 rounded-lg border-2 border-green-500 shadow-lg">
             <div className="flex items-center gap-2 mb-4">
               <CheckCircle className="text-green-600" size={24} />
@@ -728,7 +722,6 @@ export const DeliveryTab = ({
             </div>
           </div>
 
-          {/* Bag Assignment Details */}
           <div className="bg-white p-6 rounded-lg border-2 border-gray-200 shadow-md">
             <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
               <Package size={20} />
@@ -809,7 +802,6 @@ export const ScanModal = ({
             </p>
           </div>
 
-          {/* Quick Reference */}
           <div className="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-lg max-h-48 overflow-y-auto">
             <p className="text-xs font-bold text-blue-900 mb-2">
               📋 Items in this Order:
@@ -881,7 +873,6 @@ export const DeliveryPartnerModal = ({
           Assign Delivery Partner
         </h3>
 
-        {/* Search */}
         <div className="mb-4">
           <div className="relative">
             <Search
@@ -898,7 +889,6 @@ export const DeliveryPartnerModal = ({
           </div>
         </div>
 
-        {/* Partner List */}
         <div className="space-y-3 mb-6 max-h-96 overflow-y-auto">
           {availablePartners.length === 0 ? (
             <div className="text-center py-8">
@@ -963,7 +953,6 @@ export const DeliveryPartnerModal = ({
           )}
         </div>
 
-        {/* Bag Details Summary */}
         {selectedPartner && (
           <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-lg mb-4">
             <h4 className="font-bold text-orange-900 mb-2">

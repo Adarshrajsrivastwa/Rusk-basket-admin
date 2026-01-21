@@ -153,6 +153,11 @@ const Sidebar = () => {
       path: "/vendor-support",
     },
     {
+      name: "Rider Jobs",
+      icon: <Image size={16} />,
+      path: "/jobs",
+    },
+    {
       name: "User Support",
       icon: <Users size={16} />,
       subItems: [
@@ -191,9 +196,9 @@ const Sidebar = () => {
         item.subItems &&
         item.subItems.some((sub) =>
           (location.pathname + location.search).startsWith(
-            sub.path.split("?")[0]
-          )
-        )
+            sub.path.split("?")[0],
+          ),
+        ),
     );
     if (openItem) setOpenDropdown(openItem.name);
   }, [location.pathname, location.search]);
@@ -220,7 +225,7 @@ const Sidebar = () => {
                 activeItem === item.path ||
                 (item.subItems &&
                   item.subItems.some((sub) =>
-                    activeItem.startsWith(sub.path.split("?")[0])
+                    activeItem.startsWith(sub.path.split("?")[0]),
                   ));
               const isDropdownOpen = openDropdown === item.name;
 

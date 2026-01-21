@@ -16,137 +16,119 @@ const AllOrder = () => {
   const [activeTab, setActiveTab] = useState(tabFromQuery);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const itemsPerPage = 8;
 
   const [orders, setOrders] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 1,
+  });
 
-  // Simulate API call
+  // Fetch orders from API with Authorization
   useEffect(() => {
-    setLoading(true);
-    const timer = setTimeout(() => {
-      setOrders([
-        {
-          id: "RUSH8038403",
-          date: "23 Aug 2025",
-          vendor: "Abnish Kumar",
-          user: "NK Yadav",
-          cartValue: 5222,
-          payment: "COD",
-          status: "New Order",
-        },
-        {
-          id: "RUSH09401",
-          date: "27 Sep 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 124,
-          payment: "COD",
-          status: "New Order",
-        },
-        {
-          id: "RUSH09402",
-          date: "28 Sep 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 230,
-          payment: "COD",
-          status: "Assigned",
-        },
-        {
-          id: "RUSH09403",
-          date: "29 Sep 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 450,
-          payment: "COD",
-          status: "Delivered",
-        },
-        {
-          id: "RUSH09404",
-          date: "30 Sep 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 350,
-          payment: "COD",
-          status: "Cancel",
-        },
-        {
-          id: "RUSH09405",
-          date: "01 Oct 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 400,
-          payment: "COD",
-          status: "New Order",
-        },
-        {
-          id: "RUSH09406",
-          date: "02 Oct 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 280,
-          payment: "COD",
-          status: "Assigned",
-        },
-        {
-          id: "RUSH09407",
-          date: "03 Oct 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 500,
-          payment: "COD",
-          status: "Delivered",
-        },
-        {
-          id: "RUSH09408",
-          date: "04 Oct 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 320,
-          payment: "COD",
-          status: "Cancel",
-        },
-        {
-          id: "RUSH09409",
-          date: "05 Oct 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 150,
-          payment: "COD",
-          status: "New Order",
-        },
-        {
-          id: "RUSH09410",
-          date: "06 Oct 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 270,
-          payment: "COD",
-          status: "Assigned",
-        },
-        {
-          id: "RUSH09411",
-          date: "07 Oct 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 480,
-          payment: "COD",
-          status: "Delivered",
-        },
-        {
-          id: "RUSH09412",
-          date: "08 Oct 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 360,
-          payment: "COD",
-          status: "Cancel",
-        },
-      ]);
-      setLoading(false);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, []);
+    const fetchOrders = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Get token from localStorage (same as AddCategoryModal)
+        const token =
+          localStorage.getItem("token") || localStorage.getItem("authToken");
+
+        if (!token) {
+          throw new Error("No authentication token found. Please login.");
+        }
+
+        const headers = {
+          "Content-Type": "application/json",
+        };
+
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(
+          `http://46.202.164.93/api/checkout/vendor/orders?page=${currentPage}&limit=${itemsPerPage}`,
+          {
+            method: "GET",
+            credentials: "include", // Same as AddCategoryModal
+            headers: headers,
+          },
+        );
+
+        if (response.status === 401) {
+          throw new Error("Unauthorized. Please login again.");
+        }
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Transform API data to match component format
+          const transformedOrders = data.orders.map((order) => ({
+            id: order.orderNumber,
+            date: new Date(order.createdAt).toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            }),
+            vendor: order.items[0]?.vendor?.storeName || "N/A",
+            user: order.user?.contactNumber || "N/A",
+            cartValue: order.pricing.total,
+            payment: order.payment.method.toUpperCase(),
+            status: mapStatus(order.status),
+            rawStatus: order.status,
+            shippingAddress: order.shippingAddress,
+            items: order.items,
+            pricing: order.pricing,
+            notes: order.notes,
+            _id: order._id,
+          }));
+
+          setOrders(transformedOrders);
+          setPagination(data.pagination);
+        } else {
+          throw new Error(data.message || "API returned success: false");
+        }
+      } catch (err) {
+        console.error("Error fetching orders:", err);
+        setError(err.message);
+
+        // If unauthorized, redirect to login
+        if (
+          err.message.includes("Unauthorized") ||
+          err.message.includes("authentication")
+        ) {
+          // Optionally redirect to login page
+          // navigate('/login');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [currentPage, itemsPerPage]);
+
+  // Map API status to display status
+  const mapStatus = (apiStatus) => {
+    const statusMap = {
+      pending: "New Order",
+      confirmed: "Assigned",
+      processing: "Assigned",
+      shipped: "Assigned",
+      delivered: "Delivered",
+      cancelled: "Cancel",
+      canceled: "Cancel",
+    };
+    return statusMap[apiStatus?.toLowerCase()] || "New Order";
+  };
 
   // Scroll to highlighted order after loading
   useEffect(() => {
@@ -185,7 +167,7 @@ const AllOrder = () => {
           return true;
         });
 
-  // Pagination
+  // Pagination (using filtered orders for display)
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
   const currentOrders = filteredOrders.slice(indexOfFirst, indexOfLast);
@@ -217,7 +199,21 @@ const AllOrder = () => {
           colSpan="9"
           className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
         >
-          No orders found.
+          {error ? (
+            <div className="text-red-500">
+              <p className="font-semibold">Error: {error}</p>
+              {error.includes("authentication") && (
+                <button
+                  onClick={() => window.location.reload()}
+                  className="mt-2 text-orange-500 underline"
+                >
+                  Refresh Page
+                </button>
+              )}
+            </div>
+          ) : (
+            "No orders found."
+          )}
         </td>
       </tr>
     </tbody>
@@ -232,7 +228,7 @@ const AllOrder = () => {
 
   return (
     <DashboardLayout>
-      {/* Tabs + Search + Today */}
+      {/* Tabs + Search + Calendar */}
       <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-2 w-full pl-4 max-w-[99%] mx-auto mt-0 mb-2">
         <div className="flex gap-4 overflow-x-auto pb-2 lg:pb-0">
           {[
@@ -272,7 +268,7 @@ const AllOrder = () => {
 
         <div className="mt-3 sm:mt-0">
           <button className="bg-black hover:bg-gray-800 text-white w-44 sm:w-44 px-6 py-2 rounded-sm text-sm whitespace-nowrap">
-            Calender
+            Calendar
           </button>
         </div>
       </div>
@@ -304,7 +300,7 @@ const AllOrder = () => {
                 const isHighlighted = order.id === highlightOrderId;
                 return (
                   <tr
-                    key={idx}
+                    key={order.id}
                     ref={isHighlighted ? highlightRef : null}
                     className={`shadow-sm rounded-sm hover:bg-gray-50 transition border-b-4 border-gray-200 ${
                       isHighlighted ? "bg-yellow-100 animate-pulse" : "bg-white"
@@ -349,7 +345,8 @@ const AllOrder = () => {
         <div className="flex justify-end items-center gap-4 mt-6 max-w-[98%] mx-auto">
           <button
             onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            className="bg-[#FF7B1D] hover:bg-orange-600 text-white px-10 py-3 text-sm font-medium rounded-0"
+            disabled={currentPage === 1}
+            className="bg-[#FF7B1D] hover:bg-orange-600 text-white px-10 py-3 text-sm font-medium rounded-0 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Back
           </button>
@@ -368,7 +365,8 @@ const AllOrder = () => {
           </div>
           <button
             onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-            className="bg-[#247606] hover:bg-green-700 text-white px-10 py-3 text-sm font-medium rounded-0"
+            disabled={currentPage === totalPages}
+            className="bg-[#247606] hover:bg-green-700 text-white px-10 py-3 text-sm font-medium rounded-0 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next
           </button>
