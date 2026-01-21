@@ -392,7 +392,7 @@
 //     setLoading(true);
 //     try {
 //       const response = await fetch(
-//         "https://rush-basket.onrender.com/api/v1/products"
+//         ""
 //       );
 
 //       if (!response.ok) {
@@ -479,7 +479,7 @@
 //     if (window.confirm("Are you sure you want to delete this product?")) {
 //       try {
 //         const response = await fetch(
-//           `https://rush-basket.onrender.com/api/v1/products/${id}`,
+//           ``,
 //           {
 //             method: "DELETE",
 //           }

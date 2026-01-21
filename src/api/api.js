@@ -1,7 +1,9 @@
 import axios from "axios";
 
+const BASE_URL = "https://api.rushbaskets.com";
+
 const api = axios.create({
-  baseURL: "/api",
+  baseURL: "https://api.rushbaskets.com/api",
   withCredentials: false,
 });
 
@@ -33,3 +35,4 @@ api.interceptors.response.use(
 );
 
 export default api;
+export { BASE_URL };

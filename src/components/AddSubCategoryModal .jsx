@@ -221,9 +221,6 @@
 // import React, { useEffect, useRef, useState } from "react";
 // import { X } from "lucide-react";
 
-// const API_BASE_URL = "https://rush-basket.onrender.com";
-// const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
-
 // const AddSubCategoryModal = ({
 //   isOpen,
 //   onClose,

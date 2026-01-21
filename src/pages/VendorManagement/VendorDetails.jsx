@@ -448,13 +448,13 @@ const VendorDetails = () => {
 
             <div className="rounded-lg p-4 bg-white text-sm space-y-1">
               <p>
-                <strong>Username :</strong> rushbaskets8040
+                <strong>Username :</strong> {vendor?.username || "N/A"}
               </p>
               <p>
-                <strong>Password :</strong> dkfhfsdh@dkcnkjnd8
+                <strong>Password :</strong> {vendor?.password ? "••••••••" : "N/A"}
               </p>
               <p>
-                <strong>Secret KEY :</strong> 74658
+                <strong>Secret KEY :</strong> {vendor?.secretKey ? "•••••" : "N/A"}
               </p>
 
               {/* Centered Large Button */}

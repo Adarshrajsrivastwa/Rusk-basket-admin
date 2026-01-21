@@ -30,7 +30,7 @@ const PendingProduct = () => {
   const fetchPendingProducts = async (page = 1) => {
     setLoading(true);
     try {
-      const response = await api.get(`/api/product/pending`, {
+      const response = await api.get(`/product/pending`, {
         params: {
           page: page,
           limit: itemsPerPage,
@@ -69,7 +69,7 @@ const PendingProduct = () => {
 
     try {
       const response = await api.put(
-        `/api/product/approve/${productId}`,
+        `/product/approve/${productId}`,
         {}
       );
 
@@ -103,7 +103,7 @@ const PendingProduct = () => {
 
     try {
       const response = await api.put(
-        `/api/product/reject/${productId}`,
+        `/product/reject/${productId}`,
         {
           rejectionReason: reason || "No reason provided",
         }
