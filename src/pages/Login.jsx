@@ -960,50 +960,17 @@ export default function Login() {
 
       console.log("=== VERIFY OTP RESPONSE ===");
       console.log("Full Response:", res.data);
-      console.log("Response exists:", !!res);
-      console.log("Response.data exists:", !!res.data);
       
-      // Check if response and data exist
-      if (!res || !res.data) {
-        console.error("❌ Invalid response structure");
-        setError("Invalid response from server.");
-        return;
-      }
-      
-      console.log("Response check passed, extracting token...");
-      
-      // ✅ SAVE TOKEN - Direct save
+      // ✅ SAVE TOKEN - ULTRA SIMPLE DIRECT SAVE
       const token = res.data.token;
-      console.log("Token extracted:", token ? `YES (${token.length} chars)` : "NO");
+      console.log("TOKEN VALUE:", token);
       
-      if (!token) {
-        console.error("❌ Token is missing!");
-        setError("Token not received from server.");
-        return;
-      }
+      localStorage.setItem("token", token);
+      localStorage.setItem("authToken", token);
+      console.log("TOKEN SAVED TO LOCALSTORAGE");
       
-      console.log("Saving token to localStorage...");
-      
-      // Save token immediately
-      try {
-        localStorage.setItem("token", token);
-        localStorage.setItem("authToken", token);
-        console.log("✅ localStorage.setItem called successfully");
-      } catch (e) {
-        console.error("❌ Error saving to localStorage:", e);
-        setError("Failed to save token. Please check browser settings.");
-        return;
-      }
-      
-      // Verify immediately
-      const checkToken = localStorage.getItem("token");
-      console.log("Verification - Token retrieved:", checkToken ? `YES (${checkToken.length} chars)` : "NO");
-      
-      if (checkToken && checkToken === token) {
-        console.log("✅✅✅ TOKEN SAVED AND VERIFIED SUCCESSFULLY!");
-      } else {
-        console.error("❌❌❌ TOKEN SAVE FAILED!");
-      }
+      const saved = localStorage.getItem("token");
+      console.log("VERIFIED SAVED TOKEN:", saved ? "YES" : "NO");
 
       // Save user data
       if (res.data?.data) {
