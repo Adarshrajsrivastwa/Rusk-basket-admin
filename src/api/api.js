@@ -4,8 +4,10 @@ import axios from "axios";
  * Base URL of backend API (HTTPS ONLY)
  * Make sure SSL is enabled on backend
  */
+export const BASE_URL = "https://api.rushbaskets.com";
+
 const api = axios.create({
-  baseURL: "https://api.rushbaskets.com",
+  baseURL: BASE_URL,
   withCredentials: false, // set true only if using cookies
 });
 
