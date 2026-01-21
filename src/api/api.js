@@ -1,31 +1,43 @@
+// src/api/api.js
 import axios from "axios";
 
-const BASE_URL = "https://api.rushbaskets.com";
-
 const api = axios.create({
-  baseURL: "https://api.rushbaskets.com/api",
-  withCredentials: false,
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://46.202.164.93",
+  withCredentials: true, // Enable sending cookies with cross-origin requests
 });
 
+// Request interceptor to add JWT token from localStorage to all requests
 api.interceptors.request.use(
   (config) => {
-    const token =
-      localStorage.getItem("token") ||
-      localStorage.getItem("authToken");
-
+    // Get JWT token from localStorage
+    const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+    
+    // Add token to Authorization header if available
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
+// Response interceptor to handle token expiration (401 errors)
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response;
+  },
   (error) => {
+    // If token is expired or invalid (401), clear localStorage and redirect to login
     if (error.response?.status === 401) {
-      localStorage.clear();
+      localStorage.removeItem("token");
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("userData");
+      
+      // Redirect to login page
       if (window.location.pathname !== "/") {
         window.location.href = "/";
       }
@@ -35,4 +47,3 @@ api.interceptors.response.use(
 );
 
 export default api;
-export { BASE_URL };
