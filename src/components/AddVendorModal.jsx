@@ -1432,7 +1432,7 @@
 
 import React, { useState, useEffect } from "react";
 import { X, User, MapPin, FileText, Banknote } from "lucide-react";
-import { BASE_URL } from "../api/api";
+import api from "../api/api";
 
 const AddVendorModal = ({ isOpen, onClose }) => {
   const [step, setStep] = useState(1);
@@ -1639,46 +1639,25 @@ const AddVendorModal = ({ isOpen, onClose }) => {
       }
 
       console.log("=== SEND OTP REQUEST ===");
-      console.log("URL:", `${BASE_URL}/api/vendor/send-otp`);
+      console.log("URL:", "/vendor/send-otp");
       console.log("Method:", "POST");
       console.log("Headers:", headers);
       console.log("Body:", JSON.stringify(requestBody));
       console.log("Body String Length:", JSON.stringify(requestBody).length);
       console.log("Auth Token:", authToken ? "Present" : "Missing");
 
-      const response = await fetch(`${BASE_URL}/api/vendor/send-otp`, {
-        method: "POST",
-        headers: headers,
-        credentials: "include", // Include cookies if needed
-        body: JSON.stringify(requestBody),
-      });
+      const response = await api.post("/vendor/send-otp", requestBody);
 
       console.log("=== SEND OTP RESPONSE ===");
       console.log("Status:", response.status);
       console.log("Status Text:", response.statusText);
-      console.log("OK:", response.ok);
-      console.log("Headers:", Object.fromEntries(response.headers.entries()));
+      console.log("OK:", response.status >= 200 && response.status < 300);
+      console.log("Headers:", response.headers);
 
-      // Try to get response text first
-      const responseText = await response.text();
-      console.log("Response Text:", responseText);
-      console.log("Response Text Length:", responseText.length);
+      const data = response.data;
+      console.log("Response Data:", data);
 
-      // Parse JSON
-      let data;
-      try {
-        data = JSON.parse(responseText);
-        console.log("Parsed Response Data:", data);
-      } catch (e) {
-        console.error("JSON Parse Error:", e);
-        console.error("Raw Response:", responseText);
-        setError(
-          `Server returned invalid response: ${responseText.substring(0, 100)}`
-        );
-        return;
-      }
-
-      if (response.ok && data.success) {
+      if (data.success) {
         setSuccess(
           `OTP sent to ${data.contactNumber || formData.contactNumber}`
         );
@@ -1694,7 +1673,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
       console.error("Error Type:", error.constructor.name);
       console.error("Error Message:", error.message);
       console.error("Error Stack:", error.stack);
-      setError(`Network error: ${error.message}`);
+      setError(error.response?.data?.message || `Network error: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -1850,7 +1829,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
       }
 
       console.log("=== CREATE VENDOR REQUEST ===");
-      console.log("URL:", `${BASE_URL}/api/vendor/create`);
+      console.log("URL:", "/vendor/create");
       console.log("Auth Token:", authToken ? "Present" : "Missing");
       
       // Log FormData contents (for debugging)
@@ -1878,92 +1857,52 @@ const AddVendorModal = ({ isOpen, onClose }) => {
 
       let response;
       try {
-        response = await fetch(`${BASE_URL}/api/vendor/create`, {
-          method: "POST",
+        response = await api.post("/vendor/create", formDataToSend, {
           headers: headers,
-          credentials: "include", // Include cookies for authentication
-          body: formDataToSend,
           signal: controller.signal, // Add abort signal for timeout
+          timeout: 120000, // 2 minutes timeout
         });
         clearTimeout(timeoutId);
       } catch (fetchError) {
         clearTimeout(timeoutId);
-        if (fetchError.name === 'AbortError') {
+        if (fetchError.name === 'AbortError' || fetchError.code === 'ECONNABORTED') {
           console.error("Request timeout - file upload took too long");
           setError("Request timeout. The files may be too large. Please try again or reduce file sizes.");
           setIsLoading(false);
           return;
-        } else if (fetchError.message.includes('Failed to fetch') || fetchError.message.includes('NetworkError')) {
+        } else if (fetchError.message.includes('Failed to fetch') || fetchError.message.includes('NetworkError') || fetchError.code === 'ERR_NETWORK') {
           console.error("Network error:", fetchError);
           setError("Network error. Please check your internet connection and try again. If the problem persists, the files may be too large.");
           setIsLoading(false);
           return;
         } else {
-          throw fetchError; // Re-throw other errors
+          // Handle axios error response
+          const errorData = fetchError.response?.data;
+          const errorMessage = errorData?.message || fetchError.message || "An error occurred";
+          
+          // Check for specific error messages
+          if (errorMessage.includes("post office") || errorMessage.includes("Failed to fetch post office")) {
+            setError("Invalid PIN code or unable to verify address. Please check your PIN code and try again.");
+          } else if (errorMessage.includes("PIN code") || errorMessage.includes("pinCode")) {
+            setError("Invalid PIN code. Please enter a valid 6-digit PIN code.");
+          } else {
+            setError(`Server error: ${errorMessage}. Please try again or contact support.`);
+          }
+          
+          setIsLoading(false);
+          return;
         }
       }
 
       console.log("=== CREATE VENDOR RESPONSE ===");
       console.log("Status:", response.status);
       console.log("Status Text:", response.statusText);
-      console.log("OK:", response.ok);
+      console.log("OK:", response.status >= 200 && response.status < 300);
 
-      // Get response text first to handle non-JSON responses
-      const responseText = await response.text();
-      console.log("Response Text:", responseText);
+      const data = response.data;
+      console.log("Create Vendor Response Data:", data);
 
-      let data;
-      try {
-        // Check if response is HTML (error page)
-        if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
-          console.error("Server returned HTML error page instead of JSON");
-          
-          // Try to extract error message from HTML
-          const errorMatch = responseText.match(/Error: ([^<]+)/i) || 
-                            responseText.match(/<pre>([^<]+)<\/pre>/i) ||
-                            responseText.match(/<title>([^<]+)<\/title>/i);
-          
-          const extractedError = errorMatch ? errorMatch[1].trim() : "Server error occurred";
-          
-          // Check for specific error messages
-          if (extractedError.includes("post office") || extractedError.includes("Failed to fetch post office")) {
-            setError("Invalid PIN code or unable to verify address. Please check your PIN code and try again.");
-          } else if (extractedError.includes("PIN code") || extractedError.includes("pinCode")) {
-            setError("Invalid PIN code. Please enter a valid 6-digit PIN code.");
-          } else {
-            setError(`Server error: ${extractedError}. Please try again or contact support.`);
-          }
-          
-          setIsLoading(false);
-          return;
-        }
-        
-        data = JSON.parse(responseText);
-        console.log("Create Vendor Response Data:", data);
-      } catch (e) {
-        console.error("JSON Parse Error:", e);
-        console.error("Raw Response:", responseText);
-        
-        // Try to extract meaningful error from HTML
-        if (responseText.includes("Error:") || responseText.includes("<pre>")) {
-          const errorMatch = responseText.match(/Error: ([^<\n]+)/i) || 
-                            responseText.match(/<pre>([^<]+)<\/pre>/i);
-          const extractedError = errorMatch ? errorMatch[1].trim() : "Unknown server error";
-          
-          if (extractedError.includes("post office") || extractedError.includes("Failed to fetch post office")) {
-            setError("Invalid PIN code or address verification failed. Please check your PIN code and address details.");
-          } else {
-            setError(`Server error: ${extractedError}`);
-          }
-        } else {
-          setError(`Server returned invalid response. Please try again or contact support.`);
-        }
-        
-        setIsLoading(false);
-        return;
-      }
-
-      if (response.ok && data.success) {
+      if (data.success) {
         setSuccess("Vendor registered successfully!");
         setTimeout(() => {
           onClose();
