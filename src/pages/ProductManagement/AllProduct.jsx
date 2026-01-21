@@ -786,7 +786,7 @@ import React, { useState, useEffect, useRef } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Eye, Edit, Trash2, Download } from "lucide-react";
 import AddProductModal from "../../components/AddProduct";
-import { BASE_URL } from "../../api/api";
+import api from "../../api/api";
 import { useNavigate } from "react-router-dom";
 import JsBarcode from "jsbarcode";
 
@@ -811,26 +811,11 @@ const AllProduct = () => {
       const token =
         localStorage.getItem("token") || localStorage.getItem("authToken");
 
-      const headers = {
-        "Content-Type": "application/json",
-      };
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(
-        `${BASE_URL}/api/product?latitude=23.2599&longitude=77.4126&page=1&limit=100`,
-        {
-          credentials: "include",
-          headers: headers,
-        }
+      const response = await api.get(
+        "/product?latitude=23.2599&longitude=77.4126&page=1&limit=100"
       );
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch products");
-      }
-
-      const result = await response.json();
+      const result = response.data;
 
       if (result.success && result.data) {
         // Transform API data to match component structure
@@ -907,24 +892,11 @@ const AllProduct = () => {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       try {
-        // Get token from localStorage
-        const token =
-          localStorage.getItem("token") || localStorage.getItem("authToken");
+        const response = await api.delete(`/product/${id}`);
 
-        const headers = {};
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
+        const result = response.data;
 
-        const response = await fetch(`${BASE_URL}/api/product/${id}`, {
-          method: "DELETE",
-          credentials: "include",
-          headers: headers,
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.success) {
+        if (result.success) {
           setProducts((prev) => prev.filter((p) => p.id !== id));
           alert("Product deleted successfully!");
         } else {
@@ -932,7 +904,7 @@ const AllProduct = () => {
         }
       } catch (error) {
         console.error("Error deleting product:", error);
-        alert("Failed to delete product. Please try again.");
+        alert(error.response?.data?.message || "Failed to delete product. Please try again.");
       }
     }
   };
