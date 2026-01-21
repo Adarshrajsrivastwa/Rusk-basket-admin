@@ -961,27 +961,29 @@ export default function Login() {
       console.log("=== VERIFY OTP RESPONSE ===");
       console.log("Full Response:", res.data);
       
-      try {
-        // ✅ SAVE TOKEN - ULTRA SIMPLE DIRECT SAVE
-        const token = res.data.token;
-        console.log("TOKEN EXTRACTED:", token);
-        
+      // ✅ SAVE TOKEN - DIRECT SAVE (NO TRY-CATCH TO AVOID SILENT FAILURES)
+      const token = res.data.token;
+      console.log("1. Token extracted:", token ? "YES" : "NO");
+      
+      if (token) {
         localStorage.setItem("token", token);
         localStorage.setItem("authToken", token);
-        console.log("TOKEN SAVED");
+        console.log("2. Token saved to localStorage");
         
         const saved = localStorage.getItem("token");
-        console.log("TOKEN VERIFIED:", saved ? "YES ✅" : "NO ❌");
+        console.log("3. Token verified:", saved ? "YES ✅" : "NO ❌");
         
         // Save user data
         if (res.data?.data) {
           localStorage.setItem("user", JSON.stringify(res.data.data));
           localStorage.setItem("userData", JSON.stringify(res.data.data));
+          console.log("4. User data saved");
         }
         
         // Save user role
         const role = res.data?.data?.role || formData.role;
         localStorage.setItem("userRole", role);
+        console.log("5. User role saved:", role);
         
         setSuccess("Login successful! Redirecting...");
         setTimeout(() => {
@@ -991,31 +993,10 @@ export default function Login() {
             navigate("/dashboard");
           }
         }, 1000);
-      } catch (error) {
-        console.error("ERROR IN TOKEN SAVE:", error);
-        setError("Failed to save authentication data.");
+      } else {
+        console.error("❌ Token missing in response!");
+        setError("Token not received from server.");
       }
-
-      // Save user data
-      if (res.data?.data) {
-        localStorage.setItem("user", JSON.stringify(res.data.data));
-        localStorage.setItem("userData", JSON.stringify(res.data.data));
-        console.log("✅ User data saved");
-      }
-
-      // Save user role
-      const role = res.data?.data?.role || formData.role;
-      localStorage.setItem("userRole", role);
-      console.log("✅ User role saved:", role);
-
-      setSuccess("Login successful! Redirecting...");
-      setTimeout(() => {
-        if (role === "vendor") {
-          navigate("/vendor/dashboard");
-        } else {
-          navigate("/dashboard");
-        }
-      }, 1000);
     } catch (err) {
       console.error("❌ Verify OTP Error:", err);
       console.error("Error Response:", err.response?.data);
