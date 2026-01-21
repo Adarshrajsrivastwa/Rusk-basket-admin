@@ -1,8 +1,11 @@
 // src/api/api.js
 import axios from "axios";
 
+// Export BASE_URL for use in other components
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://46.202.164.93";
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://46.202.164.93",
+  baseURL: BASE_URL,
   withCredentials: true, // Enable sending cookies with cross-origin requests
 });
 
