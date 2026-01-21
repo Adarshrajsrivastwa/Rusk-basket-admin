@@ -838,6 +838,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/image 1.png";
 import api from "../api/api";
+import axios from "axios";
+import { BASE_URL } from "../api/api";
 import {
   Eye,
   EyeOff,
@@ -939,100 +941,44 @@ export default function Login() {
     setError("");
 
     try {
-      const verifyData = {
+      const payload = {
         mobile: formData.mobile,
         otp: formData.otp,
         role: formData.role,
       };
-      const response = await api.post("/api/auth/verify-otp", verifyData);
-      const data = response.data;
-      
-      console.log("=== VERIFY OTP RESPONSE ===");
-      console.log("Full Response:", data);
-      console.log("Response Headers:", Object.fromEntries(response.headers.entries()));
 
-      if (data.success !== false) {
-        // Extract JWT token from response (check multiple possible locations for JWT)
-        // Common JWT response formats:
-        // - data.token
-        // - data.accessToken
-        // - data.jwt
-        // - data.data.token
-        // - data.data.accessToken
-        // - data.data.jwt
-        // - Authorization header (Bearer token)
-        let token = 
-          data.token || 
-          data.accessToken || 
-          data.jwt || 
-          data.data?.token || 
-          data.data?.accessToken || 
-          data.data?.jwt ||
-          data.authToken || 
-          data.data?.authToken;
-        
-        // Also check Authorization header if token not in body
-        if (!token) {
-          const authHeader = response.headers.authorization || response.headers.Authorization;
-          if (authHeader && authHeader.startsWith("Bearer ")) {
-            token = authHeader.substring(7); // Remove "Bearer " prefix
-            console.log("Token found in Authorization header");
-          }
+      const res = await axios.post(
+        `${BASE_URL}/api/auth/verify-otp`,
+        payload,
+        {
+          withCredentials: true, // Enable sending cookies
         }
-        
-        console.log("Extracted Token:", token ? "Token found" : "Token NOT found");
-        console.log("Response structure:", {
-          hasToken: !!data.token,
-          hasAccessToken: !!data.accessToken,
-          hasJwt: !!data.jwt,
-          hasDataToken: !!data.data?.token,
-          hasDataAccessToken: !!data.data?.accessToken,
-          hasDataJwt: !!data.data?.jwt,
-          hasAuthToken: !!data.authToken,
-          hasDataAuthToken: !!data.data?.authToken,
-        });
-        
-        // Validate JWT token format (JWT tokens have 3 parts separated by dots)
-        if (token) {
-          const jwtParts = token.split('.');
-          if (jwtParts.length !== 3) {
-            console.warn("⚠️ Token doesn't appear to be a valid JWT format");
-          }
-          
-          // Save JWT token to localStorage (save as both 'token' and 'authToken' for compatibility)
-          localStorage.setItem("token", token);
-          localStorage.setItem("authToken", token);
-          console.log("✅ JWT Token saved to localStorage");
-        } else {
-          console.error("❌ JWT Token not found in response!");
-          console.error("Available keys in response:", Object.keys(data));
-          if (data.data) {
-            console.error("Available keys in data:", Object.keys(data.data));
-          }
-          setError("Token not received from server. Please contact support.");
-          return;
-        }
-        
-        // Save user role to localStorage
-        const role = formData.role;
-        localStorage.setItem("userRole", role);
-        
-        // Save user data if available
-        if (data.data?.user) {
-          localStorage.setItem("userData", JSON.stringify(data.data.user));
-        }
-        
-        setSuccess("Login successful! Redirecting...");
-        setTimeout(() => {
-          if (role === "vendor") {
-            navigate("/vendor/dashboard");
-          } else {
-            navigate("/dashboard");
-          }
-        }, 1000);
-      } else {
-        setError(data.message || "Invalid OTP. Please try again.");
+      );
+
+      console.log("VERIFY OTP RESPONSE", res.data);
+
+      // ✅ SAVE TOKEN
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("authToken", res.data.token);
+
+      // (optional) save user data
+      if (res.data.data) {
+        localStorage.setItem("user", JSON.stringify(res.data.data));
+        localStorage.setItem("userData", JSON.stringify(res.data.data));
       }
+
+      // Save user role to localStorage
+      const role = formData.role;
+      localStorage.setItem("userRole", role);
+
+      setSuccess("Login successful! Redirecting...");
+      setTimeout(() => {
+        if (role === "vendor") {
+          navigate("/vendor/dashboard");
+        } else {
+          navigate("/dashboard");
+        }
+      }, 1000);
     } catch (err) {
       setError(err.response?.data?.message || "Network error. Please check your connection and try again.");
     } finally {
