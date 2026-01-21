@@ -49,4 +49,3 @@ api.interceptors.response.use(
 );
 
 export default api;
-export { BASE_URL };
