@@ -2032,46 +2032,23 @@ const AddVendorModal = ({ isOpen, onClose }) => {
       }
 
       console.log("=== VERIFY OTP REQUEST ===");
-      console.log("URL:", `${BASE_URL}/api/vendor/verify-otp`);
+      console.log("URL:", "/vendor/verify-otp");
       console.log("Method:", "POST");
       console.log("Headers:", headers);
       console.log("Body:", JSON.stringify(requestBody));
       console.log("Auth Token:", authToken ? "Present" : "Missing");
 
-      const response = await fetch(
-        `${BASE_URL}/api/vendor/verify-otp`,
-        {
-          method: "POST",
-          headers: headers,
-          credentials: "include", // Include cookies if needed
-          body: JSON.stringify(requestBody),
-        }
-      );
+      const response = await api.post("/vendor/verify-otp", requestBody);
 
       console.log("=== VERIFY OTP RESPONSE ===");
       console.log("Status:", response.status);
       console.log("Status Text:", response.statusText);
-      console.log("OK:", response.ok);
+      console.log("OK:", response.status >= 200 && response.status < 300);
 
-      // Try to get response text first
-      const responseText = await response.text();
-      console.log("Response Text:", responseText);
+      const data = response.data;
+      console.log("Response Data:", data);
 
-      // Parse JSON
-      let data;
-      try {
-        data = JSON.parse(responseText);
-        console.log("Parsed Response Data:", data);
-      } catch (e) {
-        console.error("JSON Parse Error:", e);
-        console.error("Raw Response:", responseText);
-        setError(
-          `Server returned invalid response: ${responseText.substring(0, 100)}`
-        );
-        return;
-      }
-
-      if (response.ok && data.success) {
+      if (data.success) {
         setSuccess("OTP verified successfully! Contact number verified.");
         console.log("OTP verified successfully. Response:", data);
         console.log("Vendor should now have contactNumberVerified: true");
@@ -2108,7 +2085,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
       console.error("Error Type:", error.constructor.name);
       console.error("Error Message:", error.message);
       console.error("Error Stack:", error.stack);
-      setError(`Network error: ${error.message}`);
+      setError(error.response?.data?.message || `Network error: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
