@@ -110,18 +110,40 @@ const Header = () => {
               </div>
 
               <div className="py-2">
-                <button className="w-full px-4 py-2 text-sm flex items-center gap-3 hover:bg-gray-100">
+                {/* ✅ My Profile Button with Navigation */}
+                <button
+                  onClick={() => navigate("/profile")}
+                  className="w-full px-4 py-2 text-sm flex items-center gap-3 hover:bg-gray-100"
+                >
                   <FiUser /> My Profile
                 </button>
-                <button className="w-full px-4 py-2 text-sm flex items-center gap-3 hover:bg-gray-100">
+
+                {/* ✅ Settings Button with Navigation */}
+                <button
+                  onClick={() => navigate("/settings")}
+                  className="w-full px-4 py-2 text-sm flex items-center gap-3 hover:bg-gray-100"
+                >
                   <FiSettings /> Settings
                 </button>
-                <button className="w-full px-4 py-2 text-sm flex items-center gap-3 hover:bg-gray-100">
+
+                {/* ✅ Billing Button with Navigation */}
+                <button
+                  onClick={() => navigate("/billing")}
+                  className="w-full px-4 py-2 text-sm flex items-center gap-3 hover:bg-gray-100"
+                >
                   <FiCreditCard /> Billing
                 </button>
               </div>
 
-              <button className="w-full px-4 py-2 text-sm flex items-center gap-3 hover:bg-gray-100 border-t">
+              {/* ✅ Logout Button */}
+              <button
+                onClick={() => {
+                  // Add your logout logic here
+                  console.log("Logging out...");
+                  // navigate("/login");
+                }}
+                className="w-full px-4 py-2 text-sm flex items-center gap-3 hover:bg-gray-100 border-t"
+              >
                 <FiLogOut /> Logout
               </button>
             </div>

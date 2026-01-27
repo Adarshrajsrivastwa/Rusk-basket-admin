@@ -205,7 +205,9 @@ import VendorInventory from "./pages/VendorInventoryManagement/VendorInventory";
 import VendorOrder from "./pages/VendorOrderManagement/VendorOrder";
 import VendorAnalytics from "./pages/VendorAnalytics/VendorAnalytics";
 import RiderJobs from "./pages/RiderJobsManagement/RiderJobs";
-import Jobs from "./pages/AdminRiderJobsManagement/Jobs.jsx";
+import Jobs from "./pages/AdminRiderJobsManagement/Jobs";
+import UpdateProfile from "./pages/VendorUpdateProfile/UpdateProfile";
+import MyProfile from "./pages/HeaderMyProfile/MyProfile.jsx";
 function AppContent() {
   const [showPopup, setShowPopup] = useState(false);
   const location = useLocation();
@@ -350,6 +352,14 @@ function AppContent() {
           }
         />
         <Route
+          path="/profile"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "vendor"]}>
+              <MyProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/vendor/dashboard"
           element={
             <ProtectedRoute allowedRoles={["vendor"]}>
@@ -375,6 +385,14 @@ function AppContent() {
         />
 
         <Route path="/vendor-support" element={<VendorSupport />} />
+        <Route
+          path="/vendor/update-profile"
+          element={
+            <ProtectedRoute allowedRoles={["vendor"]}>
+              <UpdateProfile />
+            </ProtectedRoute>
+          }
+        />
 
         <Route path="/category/all" element={<AllCategory />} />
         <Route path="/category/view-all/:id" element={<AllCategoryView />} />

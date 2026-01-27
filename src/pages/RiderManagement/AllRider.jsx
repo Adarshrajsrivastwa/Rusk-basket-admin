@@ -21,7 +21,6 @@
 //   Loader2,
 // } from "lucide-react";
 
-
 // const RiderManagement = () => {
 //   const [riders, setRiders] = useState([]);
 //   const [loading, setLoading] = useState(true);
@@ -1108,7 +1107,7 @@ const RiderManagement = () => {
         alert(
           `Rider ${
             action === "approved" ? "Approved" : "Rejected"
-          } Successfully!`
+          } Successfully!`,
         );
         setSelectedRider(null);
         fetchRiders(); // Refresh the list
@@ -1163,7 +1162,8 @@ const RiderManagement = () => {
     pending: riders.filter((r) => r.approvalStatus === "pending").length,
     approved: riders.filter((r) => r.approvalStatus === "approved").length,
     rejected: riders.filter(
-      (r) => r.approvalStatus === "rejected" || r.approvalStatus === "suspended"
+      (r) =>
+        r.approvalStatus === "rejected" || r.approvalStatus === "suspended",
     ).length,
   };
 
@@ -1367,7 +1367,7 @@ const RiderManagement = () => {
                             </h3>
                             <span
                               className={`px-4 py-1.5 rounded-full text-sm font-semibold ${getStatusColor(
-                                rider.approvalStatus
+                                rider.approvalStatus,
                               )}`}
                             >
                               {getStatusText(rider.approvalStatus)}
@@ -1647,7 +1647,7 @@ const RiderManagement = () => {
                           className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
                           onClick={() =>
                             setImageModal(
-                              selectedRider.documents.aadharCard.photo.url
+                              selectedRider.documents.aadharCard.photo.url,
                             )
                           }
                         />
@@ -1665,7 +1665,7 @@ const RiderManagement = () => {
                           className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
                           onClick={() =>
                             setImageModal(
-                              selectedRider.documents.panCard.front.url
+                              selectedRider.documents.panCard.front.url,
                             )
                           }
                         />
@@ -1683,7 +1683,7 @@ const RiderManagement = () => {
                           className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
                           onClick={() =>
                             setImageModal(
-                              selectedRider.documents.panCard.back.url
+                              selectedRider.documents.panCard.back.url,
                             )
                           }
                         />
@@ -1701,7 +1701,7 @@ const RiderManagement = () => {
                           className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
                           onClick={() =>
                             setImageModal(
-                              selectedRider.documents.drivingLicense.front.url
+                              selectedRider.documents.drivingLicense.front.url,
                             )
                           }
                         />
@@ -1719,7 +1719,7 @@ const RiderManagement = () => {
                           className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
                           onClick={() =>
                             setImageModal(
-                              selectedRider.documents.drivingLicense.back.url
+                              selectedRider.documents.drivingLicense.back.url,
                             )
                           }
                         />
@@ -1799,7 +1799,8 @@ const RiderManagement = () => {
                         className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
                         onClick={() =>
                           setImageModal(
-                            selectedRider.documents.bankDetails.cancelCheque.url
+                            selectedRider.documents.bankDetails.cancelCheque
+                              .url,
                           )
                         }
                       />
@@ -1883,7 +1884,7 @@ const RiderManagement = () => {
                   <div className="pt-6 border-t-2 border-gray-200">
                     <div
                       className={`text-center py-4 rounded-xl font-semibold text-lg ${getStatusColor(
-                        selectedRider.approvalStatus
+                        selectedRider.approvalStatus,
                       )}`}
                     >
                       ✓ Application{" "}

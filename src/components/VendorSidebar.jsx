@@ -328,6 +328,11 @@ const VendorSidebar = () => {
       path: "/vendor/dashboard",
     },
     {
+      name: "Update Profile",
+      icon: <User size={16} />,
+      path: "/vendor/update-profile",
+    },
+    {
       name: "Product Management",
       icon: <Package size={16} />,
       subItems: [{ name: "All Products", path: "/vendor/products" }],
