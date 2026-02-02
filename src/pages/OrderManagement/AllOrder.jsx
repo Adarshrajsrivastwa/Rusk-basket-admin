@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Download, Eye, Truck } from "lucide-react";
+import { BASE_URL } from "../../api/api";
+
+const API_BASE_URL = `${BASE_URL}/api`;
 
 const AllOrder = () => {
   const navigate = useNavigate();
@@ -16,137 +19,131 @@ const AllOrder = () => {
   const [activeTab, setActiveTab] = useState(tabFromQuery);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const itemsPerPage = 8;
-
   const [orders, setOrders] = useState([]);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const itemsPerPage = 10;
 
-  // Simulate API call
-  useEffect(() => {
+  // Utility function to get auth token
+  const getAuthToken = () => {
+    return localStorage.getItem("token") || localStorage.getItem("authToken");
+  };
+
+  // Fetch orders from API
+  const fetchOrders = async () => {
     setLoading(true);
-    const timer = setTimeout(() => {
-      setOrders([
+    try {
+      const token = getAuthToken();
+
+      if (!token) {
+        console.error("No auth token found");
+        alert("Please login to view orders");
+        setLoading(false);
+        return;
+      }
+
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      };
+
+      // Build query parameters
+      const params = new URLSearchParams();
+      params.append("page", currentPage);
+      params.append("limit", itemsPerPage);
+
+      // Add status filter based on active tab
+      if (activeTab !== "all") {
+        params.append("status", activeTab);
+      }
+
+      // Add search query if exists
+      if (searchQuery.trim()) {
+        params.append("search", searchQuery.trim());
+      }
+
+      console.log("Fetching orders with params:", params.toString());
+
+      const response = await fetch(
+        `${API_BASE_URL}/admin/orders?${params.toString()}`,
         {
-          id: "RUSH8038403",
-          date: "23 Aug 2025",
-          vendor: "Abnish Kumar",
-          user: "NK Yadav",
-          cartValue: 5222,
-          payment: "COD",
-          status: "New Order",
+          method: "GET",
+          headers: headers,
+          credentials: "include",
         },
-        {
-          id: "RUSH09401",
-          date: "27 Sep 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 124,
-          payment: "COD",
-          status: "New Order",
-        },
-        {
-          id: "RUSH09402",
-          date: "28 Sep 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 230,
-          payment: "COD",
-          status: "Assigned",
-        },
-        {
-          id: "RUSH09403",
-          date: "29 Sep 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 450,
-          payment: "COD",
-          status: "Delivered",
-        },
-        {
-          id: "RUSH09404",
-          date: "30 Sep 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 350,
-          payment: "COD",
-          status: "Cancel",
-        },
-        {
-          id: "RUSH09405",
-          date: "01 Oct 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 400,
-          payment: "COD",
-          status: "New Order",
-        },
-        {
-          id: "RUSH09406",
-          date: "02 Oct 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 280,
-          payment: "COD",
-          status: "Assigned",
-        },
-        {
-          id: "RUSH09407",
-          date: "03 Oct 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 500,
-          payment: "COD",
-          status: "Delivered",
-        },
-        {
-          id: "RUSH09408",
-          date: "04 Oct 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 320,
-          payment: "COD",
-          status: "Cancel",
-        },
-        {
-          id: "RUSH09409",
-          date: "05 Oct 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 150,
-          payment: "COD",
-          status: "New Order",
-        },
-        {
-          id: "RUSH09410",
-          date: "06 Oct 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 270,
-          payment: "COD",
-          status: "Assigned",
-        },
-        {
-          id: "RUSH09411",
-          date: "07 Oct 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 480,
-          payment: "COD",
-          status: "Delivered",
-        },
-        {
-          id: "RUSH09412",
-          date: "08 Oct 2025",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          cartValue: 360,
-          payment: "COD",
-          status: "Cancel",
-        },
-      ]);
+      );
+
+      console.log("Fetch response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Fetch error response:", errorText);
+        throw new Error(`Failed to fetch orders: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      console.log("Fetched orders result:", result);
+
+      if (result.success && result.orders && Array.isArray(result.orders)) {
+        console.log("Number of orders fetched:", result.orders.length);
+
+        // Transform API data to match component structure
+        const transformedOrders = result.orders.map((order) => ({
+          id: order._id,
+          orderId: order.orderNumber || order.orderId,
+          date: order.date || "N/A",
+          vendor: order.vendor || "Unknown Vendor",
+          user: order.userName || "N/A",
+          cartValue: order.cartValue || 0,
+          payment: order.paymentStatus || "pending",
+          status: formatStatus(order.status),
+          rawStatus: order.status, // Keep original status for filtering
+        }));
+
+        console.log("Transformed orders:", transformedOrders);
+        setOrders(transformedOrders);
+        setTotalOrders(result.pagination?.total || result.count || 0);
+        setTotalPages(result.pagination?.pages || 1);
+      } else {
+        console.error("Invalid API response format:", result);
+        setOrders([]);
+        setTotalOrders(0);
+        setTotalPages(1);
+      }
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      console.error("Error details:", error.message);
+      alert("Failed to load orders. Please check console for details.");
+      setOrders([]);
+      setTotalOrders(0);
+      setTotalPages(1);
+    } finally {
       setLoading(false);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, []);
+    }
+  };
+
+  // Format status for display
+  const formatStatus = (status) => {
+    if (!status) return "Pending";
+
+    const statusMap = {
+      pending: "New Order",
+      ready: "Ready",
+      assigned: "Assigned",
+      delivered: "Delivered",
+      cancelled: "Cancel",
+      cancel: "Cancel",
+    };
+
+    return statusMap[status.toLowerCase()] || status;
+  };
+
+  // Fetch orders when component mounts or dependencies change
+  useEffect(() => {
+    fetchOrders();
+  }, [currentPage, activeTab]);
 
   // Scroll to highlighted order after loading
   useEffect(() => {
@@ -168,28 +165,18 @@ const AllOrder = () => {
 
   const statusColors = {
     "New Order": "text-blue-600 font-semibold",
+    Ready: "text-purple-600 font-semibold",
     Assigned: "text-yellow-600 font-semibold",
     Delivered: "text-green-600 font-semibold",
     Cancel: "text-red-600 font-semibold",
+    Pending: "text-gray-600 font-semibold",
   };
 
-  // Filter orders based on active tab
-  const filteredOrders =
-    activeTab === "all"
-      ? orders
-      : orders.filter((order) => {
-          if (activeTab === "new") return order.status === "New Order";
-          if (activeTab === "assigned") return order.status === "Assigned";
-          if (activeTab === "delivered") return order.status === "Delivered";
-          if (activeTab === "cancel") return order.status === "Cancel";
-          return true;
-        });
-
-  // Pagination
-  const indexOfLast = currentPage * itemsPerPage;
-  const indexOfFirst = indexOfLast - itemsPerPage;
-  const currentOrders = filteredOrders.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  // Handle search
+  const handleSearch = () => {
+    setCurrentPage(1);
+    fetchOrders();
+  };
 
   // Skeleton Loader
   const TableSkeleton = () => (
@@ -230,17 +217,32 @@ const AllOrder = () => {
     navigate(`/orders/all?tab=${tabKey}`);
   };
 
+  // Handle download invoice
+  const handleDownloadInvoice = (orderId) => {
+    console.log("Download invoice for order:", orderId);
+    // TODO: Implement invoice download
+    alert("Invoice download feature coming soon!");
+  };
+
+  // Handle assign delivery
+  const handleAssignDelivery = (orderId) => {
+    console.log("Assign delivery for order:", orderId);
+    // TODO: Implement delivery assignment
+    alert("Delivery assignment feature coming soon!");
+  };
+
   return (
     <DashboardLayout>
-      {/* Tabs + Search + Today */}
+      {/* Tabs + Search + Calendar */}
       <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-2 w-full pl-4 max-w-[99%] mx-auto mt-0 mb-2">
         <div className="flex gap-4 overflow-x-auto pb-2 lg:pb-0">
           {[
             { key: "all", label: "All" },
-            { key: "new", label: "New Order" },
+            { key: "pending", label: "New Order" },
+            { key: "ready", label: "Ready" },
             { key: "assigned", label: "Assigned" },
             { key: "delivered", label: "Delivered" },
-            { key: "cancel", label: "Cancel" },
+            { key: "cancelled", label: "Cancel" },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -263,8 +265,14 @@ const AllOrder = () => {
               type="text"
               placeholder="Search Order by Order Id, Products, User name, Tag"
               className="flex-1 px-4 text-sm focus:outline-none h-full"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && handleSearch()}
             />
-            <button className="bg-[#FF7B1D] hover:bg-orange-600 text-white px-4 sm:px-6 h-full text-sm">
+            <button
+              onClick={handleSearch}
+              className="bg-[#FF7B1D] hover:bg-orange-600 text-white px-4 sm:px-6 h-full text-sm"
+            >
               Search
             </button>
           </div>
@@ -272,7 +280,7 @@ const AllOrder = () => {
 
         <div className="mt-3 sm:mt-0">
           <button className="bg-black hover:bg-gray-800 text-white w-44 sm:w-44 px-6 py-2 rounded-sm text-sm whitespace-nowrap">
-            Calender
+            Calendar
           </button>
         </div>
       </div>
@@ -296,42 +304,53 @@ const AllOrder = () => {
 
           {loading ? (
             <TableSkeleton />
-          ) : filteredOrders.length === 0 ? (
+          ) : orders.length === 0 ? (
             <EmptyState />
           ) : (
             <tbody>
-              {currentOrders.map((order, idx) => {
+              {orders.map((order, idx) => {
                 const isHighlighted = order.id === highlightOrderId;
                 return (
                   <tr
-                    key={idx}
+                    key={order.id}
                     ref={isHighlighted ? highlightRef : null}
                     className={`shadow-sm rounded-sm hover:bg-gray-50 transition border-b-4 border-gray-200 ${
                       isHighlighted ? "bg-yellow-100 animate-pulse" : "bg-white"
                     }`}
                   >
-                    <td className="p-3">{indexOfFirst + idx + 1}</td>
-                    <td className="p-3 font-semibold">{order.id}</td>
+                    <td className="p-3">
+                      {(currentPage - 1) * itemsPerPage + idx + 1}
+                    </td>
+                    <td className="p-3 font-semibold">{order.orderId}</td>
                     <td className="p-3">{order.date}</td>
                     <td className="p-3">{order.vendor}</td>
                     <td className="p-3">{order.user}</td>
                     <td className="p-3">₹{order.cartValue}</td>
-                    <td className="p-3">{order.payment}</td>
+                    <td className="p-3 capitalize">{order.payment}</td>
                     <td className={`p-3 ${statusColors[order.status]}`}>
                       {order.status}
                     </td>
                     <td className="p-3">
                       <div className="flex gap-2 justify-end">
-                        <button className="text-orange-600 hover:text-blue-700">
+                        <button
+                          onClick={() => handleDownloadInvoice(order.id)}
+                          className="text-orange-600 hover:text-blue-700"
+                          title="Download Invoice"
+                        >
                           <Download className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => navigate(`/order/${order.id}`)}
                           className="text-orange-600 hover:text-blue-700"
+                          title="View Order Details"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button className="text-orange-600 hover:text-blue-700">
+                        <button
+                          onClick={() => handleAssignDelivery(order.id)}
+                          className="text-orange-600 hover:text-blue-700"
+                          title="Assign Delivery"
+                        >
                           <Truck className="w-4 h-4" />
                         </button>
                       </div>
@@ -345,33 +364,70 @@ const AllOrder = () => {
       </div>
 
       {/* Pagination */}
-      {!loading && filteredOrders.length > 0 && (
-        <div className="flex justify-end items-center gap-4 mt-6 max-w-[98%] mx-auto">
+      {!loading && orders.length > 0 && totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row justify-between sm:justify-end items-center gap-4 sm:gap-6 mt-6 max-w-[98%] mx-auto mb-6 px-4 sm:px-0">
           <button
             onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            className="bg-[#FF7B1D] hover:bg-orange-600 text-white px-10 py-3 text-sm font-medium rounded-0"
+            className="bg-[#FF7B1D] hover:bg-orange-600 text-white px-6 sm:px-10 py-2 sm:py-3 text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+            disabled={currentPage === 1}
           >
             Back
           </button>
-          <div className="flex gap-2 text-sm text-black font-medium flex-wrap items-center">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`px-3 py-1 rounded ${
-                  currentPage === page ? "text-orange-600 font-semibold" : ""
-                }`}
-              >
-                {page}
-              </button>
-            ))}
+
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-black font-medium overflow-x-auto">
+            {(() => {
+              const pages = [];
+              const visiblePages = new Set([
+                1,
+                2,
+                totalPages - 1,
+                totalPages,
+                currentPage - 1,
+                currentPage,
+                currentPage + 1,
+              ]);
+              for (let i = 1; i <= totalPages; i++) {
+                if (visiblePages.has(i)) pages.push(i);
+                else if (pages[pages.length - 1] !== "...") pages.push("...");
+              }
+              return pages.map((page, idx) =>
+                page === "..." ? (
+                  <span key={idx} className="px-1 text-black select-none">
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-2 sm:px-3 py-1 ${
+                      currentPage === page
+                        ? "text-orange-600 font-semibold"
+                        : ""
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ),
+              );
+            })()}
           </div>
+
           <button
             onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-            className="bg-[#247606] hover:bg-green-700 text-white px-10 py-3 text-sm font-medium rounded-0"
+            className="bg-[#247606] hover:bg-green-700 text-white px-6 sm:px-10 py-2 sm:py-3 text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+            disabled={currentPage === totalPages}
           >
             Next
           </button>
+        </div>
+      )}
+
+      {/* Summary Info */}
+      {!loading && orders.length > 0 && (
+        <div className="text-center text-sm text-gray-600 mt-2 mb-4">
+          Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+          {Math.min(currentPage * itemsPerPage, totalOrders)} of {totalOrders}{" "}
+          orders
         </div>
       )}
     </DashboardLayout>

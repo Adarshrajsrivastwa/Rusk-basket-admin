@@ -25,6 +25,11 @@ const VendorDetails = () => {
     const fetchVendor = async () => {
       try {
         setLoading(true);
+        setError(null);
+
+        // Log the request details for debugging
+        console.log("Fetching vendor with ID:", id);
+        console.log("Request URL:", `/vendor/${id}`);
 
         const response = await api.get(`/vendor/${id}`);
 
@@ -32,13 +37,31 @@ const VendorDetails = () => {
 
         if (result.success) {
           setVendor(result.data);
+          console.log("Vendor data loaded successfully:", result.data);
         } else {
           setError(result.message || "Failed to fetch vendor data");
           console.error("Failed to fetch vendor:", result.message);
         }
       } catch (error) {
         console.error("Error fetching vendor:", error);
-        setError(error.response?.data?.message || "Error fetching vendor data");
+        console.error("Error response:", error.response);
+
+        // Handle different error scenarios
+        if (error.response?.status === 404) {
+          setError("Vendor not found. Please check the vendor ID.");
+        } else if (error.response?.status === 401) {
+          setError("Unauthorized. Please log in again.");
+        } else if (error.response?.status === 403) {
+          setError(
+            "Access denied. You don't have permission to view this vendor.",
+          );
+        } else {
+          setError(
+            error.response?.data?.message ||
+              error.message ||
+              "Error fetching vendor data. Please try again.",
+          );
+        }
       } finally {
         setLoading(false);
       }
@@ -46,6 +69,9 @@ const VendorDetails = () => {
 
     if (id) {
       fetchVendor();
+    } else {
+      setError("No vendor ID provided");
+      setLoading(false);
     }
   }, [id]);
 
@@ -348,7 +374,9 @@ const VendorDetails = () => {
                   <p className="text-gray-500 font-semibold text-xs sm:text-sm">
                     Status
                   </p>
-                  <p className={`text-lg font-bold ${vendor.isActive ? "text-green-500" : "text-red-500"}`}>
+                  <p
+                    className={`text-lg font-bold ${vendor.isActive ? "text-green-500" : "text-red-500"}`}
+                  >
                     {vendor.isActive ? "Active" : "Inactive"}
                   </p>
                 </div>
@@ -385,11 +413,13 @@ const VendorDetails = () => {
             <h2 className="font-semibold text-gray-700 mb-2">Store Details</h2>
             <div className="border border-orange-500 rounded-lg shadow p-4 bg-[#FEF0E9] text-sm space-y-1">
               <p>
-                <strong>Lat :</strong> {vendor.storeAddress?.latitude || "N/A"} &nbsp;{" "}
-                <strong>Long :</strong> {vendor.storeAddress?.longitude || "N/A"}
+                <strong>Lat :</strong> {vendor.storeAddress?.latitude || "N/A"}{" "}
+                &nbsp; <strong>Long :</strong>{" "}
+                {vendor.storeAddress?.longitude || "N/A"}
               </p>
               <p>
-                <strong>Authorized Person :</strong> {vendor.vendorName || "N/A"}
+                <strong>Authorized Person :</strong>{" "}
+                {vendor.vendorName || "N/A"}
               </p>
               <p>
                 <strong>Contact :</strong> {vendor.contactNumber || "N/A"}
@@ -398,7 +428,8 @@ const VendorDetails = () => {
                 )}
               </p>
               <p>
-                <strong>Alt Contact :</strong> {vendor.altContactNumber || "N/A"}
+                <strong>Alt Contact :</strong>{" "}
+                {vendor.altContactNumber || "N/A"}
               </p>
               <p>
                 <strong>Email :</strong> {vendor.email || "N/A"}
@@ -410,10 +441,15 @@ const VendorDetails = () => {
                 <strong>Age :</strong> {vendor.age || "N/A"}
               </p>
               <p>
-                <strong>Gender :</strong> {vendor.gender ? vendor.gender.charAt(0).toUpperCase() + vendor.gender.slice(1) : "N/A"}
+                <strong>Gender :</strong>{" "}
+                {vendor.gender
+                  ? vendor.gender.charAt(0).toUpperCase() +
+                    vendor.gender.slice(1)
+                  : "N/A"}
               </p>
               <p>
-                <strong>Service Radius :</strong> {vendor.serviceRadius || "N/A"} km
+                <strong>Service Radius :</strong>{" "}
+                {vendor.serviceRadius || "N/A"} km
               </p>
             </div>
           </div>
@@ -423,10 +459,12 @@ const VendorDetails = () => {
             <h2 className="font-semibold text-gray-700 mb-2">Store Address</h2>
             <div className="border rounded-lg shadow p-4 bg-[#9797FD] text-sm space-y-1">
               <p>
-                <strong>Address 1 :</strong> {vendor.storeAddress?.line1 || "N/A"}
+                <strong>Address 1 :</strong>{" "}
+                {vendor.storeAddress?.line1 || "N/A"}
               </p>
               <p>
-                <strong>Address 2 :</strong> {vendor.storeAddress?.line2 || "N/A"}
+                <strong>Address 2 :</strong>{" "}
+                {vendor.storeAddress?.line2 || "N/A"}
               </p>
               <p>
                 <strong>City :</strong> {vendor.storeAddress?.city || "N/A"}
@@ -451,10 +489,12 @@ const VendorDetails = () => {
                 <strong>Username :</strong> {vendor?.username || "N/A"}
               </p>
               <p>
-                <strong>Password :</strong> {vendor?.password ? "••••••••" : "N/A"}
+                <strong>Password :</strong>{" "}
+                {vendor?.password ? "••••••••" : "N/A"}
               </p>
               <p>
-                <strong>Secret KEY :</strong> {vendor?.secretKey ? "•••••" : "N/A"}
+                <strong>Secret KEY :</strong>{" "}
+                {vendor?.secretKey ? "•••••" : "N/A"}
               </p>
 
               {/* Centered Large Button */}
@@ -500,14 +540,18 @@ const VendorDetails = () => {
                 <h3 className="text-sm font-semibold text-gray-800">
                   {vendor.vendorName || "N/A"}
                 </h3>
-                <p className="text-xs text-gray-600">{vendor.storeName || "Store"}</p>
+                <p className="text-xs text-gray-600">
+                  {vendor.storeName || "Store"}
+                </p>
               </div>
             </div>
 
             {/* Right: Status */}
             <div className="text-right mr-2">
               <p className="text-xs text-gray-500 font-semibold">Status</p>
-              <p className={`text-lg font-bold ${vendor.isActive ? "text-green-600" : "text-red-600"}`}>
+              <p
+                className={`text-lg font-bold ${vendor.isActive ? "text-green-600" : "text-red-600"}`}
+              >
                 {vendor.isActive ? "Active" : "Inactive"}
               </p>
             </div>
@@ -675,14 +719,18 @@ const VendorDetails = () => {
                 <h3 className="text-sm font-semibold text-gray-800">
                   {vendor.vendorName || "N/A"}
                 </h3>
-                <p className="text-xs text-gray-600">{vendor.storeName || "Store"}</p>
+                <p className="text-xs text-gray-600">
+                  {vendor.storeName || "Store"}
+                </p>
               </div>
             </div>
 
             {/* Right: Status */}
             <div className="text-right mr-2">
               <p className="text-xs text-gray-500 font-semibold">Status</p>
-              <p className={`text-lg font-bold ${vendor.isActive ? "text-green-600" : "text-red-600"}`}>
+              <p
+                className={`text-lg font-bold ${vendor.isActive ? "text-green-600" : "text-red-600"}`}
+              >
                 {vendor.isActive ? "Active" : "Inactive"}
               </p>
             </div>

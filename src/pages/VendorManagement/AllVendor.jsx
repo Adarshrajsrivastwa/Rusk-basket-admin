@@ -401,13 +401,16 @@ const AllVendor = () => {
   const fetchVendors = async (page = 1, limit = 10) => {
     try {
       setLoading(true);
-      const authToken =
-        localStorage.getItem("authToken") || localStorage.getItem("token");
 
       console.log("Fetching vendors...");
       console.log("Page:", page, "Limit:", limit);
 
-      const response = await api.get(`/vendor?page=${page}&limit=${limit}`);
+      const response = await api.get(`/api/vendor`, {
+        params: {
+          page: page,
+          limit: limit,
+        },
+      });
 
       console.log("Fetch vendors response status:", response.status);
 
@@ -422,7 +425,7 @@ const AllVendor = () => {
             pages: 1,
             page: page,
             limit: limit,
-          }
+          },
         );
       } else {
         console.error("Failed to fetch vendors:", result.message);
@@ -455,7 +458,7 @@ const AllVendor = () => {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this vendor?")) {
       try {
-        const response = await api.delete(`/vendor/${id}`);
+        const response = await api.delete(`/api/vendor/${id}`);
 
         const result = response.data;
 
@@ -513,7 +516,7 @@ const AllVendor = () => {
           key={i}
           className="border-b border-gray-200 animate-pulse bg-white rounded-sm"
         >
-          {Array.from({ length: 8 }).map((__, j) => (
+          {Array.from({ length: 9 }).map((__, j) => (
             <td key={j} className="p-3">
               <div className="h-4 bg-gray-200 rounded w-[80%]" />
             </td>
@@ -528,7 +531,7 @@ const AllVendor = () => {
     <tbody>
       <tr>
         <td
-          colSpan="8"
+          colSpan="9"
           className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
         >
           No vendors found.
@@ -550,7 +553,7 @@ const AllVendor = () => {
                 onClick={() => {
                   setActiveTab(tab);
                 }}
-                className={`px-4 py-1 border rounded text-xs sm:text-sm whitespace-nowrap ${
+                className={`px-4 py-1 border rounded text-xs sm:text-sm whitespace-nowrap transition-colors ${
                   activeTab === tab
                     ? "bg-[#FF7B1D] text-white border-orange-500"
                     : "border-gray-400 text-gray-600 hover:bg-gray-100"
@@ -559,8 +562,8 @@ const AllVendor = () => {
                 {tab === "all"
                   ? "All Vendor"
                   : tab === "active"
-                  ? "Active"
-                  : "Suspended"}
+                    ? "Active"
+                    : "Suspended"}
               </button>
             ))}
           </div>
@@ -574,7 +577,7 @@ const AllVendor = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <button className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-sm px-3 sm:px-6 h-full">
+            <button className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-sm px-3 sm:px-6 h-full transition-colors">
               Search
             </button>
           </div>
@@ -584,7 +587,7 @@ const AllVendor = () => {
         <div className="w-full md:w-auto flex justify-start md:justify-end mt-2 md:mt-0">
           <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-black text-white w-52 sm:w-60 px-4 sm:px-5 py-2 rounded-sm shadow hover:bg-orange-600 text-xs sm:text-sm flex items-center justify-center whitespace-nowrap"
+            className="bg-black text-white w-52 sm:w-60 px-4 sm:px-5 py-2 rounded-sm shadow hover:bg-orange-600 text-xs sm:text-sm flex items-center justify-center whitespace-nowrap transition-colors"
           >
             + Add Vendor
           </button>
@@ -619,8 +622,12 @@ const AllVendor = () => {
                   key={vendor._id}
                   className="bg-white shadow-sm hover:bg-gray-50 transition border-b-4 border-gray-200"
                 >
-                  <td className="p-3">{idx + 1}</td>
-                  <td className="p-3">{vendor.storeId || "N/A"}</td>
+                  <td className="p-3">
+                    {(currentPage - 1) * pagination.limit + idx + 1}
+                  </td>
+                  <td className="p-3 font-mono text-xs">
+                    {vendor.storeId || "N/A"}
+                  </td>
                   <td className="p-3">{vendor.vendorName || "N/A"}</td>
                   <td className="p-3">{vendor.storeName || "N/A"}</td>
                   <td className="p-3">{vendor.storeAddress?.city || "N/A"}</td>
@@ -635,21 +642,21 @@ const AllVendor = () => {
                     <div className="flex justify-end gap-3 text-orange-600">
                       <button
                         onClick={() => handleEdit(vendor)}
-                        className="hover:text-blue-700"
+                        className="hover:text-blue-700 transition-colors"
                         title="Edit"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(vendor._id)}
-                        className="hover:text-red-700"
+                        className="hover:text-red-700 transition-colors"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleView(vendor)}
-                        className="hover:text-green-700"
+                        className="hover:text-green-700 transition-colors"
                         title="View"
                       >
                         <Eye className="w-4 h-4" />
@@ -658,7 +665,7 @@ const AllVendor = () => {
                         onClick={() =>
                           navigate(`/vendors/${vendor._id}/settings`)
                         }
-                        className="hover:text-blue-700"
+                        className="hover:text-blue-700 transition-colors"
                         title="Settings"
                       >
                         <Settings className="w-4 h-4" />
@@ -674,11 +681,11 @@ const AllVendor = () => {
 
       {/* Pagination */}
       {!loading && filteredVendors.length > 0 && pagination.pages > 1 && (
-        <div className="flex justify-end items-center gap-6 mt-8 max-w-[95%] mx-auto">
+        <div className="flex justify-end items-center gap-6 mt-8 max-w-[95%] mx-auto pl-8">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
-            className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
             Back
           </button>
@@ -708,7 +715,7 @@ const AllVendor = () => {
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`px-1 ${
+                    className={`px-1 hover:text-orange-500 transition-colors ${
                       currentPage === page
                         ? "text-orange-600 font-semibold"
                         : ""
@@ -716,7 +723,7 @@ const AllVendor = () => {
                   >
                     {page}
                   </button>
-                )
+                ),
               );
             })()}
           </div>
@@ -725,7 +732,7 @@ const AllVendor = () => {
               setCurrentPage((prev) => Math.min(prev + 1, pagination.pages))
             }
             disabled={currentPage === pagination.pages}
-            className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
             Next
           </button>
@@ -734,7 +741,7 @@ const AllVendor = () => {
 
       {/* Pagination Info */}
       {!loading && filteredVendors.length > 0 && (
-        <div className="text-center text-sm text-gray-600 mt-4">
+        <div className="text-center text-sm text-gray-600 mt-4 mb-6">
           Showing {filteredVendors.length} of {pagination.total} vendors
         </div>
       )}

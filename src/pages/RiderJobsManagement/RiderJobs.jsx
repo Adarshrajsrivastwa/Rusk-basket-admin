@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import {
   Plus,
@@ -9,12 +10,14 @@ import {
   Briefcase,
   X,
   Search,
+  Eye,
 } from "lucide-react";
 import { BASE_URL } from "../../api/api";
 
 const API_BASE_URL = `${BASE_URL}/api`;
 
 const RiderJobManagement = () => {
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -133,6 +136,11 @@ const RiderJobManagement = () => {
     setIsModalOpen(true);
   };
 
+  // Navigate to view applications
+  const handleViewApplications = (jobId) => {
+    navigate(`/rider-job-applications/${jobId}`);
+  };
+
   // Submit form (Create or Update)
   const handleSubmit = async () => {
     // Validation
@@ -222,7 +230,7 @@ const RiderJobManagement = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen  p-0 ml-6">
+      <div className="min-h-screen p-0 ml-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
@@ -364,6 +372,13 @@ const RiderJobManagement = () => {
                       </div>
 
                       <div className="flex gap-2 ml-4">
+                        <button
+                          onClick={() => handleViewApplications(job._id)}
+                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                          title="View Applications"
+                        >
+                          <Eye size={18} />
+                        </button>
                         <button
                           onClick={() => handleEdit(job)}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"

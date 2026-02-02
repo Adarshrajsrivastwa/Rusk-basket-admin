@@ -438,7 +438,7 @@ const Category = () => {
       setCategories(transformedCategories);
       console.log(
         "Categories fetched successfully:",
-        transformedCategories.length
+        transformedCategories.length,
       );
     } catch (err) {
       console.error("Error fetching categories:", err);
@@ -499,11 +499,11 @@ const Category = () => {
     return () => {
       window.removeEventListener(
         "subcategoryCreated",
-        handleSubCategoryCreated
+        handleSubCategoryCreated,
       );
       window.removeEventListener(
         "subcategoryDeleted",
-        handleSubCategoryDeleted
+        handleSubCategoryDeleted,
       );
       console.log("Event listeners removed");
     };
@@ -579,7 +579,7 @@ const Category = () => {
       [cat.category, cat.id, cat.products, cat.subCategory]
         .join(" ")
         .toLowerCase()
-        .includes(searchQuery.toLowerCase())
+        .includes(searchQuery.toLowerCase()),
     );
 
   // Pagination
@@ -814,7 +814,7 @@ const Category = () => {
                   >
                     {page}
                   </button>
-                )
+                ),
               );
             })()}
           </div>

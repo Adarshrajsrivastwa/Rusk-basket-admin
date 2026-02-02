@@ -205,6 +205,7 @@ import VendorInventory from "./pages/VendorInventoryManagement/VendorInventory";
 import VendorOrder from "./pages/VendorOrderManagement/VendorOrder";
 import VendorAnalytics from "./pages/VendorAnalytics/VendorAnalytics";
 import RiderJobs from "./pages/RiderJobsManagement/RiderJobs";
+import RiderJobApplications from "./pages/RiderJobManagement/RiderJobApplications.jsx";
 import Jobs from "./pages/AdminRiderJobsManagement/Jobs";
 import UpdateProfile from "./pages/VendorUpdateProfile/UpdateProfile";
 import MyProfile from "./pages/HeaderMyProfile/MyProfile.jsx";
@@ -277,6 +278,12 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/rider-job-applications/:jobId"
+          element={<RiderJobApplications />}
+        />
+
         <Route
           path="/products/trending"
           element={

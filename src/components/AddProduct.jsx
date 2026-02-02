@@ -272,7 +272,6 @@
 // import React, { useState, useEffect } from "react";
 // import { Upload, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 
-
 // export default function AddProductPopup({ isOpen, onClose, onSuccess }) {
 //   const [formData, setFormData] = useState({
 //     productName: "",
@@ -1006,11 +1005,8 @@ export default function AddProductPopup({
   const [subCategories, setSubCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  // Utility function to get auth token
-  const getAuthToken = () => {
-    return localStorage.getItem("token") || localStorage.getItem("authToken");
-  };
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [subCategoriesLoading, setSubCategoriesLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -1018,7 +1014,7 @@ export default function AddProductPopup({
         "Modal opened. isEditMode:",
         isEditMode,
         "editingProduct:",
-        editingProduct
+        editingProduct,
       );
       fetchCategories();
 
@@ -1116,38 +1112,51 @@ export default function AddProductPopup({
   }, [formData.category]);
 
   const fetchCategories = async () => {
+    setCategoriesLoading(true);
     try {
-      const token = getAuthToken();
+      const response = await api.get("/api/category");
 
-      const response = await api.get("/category");
-
-      const result = response.data;
-      if (result.success) {
-        setCategories(result.data);
+      if (response.data.success) {
+        // Use the API response directly - it already has the correct structure
+        setCategories(response.data.data);
+        console.log(
+          "Categories fetched successfully:",
+          response.data.data.length,
+        );
       } else {
-        throw new Error(result.message || "Failed to load categories");
+        throw new Error(response.data.message || "Failed to load categories");
       }
     } catch (err) {
       console.error("Error fetching categories:", err);
       setError("Failed to load categories");
+    } finally {
+      setCategoriesLoading(false);
     }
   };
 
   const fetchSubCategories = async (categoryId) => {
+    setSubCategoriesLoading(true);
     try {
-      const token = getAuthToken();
+      const response = await api.get(
+        `/api/subcategory/by-category/${categoryId}`,
+      );
 
-      const response = await api.get(`/subcategory/by-category/${categoryId}`);
-
-      const result = response.data;
-      if (result.success) {
-        setSubCategories(result.data);
+      if (response.data.success) {
+        setSubCategories(response.data.data);
+        console.log(
+          "Subcategories fetched successfully:",
+          response.data.data.length,
+        );
       } else {
-        throw new Error(result.message || "Failed to load subcategories");
+        throw new Error(
+          response.data.message || "Failed to load subcategories",
+        );
       }
     } catch (err) {
       console.error("Error fetching subcategories:", err);
       setError("Failed to load subcategories");
+    } finally {
+      setSubCategoriesLoading(false);
     }
   };
 
@@ -1249,21 +1258,12 @@ export default function AddProductPopup({
         });
       }
 
-      // Get token
-      const token = getAuthToken();
-
-      console.log("Token exists:", !!token);
-
-      if (!token) {
-        throw new Error("Authentication required. Please log in again.");
-      }
-
       // Determine API endpoint and method based on mode
       const productId =
         editingProduct?.id || editingProduct?._id || editingProduct?.productId;
       const apiEndpoint = isEditMode
-        ? `/product/update/${productId}`
-        : `/product/add`;
+        ? `/api/product/update/${productId}`
+        : `/api/product/add`;
 
       console.log(`${isEditMode ? "Updating" : "Adding"} product...`);
       console.log("API Endpoint:", apiEndpoint);
@@ -1289,24 +1289,25 @@ export default function AddProductPopup({
         throw new Error("Session expired. Please log in again.");
       } else if (response.status === 403) {
         throw new Error(
-          "Access denied. You may not have permission to perform this action."
+          "Access denied. You may not have permission to perform this action.",
         );
       } else if (response.status === 400) {
         throw new Error(
-          result.message || "Invalid product data. Please check all fields."
+          result.message || "Invalid product data. Please check all fields.",
         );
       }
 
       if (!result.success) {
         throw new Error(
-          result.message || `Failed to ${isEditMode ? "update" : "add"} product`
+          result.message ||
+            `Failed to ${isEditMode ? "update" : "add"} product`,
         );
       }
 
       // Success
       console.log(
         `Product ${isEditMode ? "updated" : "added"} successfully, response:`,
-        result
+        result,
       );
       alert(`Product ${isEditMode ? "updated" : "added"} successfully!`);
 
@@ -1343,14 +1344,14 @@ export default function AddProductPopup({
     } catch (err) {
       console.error(
         `Error ${isEditMode ? "updating" : "submitting"} product:`,
-        err
+        err,
       );
       setError(
         err.response?.data?.message ||
           err.message ||
           `Failed to ${
             isEditMode ? "update" : "submit"
-          } product. Please try again.`
+          } product. Please try again.`,
       );
     } finally {
       setLoading(false);
@@ -1488,14 +1489,25 @@ export default function AddProductPopup({
                   value={formData.category}
                   onChange={handleChange}
                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
+                  disabled={categoriesLoading}
                 >
-                  <option value="">Select Category</option>
+                  <option value="">
+                    {categoriesLoading ? "Loading..." : "Select Category"}
+                  </option>
                   {categories.map((cat) => (
                     <option key={cat._id} value={cat._id}>
                       {cat.name}
+                      {cat.totalProducts > 0
+                        ? ` (${cat.totalProducts} products)`
+                        : ""}
                     </option>
                   ))}
                 </select>
+                {categoriesLoading && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Loading categories...
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block font-semibold mb-1">
@@ -1506,15 +1518,24 @@ export default function AddProductPopup({
                   value={formData.subCategory}
                   onChange={handleChange}
                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-                  disabled={!formData.category}
+                  disabled={!formData.category || subCategoriesLoading}
                 >
-                  <option value="">Select Sub-Category</option>
+                  <option value="">
+                    {subCategoriesLoading
+                      ? "Loading..."
+                      : "Select Sub-Category"}
+                  </option>
                   {subCategories.map((sub) => (
                     <option key={sub._id} value={sub._id}>
                       {sub.name}
                     </option>
                   ))}
                 </select>
+                {subCategoriesLoading && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Loading subcategories...
+                  </p>
+                )}
               </div>
             </div>
 
@@ -1635,15 +1656,15 @@ export default function AddProductPopup({
                   loading
                     ? "bg-green-400 cursor-not-allowed"
                     : "bg-green-700 hover:bg-green-800"
-                } text-white px-6 py-2 rounded-sm text-[13px] font-semibold`}
+                } text-white px-6 py-2 rounded-sm text-[13px] font-semibold transition-colors`}
               >
                 {loading
                   ? isEditMode
                     ? "Updating..."
                     : "Submitting..."
                   : isEditMode
-                  ? "Update"
-                  : "Submit"}
+                    ? "Update"
+                    : "Submit"}
               </button>
             </div>
           </div>

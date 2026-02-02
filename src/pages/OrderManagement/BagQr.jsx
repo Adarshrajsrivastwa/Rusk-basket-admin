@@ -937,7 +937,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
-import { BASE_URL } from "../../api/api";
 import {
   Package,
   QrCode,
@@ -1173,7 +1172,7 @@ const BagQRScan = () => {
 
         // Fetch order details using the ID from URL params
         const orderResponse = await fetch(
-          `${BASE_URL}/api/checkout/vendor/order/${id}`,
+          `http://46.202.164.93/api/checkout/vendor/order/${id}`,
           {
             method: "GET",
             credentials: "include",
@@ -1243,7 +1242,7 @@ const BagQRScan = () => {
     try {
       const headers = getAuthHeaders();
 
-      const response = await fetch(`${BASE_URL}/api/product/scan-qr`, {
+      const response = await fetch(`http://46.202.164.93/api/product/scan-qr`, {
         method: "POST",
         credentials: "include",
         headers: headers,
@@ -1275,7 +1274,7 @@ const BagQRScan = () => {
       const mongoId = orderData?._id || id;
 
       const response = await fetch(
-        `${BASE_URL}/api/checkout/vendor/order/${mongoId}/items`,
+        `http://46.202.164.93/api/checkout/vendor/order/${mongoId}/items`,
         {
           method: "POST",
           credentials: "include",
@@ -1317,7 +1316,7 @@ const BagQRScan = () => {
       });
 
       const response = await fetch(
-        `${BASE_URL}/api/checkout/vendor/order/${mongoId}/status`,
+        `http://46.202.164.93/api/checkout/vendor/order/${mongoId}/status`,
         {
           method: "PUT",
           credentials: "include",

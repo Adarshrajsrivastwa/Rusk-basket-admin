@@ -151,13 +151,21 @@ const AllProduct = () => {
             status: displayStatus,
             approvalStatus: product.approvalStatus || "pending",
             name: product.productName || "Unnamed Product",
+            productName: product.productName || "Unnamed Product",
             images: product.images || [],
             description: product.description || "",
             sku: product.skuHsn || "",
+            skuHsn: product.skuHsn || "",
             inventory: product.inventory || 0,
             cashback: product.cashback || 0,
+            discountPercentage: product.discountPercentage || 0,
             tags: Array.isArray(product.tags) ? product.tags.join(", ") : "",
             productType: product.productType || {},
+            // Keep original category and subcategory objects for editing
+            categoryObj: product.category,
+            subCategoryObj: product.subCategory,
+            actualPrice: product.actualPrice || 0,
+            isActive: product.isActive || false,
           };
         });
 
@@ -199,10 +207,40 @@ const AllProduct = () => {
   const handleEdit = (product) => {
     console.log("Editing product:", product);
     console.log("Product ID:", product.id);
-    console.log("Product category:", product.category);
-    console.log("Product subCategory:", product.subCategory);
+    console.log("Product category:", product.categoryObj);
+    console.log("Product subCategory:", product.subCategoryObj);
 
-    setEditingProduct(product);
+    // Prepare product data for editing with proper structure
+    const editProduct = {
+      id: product.id,
+      productId: product.productId,
+      name: product.productName,
+      productName: product.productName,
+      description: product.description,
+      sku: product.skuHsn,
+      skuHsn: product.skuHsn,
+      inventory: product.inventory,
+      category: product.categoryObj, // Use original object
+      subCategory: product.subCategoryObj, // Use original object
+      actualPrice: product.actualPrice,
+      regularPrice: product.regularPrice,
+      salePrice: product.salePrice,
+      cashback: product.cashback,
+      discountPercentage: product.discountPercentage,
+      productType: product.productType,
+      tags: Array.isArray(product.tags)
+        ? product.tags
+        : product.tags
+          ? product.tags.split(", ")
+          : [],
+      images: product.images,
+      approvalStatus: product.approvalStatus,
+      isActive: product.isActive,
+    };
+
+    console.log("Edit product data prepared:", editProduct);
+
+    setEditingProduct(editProduct);
     setIsEditMode(true);
     setIsModalOpen(true);
   };
@@ -313,8 +351,8 @@ const AllProduct = () => {
             prev.map((p) =>
               p.id === id
                 ? { ...p, status: "Approved", approvalStatus: "approved" }
-                : p
-            )
+                : p,
+            ),
           );
           alert("Product approved successfully!");
         } else {
@@ -353,8 +391,8 @@ const AllProduct = () => {
             prev.map((p) =>
               p.id === id
                 ? { ...p, status: "Rejected", approvalStatus: "rejected" }
-                : p
-            )
+                : p,
+            ),
           );
           alert("Product rejected successfully!");
         } else {
@@ -385,7 +423,7 @@ const AllProduct = () => {
     [product.productId, product.vendor, product.category, product.name]
       .join(" ")
       .toLowerCase()
-      .includes(searchQuery.toLowerCase())
+      .includes(searchQuery.toLowerCase()),
   );
 
   const indexOfLast = currentPage * itemsPerPage;
@@ -572,8 +610,8 @@ const AllProduct = () => {
                           product.inventory <= 10
                             ? "text-red-600"
                             : product.inventory <= 50
-                            ? "text-yellow-600"
-                            : "text-green-600"
+                              ? "text-yellow-600"
+                              : "text-green-600"
                         }`}
                       >
                         {product.inventory}
@@ -637,6 +675,7 @@ const AllProduct = () => {
                         )} */}
 
                         <button
+                          onClick={() => handleEdit(product)}
                           className="hover:text-blue-700"
                           title="Edit product"
                         >
@@ -714,7 +753,7 @@ const AllProduct = () => {
                   >
                     {page}
                   </button>
-                )
+                ),
               );
             })()}
           </div>

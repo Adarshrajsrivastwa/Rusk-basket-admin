@@ -69,7 +69,7 @@ const Sidebar = () => {
       icon: <Package size={16} />,
       subItems: [
         // { name: "Product", path: "/products/all", hasDot: true },
-        // { name: "All Product", path: "/products/all" },
+        { name: "All Product", path: "/products/all" },
         // { name: "Trending Product", path: "/products/trending" },
         { name: "Pending Product", path: "/products/pending" },
       ],
@@ -84,9 +84,9 @@ const Sidebar = () => {
       icon: <ShoppingCart size={16} />,
       subItems: [
         { name: "All Order", path: "/orders/all?tab=all" },
-        { name: "Pending Order", path: "/orders/pending" },
-        { name: "Delivered", path: "/orders/all?tab=delivered" },
-        { name: "Cancel", path: "/orders/all?tab=cancel" },
+        // { name: "Pending Order", path: "/orders/pending" },
+        // { name: "Delivered", path: "/orders/all?tab=delivered" },
+        // { name: "Cancel", path: "/orders/all?tab=cancel" },
         { name: "Invoice", path: "/invoice" },
       ],
     },

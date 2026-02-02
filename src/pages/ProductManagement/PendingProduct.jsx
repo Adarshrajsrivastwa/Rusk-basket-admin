@@ -30,7 +30,7 @@ const PendingProduct = () => {
   const fetchPendingProducts = async (page = 1) => {
     setLoading(true);
     try {
-      const response = await api.get(`/product/pending`, {
+      const response = await api.get(`/api/product/pending`, {
         params: {
           page: page,
           limit: itemsPerPage,
@@ -68,10 +68,7 @@ const PendingProduct = () => {
     setProcessingId(productId);
 
     try {
-      const response = await api.put(
-        `/product/approve/${productId}`,
-        {}
-      );
+      const response = await api.put(`/api/product/approve/${productId}`, {});
 
       if (response.data.success) {
         alert("Product approved successfully!");
@@ -85,7 +82,7 @@ const PendingProduct = () => {
       } else {
         alert(
           error.response?.data?.message ||
-            "Failed to approve product. Please try again."
+            "Failed to approve product. Please try again.",
         );
       }
     } finally {
@@ -102,12 +99,9 @@ const PendingProduct = () => {
     setProcessingId(productId);
 
     try {
-      const response = await api.put(
-        `/product/reject/${productId}`,
-        {
-          rejectionReason: reason || "No reason provided",
-        }
-      );
+      const response = await api.put(`/api/product/reject/${productId}`, {
+        rejectionReason: reason || "No reason provided",
+      });
 
       if (response.data.success) {
         alert("Product rejected successfully!");
@@ -121,7 +115,7 @@ const PendingProduct = () => {
       } else {
         alert(
           error.response?.data?.message ||
-            "Failed to reject product. Please try again."
+            "Failed to reject product. Please try again.",
         );
       }
     } finally {
@@ -140,23 +134,33 @@ const PendingProduct = () => {
     return `₹${price.toLocaleString("en-IN")}`;
   };
 
-  // Filtering logic
+  // Get vendor name safely
+  const getVendorName = (product) => {
+    return product.vendor?.vendorName || product.vendor || "No Vendor";
+  };
+
+  // Filtering logic - Fixed to handle null vendors
   const filteredByVendor =
     selectedVendor === "All Vendors"
       ? products
-      : products.filter((p) => p.vendor?.vendorName === selectedVendor);
+      : products.filter((p) => {
+          const vendorName = getVendorName(p);
+          return vendorName === selectedVendor;
+        });
 
-  const searchedProducts = filteredByVendor.filter((product) =>
-    [
+  const searchedProducts = filteredByVendor.filter((product) => {
+    const searchableText = [
       product._id,
-      product.vendor?.vendorName,
+      getVendorName(product),
       product.category?.name,
       product.productName,
     ]
+      .filter(Boolean)
       .join(" ")
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase())
-  );
+      .toLowerCase();
+
+    return searchableText.includes(searchQuery.toLowerCase());
+  });
 
   const EmptyState = () => (
     <tbody>
@@ -171,8 +175,13 @@ const PendingProduct = () => {
     </tbody>
   );
 
+  // Get unique vendors - handle null vendors
   const uniqueVendors = [
-    ...new Set(products.map((p) => p.vendor?.vendorName).filter(Boolean)),
+    ...new Set(
+      products
+        .map((p) => getVendorName(p))
+        .filter((name) => name !== "No Vendor"),
+    ),
   ];
 
   return (
@@ -207,7 +216,7 @@ const PendingProduct = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <button className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-sm px-4 sm:px-6 h-full">
+            <button className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-sm px-4 sm:px-6 h-full transition-colors">
               Search
             </button>
           </div>
@@ -224,6 +233,7 @@ const PendingProduct = () => {
             <tr className="bg-[#FF7B1D] text-black">
               <th className="p-3 text-left">S.N</th>
               <th className="p-3 text-left">Product ID</th>
+              <th className="p-3 text-left">Product Name</th>
               <th className="p-3 text-left">Date</th>
               <th className="p-3 text-left">Vendor</th>
               <th className="p-3 text-left">Category</th>
@@ -241,7 +251,7 @@ const PendingProduct = () => {
                   key={idx}
                   className="border-b border-gray-200 animate-pulse bg-white"
                 >
-                  {Array.from({ length: 9 }).map((__, j) => (
+                  {Array.from({ length: 10 }).map((__, j) => (
                     <td key={j} className="p-3">
                       <div className="h-4 bg-gray-200 rounded w-[80%]"></div>
                     </td>
@@ -262,19 +272,32 @@ const PendingProduct = () => {
                     {(currentPage - 1) * itemsPerPage + idx + 1}
                   </td>
                   <td className="p-3 font-mono text-xs">{product._id}</td>
+                  <td className="p-3 font-medium">{product.productName}</td>
                   <td className="p-3">{formatDate(product.createdAt)}</td>
-                  <td className="p-3">{product.vendor?.vendorName || "N/A"}</td>
+                  <td className="p-3">
+                    <span
+                      className={
+                        getVendorName(product) === "No Vendor"
+                          ? "text-gray-400 italic"
+                          : ""
+                      }
+                    >
+                      {getVendorName(product)}
+                    </span>
+                  </td>
                   <td className="p-3">{product.category?.name || "N/A"}</td>
                   <td className="p-3">{product.subCategory?.name || "N/A"}</td>
-                  <td className="p-3">{formatPrice(product.salePrice)}</td>
+                  <td className="p-3 font-semibold">
+                    {formatPrice(product.salePrice)}
+                  </td>
                   <td className="p-3">
                     <span
                       className={`font-semibold ${
                         product.approvalStatus === "pending"
                           ? "text-yellow-600"
                           : product.approvalStatus === "approved"
-                          ? "text-green-600"
-                          : "text-red-600"
+                            ? "text-green-600"
+                            : "text-red-600"
                       }`}
                     >
                       {product.approvalStatus.charAt(0).toUpperCase() +
@@ -287,20 +310,28 @@ const PendingProduct = () => {
                       <button
                         onClick={() => handleApprove(product._id)}
                         disabled={processingId === product._id}
-                        className="text-green-600 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="text-green-600 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         title="Approve product"
                       >
-                        <CheckCircle className="w-5 h-5" />
+                        {processingId === product._id ? (
+                          <div className="w-5 h-5 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <CheckCircle className="w-5 h-5" />
+                        )}
                       </button>
 
                       {/* Reject Button */}
                       <button
                         onClick={() => handleReject(product._id)}
                         disabled={processingId === product._id}
-                        className="text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         title="Reject product"
                       >
-                        <XCircle className="w-5 h-5" />
+                        {processingId === product._id ? (
+                          <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <XCircle className="w-5 h-5" />
+                        )}
                       </button>
                     </div>
                   </td>
@@ -315,7 +346,7 @@ const PendingProduct = () => {
         <div className="flex justify-end pl-8 items-center gap-6 mt-8 max-w-[95%] mx-auto mb-6">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             disabled={currentPage === 1}
           >
             Back
@@ -346,7 +377,7 @@ const PendingProduct = () => {
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`px-1 ${
+                    className={`px-1 hover:text-orange-500 transition-colors ${
                       currentPage === page
                         ? "text-orange-600 font-semibold"
                         : ""
@@ -354,7 +385,7 @@ const PendingProduct = () => {
                   >
                     {page}
                   </button>
-                )
+                ),
               );
             })()}
           </div>
@@ -363,7 +394,7 @@ const PendingProduct = () => {
             onClick={() =>
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }
-            className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             disabled={currentPage === totalPages}
           >
             Next
