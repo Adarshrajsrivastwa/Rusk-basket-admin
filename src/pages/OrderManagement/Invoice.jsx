@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { useNavigate } from "react-router-dom";
+import { BASE_URL } from "../../api/api";
 import {
   Download,
   Eye,
@@ -30,170 +31,91 @@ const InvoicePage = () => {
   const [showVendorDropdown, setShowVendorDropdown] = useState(false);
   const [showPaymentDropdown, setShowPaymentDropdown] = useState(false);
   const [invoices, setInvoices] = useState([]);
+  const [apiInvoices, setApiInvoices] = useState([]);
+  const [error, setError] = useState(null);
+  const [totalInvoices, setTotalInvoices] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
+  // Fetch invoices from API
   useEffect(() => {
-    setLoading(true);
-    const timer = setTimeout(() => {
-      setInvoices([
-        {
-          id: "INV001",
-          invoiceNumber: "RUSH-INV-2025-001",
-          date: "2025-08-23",
-          vendor: "Abnish Kumar",
-          user: "NK Yadav",
-          orderId: "RUSH8038403",
-          amount: 5222,
-          payment: "COD",
-          status: "Paid",
-        },
-        {
-          id: "INV002",
-          invoiceNumber: "RUSH-INV-2025-002",
-          date: "2025-09-27",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          orderId: "RUSH09401",
-          amount: 124,
-          payment: "COD",
-          status: "Pending",
-        },
-        {
-          id: "INV003",
-          invoiceNumber: "RUSH-INV-2025-003",
-          date: "2025-09-28",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          orderId: "RUSH09402",
-          amount: 230,
-          payment: "Prepaid",
-          status: "Paid",
-        },
-        {
-          id: "INV004",
-          invoiceNumber: "RUSH-INV-2025-004",
-          date: "2025-09-29",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          orderId: "RUSH09403",
-          amount: 450,
-          payment: "COD",
-          status: "Paid",
-        },
-        {
-          id: "INV005",
-          invoiceNumber: "RUSH-INV-2025-005",
-          date: "2025-09-30",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          orderId: "RUSH09404",
-          amount: 350,
-          payment: "Prepaid",
-          status: "Cancelled",
-        },
-        {
-          id: "INV006",
-          invoiceNumber: "RUSH-INV-2025-006",
-          date: "2025-10-01",
-          vendor: "Abnish Kumar",
-          user: "Anish Kumar",
-          orderId: "RUSH09405",
-          amount: 400,
-          payment: "COD",
-          status: "Pending",
-        },
-        {
-          id: "INV007",
-          invoiceNumber: "RUSH-INV-2025-007",
-          date: "2025-10-02",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          orderId: "RUSH09406",
-          amount: 280,
-          payment: "Prepaid",
-          status: "Paid",
-        },
-        {
-          id: "INV008",
-          invoiceNumber: "RUSH-INV-2025-008",
-          date: "2025-10-03",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          orderId: "RUSH09407",
-          amount: 500,
-          payment: "COD",
-          status: "Paid",
-        },
-        {
-          id: "INV009",
-          invoiceNumber: "RUSH-INV-2025-009",
-          date: "2025-10-04",
-          vendor: "Abnish Kumar",
-          user: "Anish Kumar",
-          orderId: "RUSH09408",
-          amount: 320,
-          payment: "Prepaid",
-          status: "Cancelled",
-        },
-        {
-          id: "INV010",
-          invoiceNumber: "RUSH-INV-2025-010",
-          date: "2025-10-05",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          orderId: "RUSH09409",
-          amount: 150,
-          payment: "COD",
-          status: "Pending",
-        },
-        {
-          id: "INV011",
-          invoiceNumber: "RUSH-INV-2025-011",
-          date: "2025-10-06",
-          vendor: "Mathura",
-          user: "Anish Kumar",
-          orderId: "RUSH09410",
-          amount: 270,
-          payment: "Prepaid",
-          status: "Paid",
-        },
-        {
-          id: "INV012",
-          invoiceNumber: "RUSH-INV-2025-012",
-          date: "2025-10-07",
-          vendor: "Abnish Kumar",
-          user: "Anish Kumar",
-          orderId: "RUSH09411",
-          amount: 480,
-          payment: "COD",
-          status: "Paid",
-        },
-        {
-          id: "INV013",
-          invoiceNumber: "RUSH-INV-2025-013",
-          date: "2025-10-08",
-          vendor: "Mathura",
-          user: "Raj Kumar",
-          orderId: "RUSH09412",
-          amount: 650,
-          payment: "Prepaid",
-          status: "Paid",
-        },
-        {
-          id: "INV014",
-          invoiceNumber: "RUSH-INV-2025-014",
-          date: "2025-10-09",
-          vendor: "Abnish Kumar",
-          user: "Priya Singh",
-          orderId: "RUSH09413",
-          amount: 890,
-          payment: "COD",
-          status: "Pending",
-        },
-      ]);
-      setLoading(false);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, []);
+    const fetchInvoices = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Get token from localStorage
+        const token =
+          localStorage.getItem("token") || localStorage.getItem("authToken");
+
+        const headers = {
+          "Content-Type": "application/json",
+        };
+
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(
+          `${BASE_URL}/api/invoice/admin/all?page=${currentPage}&limit=${itemsPerPage}`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: headers,
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch invoices: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          // Transform API data to match component structure
+          const transformedInvoices = result.data.invoices.map((invoice) => ({
+            id: invoice._id,
+            invoiceNumber: invoice.invoiceNumber,
+            date: invoice.date || invoice.createdAt,
+            vendor:
+              invoice.vendor?.vendorName ||
+              invoice.vendor?.storeName ||
+              "Unknown",
+            vendorId: invoice.vendor?._id,
+            user: invoice.user?.userName || invoice.userName || "Unknown",
+            userId: invoice.user?._id,
+            orderId: invoice.order?.orderNumber || invoice.orderId,
+            orderStatus: invoice.order?.status,
+            amount: invoice.amount || 0,
+            payment: invoice.payment?.method?.toUpperCase() || "COD",
+            paymentStatus: invoice.payment?.status,
+            status: capitalizeStatus(invoice.status),
+            serialNumber: invoice.serialNumber,
+          }));
+
+          setApiInvoices(transformedInvoices);
+          setInvoices(transformedInvoices);
+          setTotalInvoices(result.data.pagination.total);
+          setTotalPages(result.data.pagination.pages);
+        } else {
+          throw new Error("Invalid API response");
+        }
+      } catch (err) {
+        console.error("Error fetching invoices:", err);
+        setError(err.message);
+        setInvoices([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInvoices();
+  }, [currentPage, itemsPerPage]);
+
+  // Helper function to capitalize status
+  const capitalizeStatus = (status) => {
+    if (!status) return "Pending";
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+  };
 
   const vendors = ["all", ...new Set(invoices.map((inv) => inv.vendor))];
 
@@ -201,6 +123,8 @@ const InvoicePage = () => {
     Paid: "bg-green-50 text-green-700 border-green-300",
     Pending: "bg-yellow-50 text-yellow-700 border-yellow-300",
     Cancelled: "bg-red-50 text-red-700 border-red-300",
+    Completed: "bg-green-50 text-green-700 border-green-300",
+    Failed: "bg-red-50 text-red-700 border-red-300",
   };
 
   const filteredInvoices = invoices.filter((invoice) => {
@@ -226,13 +150,19 @@ const InvoicePage = () => {
     );
   });
 
-  const indexOfLast = currentPage * itemsPerPage;
-  const indexOfFirst = indexOfLast - itemsPerPage;
-  const currentInvoices = filteredInvoices.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
+  // Use filtered invoices for display
+  const currentInvoices = filteredInvoices;
 
   useEffect(() => {
-    setCurrentPage(1);
+    if (
+      selectedVendor !== "all" ||
+      selectedPaymentMode !== "all" ||
+      startDate ||
+      endDate ||
+      searchQuery
+    ) {
+      setCurrentPage(1);
+    }
   }, [selectedVendor, selectedPaymentMode, startDate, endDate, searchQuery]);
 
   const handleClearFilters = () => {
@@ -262,16 +192,16 @@ const InvoicePage = () => {
     }
   };
 
-  // Calculate stats
+  // Calculate stats from filtered invoices
   const totalAmount = filteredInvoices.reduce(
     (sum, inv) => sum + inv.amount,
-    0
+    0,
   );
   const paidInvoices = filteredInvoices.filter(
-    (inv) => inv.status === "Paid"
+    (inv) => inv.status === "Paid" || inv.status === "Completed",
   ).length;
   const pendingInvoices = filteredInvoices.filter(
-    (inv) => inv.status === "Pending"
+    (inv) => inv.status === "Pending",
   ).length;
 
   const activeFiltersCount = [
@@ -306,13 +236,37 @@ const InvoicePage = () => {
               No invoices found
             </p>
             <p className="text-gray-400 text-sm mt-2">
-              Try adjusting your filters
+              {error
+                ? "Failed to load invoices. Please try again."
+                : "Try adjusting your filters"}
             </p>
           </div>
         </td>
       </tr>
     </tbody>
   );
+
+  // Error State
+  if (error && !loading && invoices.length === 0) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+            <h3 className="text-red-800 font-semibold mb-2">
+              Error Loading Invoices
+            </h3>
+            <p className="text-red-600 text-sm">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -486,7 +440,7 @@ const InvoicePage = () => {
                   </button>
                   {showPaymentDropdown && (
                     <div className="absolute z-10 w-full mt-2 bg-white border-2 border-gray-300 rounded-sm shadow-2xl">
-                      {["all", "COD", "Prepaid"].map((mode) => (
+                      {["all", "COD", "PREPAID", "ONLINE"].map((mode) => (
                         <button
                           key={mode}
                           onClick={() => {
@@ -536,7 +490,7 @@ const InvoicePage = () => {
                     <th className="p-4 text-left font-bold">Amount</th>
                     <th className="p-4 text-left font-bold">Payment</th>
                     <th className="p-4 text-left font-bold">Status</th>
-                    <th className="p-4 text-right font-bold">Actions</th>
+                    <th className="p-4 text-right pr-16 font-bold">Actions</th>
                   </tr>
                 </thead>
 
@@ -552,7 +506,7 @@ const InvoicePage = () => {
                         className="hover:bg-gray-50 transition-all border-b border-gray-200 group"
                       >
                         <td className="p-4 text-black font-semibold">
-                          {indexOfFirst + idx + 1}
+                          {invoice.serialNumber || idx + 1}
                         </td>
                         <td className="p-4 font-bold text-[#FF7B1D]">
                           {invoice.invoiceNumber}
@@ -561,7 +515,7 @@ const InvoicePage = () => {
                           {formatDate(invoice.date)}
                         </td>
                         <td className="p-4">
-                          <span className="text-[#FF7B1D] font-bold  cursor-pointer">
+                          <span className="text-[#FF7B1D] font-bold cursor-pointer">
                             {invoice.orderId}
                           </span>
                         </td>
@@ -588,7 +542,8 @@ const InvoicePage = () => {
                         <td className="p-4">
                           <span
                             className={`px-3 py-1.5 rounded-sm text-xs font-bold border-2 ${
-                              statusColors[invoice.status]
+                              statusColors[invoice.status] ||
+                              "bg-gray-50 text-gray-700 border-gray-300"
                             }`}
                           >
                             {invoice.status}
@@ -598,20 +553,20 @@ const InvoicePage = () => {
                           <div className="flex gap-2 justify-end">
                             <button
                               title="Download"
-                              className="p-2.5 text-[#FF7B1D] hover:bg-gray-100 rounded-sm transition-all hover:scale-110 border-2 border-transparent "
+                              className="p-2.5 text-[#FF7B1D] hover:bg-gray-100 rounded-sm transition-all hover:scale-110 border-2 border-transparent"
                             >
                               <Download className="w-4 h-4" />
                             </button>
                             <button
                               title="View"
                               onClick={() => handleViewInvoice(invoice.id)}
-                              className="p-2.5 text-[#FF7B1D] hover:bg-orange-100 rounded-sm transition-all hover:scale-110 border-2 border-transparent "
+                              className="p-2.5 text-[#FF7B1D] hover:bg-orange-100 rounded-sm transition-all hover:scale-110 border-2 border-transparent"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
                             <button
                               title="Print"
-                              className="p-2.5 text-[#FF7B1D] hover:bg-orange-100 rounded-sm transition-all hover:scale-110 border-2 border-transparent "
+                              className="p-2.5 text-[#FF7B1D] hover:bg-orange-100 rounded-sm transition-all hover:scale-110 border-2 border-transparent"
                             >
                               <Printer className="w-4 h-4" />
                             </button>
@@ -631,15 +586,15 @@ const InvoicePage = () => {
               <div className="text-sm text-black font-medium">
                 Showing{" "}
                 <span className="font-bold text-[#FF7B1D]">
-                  {indexOfFirst + 1}
+                  {Math.min(1, filteredInvoices.length)}
                 </span>{" "}
                 to{" "}
                 <span className="font-bold text-[#FF7B1D]">
-                  {Math.min(indexOfLast, filteredInvoices.length)}
+                  {filteredInvoices.length}
                 </span>{" "}
                 of{" "}
                 <span className="font-bold text-[#FF7B1D]">
-                  {filteredInvoices.length}
+                  {totalInvoices}
                 </span>{" "}
                 invoices
               </div>
@@ -647,7 +602,7 @@ const InvoicePage = () => {
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                   disabled={currentPage === 1}
-                  className="bg-[#FF7B1D] hover:bg-[#E66A0D]  disabled:cursor-not-allowed text-white px-6 py-2.5 text-sm font-bold rounded-sm transition-all hover:scale-105 disabled:hover:scale-100 shadow-lg"
+                  className="bg-[#FF7B1D] hover:bg-[#E66A0D] disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2.5 text-sm font-bold rounded-sm transition-all hover:scale-105 disabled:hover:scale-100 shadow-lg"
                 >
                   Back
                 </button>
@@ -659,13 +614,13 @@ const InvoicePage = () => {
                         onClick={() => setCurrentPage(page)}
                         className={`px-4 py-2 rounded-sm text-sm font-bold transition-all ${
                           currentPage === page
-                            ? " text-black shadow-lg scale-110"
+                            ? "bg-[#FF7B1D] text-white shadow-lg scale-110"
                             : "text-black bg-white hover:bg-orange-50 border-2 border-gray-300"
                         }`}
                       >
                         {page}
                       </button>
-                    )
+                    ),
                   )}
                 </div>
                 <button
@@ -673,7 +628,7 @@ const InvoicePage = () => {
                     setCurrentPage((p) => Math.min(p + 1, totalPages))
                   }
                   disabled={currentPage === totalPages}
-                  className="bg-[#247606]  disabled:cursor-not-allowed text-white px-6 py-2.5 text-sm font-bold rounded-sm transition-all hover:scale-105 disabled:hover:scale-100 shadow-lg"
+                  className="bg-[#247606] hover:bg-[#1f6405] disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2.5 text-sm font-bold rounded-sm transition-all hover:scale-105 disabled:hover:scale-100 shadow-lg"
                 >
                   Next
                 </button>

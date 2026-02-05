@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
+import { useLocation, useParams } from "react-router-dom";
+import { BASE_URL } from "../../api/api";
 import {
   Download,
   Printer,
@@ -14,75 +16,163 @@ import {
   Building,
   FileText,
   Globe,
+  AlertCircle,
 } from "lucide-react";
 
 const InvoiceViewPage = () => {
+  const location = useLocation();
+  const params = useParams();
   const [loading, setLoading] = useState(true);
   const [invoice, setInvoice] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setInvoice({
-        id: "INV001",
-        invoiceNumber: "RUSH-INV-2025-001",
-        date: "2025-08-23",
-        dueDate: "2025-09-23",
-        vendor: "Abnish Kumar",
-        user: "NK Yadav",
-        userEmail: "nkyadav@example.com",
-        userPhone: "+91 98765 12345",
-        userAddress: "456 Park Avenue, Patna, Bihar - 800002",
-        orderId: "RUSH8038403",
-        amount: 5222,
-        payment: "COD",
-        status: "Paid",
-        items: [
+    const fetchInvoiceDetails = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Get invoice ID from location state or params
+        const invoiceId =
+          location.state?.invoice?.id ||
+          params.invoiceId ||
+          location.state?.invoiceId;
+
+        if (!invoiceId) {
+          throw new Error("No invoice ID provided");
+        }
+
+        // Get token from localStorage
+        const token =
+          localStorage.getItem("token") || localStorage.getItem("authToken");
+
+        const headers = {
+          "Content-Type": "application/json",
+        };
+
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(
+          `${BASE_URL}/api/invoice/${invoiceId}`,
           {
-            id: 1,
-            sku: "SKU-001",
-            hssn: "1234567890",
-            description: "Premium Package Item A",
-            quantity: 2,
-            unitPrice: 2000,
-            total: 4000,
+            method: "GET",
+            credentials: "include",
+            headers: headers,
           },
-          {
-            id: 2,
-            sku: "SKU-002",
-            hssn: "0987654321",
-            description: "Standard Package Item B",
-            quantity: 1,
-            unitPrice: 440,
-            total: 440,
-          },
-        ],
-        itemCost: 4440,
-        cgst: 235,
-        sgst: 235,
-        totalGst: 470,
-        handlingCharges: 312,
-        total: 5222,
-        notes: "Thank you for your business. Payment due within 30 days.",
-        terms:
-          "Please pay within 30 days of invoice date. Late payments may incur additional charges.",
-      });
-      setLoading(false);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, []);
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch invoice: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          const apiInvoice = result.data;
+
+          // Transform API data to match component structure
+          const transformedInvoice = {
+            id: apiInvoice._id,
+            invoiceNumber: apiInvoice.invoiceNumber,
+            date: apiInvoice.date || apiInvoice.createdAt,
+            dueDate: apiInvoice.dueDate,
+            orderId:
+              apiInvoice.orderNumber || apiInvoice.order?.orderNumber || "N/A",
+
+            // User details
+            user: apiInvoice.user?.userName || "N/A",
+            userEmail: apiInvoice.user?.email || "N/A",
+            userPhone: apiInvoice.user?.contactNumber || "N/A",
+            userAddress: apiInvoice.user?.address || "Address not available",
+            userId: apiInvoice.user?._id,
+
+            // Vendor details
+            vendor:
+              apiInvoice.vendor?.vendorName ||
+              apiInvoice.vendor?.storeName ||
+              "N/A",
+            vendorId: apiInvoice.vendor?._id,
+
+            // Payment details
+            payment: apiInvoice.payment?.method?.toUpperCase() || "COD",
+            paymentStatus: apiInvoice.payment?.status || "pending",
+            status: capitalizeStatus(apiInvoice.status),
+
+            // Items
+            items: apiInvoice.items.map((item, index) => ({
+              id: item._id || index + 1,
+              sku: item.sku || "N/A",
+              hssn: item.hssn || "N/A",
+              description: item.description || item.productName || "N/A",
+              productName: item.productName,
+              quantity: item.quantity || 0,
+              unitPrice: item.unitPrice || 0,
+              total: item.totalPrice || item.quantity * item.unitPrice || 0,
+            })),
+
+            // Pricing
+            itemCost:
+              apiInvoice.pricing?.itemCost || apiInvoice.pricing?.subtotal || 0,
+            cgst: apiInvoice.pricing?.cgst || 0,
+            sgst: apiInvoice.pricing?.sgst || 0,
+            totalGst:
+              apiInvoice.pricing?.totalGst || apiInvoice.pricing?.tax || 0,
+            handlingCharges: apiInvoice.pricing?.handlingCharge || 0,
+            discount: apiInvoice.pricing?.discount || 0,
+            cashback: apiInvoice.pricing?.totalCashback || 0,
+            total: apiInvoice.amount || apiInvoice.pricing?.totalAmount || 0,
+
+            // Notes and terms
+            notes:
+              apiInvoice.notes ||
+              "Thank you for your business. Payment due within 30 days.",
+            terms:
+              apiInvoice.terms ||
+              "Please pay within 30 days of invoice date. Late payments may incur additional charges.",
+          };
+
+          setInvoice(transformedInvoice);
+        } else {
+          throw new Error("Invalid API response");
+        }
+      } catch (err) {
+        console.error("Error fetching invoice details:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInvoiceDetails();
+  }, [location.state, params.invoiceId]);
+
+  // Helper function to capitalize status
+  const capitalizeStatus = (status) => {
+    if (!status) return "Pending";
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+  };
 
   const handlePrint = () => window.print();
-  const handleDownload = () =>
+
+  const handleDownload = () => {
+    // Implement download functionality
     alert("Download functionality would be implemented here");
+  };
+
   const handleBack = () => window.history.back();
 
   const statusColors = {
     Paid: "bg-green-50 text-green-700 border-green-500",
     Pending: "bg-yellow-50 text-yellow-700 border-yellow-500",
     Cancelled: "bg-red-50 text-red-700 border-red-500",
+    Completed: "bg-green-50 text-green-700 border-green-500",
+    Failed: "bg-red-50 text-red-700 border-red-500",
   };
 
   const formatDate = (dateStr) => {
+    if (!dateStr) return "N/A";
     const date = new Date(dateStr);
     return date.toLocaleDateString("en-GB", {
       day: "2-digit",
@@ -91,23 +181,56 @@ const InvoiceViewPage = () => {
     });
   };
 
+  // Loading State
   if (loading) {
     return (
-      <div className="min-h-screen bg-white p-6">
-        <div className="max-w-5xl mx-auto">
-          <div
-            className="bg-white rounded-lg shadow-xl p-8 animate-pulse border-2"
-            style={{ borderColor: "#FF7B1D" }}
-          >
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
-            <div className="space-y-4">
-              <div className="h-4 bg-gray-200 rounded w-full"></div>
-              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-              <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+      <DashboardLayout>
+        <div className="min-h-screen bg-white p-6">
+          <div className="max-w-5xl mx-auto">
+            <div
+              className="bg-white rounded-lg shadow-xl p-8 animate-pulse border-2"
+              style={{ borderColor: "#FF7B1D" }}
+            >
+              <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
+              <div className="space-y-4">
+                <div className="h-4 bg-gray-200 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Error State
+  if (error || !invoice) {
+    return (
+      <DashboardLayout>
+        <div className="min-h-screen bg-white p-6">
+          <div className="max-w-5xl mx-auto">
+            <div className="bg-red-50 border-2 border-red-200 rounded-lg p-8">
+              <div className="flex items-center gap-3 mb-4">
+                <AlertCircle className="w-8 h-8 text-red-600" />
+                <h3 className="text-red-800 font-bold text-xl">
+                  Error Loading Invoice
+                </h3>
+              </div>
+              <p className="text-red-600 mb-4">
+                {error || "Invoice not found"}
+              </p>
+              <button
+                onClick={handleBack}
+                className="flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-sm shadow-md transition-all"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Invoices
+              </button>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
     );
   }
 
@@ -174,7 +297,7 @@ const InvoiceViewPage = () => {
                     </p>
                     <span
                       className={`inline-block px-4 py-2 rounded-sm text-sm font-bold border-2 ${
-                        statusColors[invoice.status]
+                        statusColors[invoice.status] || statusColors.Pending
                       }`}
                     >
                       {invoice.status}
@@ -342,14 +465,16 @@ const InvoiceViewPage = () => {
                       />
                       <span>{invoice.userAddress}</span>
                     </div>
-                    <div
-                      className="mt-3 pt-3 border-t-2"
-                      style={{ borderColor: "#FF7B1D" }}
-                    >
-                      <p className="text-sm font-bold text-black">
-                        Vendor: {invoice.vendor}
-                      </p>
-                    </div>
+                    {invoice.vendor !== "N/A" && (
+                      <div
+                        className="mt-3 pt-3 border-t-2"
+                        style={{ borderColor: "#FF7B1D" }}
+                      >
+                        <p className="text-sm font-bold text-black">
+                          Vendor: {invoice.vendor}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -371,6 +496,20 @@ const InvoiceViewPage = () => {
                       style={{ backgroundColor: "#FF7B1D" }}
                     >
                       {invoice.payment}
+                    </span>
+                    <span className="ml-3 text-xs text-gray-600">
+                      Status:{" "}
+                      <span
+                        className={`font-bold ${
+                          invoice.paymentStatus === "completed"
+                            ? "text-green-600"
+                            : invoice.paymentStatus === "pending"
+                              ? "text-yellow-600"
+                              : "text-red-600"
+                        }`}
+                      >
+                        {invoice.paymentStatus?.toUpperCase()}
+                      </span>
                     </span>
                   </p>
                 </div>
@@ -411,12 +550,21 @@ const InvoiceViewPage = () => {
                             className="p-4 text-black font-medium border-b"
                             style={{ borderColor: "#FFE5D0" }}
                           >
-                            <div className="text-xs text-gray-600">
-                              SKU: {item.sku}
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              HSSN: {item.hssn}
-                            </div>
+                            {item.sku !== "N/A" && (
+                              <div className="text-xs text-gray-600">
+                                SKU: {item.sku}
+                              </div>
+                            )}
+                            {item.hssn !== "N/A" && (
+                              <div className="text-xs text-gray-600">
+                                HSSN: {item.hssn}
+                              </div>
+                            )}
+                            {item.sku === "N/A" && item.hssn === "N/A" && (
+                              <div className="text-xs text-gray-400">
+                                Not Available
+                              </div>
+                            )}
                           </td>
                           <td
                             className="p-4 text-black font-medium border-b"
@@ -465,34 +613,62 @@ const InvoiceViewPage = () => {
                           ₹{invoice.itemCost.toLocaleString()}
                         </span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-black font-semibold">CGST:</span>
-                        <span className="text-black font-bold">
-                          ₹{invoice.cgst.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-black font-semibold">SGST:</span>
-                        <span className="text-black font-bold">
-                          ₹{invoice.sgst.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-black font-semibold">
-                          Total GST:
-                        </span>
-                        <span className="text-black font-bold">
-                          ₹{invoice.totalGst.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-black font-semibold">
-                          Handling Charges:
-                        </span>
-                        <span className="text-black font-bold">
-                          ₹{invoice.handlingCharges.toLocaleString()}
-                        </span>
-                      </div>
+                      {invoice.cgst > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-black font-semibold">
+                            CGST:
+                          </span>
+                          <span className="text-black font-bold">
+                            ₹{invoice.cgst.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      {invoice.sgst > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-black font-semibold">
+                            SGST:
+                          </span>
+                          <span className="text-black font-bold">
+                            ₹{invoice.sgst.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      {invoice.totalGst > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-black font-semibold">
+                            Total GST:
+                          </span>
+                          <span className="text-black font-bold">
+                            ₹{invoice.totalGst.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      {invoice.handlingCharges > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-black font-semibold">
+                            Handling Charges:
+                          </span>
+                          <span className="text-black font-bold">
+                            ₹{invoice.handlingCharges.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      {invoice.discount > 0 && (
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span className="font-semibold">Discount:</span>
+                          <span className="font-bold">
+                            -₹{invoice.discount.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      {invoice.cashback > 0 && (
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span className="font-semibold">Cashback:</span>
+                          <span className="font-bold">
+                            ₹{invoice.cashback.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
                       <div
                         className="border-t-2 pt-3 mt-3"
                         style={{ borderColor: "#FF7B1D" }}

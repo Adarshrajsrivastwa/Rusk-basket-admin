@@ -5,6 +5,7 @@ import AddVendorModal from "../../components/AddVendorModal";
 import NotificationsPage from "../../pages/SuperAdminDashboard/ViewAllNotification";
 import VendorDetails from "../../pages/VendorManagement/VendorDetails";
 import { useNavigate } from "react-router-dom";
+import { BASE_URL } from "../../api/api";
 
 import {
   ShoppingCart,
@@ -25,106 +26,146 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Simulate API loading
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 300);
-    return () => clearTimeout(timer);
-  }, []);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [error, setError] = useState(null);
 
   const navigate = useNavigate();
 
-  // Dashboard Stats Data
-  const stats = {
-    orders: {
-      total: 1245,
-      new: 21,
-      pending: 14,
-      delivered: 1180,
-      cancelled: 30,
-      growth: 12.5,
-    },
-    vendors: {
-      total: 156,
-      active: 142,
-      inactive: 14,
-      newThisMonth: 8,
-      growth: 5.2,
-    },
-    riders: {
-      total: 89,
-      active: 76,
-      offline: 13,
-      onDelivery: 45,
-      growth: 8.7,
-    },
-    users: {
-      total: 5420,
-      active: 4890,
-      newThisMonth: 234,
-      growth: 15.3,
-    },
-    inventory: {
-      totalProducts: 3456,
-      inStock: 3120,
-      lowStock: 256,
-      outOfStock: 80,
-    },
-    revenue: {
-      today: 45678,
-      thisWeek: 234567,
-      thisMonth: 987654,
-      growth: 18.9,
-    },
-    notifications: {
-      unread: 15,
-      total: 48,
-    },
-    tickets: {
-      open: 23,
-      inProgress: 12,
-      resolved: 156,
-      escalated: 5,
-    },
+  // Fetch dashboard data from API
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+
+        // Get token from localStorage
+        const token =
+          localStorage.getItem("token") || localStorage.getItem("authToken");
+
+        const headers = {
+          "Content-Type": "application/json",
+        };
+
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(
+          `${BASE_URL}/api/analytics/admin/dashboard/overview`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: headers,
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch dashboard data: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          setDashboardData(result.data);
+        } else {
+          throw new Error("API returned unsuccessful response");
+        }
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  // Transform API data to match component structure
+  const getStats = () => {
+    if (!dashboardData) return null;
+
+    return {
+      orders: {
+        total: dashboardData.metrics.totalOrders.total,
+        new: dashboardData.metrics.totalOrders.new,
+        pending: dashboardData.metrics.totalOrders.pending,
+        delivered:
+          dashboardData.metrics.totalOrders.total -
+          dashboardData.metrics.totalOrders.pending,
+        cancelled: 0,
+        growth: dashboardData.metrics.totalOrders.increasePercent,
+      },
+      vendors: {
+        total: dashboardData.metrics.totalVendors.total,
+        active: dashboardData.metrics.totalVendors.active,
+        inactive:
+          dashboardData.metrics.totalVendors.total -
+          dashboardData.metrics.totalVendors.active,
+        newThisMonth: dashboardData.metrics.totalVendors.new,
+        growth: dashboardData.metrics.totalVendors.increasePercent,
+      },
+      riders: {
+        total: dashboardData.metrics.totalRiders.total,
+        active: dashboardData.metrics.totalRiders.online,
+        offline:
+          dashboardData.metrics.totalRiders.total -
+          dashboardData.metrics.totalRiders.online,
+        onDelivery: dashboardData.metrics.totalRiders.delivering,
+        growth: dashboardData.metrics.totalRiders.increasePercent,
+      },
+      users: {
+        total: dashboardData.metrics.totalUsers.total,
+        active: dashboardData.metrics.totalUsers.active,
+        newThisMonth: dashboardData.metrics.totalUsers.new,
+        growth: dashboardData.metrics.totalUsers.increasePercent,
+      },
+      inventory: {
+        totalProducts: dashboardData.inventory.totalProducts,
+        inStock: dashboardData.inventory.inStock,
+        lowStock: dashboardData.inventory.lowStock,
+        outOfStock: dashboardData.inventory.outOfStock,
+      },
+      revenue: {
+        today: dashboardData.revenue.today,
+        thisWeek: dashboardData.revenue.thisWeek,
+        thisMonth: dashboardData.revenue.thisMonth,
+        growth: dashboardData.revenue.increasePercent,
+      },
+      notifications: {
+        unread: dashboardData.notifications.unread,
+        total: dashboardData.notifications.unread,
+      },
+      tickets: {
+        open: dashboardData.supportTickets.open,
+        inProgress: dashboardData.supportTickets.inProgress,
+        resolved: dashboardData.supportTickets.resolved,
+        escalated: dashboardData.supportTickets.escalated,
+      },
+    };
   };
 
-  const recentOrders = [
-    {
-      id: "ORD-001",
-      customer: "John Doe",
-      amount: 1250,
-      status: "Delivered",
-      date: "2025-10-22",
-    },
-    {
-      id: "ORD-002",
-      customer: "Sarah Wilson",
-      amount: 890,
-      status: "Pending",
-      date: "2025-10-22",
-    },
-    {
-      id: "ORD-003",
-      customer: "Mike Brown",
-      amount: 2340,
-      status: "In Transit",
-      date: "2025-10-21",
-    },
-    {
-      id: "ORD-004",
-      customer: "Emily Davis",
-      amount: 560,
-      status: "Processing",
-      date: "2025-10-21",
-    },
-  ];
+  const stats = getStats();
 
-  const topVendors = [
-    { id: 1, name: "TechStore", sales: 45678, orders: 234, rating: 4.8 },
-    { id: 2, name: "Fashion Hub", sales: 38920, orders: 189, rating: 4.6 },
-    { id: 3, name: "ElectroMart", sales: 32450, orders: 156, rating: 4.7 },
-    { id: 4, name: "BookWorld", sales: 28900, orders: 145, rating: 4.5 },
-  ];
+  // Transform recent orders from API
+  const recentOrders =
+    dashboardData?.recentOrders.map((order) => ({
+      id: order.orderId,
+      customer: order.customer,
+      amount: order.amount,
+      status: order.status.charAt(0).toUpperCase() + order.status.slice(1),
+      date: new Date().toISOString().split("T")[0],
+    })) || [];
+
+  // Transform top vendors from API
+  const topVendors =
+    dashboardData?.topVendors.map((vendor) => ({
+      id: vendor.vendorId,
+      name: vendor.vendorName || vendor.storeName,
+      sales: 0, // Not provided in API
+      orders: vendor.orders,
+      rating: 0, // Not provided in API
+      rank: vendor.rank,
+    })) || [];
 
   // Skeleton Loader
   const SkeletonLoader = () => (
@@ -142,8 +183,35 @@ const AdminDashboard = () => {
           <div className="h-8 w-full sm:w-24 bg-gray-300 rounded"></div>
         </div>
       </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="bg-gray-200 rounded-lg h-40"></div>
+        ))}
+      </div>
     </div>
   );
+
+  // Error State
+  if (error && !loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+            <h3 className="text-red-800 font-semibold mb-2">
+              Error Loading Dashboard
+            </h3>
+            <p className="text-red-600 text-sm">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   // If notifications view is active, show NotificationsPage
   if (showNotifications) {
@@ -182,11 +250,11 @@ const AdminDashboard = () => {
                     <p className="text-sm text-gray-600">
                       You have{" "}
                       <span className="text-red-500 font-semibold">
-                        {stats.orders.new}
+                        {dashboardData?.summary.newOrders || 0}
                       </span>{" "}
                       New Orders &{" "}
                       <span className="text-red-500 font-semibold">
-                        {stats.orders.pending}
+                        {dashboardData?.summary.pendingOrders || 0}
                       </span>{" "}
                       Pending Orders
                     </p>
@@ -219,21 +287,21 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex items-center gap-1 text-green-600 text-sm font-semibold">
                       <ArrowUp size={16} />
-                      {stats.orders.growth}%
+                      {stats?.orders.growth}%
                     </div>
                   </div>
                   <h3 className="text-gray-600 text-sm font-medium mb-1">
                     Total Orders
                   </h3>
                   <p className="text-3xl font-bold text-gray-800 mb-2">
-                    {stats.orders.total.toLocaleString()}
+                    {stats?.orders.total.toLocaleString()}
                   </p>
                   <div className="flex gap-3 text-xs">
                     <span className="text-blue-600 font-medium">
-                      New: {stats.orders.new}
+                      New: {stats?.orders.new}
                     </span>
                     <span className="text-orange-600 font-medium">
-                      Pending: {stats.orders.pending}
+                      Pending: {stats?.orders.pending}
                     </span>
                   </div>
                 </div>
@@ -246,21 +314,21 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex items-center gap-1 text-green-600 text-sm font-semibold">
                       <ArrowUp size={16} />
-                      {stats.vendors.growth}%
+                      {stats?.vendors.growth}%
                     </div>
                   </div>
                   <h3 className="text-gray-600 text-sm font-medium mb-1">
                     Total Vendors
                   </h3>
                   <p className="text-3xl font-bold text-gray-800 mb-2">
-                    {stats.vendors.total}
+                    {stats?.vendors.total}
                   </p>
                   <div className="flex gap-3 text-xs">
                     <span className="text-green-600 font-medium">
-                      Active: {stats.vendors.active}
+                      Active: {stats?.vendors.active}
                     </span>
                     <span className="text-gray-500 font-medium">
-                      New: {stats.vendors.newThisMonth}
+                      New: {stats?.vendors.newThisMonth}
                     </span>
                   </div>
                 </div>
@@ -273,21 +341,21 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex items-center gap-1 text-green-600 text-sm font-semibold">
                       <ArrowUp size={16} />
-                      {stats.riders.growth}%
+                      {stats?.riders.growth}%
                     </div>
                   </div>
                   <h3 className="text-gray-600 text-sm font-medium mb-1">
                     Total Riders
                   </h3>
                   <p className="text-3xl font-bold text-gray-800 mb-2">
-                    {stats.riders.total}
+                    {stats?.riders.total}
                   </p>
                   <div className="flex gap-3 text-xs">
                     <span className="text-green-600 font-medium">
-                      Online: {stats.riders.active}
+                      Online: {stats?.riders.active}
                     </span>
                     <span className="text-orange-600 font-medium">
-                      Delivering: {stats.riders.onDelivery}
+                      Delivering: {stats?.riders.onDelivery}
                     </span>
                   </div>
                 </div>
@@ -300,21 +368,21 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex items-center gap-1 text-green-600 text-sm font-semibold">
                       <ArrowUp size={16} />
-                      {stats.users.growth}%
+                      {stats?.users.growth}%
                     </div>
                   </div>
                   <h3 className="text-gray-600 text-sm font-medium mb-1">
                     Total Users
                   </h3>
                   <p className="text-3xl font-bold text-gray-800 mb-2">
-                    {stats.users.total.toLocaleString()}
+                    {stats?.users.total.toLocaleString()}
                   </p>
                   <div className="flex gap-3 text-xs">
                     <span className="text-green-600 font-medium">
-                      Active: {stats.users.active.toLocaleString()}
+                      Active: {stats?.users.active.toLocaleString()}
                     </span>
                     <span className="text-blue-600 font-medium">
-                      New: {stats.users.newThisMonth}
+                      New: {stats?.users.newThisMonth}
                     </span>
                   </div>
                 </div>
@@ -334,25 +402,25 @@ const AdminDashboard = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Total Products:</span>
                       <span className="font-bold text-gray-800">
-                        {stats.inventory.totalProducts.toLocaleString()}
+                        {stats?.inventory.totalProducts.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">In Stock:</span>
                       <span className="font-semibold text-green-600">
-                        {stats.inventory.inStock.toLocaleString()}
+                        {stats?.inventory.inStock.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Low Stock:</span>
                       <span className="font-semibold text-orange-600">
-                        {stats.inventory.lowStock}
+                        {stats?.inventory.lowStock}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Out of Stock:</span>
                       <span className="font-semibold text-red-600">
-                        {stats.inventory.outOfStock}
+                        {stats?.inventory.outOfStock}
                       </span>
                     </div>
                   </div>
@@ -369,26 +437,26 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex items-center gap-1 text-green-600 text-xs font-semibold">
                       <ArrowUp size={14} />
-                      {stats.revenue.growth}%
+                      {stats?.revenue.growth}%
                     </div>
                   </div>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Today:</span>
                       <span className="font-bold text-gray-800">
-                        ₹{stats.revenue.today.toLocaleString()}
+                        ₹{stats?.revenue.today.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">This Week:</span>
                       <span className="font-semibold text-blue-600">
-                        ₹{stats.revenue.thisWeek.toLocaleString()}
+                        ₹{stats?.revenue.thisWeek.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">This Month:</span>
                       <span className="font-semibold text-green-600">
-                        ₹{stats.revenue.thisMonth.toLocaleString()}
+                        ₹{stats?.revenue.thisMonth.toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -399,9 +467,9 @@ const AdminDashboard = () => {
                   <div className="flex items-center gap-3 mb-3">
                     <div className="bg-yellow-100 p-2 rounded-lg relative">
                       <Bell className="text-yellow-600" size={20} />
-                      {stats.notifications.unread > 0 && (
+                      {stats?.notifications.unread > 0 && (
                         <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                          {stats.notifications.unread}
+                          {stats?.notifications.unread}
                         </span>
                       )}
                     </div>
@@ -412,10 +480,10 @@ const AdminDashboard = () => {
                   <div className="space-y-3">
                     <div className="bg-orange-50 border-l-4 border-orange-500 p-3 rounded">
                       <p className="text-sm font-semibold text-gray-800">
-                        {stats.notifications.unread} Unread
+                        {stats?.notifications.unread} Unread
                       </p>
                       <p className="text-xs text-gray-600 mt-1">
-                        You have pending notifications
+                        {dashboardData?.notifications.message}
                       </p>
                     </div>
                     <button
@@ -441,25 +509,25 @@ const AdminDashboard = () => {
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Open:</span>
                       <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-bold text-xs">
-                        {stats.tickets.open}
+                        {stats?.tickets.open}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">In Progress:</span>
                       <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-bold text-xs">
-                        {stats.tickets.inProgress}
+                        {stats?.tickets.inProgress}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Escalated:</span>
                       <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full font-bold text-xs">
-                        {stats.tickets.escalated}
+                        {stats?.tickets.escalated}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Resolved:</span>
                       <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold text-xs">
-                        {stats.tickets.resolved}
+                        {stats?.tickets.resolved}
                       </span>
                     </div>
                   </div>
@@ -481,56 +549,62 @@ const AdminDashboard = () => {
                       View All
                     </button>
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">
-                            Order ID
-                          </th>
-                          <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">
-                            Customer
-                          </th>
-                          <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">
-                            Amount
-                          </th>
-                          <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">
-                            Status
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {recentOrders.map((order) => (
-                          <tr key={order.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 text-sm font-medium text-[#F26422]">
-                              {order.id}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-700">
-                              {order.customer}
-                            </td>
-                            <td className="px-4 py-3 text-sm font-semibold text-gray-800">
-                              ₹{order.amount.toLocaleString()}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span
-                                className={`px-2 py-1 text-xs font-bold rounded-full ${
-                                  order.status === "Delivered"
-                                    ? "bg-green-100 text-green-700"
-                                    : order.status === "Pending"
-                                    ? "bg-orange-100 text-orange-700"
-                                    : order.status === "In Transit"
-                                    ? "bg-blue-100 text-blue-700"
-                                    : "bg-gray-100 text-gray-700"
-                                }`}
-                              >
-                                {order.status}
-                              </span>
-                            </td>
+                  {recentOrders.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">
+                              Order ID
+                            </th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">
+                              Customer
+                            </th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">
+                              Amount
+                            </th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">
+                              Status
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {recentOrders.map((order) => (
+                            <tr key={order.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 text-sm font-medium text-[#F26422]">
+                                {order.id}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-700">
+                                {order.customer}
+                              </td>
+                              <td className="px-4 py-3 text-sm font-semibold text-gray-800">
+                                ₹{order.amount.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3">
+                                <span
+                                  className={`px-2 py-1 text-xs font-bold rounded-full ${
+                                    order.status === "Delivered"
+                                      ? "bg-green-100 text-green-700"
+                                      : order.status === "Pending"
+                                        ? "bg-orange-100 text-orange-700"
+                                        : order.status === "In Transit"
+                                          ? "bg-blue-100 text-blue-700"
+                                          : "bg-gray-100 text-gray-700"
+                                  }`}
+                                >
+                                  {order.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      No recent orders
+                    </div>
+                  )}
                 </div>
 
                 {/* Top Vendors */}
@@ -546,40 +620,50 @@ const AdminDashboard = () => {
                       View All
                     </button>
                   </div>
-                  <div className="space-y-3">
-                    {topVendors.map((vendor, index) => (
-                      <div
-                        key={vendor.id}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                        onClick={() => navigate(`/vendor/${vendor.id}`)}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="bg-[#F26422] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">
-                            {index + 1}
+                  {topVendors.length > 0 ? (
+                    <div className="space-y-3">
+                      {topVendors.map((vendor) => (
+                        <div
+                          key={vendor.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                          onClick={() => navigate(`/vendor/${vendor.id}`)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="bg-[#F26422] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">
+                              {vendor.rank}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-800">
+                                {vendor.name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {vendor.orders} orders
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-semibold text-gray-800">
-                              {vendor.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {vendor.orders} orders
-                            </p>
+                          <div className="text-right">
+                            {vendor.sales > 0 && (
+                              <p className="font-bold text-gray-800">
+                                ₹{vendor.sales.toLocaleString()}
+                              </p>
+                            )}
+                            {vendor.rating > 0 && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-yellow-500">★</span>
+                                <span className="text-xs font-semibold text-gray-600">
+                                  {vendor.rating}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-bold text-gray-800">
-                            ₹{vendor.sales.toLocaleString()}
-                          </p>
-                          <div className="flex items-center gap-1">
-                            <span className="text-yellow-500">★</span>
-                            <span className="text-xs font-semibold text-gray-600">
-                              {vendor.rating}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      No vendors data available
+                    </div>
+                  )}
                 </div>
               </div>
             </>

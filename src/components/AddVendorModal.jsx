@@ -1429,7 +1429,6 @@
 
 // export default AddVendorModal;
 
-
 import React, { useState, useEffect } from "react";
 import { X, User, MapPin, FileText, Banknote } from "lucide-react";
 import api from "../api/api";
@@ -1467,6 +1466,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
     accountNumber: "",
     bankName: "",
     cancelCheque: null,
+    handlingChargePercentage: "20",
   });
   const [errors, setErrors] = useState({});
 
@@ -1510,7 +1510,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
         },
         () => {
           alert("Unable to fetch location. Please enter manually.");
-        }
+        },
       );
     } else {
       alert("Geolocation is not supported by this browser.");
@@ -1521,7 +1521,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
     if (pinCode.length === 6) {
       try {
         const response = await fetch(
-          `https://api.postalpincode.in/pincode/${pinCode}`
+          `https://api.postalpincode.in/pincode/${pinCode}`,
         );
         const data = await response.json();
         if (data[0].Status === "Success") {
@@ -1581,6 +1581,17 @@ const AddVendorModal = ({ isOpen, onClose }) => {
     if (!formData.accountNumber.trim())
       newErrors.accountNumber = "Account number required";
     if (!formData.bankName.trim()) newErrors.bankName = "Bank name required";
+
+    if (!formData.handlingChargePercentage.trim()) {
+      newErrors.handlingChargePercentage =
+        "Handling charge percentage is required";
+    } else {
+      const percentage = parseFloat(formData.handlingChargePercentage);
+      if (isNaN(percentage) || percentage < 0 || percentage > 100) {
+        newErrors.handlingChargePercentage = "Must be between 0 and 100";
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -1608,72 +1619,44 @@ const AddVendorModal = ({ isOpen, onClose }) => {
       setError("");
       setSuccess("");
 
-      // Validate phone number format
       const phoneRegex = /^[6-9]\d{9}$/;
       if (!phoneRegex.test(formData.contactNumber)) {
         setError(
-          "Contact number must be a valid 10-digit Indian mobile number starting with 6-9"
+          "Contact number must be a valid 10-digit Indian mobile number starting with 6-9",
         );
         setIsLoading(false);
         return;
       }
 
-      // Get auth token from localStorage
-      const authToken = localStorage.getItem("authToken") || localStorage.getItem("token");
-
-      // Normalize contact number (remove spaces, ensure it's a string)
-      const normalizedContactNumber = String(formData.contactNumber).trim().replace(/\s+/g, '');
+      const normalizedContactNumber = String(formData.contactNumber)
+        .trim()
+        .replace(/\s+/g, "");
 
       const requestBody = {
         contactNumber: normalizedContactNumber,
       };
 
-      // Prepare headers
-      const headers = {
-        "Content-Type": "application/json",
-      };
-
-      // Add Authorization header if token exists
-      if (authToken) {
-        headers["Authorization"] = `Bearer ${authToken}`;
-      }
-
-      console.log("=== SEND OTP REQUEST ===");
-      console.log("URL:", "/vendor/send-otp");
-      console.log("Method:", "POST");
-      console.log("Headers:", headers);
-      console.log("Body:", JSON.stringify(requestBody));
-      console.log("Body String Length:", JSON.stringify(requestBody).length);
-      console.log("Auth Token:", authToken ? "Present" : "Missing");
-
-      const response = await api.post("/vendor/send-otp", requestBody);
-
-      console.log("=== SEND OTP RESPONSE ===");
-      console.log("Status:", response.status);
-      console.log("Status Text:", response.statusText);
-      console.log("OK:", response.status >= 200 && response.status < 300);
-      console.log("Headers:", response.headers);
-
+      const response = await api.post("/api/vendor/send-otp", requestBody);
       const data = response.data;
-      console.log("Response Data:", data);
 
       if (data.success) {
         setSuccess(
-          `OTP sent to ${data.contactNumber || formData.contactNumber}`
+          `OTP sent to ${data.contactNumber || formData.contactNumber}`,
         );
         setStep(2);
       } else {
         const errorMsg =
           data.message || data.error || `Server error (${response.status})`;
-        console.error("API Error:", errorMsg);
         setError(errorMsg);
       }
     } catch (error) {
-      console.error("=== SEND OTP NETWORK ERROR ===");
-      console.error("Error Type:", error.constructor.name);
-      console.error("Error Message:", error.message);
-      console.error("Error Stack:", error.stack);
-      setError(error.response?.data?.message || `Network error: ${error.message}`);
+      if (error.response?.status === 404) {
+        setError("API endpoint not found. Please contact administrator.");
+      } else {
+        setError(
+          error.response?.data?.message || `Network error: ${error.message}`,
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -1708,35 +1691,53 @@ const AddVendorModal = ({ isOpen, onClose }) => {
 
       const formDataToSend = new FormData();
 
-      console.log("Creating vendor with data:", {
-        vendorName: formData.vendorName,
-        contactNumber: formData.contactNumber,
-        email: formData.email,
-        storeName: formData.storeName,
-      });
+      const normalizedContactNumber = String(formData.contactNumber)
+        .trim()
+        .replace(/\s+/g, "");
 
-      // Normalize contact number (remove spaces, ensure it's a string)
-      const normalizedContactNumber = String(formData.contactNumber).trim().replace(/\s+/g, '');
-
-      // Add text fields (trim all string values)
-      formDataToSend.append("vendorName", String(formData.vendorName || "").trim());
+      formDataToSend.append(
+        "vendorName",
+        String(formData.vendorName || "").trim(),
+      );
       formDataToSend.append("contactNumber", normalizedContactNumber);
       if (formData.altContactNumber) {
-        formDataToSend.append("altContactNumber", String(formData.altContactNumber).trim().replace(/\s+/g, ''));
+        formDataToSend.append(
+          "altContactNumber",
+          String(formData.altContactNumber).trim().replace(/\s+/g, ""),
+        );
       }
-      formDataToSend.append("email", String(formData.email || "").trim().toLowerCase());
+      formDataToSend.append(
+        "email",
+        String(formData.email || "")
+          .trim()
+          .toLowerCase(),
+      );
       formDataToSend.append("gender", String(formData.gender || "").trim());
       formDataToSend.append("dateOfBirth", String(formData.dob || "").trim());
       if (formData.age) {
         formDataToSend.append("age", String(formData.age).trim());
       }
-      // Don't send storeId - backend auto-generates it
-      formDataToSend.append("storeName", String(formData.storeName || "").trim());
+      formDataToSend.append(
+        "storeName",
+        String(formData.storeName || "").trim(),
+      );
 
-      // Add store address (using flat field names as expected by backend)
-      formDataToSend.append("storeAddressLine1", String(formData.storeAddress1 || "").trim());
+      if (formData.handlingChargePercentage) {
+        formDataToSend.append(
+          "handlingChargePercentage",
+          String(formData.handlingChargePercentage).trim(),
+        );
+      }
+
+      formDataToSend.append(
+        "storeAddressLine1",
+        String(formData.storeAddress1 || "").trim(),
+      );
       if (formData.storeAddress2) {
-        formDataToSend.append("storeAddressLine2", String(formData.storeAddress2).trim());
+        formDataToSend.append(
+          "storeAddressLine2",
+          String(formData.storeAddress2).trim(),
+        );
       }
       formDataToSend.append("pinCode", String(formData.pinCode || "").trim());
       if (formData.city) {
@@ -1752,36 +1753,38 @@ const AddVendorModal = ({ isOpen, onClose }) => {
         formDataToSend.append("longitude", String(formData.storeLong).trim());
       }
 
-      // Add bank details (using flat field names as expected by backend)
-      // IFSC should be uppercase as per validation pattern
-      formDataToSend.append("ifsc", String(formData.ifscCode || "").trim().toUpperCase());
-      formDataToSend.append("accountNumber", String(formData.accountNumber || "").trim());
-      // Bank name is required (backend accepts bankName or bank_name)
+      formDataToSend.append(
+        "ifsc",
+        String(formData.ifscCode || "")
+          .trim()
+          .toUpperCase(),
+      );
+      formDataToSend.append(
+        "accountNumber",
+        String(formData.accountNumber || "").trim(),
+      );
       formDataToSend.append("bankName", String(formData.bankName || "").trim());
 
-      // Add files with size validation (10MB limit per file)
-      const maxFileSize = 10 * 1024 * 1024; // 10MB in bytes
-      const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-      const allowedPdfType = 'application/pdf';
+      const maxFileSize = 10 * 1024 * 1024;
+      const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png"];
+      const allowedPdfType = "application/pdf";
       const allowedTypes = [...allowedImageTypes, allowedPdfType];
 
       const validateFile = (file, fieldName) => {
         if (!file) return null;
-        
-        // Check file size
         if (file.size > maxFileSize) {
-          throw new Error(`${fieldName} file size exceeds 10MB limit. Please upload a smaller file.`);
+          throw new Error(
+            `${fieldName} file size exceeds 10MB limit. Please upload a smaller file.`,
+          );
         }
-        
-        // Check file type
         if (!allowedTypes.includes(file.type)) {
-          throw new Error(`${fieldName} must be a JPEG, JPG, PNG image or PDF file.`);
+          throw new Error(
+            `${fieldName} must be a JPEG, JPG, PNG image or PDF file.`,
+          );
         }
-        
         return true;
       };
 
-      // Validate and append files
       try {
         if (formData.storeImage) {
           validateFile(formData.storeImage, "Store Image");
@@ -1817,96 +1820,73 @@ const AddVendorModal = ({ isOpen, onClose }) => {
         return;
       }
 
-      // Get auth token from localStorage
-      const authToken = localStorage.getItem("authToken") || localStorage.getItem("token");
-
-      // Prepare headers for FormData (don't set Content-Type, browser will set it with boundary)
-      const headers = {};
-      
-      // Add Authorization header if token exists
-      if (authToken) {
-        headers["Authorization"] = `Bearer ${authToken}`;
-      }
-
-      console.log("=== CREATE VENDOR REQUEST ===");
-      console.log("URL:", "/vendor/create");
-      console.log("Auth Token:", authToken ? "Present" : "Missing");
-      
-      // Log FormData contents (for debugging)
-      console.log("FormData entries:");
-      let totalFileSize = 0;
-      for (let pair of formDataToSend.entries()) {
-        if (pair[1] instanceof File) {
-          const fileSizeMB = (pair[1].size / (1024 * 1024)).toFixed(2);
-          totalFileSize += pair[1].size;
-          console.log(pair[0] + ": [File: " + pair[1].name + ", Size: " + fileSizeMB + " MB]");
-        } else {
-          console.log(pair[0] + ": " + pair[1]);
-        }
-      }
-      const totalSizeMB = (totalFileSize / (1024 * 1024)).toFixed(2);
-      console.log("Total file size: " + totalSizeMB + " MB");
-      
-      if (totalFileSize > 50 * 1024 * 1024) { // 50MB warning
-        console.warn("Warning: Total file size exceeds 50MB. This may cause timeout issues.");
-      }
-
-      // Create AbortController for timeout handling
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes timeout
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
 
       let response;
       try {
-        response = await api.post("/vendor/create", formDataToSend, {
-          headers: headers,
-          signal: controller.signal, // Add abort signal for timeout
-          timeout: 120000, // 2 minutes timeout
+        response = await api.post("/api/vendor/create", formDataToSend, {
+          signal: controller.signal,
+          timeout: 120000,
         });
         clearTimeout(timeoutId);
       } catch (fetchError) {
         clearTimeout(timeoutId);
-        if (fetchError.name === 'AbortError' || fetchError.code === 'ECONNABORTED') {
-          console.error("Request timeout - file upload took too long");
-          setError("Request timeout. The files may be too large. Please try again or reduce file sizes.");
+        if (
+          fetchError.name === "AbortError" ||
+          fetchError.code === "ECONNABORTED"
+        ) {
+          setError(
+            "Request timeout. The files may be too large. Please try again or reduce file sizes.",
+          );
           setIsLoading(false);
           return;
-        } else if (fetchError.message.includes('Failed to fetch') || fetchError.message.includes('NetworkError') || fetchError.code === 'ERR_NETWORK') {
-          console.error("Network error:", fetchError);
-          setError("Network error. Please check your internet connection and try again. If the problem persists, the files may be too large.");
+        } else if (
+          fetchError.message.includes("Failed to fetch") ||
+          fetchError.message.includes("NetworkError") ||
+          fetchError.code === "ERR_NETWORK"
+        ) {
+          setError(
+            "Network error. Please check your internet connection and try again. If the problem persists, the files may be too large.",
+          );
           setIsLoading(false);
           return;
         } else {
-          // Handle axios error response
           const errorData = fetchError.response?.data;
-          const errorMessage = errorData?.message || fetchError.message || "An error occurred";
-          
-          // Check for specific error messages
-          if (errorMessage.includes("post office") || errorMessage.includes("Failed to fetch post office")) {
-            setError("Invalid PIN code or unable to verify address. Please check your PIN code and try again.");
-          } else if (errorMessage.includes("PIN code") || errorMessage.includes("pinCode")) {
-            setError("Invalid PIN code. Please enter a valid 6-digit PIN code.");
+          const errorMessage =
+            errorData?.message || fetchError.message || "An error occurred";
+
+          if (
+            errorMessage.includes("post office") ||
+            errorMessage.includes("Failed to fetch post office")
+          ) {
+            setError(
+              "Invalid PIN code or unable to verify address. Please check your PIN code and try again.",
+            );
+          } else if (
+            errorMessage.includes("PIN code") ||
+            errorMessage.includes("pinCode")
+          ) {
+            setError(
+              "Invalid PIN code. Please enter a valid 6-digit PIN code.",
+            );
           } else {
-            setError(`Server error: ${errorMessage}. Please try again or contact support.`);
+            setError(
+              `Server error: ${errorMessage}. Please try again or contact support.`,
+            );
           }
-          
+
           setIsLoading(false);
           return;
         }
       }
 
-      console.log("=== CREATE VENDOR RESPONSE ===");
-      console.log("Status:", response.status);
-      console.log("Status Text:", response.statusText);
-      console.log("OK:", response.status >= 200 && response.status < 300);
-
       const data = response.data;
-      console.log("Create Vendor Response Data:", data);
 
       if (data.success) {
         setSuccess("Vendor registered successfully!");
         setTimeout(() => {
           onClose();
-          // Reset form
           setFormData({
             vendorName: "",
             contactNumber: "",
@@ -1934,6 +1914,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
             accountNumber: "",
             bankName: "",
             cancelCheque: null,
+            handlingChargePercentage: "20",
           });
           setOtp(["", "", "", ""]);
           setStep(1);
@@ -1941,52 +1922,67 @@ const AddVendorModal = ({ isOpen, onClose }) => {
           setSuccess("");
         }, 2000);
       } else {
-        // Handle specific error cases
-        const errorMsg = data.error || data.message || "Failed to register vendor";
-        
-        console.error("Create vendor error:", errorMsg);
-        console.error("Full error response:", data);
-        
-        if (errorMsg.includes("verify your contact number") || 
-            errorMsg.includes("Vendor not found") ||
-            errorMsg.includes("contactNumberVerified")) {
+        const errorMsg =
+          data.error || data.message || "Failed to register vendor";
+
+        if (
+          errorMsg.includes("verify your contact number") ||
+          errorMsg.includes("Vendor not found") ||
+          errorMsg.includes("contactNumberVerified")
+        ) {
           setError("Contact number not verified. Please verify OTP again.");
-          // Reset to OTP step
           setStep(2);
           setOtp(["", "", "", ""]);
-        } else if (errorMsg.includes("File size too large") || 
-                   errorMsg.includes("file size") ||
-                   errorMsg.includes("LIMIT_FILE_SIZE")) {
-          setError("One or more files exceed the 10MB size limit. Please reduce file sizes and try again.");
-        } else if (errorMsg.includes("Unexpected field") || 
-                   errorMsg.includes("file upload error") ||
-                   errorMsg.includes("MulterError")) {
-          setError(`File upload error: ${errorMsg}. Please check file names and try again.`);
-        } else if (errorMsg.includes("Only image files") || 
-                   errorMsg.includes("PDF files are allowed")) {
-          setError("Invalid file type. Please upload only JPEG, JPG, PNG images or PDF files.");
-        } else if (errorMsg.includes("already registered") || 
-                   errorMsg.includes("already exists")) {
+        } else if (
+          errorMsg.includes("File size too large") ||
+          errorMsg.includes("file size") ||
+          errorMsg.includes("LIMIT_FILE_SIZE")
+        ) {
+          setError(
+            "One or more files exceed the 10MB size limit. Please reduce file sizes and try again.",
+          );
+        } else if (
+          errorMsg.includes("Unexpected field") ||
+          errorMsg.includes("file upload error") ||
+          errorMsg.includes("MulterError")
+        ) {
+          setError(
+            `File upload error: ${errorMsg}. Please check file names and try again.`,
+          );
+        } else if (
+          errorMsg.includes("Only image files") ||
+          errorMsg.includes("PDF files are allowed")
+        ) {
+          setError(
+            "Invalid file type. Please upload only JPEG, JPG, PNG images or PDF files.",
+          );
+        } else if (
+          errorMsg.includes("already registered") ||
+          errorMsg.includes("already exists")
+        ) {
           setError(errorMsg);
         } else {
           setError(errorMsg);
         }
       }
     } catch (error) {
-      console.error("Vendor Creation Error:", error);
-      console.error("Error name:", error.name);
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
-      
-      // Provide more specific error messages
-      if (error.name === 'AbortError' || error.message.includes('timeout')) {
-        setError("Request timeout. The upload is taking too long. Please try again with smaller files.");
-      } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-        setError("Network error. Please check your connection. If uploading large files, try reducing their size.");
-      } else if (error.message.includes('CORS')) {
+      if (error.name === "AbortError" || error.message.includes("timeout")) {
+        setError(
+          "Request timeout. The upload is taking too long. Please try again with smaller files.",
+        );
+      } else if (
+        error.message.includes("Failed to fetch") ||
+        error.message.includes("NetworkError")
+      ) {
+        setError(
+          "Network error. Please check your connection. If uploading large files, try reducing their size.",
+        );
+      } else if (error.message.includes("CORS")) {
         setError("CORS error. Please contact the administrator.");
       } else {
-        setError(`Error creating vendor: ${error.message || "Please try again."}`);
+        setError(
+          `Error creating vendor: ${error.message || "Please try again."}`,
+        );
       }
     } finally {
       setIsLoading(false);
@@ -2000,7 +1996,6 @@ const AddVendorModal = ({ isOpen, onClose }) => {
       return;
     }
 
-    // Validate OTP is numeric
     if (!/^\d{4}$/.test(enteredOtp)) {
       setError("OTP must be 4 digits");
       return;
@@ -2010,82 +2005,51 @@ const AddVendorModal = ({ isOpen, onClose }) => {
       setIsLoading(true);
       setError("");
 
-      // Get auth token from localStorage
-      const authToken = localStorage.getItem("authToken") || localStorage.getItem("token");
-
-      // Normalize contact number (remove spaces, ensure it's a string)
-      const normalizedContactNumber = String(formData.contactNumber).trim().replace(/\s+/g, '');
+      const normalizedContactNumber = String(formData.contactNumber)
+        .trim()
+        .replace(/\s+/g, "");
 
       const requestBody = {
         contactNumber: normalizedContactNumber,
         otp: String(enteredOtp).trim(),
       };
 
-      // Prepare headers
-      const headers = {
-        "Content-Type": "application/json",
-      };
-
-      // Add Authorization header if token exists
-      if (authToken) {
-        headers["Authorization"] = `Bearer ${authToken}`;
-      }
-
-      console.log("=== VERIFY OTP REQUEST ===");
-      console.log("URL:", "/vendor/verify-otp");
-      console.log("Method:", "POST");
-      console.log("Headers:", headers);
-      console.log("Body:", JSON.stringify(requestBody));
-      console.log("Auth Token:", authToken ? "Present" : "Missing");
-
-      const response = await api.post("/vendor/verify-otp", requestBody);
-
-      console.log("=== VERIFY OTP RESPONSE ===");
-      console.log("Status:", response.status);
-      console.log("Status Text:", response.statusText);
-      console.log("OK:", response.status >= 200 && response.status < 300);
-
+      const response = await api.post("/api/vendor/verify-otp", requestBody);
       const data = response.data;
-      console.log("Response Data:", data);
 
       if (data.success) {
         setSuccess("OTP verified successfully! Contact number verified.");
-        console.log("OTP verified successfully. Response:", data);
-        console.log("Vendor should now have contactNumberVerified: true");
-        
-        // Small delay to ensure backend has saved contactNumberVerified: true
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        console.log("Proceeding to create vendor...");
-        // OTP verified and contactNumberVerified should be true, now create vendor
+        await new Promise((resolve) => setTimeout(resolve, 500));
         await createVendor();
       } else {
         const errorMsg =
           data.message || data.error || `Invalid OTP (${response.status})`;
-        console.error("API Error:", errorMsg);
-        console.error("Full error response:", data);
-        
-        // Provide more helpful error messages and allow resending OTP
+
         if (errorMsg.includes("expired") || errorMsg.includes("Expired")) {
-          setError("OTP has expired (valid for 10 minutes). Please request a new OTP.");
-          // Clear OTP input and allow resending
+          setError(
+            "OTP has expired (valid for 10 minutes). Please request a new OTP.",
+          );
           setOtp(["", "", "", ""]);
-          // Optionally reset to step 1 to allow resending OTP
-          // setStep(1);
-        } else if (errorMsg.includes("Invalid") || errorMsg.includes("invalid")) {
-          setError("Invalid OTP. Please check the code and try again, or request a new OTP.");
-          // Clear OTP input
+        } else if (
+          errorMsg.includes("Invalid") ||
+          errorMsg.includes("invalid")
+        ) {
+          setError(
+            "Invalid OTP. Please check the code and try again, or request a new OTP.",
+          );
           setOtp(["", "", "", ""]);
         } else {
           setError(errorMsg);
         }
       }
     } catch (error) {
-      console.error("=== VERIFY OTP NETWORK ERROR ===");
-      console.error("Error Type:", error.constructor.name);
-      console.error("Error Message:", error.message);
-      console.error("Error Stack:", error.stack);
-      setError(error.response?.data?.message || `Network error: ${error.message}`);
+      if (error.response?.status === 404) {
+        setError("Verification endpoint not found. Please contact administrator.");
+      } else {
+        setError(
+          error.response?.data?.message || `Network error: ${error.message}`,
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -2116,7 +2080,6 @@ const AddVendorModal = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Error/Success Messages */}
         {error && (
           <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
             <svg
@@ -2325,7 +2288,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
                 Store Information
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
                   <label className="block text-sm text-gray-700 font-bold mb-1">
                     Store ID
@@ -2371,6 +2334,32 @@ const AddVendorModal = ({ isOpen, onClose }) => {
                     onChange={handleFileChange}
                     className="w-full px-3 py-2 text-sm border border-orange-400 rounded focus:ring-1 focus:ring-orange-400 outline-none"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-700 font-bold mb-1">
+                    Handling Charge (%)
+                  </label>
+                  <input
+                    id="handlingChargePercentage"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={formData.handlingChargePercentage}
+                    onChange={handleInputChange}
+                    placeholder="Enter percentage (0-100)"
+                    className={`w-full px-3 py-2 text-sm border ${
+                      errors.handlingChargePercentage
+                        ? "border-red-500"
+                        : "border-orange-400"
+                    } rounded focus:ring-1 focus:ring-orange-400 outline-none`}
+                  />
+                  {errors.handlingChargePercentage && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.handlingChargePercentage}
+                    </p>
+                  )}
                 </div>
               </div>
 
