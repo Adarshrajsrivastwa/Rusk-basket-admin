@@ -138,7 +138,7 @@ const AllProduct = () => {
 
           return {
             id: product._id,
-            productId: product._id,
+            productId: product.productNumber || product._id,
             date: product.createdAt
               ? new Date(product.createdAt).toISOString().split("T")[0]
               : "N/A",

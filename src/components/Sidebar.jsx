@@ -398,7 +398,6 @@
 // export default Sidebar;
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { BASE_URL } from "../api/api";
 import {
   LayoutDashboard,
   Package,
@@ -407,7 +406,6 @@ import {
   ShoppingCart,
   Tags,
   TicketPercent,
-  Bell,
   BarChart3,
   Store,
   Headphones,
@@ -422,9 +420,12 @@ import {
   UserCog,
   LogOut,
   Image,
+  CreditCard,
+  MessageSquare,
 } from "lucide-react";
 import AddVendorModal from "./AddVendorModal";
 import AddProductPopup from "../components/AddProduct"; // ✅ Import Product Modal
+import { BASE_URL } from "../api/api";
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -577,15 +578,6 @@ const Sidebar = () => {
       ],
     },
     {
-      name: "Notification",
-      icon: <Bell size={16} />,
-      subItems: [
-        { name: "Notification", path: "/notification" },
-        { name: "Shoot Notification", path: "/notification/shoot" },
-        { name: "Manage Event Notification", path: "/notification/manage" },
-      ],
-    },
-    {
       name: "Analytics",
       icon: <BarChart3 size={16} />,
       subItems: [
@@ -600,12 +592,6 @@ const Sidebar = () => {
       icon: <Truck size={16} />,
       path: "/Rider",
     },
-
-    {
-      name: "Rider Jobs",
-      icon: <Image size={16} />,
-      path: "/jobs",
-    },
     {
       name: "Vendor Management",
       icon: <Store size={16} />,
@@ -619,17 +605,29 @@ const Sidebar = () => {
     {
       name: "Vendor Support",
       icon: <Headphones size={16} />,
-      path: "/vendor-support",
+      path: "/admin/vendor-support",
     },
 
     {
       name: "User Support",
       icon: <Users size={16} />,
-      subItems: [
-        { name: "New Ticket", path: "/user-support/new" },
-        { name: "Open Ticket", path: "/user-support/open" },
-        { name: "Closed Ticket", path: "/user-support/closed" },
-      ],
+      path: "/admin/user-support",
+    },
+
+    {
+      name: "Rider Support",
+      icon: <Truck size={16} />,
+      path: "/admin/rider-support",
+    },
+    {
+      name: "Payment Gateways",
+      icon: <CreditCard size={16} />,
+      path: "/payment-gateways",
+    },
+    {
+      name: "Suggestions",
+      icon: <MessageSquare size={16} />,
+      path: "/suggestions",
     },
     {
       name: "Settings",

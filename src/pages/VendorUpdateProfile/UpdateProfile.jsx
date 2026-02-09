@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
-import { BASE_URL } from "../../api/api";
 import {
   User,
   Store,
@@ -64,7 +63,7 @@ const VendorProfile = () => {
       }
 
       const response = await fetch(
-        `${BASE_URL}/api/vendor/profile`,
+        "https://api.rushbaskets.com/api/vendor/profile",
         {
           method: "GET",
           credentials: "include",
@@ -131,7 +130,7 @@ const VendorProfile = () => {
       }
 
       const response = await fetch(
-        `${BASE_URL}/api/vendor/profile`,
+        "https://api.rushbaskets.com/api/vendor/profile",
         {
           method: "PUT",
           credentials: "include",

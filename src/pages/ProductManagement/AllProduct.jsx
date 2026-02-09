@@ -811,9 +811,17 @@ const AllProduct = () => {
       });
 
       if (response.data.success) {
-        setProducts(response.data.data);
+        // Transform products to include productNumber in productId field and format date
+        const transformedProducts = response.data.data.map((product) => ({
+          ...product,
+          productId: product.productNumber || product._id,
+          date: product.createdAt
+            ? new Date(product.createdAt).toISOString().split("T")[0]
+            : "N/A",
+        }));
+        setProducts(transformedProducts);
         setTotalProducts(response.data.pagination.total);
-        setTotalPages(response.data.pagination.pages);
+        setTotalPages(response.data.pagination.pages || response.data.pagination.totalPages || 1);
       }
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -869,7 +877,7 @@ const AllProduct = () => {
 
   const searchedProducts = filteredByVendor.filter((product) => {
     const searchableText = [
-      product._id,
+      product.productNumber || product._id,
       product.productId,
       getVendorName(product),
       product.category,
@@ -1015,7 +1023,7 @@ const AllProduct = () => {
                   <td className="p-3">
                     {(currentPage - 1) * itemsPerPage + idx + 1}
                   </td>
-                  <td className="p-3 font-mono text-xs">{product.productId}</td>
+                  <td className="p-3 font-mono text-xs">{product.productNumber || product.productId || product._id}</td>
                   <td className="p-3">{product.date}</td>
                   <td className="p-3">
                     <span

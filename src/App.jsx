@@ -171,6 +171,7 @@ import AllVendor from "./pages/VendorManagement/AllVendor";
 import VendorDetails from "./pages/VendorManagement/VendorDetails";
 import VendorPermissionPage from "./pages/VendorManagement/VendorPermissionPage";
 import VendorSupport from "./pages/VendorSupportManagement/VendorSupport";
+import VendorDailyOffers from "./pages/VendorDailyOffers/VendorDailyOffers";
 import AllCategory from "./pages/CategoryManagement/AllCategory";
 import AllCategoryView from "./pages/CategoryManagement/AllCategoryView";
 import CreateCategory from "./pages/CategoryManagement/CreateCategory";
@@ -198,7 +199,6 @@ import Login from "./pages/Login";
 import TopBarNotification from "./pages/TopBarComponents/TopBarNotification";
 import TopBarMail from "./pages/TopBarComponents/TopBarMail";
 import TopBarChat from "./pages/TopBarComponents/TopBarChat";
-import NewOrderPopup from "./components/NewOrderPopup";
 import Products from "./pages/VendorProductManagement/Products";
 import SingleProducts from "./pages/VendorProductManagement/SingleProducts";
 import VendorInventory from "./pages/VendorInventoryManagement/VendorInventory";
@@ -206,22 +206,16 @@ import VendorOrder from "./pages/VendorOrderManagement/VendorOrder";
 import VendorAnalytics from "./pages/VendorAnalytics/VendorAnalytics";
 import RiderJobs from "./pages/RiderJobsManagement/RiderJobs";
 import RiderJobApplications from "./pages/RiderJobManagement/RiderJobApplications.jsx";
-import Jobs from "./pages/AdminRiderJobsManagement/Jobs";
 import UpdateProfile from "./pages/VendorUpdateProfile/UpdateProfile";
-import MyProfile from "./pages/HeaderMyProfile/MyProfile.jsx";
+import MyProfile from "./pages/HeaderMyProfile/MyProfile";
+import AdminProfile from "./pages/AdminProfilePage/AdminProfile.jsx";
+import PaymentGateways from "./pages/PaymentGatewayManagement/PaymentGateways";
+import Suggestions from "./pages/SuggestionManagement/Suggestions";
+import AdminVendorSupport from "./pages/AdminSupportManagement/AdminVendorSupport";
+import AdminUserSupport from "./pages/AdminSupportManagement/AdminUserSupport";
+import AdminRiderSupport from "./pages/AdminSupportManagement/AdminRiderSupport";
 function AppContent() {
-  const [showPopup, setShowPopup] = useState(false);
   const location = useLocation();
-
-  useEffect(() => {
-    if (location.pathname !== "/") {
-      const timer = setTimeout(() => {
-        setShowPopup(true);
-      }, 5000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [location.pathname]);
 
   return (
     <>
@@ -391,12 +385,70 @@ function AppContent() {
           }
         />
 
-        <Route path="/vendor-support" element={<VendorSupport />} />
+        <Route
+          path="/vendor-support"
+          element={
+            <ProtectedRoute allowedRoles={["vendor"]}>
+              <VendorSupport />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/daily-offers"
+          element={
+            <ProtectedRoute allowedRoles={["vendor"]}>
+              <VendorDailyOffers />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/vendor/update-profile"
           element={
             <ProtectedRoute allowedRoles={["vendor"]}>
               <UpdateProfile />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="/settings/profile" element={<AdminProfile />} />
+        <Route
+          path="/payment-gateways"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <PaymentGateways />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/suggestions"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <Suggestions />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/vendor-support"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminVendorSupport />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/user-support"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminUserSupport />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/rider-support"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminRiderSupport />
             </ProtectedRoute>
           }
         />
@@ -417,7 +469,6 @@ function AppContent() {
         <Route path="/orders/:id/bag-qr-scan" element={<BagQRScan />} />
 
         <Route path="/Rider" element={<AllRider />} />
-        <Route path="/jobs" element={<Jobs />} />
 
         <Route path="/coupons/all" element={<AllCoupon />} />
         <Route path="/coupons/:id" element={<SingleOffer />} />
@@ -439,18 +490,20 @@ function AppContent() {
           path="/vendor/notifications"
           element={
             <ProtectedRoute allowedRoles={["vendor"]}>
-              <div className="p-4">Vendor Notifications Page - Coming Soon</div>
+              <TopBarNotification />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/settings/profile"
+          element={
+            <ProtectedRoute allowedRoles={["vendor"]}>
+              <UpdateProfile />
             </ProtectedRoute>
           }
         />
       </Routes>
 
-      {location.pathname !== "/" && (
-        <NewOrderPopup
-          visible={showPopup}
-          onClose={() => setShowPopup(false)}
-        />
-      )}
     </>
   );
 }

@@ -973,7 +973,7 @@
 //   );
 // }
 import React, { useState, useEffect } from "react";
-import { Upload } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import api from "../api/api";
 
 export default function AddProductPopup({
@@ -994,19 +994,87 @@ export default function AddProductPopup({
     regularPrice: "",
     salePrice: "",
     cashback: "",
+    tax: "",
     productType: "",
     productTypeValue: "",
     productTypeUnit: "",
-    tags: "",
-    images: [],
+    tags: [],
+    images: [], // New images to upload
+    existingImages: [], // Existing images from backend (for edit mode)
+    vendorId: "", // For admin to select vendor
   });
 
+  const [tagInput, setTagInput] = useState("");
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
+  const [vendors, setVendors] = useState([]);
+  const [vendorsLoading, setVendorsLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [subCategoriesLoading, setSubCategoriesLoading] = useState(false);
+  
+  // Get user role
+  const userRole = localStorage.getItem("userRole") || "";
+  const isAdmin = userRole === "admin";
+
+  // Product type options
+  const productTypeOptions = [
+    { value: "", label: "Select Type" },
+    { value: "weight", label: "Weight" },
+    { value: "volume", label: "Volume" },
+    { value: "count", label: "Count" },
+    { value: "piece", label: "Piece" },
+  ];
+
+  // Product type unit options based on selected type
+  const getUnitOptions = () => {
+    switch (formData.productType) {
+      case "weight":
+        return [
+          { value: "", label: "Select Unit" },
+          { value: "kg", label: "Kilogram (kg)" },
+          { value: "g", label: "Gram (g)" },
+          { value: "mg", label: "Milligram (mg)" },
+          { value: "lb", label: "Pound (lb)" },
+          { value: "oz", label: "Ounce (oz)" },
+        ];
+      case "volume":
+        return [
+          { value: "", label: "Select Unit" },
+          { value: "l", label: "Liter (l)" },
+          { value: "ml", label: "Milliliter (ml)" },
+          { value: "gallon", label: "Gallon" },
+        ];
+      case "count":
+      case "piece":
+        return [
+          { value: "", label: "Select Unit" },
+          { value: "piece", label: "Piece" },
+          { value: "dozen", label: "Dozen" },
+          { value: "pack", label: "Pack" },
+          { value: "box", label: "Box" },
+        ];
+      default:
+        return [{ value: "", label: "Select Type First" }];
+    }
+  };
+
+  // Fetch vendors for admin
+  const fetchVendors = async () => {
+    if (!isAdmin) return;
+    setVendorsLoading(true);
+    try {
+      const response = await api.get("/api/vendor");
+      if (response.data.success) {
+        setVendors(response.data.data || []);
+      }
+    } catch (err) {
+      console.error("Error fetching vendors:", err);
+    } finally {
+      setVendorsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -1017,6 +1085,9 @@ export default function AddProductPopup({
         editingProduct,
       );
       fetchCategories();
+      if (isAdmin && !isEditMode) {
+        fetchVendors();
+      }
 
       // If editing, populate form with existing data
       if (isEditMode && editingProduct) {
@@ -1062,13 +1133,15 @@ export default function AddProductPopup({
           regularPrice: editingProduct.regularPrice?.toString() || "",
           salePrice: editingProduct.salePrice?.toString() || "",
           cashback: editingProduct.cashback?.toString() || "",
+          tax: editingProduct.tax?.toString() || "",
           productType: editingProduct.productType?.type || "",
           productTypeValue: editingProduct.productType?.value?.toString() || "",
           productTypeUnit: editingProduct.productType?.unit || "",
-          tags: Array.isArray(editingProduct.tags)
-            ? editingProduct.tags.join(", ")
-            : editingProduct.tags || "",
-          images: [], // Images will be handled separately for edit
+          tags: Array.isArray(editingProduct.tags) ? editingProduct.tags : [],
+          images: [], // New images to upload
+          existingImages: Array.isArray(editingProduct.images)
+            ? editingProduct.images
+            : [], // Existing images from backend
         };
 
         console.log("Setting form data:", newFormData);
@@ -1092,12 +1165,16 @@ export default function AddProductPopup({
           regularPrice: "",
           salePrice: "",
           cashback: "",
+          tax: "",
           productType: "",
           productTypeValue: "",
           productTypeUnit: "",
-          tags: "",
+          tags: [],
           images: [],
+          existingImages: [],
+          vendorId: "",
         });
+        setTagInput("");
       }
     }
   }, [isOpen, isEditMode, editingProduct]);
@@ -1111,13 +1188,19 @@ export default function AddProductPopup({
     }
   }, [formData.category]);
 
+  // Reset product type unit when product type changes
+  useEffect(() => {
+    if (formData.productType) {
+      setFormData((prev) => ({ ...prev, productTypeUnit: "" }));
+    }
+  }, [formData.productType]);
+
   const fetchCategories = async () => {
     setCategoriesLoading(true);
     try {
       const response = await api.get("/api/category");
 
       if (response.data.success) {
-        // Use the API response directly - it already has the correct structure
         setCategories(response.data.data);
         console.log(
           "Categories fetched successfully:",
@@ -1168,18 +1251,64 @@ export default function AddProductPopup({
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
+    const totalImages = formData.images.length + formData.existingImages.length;
+    const remainingSlots = 6 - totalImages;
+
     if (files.length > 0) {
+      const filesToAdd = files.slice(0, remainingSlots);
       setFormData((prev) => ({
         ...prev,
-        images: [...prev.images, ...files].slice(0, 6),
+        images: [...prev.images, ...filesToAdd],
       }));
+
+      if (files.length > remainingSlots) {
+        alert(
+          `Only ${remainingSlots} more image(s) can be added. Maximum is 6 images.`,
+        );
+      }
     }
   };
 
-  const removeImage = (index) => {
+  const removeNewImage = (index) => {
     setFormData((prev) => ({
       ...prev,
       images: prev.images.filter((_, i) => i !== index),
+    }));
+  };
+
+  const removeExistingImage = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      existingImages: prev.existingImages.filter((_, i) => i !== index),
+    }));
+  };
+
+  // Tag handling functions
+  const handleTagInputChange = (e) => {
+    setTagInput(e.target.value);
+  };
+
+  const handleTagInputKeyDown = (e) => {
+    if (e.key === "Enter" && tagInput.trim()) {
+      e.preventDefault();
+      addTag(tagInput.trim());
+    }
+  };
+
+  const addTag = (tag) => {
+    if (tag && !formData.tags.includes(tag)) {
+      setFormData((prev) => ({
+        ...prev,
+        tags: [...prev.tags, tag],
+      }));
+      setTagInput("");
+    }
+  };
+
+  const removeTag = (indexToRemove) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: prev.tags.filter((_, index) => index !== indexToRemove),
     }));
   };
 
@@ -1207,8 +1336,16 @@ export default function AddProductPopup({
       return;
     }
 
-    // For add mode, check if images are uploaded
-    if (!isEditMode && formData.images.length === 0) {
+    // Admin must select a vendor when adding product
+    if (isAdmin && !isEditMode && !formData.vendorId) {
+      setError("Please select a vendor");
+      setLoading(false);
+      return;
+    }
+
+    // Image validation - check total images (existing + new)
+    const totalImages = formData.images.length + formData.existingImages.length;
+    if (totalImages === 0) {
       setError("Please upload at least one product image");
       setLoading(false);
       return;
@@ -1228,6 +1365,12 @@ export default function AddProductPopup({
       formDataToSend.append("regularPrice", formData.regularPrice);
       formDataToSend.append("salePrice", formData.salePrice);
       formDataToSend.append("cashback", formData.cashback || "0");
+      formDataToSend.append("tax", formData.tax || "0");
+      
+      // Add vendorId if admin is adding product
+      if (isAdmin && !isEditMode && formData.vendorId) {
+        formDataToSend.append("vendorId", formData.vendorId);
+      }
 
       // ProductType structure: {type, value, unit}
       if (formData.productType) {
@@ -1240,22 +1383,25 @@ export default function AddProductPopup({
         formDataToSend.append("productTypeUnit", formData.productTypeUnit);
       }
 
-      // Tags should be an array - convert comma-separated string to array
-      if (formData.tags) {
-        const tagsArray = formData.tags
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter((tag) => tag.length > 0);
-        tagsArray.forEach((tag) => {
-          formDataToSend.append("tags", tag);
-        });
+      // Tags - send as comma-separated string (backend expects string, not array)
+      if (formData.tags.length > 0) {
+        const tagsString = formData.tags.join(",");
+        formDataToSend.append("tags", tagsString);
       }
 
-      // Append images (only if new images uploaded)
+      // Append NEW images
       if (formData.images.length > 0) {
         formData.images.forEach((image) => {
           formDataToSend.append("images", image);
         });
+      }
+
+      // In edit mode, send existing images to keep
+      if (isEditMode && formData.existingImages.length > 0) {
+        formDataToSend.append(
+          "existingImages",
+          JSON.stringify(formData.existingImages),
+        );
       }
 
       // Determine API endpoint and method based on mode
@@ -1329,12 +1475,16 @@ export default function AddProductPopup({
         regularPrice: "",
         salePrice: "",
         cashback: "",
+        tax: "",
         productType: "",
         productTypeValue: "",
         productTypeUnit: "",
-        tags: "",
+        tags: [],
         images: [],
+        existingImages: [],
+        vendorId: "",
       });
+      setTagInput("");
 
       // Close popup after a brief delay to ensure state updates
       setTimeout(() => {
@@ -1359,6 +1509,8 @@ export default function AddProductPopup({
   };
 
   if (!isOpen) return null;
+
+  const totalImages = formData.images.length + formData.existingImages.length;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-2">
@@ -1416,30 +1568,60 @@ export default function AddProductPopup({
               {/* Image Upload Section */}
               <div className="flex flex-col justify-end">
                 <label className="block font-semibold mb-1">
-                  Upload Images ({formData.images.length}/6)
+                  Upload Images ({totalImages}/6)
                 </label>
                 <div className="border border-orange-400 rounded-sm h-[250px] sm:h-[280px] lg:h-[330px] overflow-y-auto p-2">
                   <div className="grid grid-cols-2 gap-2">
-                    {formData.images.map((img, index) => (
+                    {/* Display existing images (from backend) */}
+                    {formData.existingImages.map((img, index) => (
                       <div
-                        key={index}
+                        key={`existing-${index}`}
                         className="relative border border-gray-300 rounded-sm h-[100px]"
                       >
                         <img
-                          src={URL.createObjectURL(img)}
-                          alt={`Image ${index + 1}`}
+                          src={img.url || img}
+                          alt={`Existing ${index + 1}`}
                           className="object-cover h-full w-full rounded-sm"
                         />
                         <button
                           type="button"
-                          onClick={() => removeImage(index)}
+                          onClick={() => removeExistingImage(index)}
                           className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
                         >
                           ✕
                         </button>
+                        <span className="absolute bottom-1 left-1 bg-blue-500 text-white text-[10px] px-1 rounded">
+                          Existing
+                        </span>
                       </div>
                     ))}
-                    {formData.images.length < 6 && (
+
+                    {/* Display new images (to be uploaded) */}
+                    {formData.images.map((img, index) => (
+                      <div
+                        key={`new-${index}`}
+                        className="relative border border-gray-300 rounded-sm h-[100px]"
+                      >
+                        <img
+                          src={URL.createObjectURL(img)}
+                          alt={`New ${index + 1}`}
+                          className="object-cover h-full w-full rounded-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeNewImage(index)}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                        >
+                          ✕
+                        </button>
+                        <span className="absolute bottom-1 left-1 bg-green-500 text-white text-[10px] px-1 rounded">
+                          New
+                        </span>
+                      </div>
+                    ))}
+
+                    {/* Upload button */}
+                    {totalImages < 6 && (
                       <label className="border border-dashed border-orange-400 rounded-sm h-[100px] flex items-center justify-center cursor-pointer hover:border-orange-600">
                         <Upload size={30} className="text-orange-500" />
                         <input
@@ -1455,6 +1637,35 @@ export default function AddProductPopup({
                 </div>
               </div>
             </div>
+
+            {/* Vendor Selection (Admin only) */}
+            {isAdmin && !isEditMode && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold mb-1">
+                    Select Vendor *
+                  </label>
+                  <select
+                    name="vendorId"
+                    value={formData.vendorId}
+                    onChange={handleChange}
+                    className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
+                    required
+                  >
+                    <option value="">Select a vendor</option>
+                    {vendorsLoading ? (
+                      <option>Loading vendors...</option>
+                    ) : (
+                      vendors.map((vendor) => (
+                        <option key={vendor._id} value={vendor._id}>
+                          {vendor.vendorName || vendor.storeName || vendor.contactNumber} - {vendor.storeName || "Store"}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+              </div>
+            )}
 
             {/* SKU, Inventory, Category, Sub-Category */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1539,8 +1750,8 @@ export default function AddProductPopup({
               </div>
             </div>
 
-            {/* Pricing Fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Pricing Fields with Tax */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
                 <label className="block font-semibold mb-1">
                   Actual Price *
@@ -1589,20 +1800,35 @@ export default function AddProductPopup({
                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
                 />
               </div>
+              <div>
+                <label className="block font-semibold mb-1">Tax (%)</label>
+                <input
+                  type="number"
+                  name="tax"
+                  value={formData.tax}
+                  onChange={handleChange}
+                  placeholder="Enter Tax Percentage"
+                  className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
+                />
+              </div>
             </div>
 
-            {/* Product Type Fields */}
+            {/* Product Type Fields - Dropdowns */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block font-semibold mb-1">Product Type</label>
-                <input
-                  type="text"
+                <select
                   name="productType"
                   value={formData.productType}
                   onChange={handleChange}
-                  placeholder="e.g., weight, volume, count"
                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-                />
+                >
+                  {productTypeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block font-semibold mb-1">
@@ -1621,29 +1847,64 @@ export default function AddProductPopup({
                 <label className="block font-semibold mb-1">
                   Product Type Unit
                 </label>
-                <input
-                  type="text"
+                <select
                   name="productTypeUnit"
                   value={formData.productTypeUnit}
                   onChange={handleChange}
-                  placeholder="e.g., kg, liter, piece"
                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-                />
+                  disabled={!formData.productType}
+                >
+                  {getUnitOptions().map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
-            {/* Tags Field */}
+            {/* Tags Field - Pill Style */}
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <label className="block font-semibold mb-1">Tags</label>
-                <textarea
-                  name="tags"
-                  value={formData.tags}
-                  onChange={handleChange}
-                  placeholder="Enter tags separated by commas (e.g., fruits,apple,fresh,organic)"
-                  rows="3"
-                  className="w-full border border-orange-400 rounded-sm p-2 resize-none focus:outline-none text-[13px]"
-                ></textarea>
+                <label className="block font-semibold mb-1 flex items-center gap-2">
+                  <span className="text-orange-500">🏷️</span> Tags
+                  <span className="text-gray-400 text-xs font-normal">
+                    (Press Enter to add)
+                  </span>
+                </label>
+                <div className="border border-orange-400 rounded-sm p-2 min-h-[80px] focus-within:ring-2 focus-within:ring-orange-300">
+                  {/* Tag Pills */}
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {formData.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center gap-1 bg-orange-500 text-white px-3 py-1 rounded-full text-[12px] font-medium"
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => removeTag(index)}
+                          className="hover:bg-orange-600 rounded-full p-0.5 transition-colors"
+                        >
+                          <X size={14} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  {/* Tag Input */}
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={handleTagInputChange}
+                    onKeyDown={handleTagInputKeyDown}
+                    placeholder={
+                      formData.tags.length === 0
+                        ? "Add tags (e.g., fruits, apple, fresh, organic)"
+                        : "Add more..."
+                    }
+                    className="w-full focus:outline-none text-[13px] bg-transparent"
+                  />
+                </div>
               </div>
             </div>
 
@@ -1663,8 +1924,8 @@ export default function AddProductPopup({
                     ? "Updating..."
                     : "Submitting..."
                   : isEditMode
-                    ? "Update"
-                    : "Submit"}
+                    ? "Update Product"
+                    : "Add Product"}
               </button>
             </div>
           </div>

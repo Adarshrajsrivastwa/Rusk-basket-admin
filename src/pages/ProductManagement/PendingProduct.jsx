@@ -38,9 +38,14 @@ const PendingProduct = () => {
       });
 
       if (response.data.success) {
-        setProducts(response.data.data);
+        // Transform products to include productNumber
+        const transformedProducts = response.data.data.map((product) => ({
+          ...product,
+          productId: product.productNumber || product._id,
+        }));
+        setProducts(transformedProducts);
         setTotalProducts(response.data.pagination.total);
-        setTotalPages(response.data.pagination.pages);
+        setTotalPages(response.data.pagination.pages || response.data.pagination.totalPages || 1);
       }
     } catch (error) {
       console.error("Error fetching pending products:", error);
@@ -271,7 +276,7 @@ const PendingProduct = () => {
                   <td className="p-3">
                     {(currentPage - 1) * itemsPerPage + idx + 1}
                   </td>
-                  <td className="p-3 font-mono text-xs">{product._id}</td>
+                  <td className="p-3 font-mono text-xs">{product.productNumber || product._id}</td>
                   <td className="p-3 font-medium">{product.productName}</td>
                   <td className="p-3">{formatDate(product.createdAt)}</td>
                   <td className="p-3">

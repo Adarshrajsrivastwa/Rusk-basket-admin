@@ -1,24 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import {
   Search,
-  Plus,
   Clock,
   CheckCircle,
   AlertCircle,
-  ArrowUp,
   MessageSquare,
-  User,
   X,
-  Star,
   Send,
+  User,
 } from "lucide-react";
 import api from "../../api/api";
-import { BASE_URL } from "../../api/api";
 
-const VendorSupport = () => {
+const AdminUserSupport = () => {
   const [activeTab, setActiveTab] = useState("all");
-  const [showNewTicketModal, setShowNewTicketModal] = useState(false);
   const [showTicketDetailModal, setShowTicketDetailModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -27,83 +22,23 @@ const VendorSupport = () => {
   const [error, setError] = useState("");
   const [messageInput, setMessageInput] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
-  const [recentOrders, setRecentOrders] = useState([]);
-  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [statusUpdate, setStatusUpdate] = useState("");
+  const [adminResponse, setAdminResponse] = useState("");
   const itemsPerPage = 8;
 
   const [tickets, setTickets] = useState([]);
   const [totalTickets, setTotalTickets] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const searchQueryRef = useRef(searchQuery);
 
-  const [newTicket, setNewTicket] = useState({
-    complaint: "",
-    category: "general_queries",
-    orderId: "",
-  });
-
-  // Fetch recent delivered orders (last 1 week)
-  const fetchRecentOrders = async () => {
-    setLoadingOrders(true);
-    try {
-      // Calculate date 1 week ago
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-      
-      // Fetch orders with delivered status
-      const response = await api.get(
-        `/api/vendor/orders?status=delivered&limit=100`
-      );
-      
-      if (response.data.success) {
-        // Handle different response structures
-        const orders = response.data.data || response.data.orders || response.data || [];
-        
-        // Filter orders delivered in last 1 week
-        const recentDeliveredOrders = orders.filter((order) => {
-          // Check if order has delivered status
-          if (order.status !== "delivered") return false;
-          
-          // Check if order has a delivery date
-          const deliveredDate = order.deliveredAt 
-            ? new Date(order.deliveredAt)
-            : order.updatedAt 
-            ? new Date(order.updatedAt)
-            : null;
-          
-          if (!deliveredDate) return false;
-          
-          // Check if delivered within last 1 week
-          return deliveredDate >= oneWeekAgo;
-        });
-        
-        // Sort by most recent first
-        recentDeliveredOrders.sort((a, b) => {
-          const dateA = a.deliveredAt 
-            ? new Date(a.deliveredAt)
-            : a.updatedAt 
-            ? new Date(a.updatedAt)
-            : new Date(a.createdAt);
-          const dateB = b.deliveredAt 
-            ? new Date(b.deliveredAt)
-            : b.updatedAt 
-            ? new Date(b.updatedAt)
-            : new Date(b.createdAt);
-          return dateB - dateA;
-        });
-        
-        setRecentOrders(recentDeliveredOrders);
-      }
-    } catch (err) {
-      console.error("Error fetching recent orders:", err);
-      // Don't show error, just set empty array
-      setRecentOrders([]);
-    } finally {
-      setLoadingOrders(false);
-    }
-  };
+  // Update ref when searchQuery changes
+  useEffect(() => {
+    searchQueryRef.current = searchQuery;
+  }, [searchQuery]);
 
   // Fetch tickets
-  const fetchTickets = async () => {
+  const fetchTickets = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -111,43 +46,59 @@ const VendorSupport = () => {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: itemsPerPage.toString(),
+        createdByModel: "User", // Filter by User
       });
       if (statusFilter) {
         params.append("status", statusFilter);
       }
-      if (searchQuery) {
-        params.append("search", searchQuery);
+      if (searchQueryRef.current) {
+        params.append("search", searchQueryRef.current);
       }
 
-      const response = await api.get(`/api/vendor/tickets?${params.toString()}`);
-      if (response.data.success) {
-        setTickets(response.data.data.tickets || []);
-        setTotalTickets(response.data.data.pagination?.total || 0);
-        setTotalPages(response.data.data.pagination?.totalPages || 1);
+      const response = await api.get(`/api/admin/tickets?${params.toString()}`);
+      if (response.data && response.data.success) {
+        const ticketsData = response.data.data?.tickets || [];
+        const paginationData = response.data.data?.pagination || {};
+        
+        setTickets(ticketsData);
+        setTotalTickets(paginationData.total || 0);
+        setTotalPages(paginationData.totalPages || paginationData.pages || 1);
+        setError(""); // Clear any previous errors
       } else {
-        setError(response.data.message || "Failed to load tickets");
+        const errorMsg = response.data?.message || response.data?.error || "Failed to load tickets";
+        setError(errorMsg);
+        setTickets([]);
+        setTotalTickets(0);
+        setTotalPages(1);
       }
     } catch (err) {
       console.error("Error fetching tickets:", err);
-      setError(
-        err.response?.data?.message || "Failed to load tickets. Please try again."
-      );
+      const errorMsg = err.response?.data?.message || 
+                      err.response?.data?.error || 
+                      err.message || 
+                      "Failed to load tickets. Please try again.";
+      setError(errorMsg);
+      setTickets([]);
+      setTotalTickets(0);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, currentPage]);
 
   useEffect(() => {
     fetchTickets();
-  }, [activeTab, currentPage]);
+  }, [fetchTickets]);
 
   // Fetch single ticket details
   const fetchTicketDetails = async (ticketId) => {
     try {
-      const response = await api.get(`/api/vendor/tickets/${ticketId}`);
+      const response = await api.get(`/api/admin/tickets/${ticketId}`);
       if (response.data.success) {
         setSelectedTicket(response.data.data.ticket);
         setShowTicketDetailModal(true);
+        setStatusUpdate(response.data.data.ticket.status);
+        setAdminResponse(response.data.data.ticket.adminResponse || "");
       } else {
         setError(response.data.message || "Failed to load ticket details");
       }
@@ -159,49 +110,7 @@ const VendorSupport = () => {
     }
   };
 
-  // Create new ticket
-  const handleCreateTicket = async () => {
-    if (!newTicket.complaint || newTicket.complaint.trim().length < 10) {
-      setError("Complaint must be at least 10 characters long");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-    try {
-      const payload = {
-        complaint: newTicket.complaint.trim(),
-        category: newTicket.category,
-      };
-      if (newTicket.orderId) {
-        payload.orderId = newTicket.orderId;
-      }
-
-      const response = await api.post("/api/vendor/tickets", payload);
-      if (response.data.success) {
-        setShowNewTicketModal(false);
-        setNewTicket({
-          complaint: "",
-          category: "general_queries",
-          orderId: "",
-        });
-        fetchTickets(); // Refresh list
-      } else {
-        setError(response.data.message || "Failed to create ticket");
-      }
-    } catch (err) {
-      console.error("Error creating ticket:", err);
-      setError(
-        err.response?.data?.error ||
-          err.response?.data?.message ||
-          "Failed to create ticket. Please try again."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Add message to ticket
+  // Add admin message to ticket
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !selectedTicket) return;
 
@@ -209,7 +118,7 @@ const VendorSupport = () => {
     setError("");
     try {
       const response = await api.post(
-        `/api/vendor/tickets/${selectedTicket._id}/messages`,
+        `/api/admin/tickets/${selectedTicket._id}/messages`,
         { message: messageInput.trim() }
       );
       if (response.data.success) {
@@ -230,6 +139,42 @@ const VendorSupport = () => {
       );
     } finally {
       setSendingMessage(false);
+    }
+  };
+
+  // Update ticket status
+  const handleUpdateStatus = async () => {
+    if (!selectedTicket || !statusUpdate) return;
+
+    setUpdatingStatus(true);
+    setError("");
+    try {
+      const payload = { status: statusUpdate };
+      if (adminResponse) {
+        payload.adminResponse = adminResponse;
+      }
+
+      const response = await api.patch(
+        `/api/admin/tickets/${selectedTicket._id}/status`,
+        payload
+      );
+      if (response.data.success) {
+        // Refresh ticket details
+        await fetchTicketDetails(selectedTicket._id);
+        // Refresh tickets list
+        fetchTickets();
+      } else {
+        setError(response.data.message || "Failed to update status");
+      }
+    } catch (err) {
+      console.error("Error updating status:", err);
+      setError(
+        err.response?.data?.error ||
+          err.response?.data?.message ||
+          "Failed to update status. Please try again."
+      );
+    } finally {
+      setUpdatingStatus(false);
     }
   };
 
@@ -284,6 +229,8 @@ const VendorSupport = () => {
       year: "numeric",
       month: "short",
       day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -291,29 +238,31 @@ const VendorSupport = () => {
     <DashboardLayout>
       <div className="min-h-screen p-6">
         <div className="max-w-8xl mx-auto">
+          <h1 className="text-2xl font-bold mb-6 text-gray-800">User Support</h1>
+
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-orange-500">
+            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-blue-500">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Total Tickets</p>
-                  <p className="text-2xl font-bold text-orange-600">
+                  <p className="text-2xl font-bold text-blue-600">
                     {stats.total}
                   </p>
                 </div>
-                <MessageSquare className="text-orange-500" size={24} />
+                <MessageSquare className="text-blue-500" size={24} />
               </div>
             </div>
 
-            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-orange-500">
+            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-blue-500">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Active</p>
-                  <p className="text-2xl font-bold text-orange-600">
+                  <p className="text-2xl font-bold text-blue-600">
                     {stats.active}
                   </p>
                 </div>
-                <AlertCircle className="text-orange-500" size={24} />
+                <AlertCircle className="text-blue-500" size={24} />
               </div>
             </div>
 
@@ -329,27 +278,27 @@ const VendorSupport = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-orange-500">
+            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-green-500">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Resolved</p>
-                  <p className="text-2xl font-bold text-orange-600">
+                  <p className="text-2xl font-bold text-green-600">
                     {stats.resolved}
                   </p>
                 </div>
-                <CheckCircle className="text-orange-500" size={24} />
+                <CheckCircle className="text-green-500" size={24} />
               </div>
             </div>
 
-            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-orange-500">
+            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-gray-500">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Closed</p>
-                  <p className="text-2xl font-bold text-orange-600">
+                  <p className="text-2xl font-bold text-gray-600">
                     {stats.closed}
                   </p>
                 </div>
-                <CheckCircle className="text-orange-500" size={24} />
+                <CheckCircle className="text-gray-500" size={24} />
               </div>
             </div>
           </div>
@@ -366,8 +315,8 @@ const VendorSupport = () => {
                     }}
                     className={`px-4 py-2 rounded font-medium transition-colors ${
                       activeTab === "all"
-                        ? "bg-orange-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
+                        ? "bg-blue-500 text-white"
+                        : "bg-white text-gray-700 border border-gray-300 hover:bg-blue-50"
                     }`}
                   >
                     All Tickets
@@ -379,8 +328,8 @@ const VendorSupport = () => {
                     }}
                     className={`px-4 py-2 rounded font-medium transition-colors ${
                       activeTab === "active"
-                        ? "bg-orange-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
+                        ? "bg-blue-500 text-white"
+                        : "bg-white text-gray-700 border border-gray-300 hover:bg-blue-50"
                     }`}
                   >
                     Active
@@ -392,8 +341,8 @@ const VendorSupport = () => {
                     }}
                     className={`px-4 py-2 rounded font-medium transition-colors ${
                       activeTab === "pending"
-                        ? "bg-orange-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
+                        ? "bg-blue-500 text-white"
+                        : "bg-white text-gray-700 border border-gray-300 hover:bg-blue-50"
                     }`}
                   >
                     Pending
@@ -405,8 +354,8 @@ const VendorSupport = () => {
                     }}
                     className={`px-4 py-2 rounded font-medium transition-colors ${
                       activeTab === "resolved"
-                        ? "bg-orange-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
+                        ? "bg-blue-500 text-white"
+                        : "bg-white text-gray-700 border border-gray-300 hover:bg-blue-50"
                     }`}
                   >
                     Resolved
@@ -418,24 +367,13 @@ const VendorSupport = () => {
                     }}
                     className={`px-4 py-2 rounded font-medium transition-colors ${
                       activeTab === "closed"
-                        ? "bg-orange-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
+                        ? "bg-blue-500 text-white"
+                        : "bg-white text-gray-700 border border-gray-300 hover:bg-blue-50"
                     }`}
                   >
                     Closed
                   </button>
                 </div>
-
-                <button
-                  onClick={() => {
-                    setShowNewTicketModal(true);
-                    fetchRecentOrders(); // Fetch orders when modal opens
-                  }}
-                  className="flex items-center gap-2 bg-orange-500 text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors font-medium"
-                >
-                  <Plus size={20} />
-                  New Ticket
-                </button>
               </div>
             </div>
 
@@ -456,12 +394,12 @@ const VendorSupport = () => {
                         handleSearch();
                       }
                     }}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <button
                   onClick={handleSearch}
-                  className="bg-orange-500 text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors font-medium"
+                  className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors font-medium"
                 >
                   Search
                 </button>
@@ -486,13 +424,16 @@ const VendorSupport = () => {
               <>
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-orange-500 text-white">
+                    <thead className="bg-blue-500 text-white">
                       <tr>
                         <th className="px-6 py-3 text-left text-sm font-bold uppercase">
                           S.N
                         </th>
                         <th className="px-6 py-3 text-left text-sm font-bold uppercase">
                           Ticket Number
+                        </th>
+                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                          User
                         </th>
                         <th className="px-6 py-3 text-left text-sm font-bold uppercase">
                           Complaint
@@ -518,15 +459,23 @@ const VendorSupport = () => {
                       {tickets.map((ticket, index) => (
                         <tr
                           key={ticket._id}
-                          className="hover:bg-orange-50 transition-colors"
+                          className="hover:bg-blue-50 transition-colors"
                         >
                           <td className="px-6 py-4 whitespace-nowrap text-gray-900">
                             {(currentPage - 1) * itemsPerPage + index + 1}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="font-medium text-orange-600">
+                            <span className="font-medium text-blue-600">
                               {ticket.ticketNumber}
                             </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <User size={16} className="text-blue-500" />
+                              <span className="text-sm text-gray-900">
+                                {ticket.user?.userName || "N/A"}
+                              </span>
+                            </div>
                           </td>
                           <td className="px-6 py-4">
                             <div className="max-w-xs">
@@ -536,7 +485,7 @@ const VendorSupport = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
+                            <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
                               {categoryLabels[ticket.category] || ticket.category}
                             </span>
                           </td>
@@ -550,7 +499,7 @@ const VendorSupport = () => {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-sm">
+                            <span className="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded-sm">
                               {ticket.messages?.length || 0}
                             </span>
                           </td>
@@ -560,7 +509,7 @@ const VendorSupport = () => {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <button
                               onClick={() => fetchTicketDetails(ticket._id)}
-                              className="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600 transition-colors"
+                              className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors"
                             >
                               View
                             </button>
@@ -571,9 +520,15 @@ const VendorSupport = () => {
                   </table>
                 </div>
 
-                {tickets.length === 0 && !loading && (
+                {tickets.length === 0 && !loading && !error && (
                   <div className="text-center py-12">
-                    <p className="text-gray-500">No tickets found</p>
+                    <MessageSquare className="mx-auto text-gray-400 mb-4" size={48} />
+                    <p className="text-gray-500 text-lg font-medium">No Tickets Found</p>
+                    <p className="text-gray-400 text-sm mt-2">
+                      {searchQueryRef.current
+                        ? "No tickets match your search criteria"
+                        : "There are no tickets available at the moment"}
+                    </p>
                   </div>
                 )}
               </>
@@ -598,7 +553,7 @@ const VendorSupport = () => {
                     onClick={() => setCurrentPage(idx + 1)}
                     className={`px-2 py-1 rounded transition-colors ${
                       currentPage === idx + 1
-                        ? "text-orange-600 font-semibold"
+                        ? "text-blue-600 font-semibold"
                         : "text-gray-700 hover:text-black"
                     }`}
                   >
@@ -620,140 +575,11 @@ const VendorSupport = () => {
           )}
         </div>
 
-        {/* New Ticket Modal */}
-        {showNewTicketModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-orange-500 text-white rounded-t-lg">
-                <h2 className="text-2xl font-bold">Raise New Ticket</h2>
-                <button
-                  onClick={() => {
-                    setShowNewTicketModal(false);
-                    setError("");
-                    setNewTicket({
-                      complaint: "",
-                      category: "general_queries",
-                      orderId: "",
-                    });
-                  }}
-                  className="text-white hover:text-gray-200"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              <div className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Category *
-                  </label>
-                  <select
-                    value={newTicket.category}
-                    onChange={(e) =>
-                      setNewTicket({ ...newTicket, category: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  >
-                    <option value="general_queries">General Queries</option>
-                    <option value="order_delivery">Order & Delivery</option>
-                    <option value="account_profile">Account & Profile</option>
-                    <option value="payments_refunds">Payments & Refunds</option>
-                    <option value="login_otp">Login & OTP</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Complaint * (Min 10 characters)
-                  </label>
-                  <textarea
-                    value={newTicket.complaint}
-                    onChange={(e) =>
-                      setNewTicket({
-                        ...newTicket,
-                        complaint: e.target.value,
-                      })
-                    }
-                    placeholder="Describe your issue in detail..."
-                    rows="6"
-                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Order (Optional) - Last 1 Week Delivered Orders
-                  </label>
-                  <select
-                    value={newTicket.orderId}
-                    onChange={(e) =>
-                      setNewTicket({ ...newTicket, orderId: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    disabled={loadingOrders}
-                  >
-                    <option value="">
-                      {loadingOrders
-                        ? "Loading orders..."
-                        : recentOrders.length === 0
-                        ? "No recent delivered orders"
-                        : "Select an order (optional)"}
-                    </option>
-                    {recentOrders.map((order) => {
-                      const orderNumber = order.orderNumber || order.orderId || order._id;
-                      const amount = order.totalAmount || order.vendorSubtotal || order.amount || "N/A";
-                      const deliveryDate = order.deliveredAt || order.updatedAt || order.createdAt;
-                      return (
-                        <option key={order._id} value={order._id}>
-                          {orderNumber} - {amount !== "N/A" ? `₹${amount}` : amount} - {formatDate(deliveryDate)}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  {recentOrders.length > 0 && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Showing {recentOrders.length} delivered order(s) from last 1 week
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="p-6 border-t border-gray-200 flex gap-4 justify-end">
-                <button
-                  onClick={() => {
-                    setShowNewTicketModal(false);
-                    setError("");
-                    setNewTicket({
-                      complaint: "",
-                      category: "general_queries",
-                      orderId: "",
-                    });
-                  }}
-                  className="px-6 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCreateTicket}
-                  disabled={
-                    !newTicket.complaint ||
-                    newTicket.complaint.trim().length < 10 ||
-                    loading
-                  }
-                  className="px-6 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  {loading ? "Submitting..." : "Submit Ticket"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Ticket Detail Modal */}
         {showTicketDetailModal && selectedTicket && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-orange-500 text-white rounded-t-lg">
+              <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-blue-500 text-white rounded-t-lg">
                 <div>
                   <h2 className="text-2xl font-bold">
                     Ticket: {selectedTicket.ticketNumber}
@@ -768,6 +594,8 @@ const VendorSupport = () => {
                     setSelectedTicket(null);
                     setMessageInput("");
                     setError("");
+                    setStatusUpdate("");
+                    setAdminResponse("");
                   }}
                   className="text-white hover:text-gray-200"
                 >
@@ -780,17 +608,30 @@ const VendorSupport = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-600">
+                      User
+                    </label>
+                    <div className="mt-1 flex items-center gap-2">
+                      <User size={16} className="text-blue-500" />
+                      <span className="text-gray-900">
+                        {selectedTicket.user?.userName || "N/A"}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">
                       Status
                     </label>
                     <div className="mt-1">
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-bold ${getStatusColor(
-                          selectedTicket.status
-                        )}`}
+                      <select
+                        value={statusUpdate}
+                        onChange={(e) => setStatusUpdate(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
-                        {statusLabels[selectedTicket.status] ||
-                          selectedTicket.status}
-                      </span>
+                        <option value="active">Active</option>
+                        <option value="pending">Pending</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="closed">Closed</option>
+                      </select>
                     </div>
                   </div>
                   <div>
@@ -798,7 +639,7 @@ const VendorSupport = () => {
                       Category
                     </label>
                     <div className="mt-1">
-                      <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
+                      <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
                         {categoryLabels[selectedTicket.category] ||
                           selectedTicket.category}
                       </span>
@@ -815,6 +656,31 @@ const VendorSupport = () => {
                   </div>
                 </div>
 
+                {/* Admin Response */}
+                <div>
+                  <label className="text-sm font-medium text-gray-600 mb-2 block">
+                    Admin Response (Optional)
+                  </label>
+                  <textarea
+                    value={adminResponse}
+                    onChange={(e) => setAdminResponse(e.target.value)}
+                    placeholder="Add your response..."
+                    rows="3"
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Update Status Button */}
+                <div>
+                  <button
+                    onClick={handleUpdateStatus}
+                    disabled={updatingStatus || !statusUpdate}
+                    className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    {updatingStatus ? "Updating..." : "Update Status"}
+                  </button>
+                </div>
+
                 {/* Messages */}
                 <div>
                   <label className="text-sm font-medium text-gray-600 mb-2 block">
@@ -826,16 +692,20 @@ const VendorSupport = () => {
                         <div
                           key={idx}
                           className={`p-3 rounded ${
-                            msg.senderModel === "Vendor"
+                            msg.senderModel === "User"
+                              ? "bg-blue-50 border-l-4 border-blue-500"
+                              : msg.senderModel === "Admin"
                               ? "bg-orange-50 border-l-4 border-orange-500"
-                              : "bg-blue-50 border-l-4 border-blue-500"
+                              : "bg-gray-50 border-l-4 border-gray-500"
                           }`}
                         >
                           <div className="flex justify-between items-start mb-1">
                             <span className="font-medium text-sm">
-                              {msg.senderModel === "Vendor"
-                                ? msg.sender?.vendorName || msg.sender?.storeName || "You"
-                                : msg.sender?.name || "Admin"}
+                              {msg.senderModel === "User"
+                                ? msg.sender?.userName || "User"
+                                : msg.senderModel === "Admin"
+                                ? msg.sender?.name || "Admin"
+                                : "Unknown"}
                             </span>
                             <span className="text-xs text-gray-500">
                               {formatDate(msg.createdAt)}
@@ -862,12 +732,12 @@ const VendorSupport = () => {
                         onChange={(e) => setMessageInput(e.target.value)}
                         placeholder="Type your message..."
                         rows="3"
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                       <button
                         onClick={handleSendMessage}
                         disabled={!messageInput.trim() || sendingMessage}
-                        className="bg-orange-500 text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
                       >
                         <Send size={18} />
                         {sendingMessage ? "Sending..." : "Send"}
@@ -884,6 +754,8 @@ const VendorSupport = () => {
                     setSelectedTicket(null);
                     setMessageInput("");
                     setError("");
+                    setStatusUpdate("");
+                    setAdminResponse("");
                   }}
                   className="px-6 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition-colors"
                 >
@@ -898,4 +770,4 @@ const VendorSupport = () => {
   );
 };
 
-export default VendorSupport;
+export default AdminUserSupport;

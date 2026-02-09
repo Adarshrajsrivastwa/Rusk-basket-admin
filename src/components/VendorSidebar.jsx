@@ -609,6 +609,8 @@ import {
   KeyRound,
   LogOut,
   Boxes,
+  MessageSquare,
+  Tag,
 } from "lucide-react";
 
 const VendorSidebar = () => {
@@ -677,6 +679,16 @@ const VendorSidebar = () => {
       path: "/vendor/notifications",
     },
     {
+      name: "Support",
+      icon: <MessageSquare size={16} />,
+      path: "/vendor-support",
+    },
+    {
+      name: "Daily Offers",
+      icon: <Tag size={16} />,
+      path: "/vendor/daily-offers",
+    },
+    {
       name: "Settings",
       icon: <Settings size={16} />,
       subItems: [
@@ -686,9 +698,9 @@ const VendorSidebar = () => {
           icon: <User size={14} />,
         },
         {
-          name: "Change Password",
-          path: "/vendor/settings/password",
-          icon: <KeyRound size={14} />,
+          name: "Notifications",
+          path: "/vendor/notifications",
+          icon: <Bell size={14} />,
         },
         {
           name: "Logout",
@@ -730,23 +742,22 @@ const VendorSidebar = () => {
       }
 
       // Call logout API
-      const response = await fetch(`${BASE_URL}/api/vendor/logout`, {
-        method: "POST",
-        credentials: "include",
-        headers: headers,
-      });
+      try {
+        const response = await fetch(`${BASE_URL}/api/vendor/logout`, {
+          method: "POST",
+          credentials: "include",
+          headers: headers,
+        });
 
-      const data = await response.json();
+        const data = await response.json();
+        console.log("Logout response:", data);
+      } catch (apiError) {
+        console.error("Logout API error:", apiError);
+        // Continue with logout even if API fails
+      }
 
-      // Clear local storage regardless of API response
-      localStorage.removeItem("token");
-      localStorage.removeItem("authToken");
-      localStorage.removeItem("user");
-      localStorage.removeItem("vendorData");
-      localStorage.removeItem("userRole");
-      localStorage.removeItem("userMobile");
-
-      // Clear any other auth-related items
+      // Clear all local storage
+      localStorage.clear();
       sessionStorage.clear();
 
       // Navigate to login page
@@ -758,12 +769,8 @@ const VendorSidebar = () => {
       console.error("Logout error:", error);
 
       // Even if API fails, clear local storage and redirect
-      localStorage.removeItem("token");
-      localStorage.removeItem("authToken");
-      localStorage.removeItem("user");
-      localStorage.removeItem("vendorData");
-      localStorage.removeItem("userRole");
-      localStorage.removeItem("userMobile");
+      localStorage.clear();
+      sessionStorage.clear();
       sessionStorage.clear();
 
       navigate("/", { replace: true });
