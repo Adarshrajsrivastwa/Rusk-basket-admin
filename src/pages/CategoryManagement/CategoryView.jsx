@@ -1125,11 +1125,11 @@ const CategoryView = () => {
         <div className="bg-white rounded-sm shadow-md p-6 border border-gray-200">
           <div className="flex flex-col md:flex-row items-start gap-6 mb-6">
             <img
-              src={category.image?.url || "https://via.placeholder.com/150"}
+              src={category.image?.url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect width='150' height='150' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E"}
               alt={category.name}
               className="w-32 h-32 rounded-sm object-cover border-2 border-[#FF7B1D] mx-auto md:mx-0"
               onError={(e) => {
-                e.target.src = "https://via.placeholder.com/150";
+                e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect width='150' height='150' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E";
               }}
             />
             <div className="flex-1 w-full">

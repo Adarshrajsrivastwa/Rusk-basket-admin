@@ -29,8 +29,8 @@ const SingleProduct = () => {
     sku: "HSN5468",
     tags: ["Kitchen Item", "Rosewhal", "Kitchen Item"],
     mainImage:
-      "https://via.placeholder.com/600x600.png?text=Main+Product+Image",
-    images: Array(8).fill("https://via.placeholder.com/100x100.png?text=Image"),
+      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Crect width='600' height='600' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='18' fill='%239ca3af'%3EMain Product Image%3C/text%3E%3C/svg%3E",
+    images: Array(8).fill("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='12' fill='%239ca3af'%3EImage%3C/text%3E%3C/svg%3E"),
   };
 
   // ✅ Skeleton Loader
@@ -210,7 +210,7 @@ const SingleProduct = () => {
             <div className="lg:w-1/4 w-full flex flex-col">
               <div className="border border-orange-300 rounded bg-white h-[150px] sm:h-[180px] lg:h-[220px] mb-3 flex justify-center items-center overflow-hidden">
                 <img
-                  src="https://via.placeholder.com/180x180.png?text=Preview"
+                  src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='180' height='180' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='%239ca3af'%3EPreview%3C/text%3E%3C/svg%3E"
                   alt="preview"
                   className="object-cover h-full w-full"
                 />
