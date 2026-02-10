@@ -380,7 +380,7 @@ import { BASE_URL } from "../../api/api";
 const API_GET_ALL = `${BASE_URL}/api/category`;
 const API_DELETE = `${BASE_URL}/api/category`;
 
-const Category = () => {
+const CreateCategory = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -436,10 +436,6 @@ const Category = () => {
       }));
 
       setCategories(transformedCategories);
-      console.log(
-        "Categories fetched successfully:",
-        transformedCategories.length,
-      );
     } catch (err) {
       console.error("Error fetching categories:", err);
       setError(err.message);
@@ -453,7 +449,6 @@ const Category = () => {
 
     // Set up interval to refresh data every 30 seconds
     const refreshInterval = setInterval(() => {
-      console.log("Auto-refreshing categories...");
       fetchCategories();
     }, 30000); // 30 seconds
 
@@ -465,7 +460,6 @@ const Category = () => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        console.log("Tab visible - refreshing categories...");
         fetchCategories();
       }
     };
@@ -477,23 +471,17 @@ const Category = () => {
 
   // Listen for subcategory creation/deletion events
   useEffect(() => {
-    const handleSubCategoryCreated = (event) => {
-      console.log("SubCategory created event detected:", event.detail);
-      console.log("Refreshing categories to update counts...");
+    const handleSubCategoryCreated = () => {
       fetchCategories();
     };
 
-    const handleSubCategoryDeleted = (event) => {
-      console.log("SubCategory deleted event detected:", event.detail);
-      console.log("Refreshing categories to update counts...");
+    const handleSubCategoryDeleted = () => {
       fetchCategories();
     };
 
     // Add event listeners
     window.addEventListener("subcategoryCreated", handleSubCategoryCreated);
     window.addEventListener("subcategoryDeleted", handleSubCategoryDeleted);
-
-    console.log("Event listeners registered for subcategory changes");
 
     // Cleanup
     return () => {
@@ -505,7 +493,6 @@ const Category = () => {
         "subcategoryDeleted",
         handleSubCategoryDeleted,
       );
-      console.log("Event listeners removed");
     };
   }, []);
 
@@ -851,4 +838,4 @@ const Category = () => {
   );
 };
 
-export default Category;
+export default CreateCategory;
