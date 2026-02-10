@@ -78,8 +78,8 @@ const Notifications = () => {
       setLoading(true);
       const userRole = localStorage.getItem("userRole");
       
-      // Only fetch for vendors
-      if (userRole !== "vendor") {
+      // Fetch for vendors and admin
+      if (userRole !== "vendor" && userRole !== "admin") {
         setLoading(false);
         return;
       }
@@ -109,14 +109,30 @@ const Notifications = () => {
         }
       }
 
-      const response = await api.get("/api/vendor/notifications", {
-        params: {
-          page: 1,
-          limit: 50,
-        },
-      });
+      let response;
+      if (userRole === "vendor") {
+        // Fetch vendor notifications
+        response = await api.get("/api/vendor/notifications", {
+          params: {
+            page: 1,
+            limit: 50,
+          },
+        });
+      } else if (userRole === "admin") {
+        // Fetch admin notifications (support tickets, etc.)
+        console.log("Fetching admin notifications...");
+        response = await api.get("/api/admin/notifications", {
+          params: {
+            page: 1,
+            limit: 50,
+          },
+        });
+        console.log("Admin notifications response:", response.data);
+      }
 
-      if (response.data && response.data.success) {
+      if (response && response.data && response.data.success) {
+        console.log("Notifications fetched successfully:", response.data.data);
+        console.log("Unread count:", response.data.unreadCount);
         setNotifications(response.data.data || []);
         setUnreadCount(response.data.unreadCount || 0);
         setError(null); // Clear any previous errors
@@ -192,17 +208,31 @@ const Notifications = () => {
   const fetchUnreadCount = async () => {
     try {
       const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      const userRole = localStorage.getItem("userRole");
+      
       if (!token) {
         setUnreadCount(0);
         return;
       }
 
-      const response = await api.get("/api/vendor/notifications/unread-count");
-      if (response.data && response.data.success) {
+      let response;
+      if (userRole === "vendor") {
+        response = await api.get("/api/vendor/notifications/unread-count");
+      } else if (userRole === "admin") {
+        response = await api.get("/api/admin/notifications/unread-count");
+      }
+
+      if (response && response.data && response.data.success) {
+        console.log("Unread count fetched:", response.data.unreadCount);
         setUnreadCount(response.data.unreadCount || 0);
       }
     } catch (error) {
       console.error("Error fetching unread count:", error);
+      console.error("Error details:", {
+        status: error.response?.status,
+        message: error.response?.data?.message,
+        userRole: localStorage.getItem("userRole")
+      });
       // Don't set error state for unread count, just log it
       setUnreadCount(0);
     }

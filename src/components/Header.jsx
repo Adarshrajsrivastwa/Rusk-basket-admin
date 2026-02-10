@@ -58,9 +58,9 @@ const Header = () => {
     }
   }, [userRole]);
 
-  // Fetch unread notification count (for vendors)
+  // Fetch unread notification count (for vendors and admin)
   const fetchUnreadCount = async () => {
-    if (userRole !== "vendor") return;
+    if (userRole !== "vendor" && userRole !== "admin") return;
     
     try {
       // Check if token exists
@@ -70,22 +70,36 @@ const Header = () => {
         return;
       }
 
-      const response = await api.get("/api/vendor/notifications/unread-count");
-      if (response.data && response.data.success) {
+      let response;
+      if (userRole === "vendor") {
+        // Fetch vendor notifications
+        response = await api.get("/api/vendor/notifications/unread-count");
+      } else if (userRole === "admin") {
+        // Fetch admin notifications (support tickets, etc.)
+        response = await api.get("/api/admin/notifications/unread-count");
+      }
+
+      if (response && response.data && response.data.success) {
+        console.log("Notification count fetched:", response.data.unreadCount);
         setUnreadCount(response.data.unreadCount || 0);
       }
     } catch (error) {
       console.error("Error fetching unread count:", error);
+      console.error("Error details:", {
+        status: error.response?.status,
+        message: error.response?.data?.message,
+        userRole: userRole
+      });
       // Don't show error to user, just set count to 0
       setUnreadCount(0);
     }
   };
 
-  // Initialize notification fetching for vendors
+  // Initialize notification fetching for vendors and admin
   useEffect(() => {
     const role = localStorage.getItem("userRole");
 
-    if (role === "vendor") {
+    if (role === "vendor" || role === "admin") {
       // Fetch initial count
       fetchUnreadCount();
 
@@ -114,6 +128,9 @@ const Header = () => {
   const getNotificationRoute = () => {
     if (userRole === "vendor") {
       return "/vendor/notifications";
+    }
+    if (userRole === "admin") {
+      return "/topbar-notifications";
     }
     return "/topbar-notifications";
   };
@@ -182,7 +199,7 @@ const Header = () => {
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}
-          {unreadCount === 0 && userRole === "vendor" && (
+          {unreadCount === 0 && (userRole === "vendor" || userRole === "admin") && (
             <span className="absolute -top-1 -right-1 bg-gray-500 text-white text-xs w-3 h-3 rounded-full" />
           )}
         </button>
