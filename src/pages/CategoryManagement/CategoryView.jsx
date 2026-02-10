@@ -998,7 +998,66 @@ const CategoryView = () => {
       }
 
       console.log("Category data received:", data.data);
-      setCategory(data.data);
+      console.log("Category data structure:", {
+        hasCategory: !!data.data.category,
+        hasSummary: !!data.data.summary,
+        hasTopSellingProducts: !!data.data.topSellingProducts,
+        hasSubCategories: !!data.data.subCategories,
+        keys: Object.keys(data.data)
+      });
+      
+      // Extract category object and merge with summary data
+      const categoryData = data.data;
+      
+      // Check if category is nested or flat
+      let categoryObj;
+      if (categoryData.category) {
+        // Nested structure: {category: {...}, summary: {...}}
+        categoryObj = categoryData.category;
+        console.log("Using nested category object");
+      } else {
+        // Flat structure: all properties directly on data.data
+        categoryObj = categoryData;
+        console.log("Using flat category object");
+      }
+      
+      const summary = categoryData.summary || {};
+      
+      console.log("Extracted category object:", categoryObj);
+      console.log("Category object keys:", Object.keys(categoryObj));
+      console.log("Category name value:", categoryObj.name);
+      console.log("Category _id value:", categoryObj._id);
+      console.log("Category isActive value:", categoryObj.isActive);
+      console.log("Category image value:", categoryObj.image);
+      console.log("Category createdAt value:", categoryObj.createdAt);
+      console.log("Category updatedAt value:", categoryObj.updatedAt);
+      console.log("Summary data:", summary);
+      
+      // Merge category with summary data for easy access
+      const mergedCategory = {
+        ...categoryObj,
+        // Ensure all required fields are present
+        name: categoryObj.name || "",
+        description: categoryObj.description || "",
+        code: categoryObj.code || categoryObj._id || "",
+        isActive: categoryObj.isActive !== undefined ? categoryObj.isActive : false,
+        image: categoryObj.image || null,
+        createdAt: categoryObj.createdAt || null,
+        updatedAt: categoryObj.updatedAt || null,
+        productCount: summary.productCount || categoryObj.productCount || 0,
+        subCategoryCount: summary.subCategoryCount || categoryObj.subCategoryCount || 0,
+        topSellingProducts: categoryData.topSellingProducts || [],
+        subCategories: categoryData.subCategories || [],
+        summary: summary
+      };
+      
+      console.log("Merged category object:", mergedCategory);
+      console.log("Final category name:", mergedCategory.name);
+      console.log("Final category code:", mergedCategory.code);
+      console.log("Final category image:", mergedCategory.image);
+      console.log("Final category createdAt:", mergedCategory.createdAt);
+      console.log("Final category updatedAt:", mergedCategory.updatedAt);
+      setCategory(mergedCategory);
       console.log("Category state updated successfully");
     } catch (err) {
       console.error("Error fetching category:", err);
@@ -1194,8 +1253,8 @@ const CategoryView = () => {
         <div className="bg-white rounded-sm shadow-md p-6 border border-gray-200">
           <div className="flex flex-col md:flex-row items-start gap-6 mb-6">
             <img
-              src={category.image?.url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect width='150' height='150' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E"}
-              alt={category.name}
+              src={category?.image?.url || category?.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect width='150' height='150' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E"}
+              alt={category?.name || "Category"}
               className="w-32 h-32 rounded-sm object-cover border-2 border-[#FF7B1D] mx-auto md:mx-0"
               onError={(e) => {
                 e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect width='150' height='150' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E";
@@ -1205,22 +1264,22 @@ const CategoryView = () => {
               <div className="flex flex-col sm:flex-row items-start justify-between mb-3 gap-3">
                 <div>
                   <h1 className="text-2xl md:text-3xl font-bold text-black mb-2">
-                    {category.name}
+                    {category?.name || "Unnamed Category"}
                   </h1>
                   <p className="text-black text-sm font-medium">
-                    Code: <span className="text-[#FF7B1D]">{category.code || category._id}</span>
+                    Code: <span className="text-[#FF7B1D]">{category?.code || category?._id || "N/A"}</span>
                   </p>
                 </div>
                 <span
                   className={`px-4 py-1 rounded-sm text-sm font-semibold border ${
-                    statusColors[category.isActive]
+                    statusColors[category?.isActive] || statusColors[false]
                   }`}
                 >
-                  {category.isActive ? "Active" : "Inactive"}
+                  {category?.isActive ? "Active" : "Inactive"}
                 </span>
               </div>
               <p className="text-black leading-relaxed">
-                {category.description || "No description available"}
+                {category?.description || "No description available"}
               </p>
             </div>
           </div>
@@ -1231,7 +1290,7 @@ const CategoryView = () => {
               <div className="flex items-center justify-center gap-2 mb-1">
                 <Package className="w-5 h-5 text-[#FF7B1D]" />
                 <p className="text-xl md:text-2xl font-bold text-black">
-                  {category.productCount || 0}
+                  {category?.productCount || 0}
                 </p>
               </div>
               <p className="text-xs md:text-sm text-black">Total Products</p>
@@ -1240,7 +1299,7 @@ const CategoryView = () => {
               <div className="flex items-center justify-center gap-2 mb-1">
                 <Layers className="w-5 h-5 text-[#FF7B1D]" />
                 <p className="text-xl md:text-2xl font-bold text-black">
-                  {category.subCategoryCount || 0}
+                  {category?.subCategoryCount || 0}
                 </p>
               </div>
               <p className="text-xs md:text-sm text-black">Sub Categories</p>
@@ -1250,7 +1309,16 @@ const CategoryView = () => {
                 Created
               </p>
               <p className="text-xs md:text-sm font-bold text-black">
-                {new Date(category.createdAt).toLocaleDateString()}
+                {category?.createdAt 
+                  ? (() => {
+                      try {
+                        return new Date(category.createdAt).toLocaleDateString();
+                      } catch (e) {
+                        console.error("Error parsing createdAt:", e);
+                        return "Invalid Date";
+                      }
+                    })()
+                  : "N/A"}
               </p>
             </div>
             <div className="text-center bg-white p-3 rounded border border-gray-200">
@@ -1258,7 +1326,16 @@ const CategoryView = () => {
                 Last Updated
               </p>
               <p className="text-xs md:text-sm font-bold text-black">
-                {new Date(category.updatedAt).toLocaleDateString()}
+                {category?.updatedAt 
+                  ? (() => {
+                      try {
+                        return new Date(category.updatedAt).toLocaleDateString();
+                      } catch (e) {
+                        console.error("Error parsing updatedAt:", e);
+                        return "Invalid Date";
+                      }
+                    })()
+                  : "N/A"}
               </p>
             </div>
           </div>
