@@ -65,8 +65,27 @@ const AdminDashboard = () => {
 
         const result = await response.json();
 
+        console.log("========================================");
+        console.log("ADMIN DASHBOARD API RESPONSE:");
+        console.log("Full response:", result);
+        console.log("Response success:", result.success);
+        console.log("Response data:", result.data);
+        console.log("========================================");
+        
+        if (result.data) {
+          console.log("Dashboard data keys:", Object.keys(result.data));
+          console.log("Notifications data:", result.data.notifications);
+          console.log("Notifications type:", typeof result.data.notifications);
+          console.log("Notifications unread:", result.data.notifications?.unread);
+          console.log("Notifications message:", result.data.notifications?.message);
+          console.log("Notifications total:", result.data.notifications?.total);
+          console.log("Full notifications object:", JSON.stringify(result.data.notifications, null, 2));
+        }
+        console.log("========================================");
+
         if (result.success) {
           setDashboardData(result.data);
+          console.log("Dashboard data set successfully");
         } else {
           throw new Error("API returned unsuccessful response");
         }
@@ -139,8 +158,8 @@ const AdminDashboard = () => {
         growth: dashboardData.revenue.increasePercent,
       },
       notifications: {
-        unread: dashboardData.notifications.unread,
-        total: dashboardData.notifications.unread,
+        unread: dashboardData.notifications?.unread || 0,
+        total: dashboardData.notifications?.total || dashboardData.notifications?.unread || 0,
       },
       tickets: {
         open: dashboardData.supportTickets.open,
@@ -510,7 +529,7 @@ const AdminDashboard = () => {
                   <div className="flex items-center gap-3 mb-3">
                     <div className="bg-yellow-100 p-2 rounded-lg relative">
                       <Bell className="text-yellow-600" size={20} />
-                      {stats?.notifications.unread > 0 && (
+                      {stats?.notifications?.unread > 0 && (
                         <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                           {stats?.notifications.unread}
                         </span>
@@ -523,10 +542,10 @@ const AdminDashboard = () => {
                   <div className="space-y-3">
                     <div className="bg-orange-50 border-l-4 border-orange-500 p-3 rounded">
                       <p className="text-sm font-semibold text-gray-800">
-                        {stats?.notifications.unread} Unread
+                        {stats?.notifications?.unread || 0} Unread
                       </p>
                       <p className="text-xs text-gray-600 mt-1">
-                        {dashboardData?.notifications.message}
+                        {dashboardData?.notifications?.message || "No new notifications"}
                       </p>
                     </div>
                     <button
