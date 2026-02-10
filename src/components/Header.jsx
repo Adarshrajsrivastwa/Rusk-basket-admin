@@ -14,7 +14,6 @@ const Header = () => {
   const [userRole, setUserRole] = useState(null);
   const [vendorProfile, setVendorProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
-  const [socket, setSocket] = useState(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -31,12 +30,22 @@ const Header = () => {
     
     try {
       setLoadingProfile(true);
+      
+      // Check if token exists
+      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      if (!token) {
+        setLoadingProfile(false);
+        return;
+      }
+
       const response = await api.get("/api/vendor/profile");
-      if (response.data.success) {
+      if (response.data && response.data.success) {
         setVendorProfile(response.data.data);
       }
     } catch (error) {
       console.error("Error fetching vendor profile:", error);
+      // Don't show error to user for profile fetch, just log it
+      // The profile will show default values if fetch fails
     } finally {
       setLoadingProfile(false);
     }
@@ -54,81 +63,41 @@ const Header = () => {
     if (userRole !== "vendor") return;
     
     try {
+      // Check if token exists
+      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      if (!token) {
+        setUnreadCount(0);
+        return;
+      }
+
       const response = await api.get("/api/vendor/notifications/unread-count");
-      if (response.data.success) {
+      if (response.data && response.data.success) {
         setUnreadCount(response.data.unreadCount || 0);
       }
     } catch (error) {
       console.error("Error fetching unread count:", error);
+      // Don't show error to user, just set count to 0
+      setUnreadCount(0);
     }
   };
 
-  // Initialize socket.io for real-time notifications (vendors only)
+  // Initialize notification fetching for vendors
   useEffect(() => {
-    const token = localStorage.getItem("token") || localStorage.getItem("authToken");
     const role = localStorage.getItem("userRole");
 
-    if (token && role === "vendor") {
+    if (role === "vendor") {
       // Fetch initial count
       fetchUnreadCount();
 
-      // Set up socket.io connection
-      import("socket.io-client")
-        .then((ioModule) => {
-          const io = ioModule.default;
-          const socketInstance = io(BASE_URL, {
-            auth: { token },
-            transports: ["websocket", "polling"],
-          });
-
-          socketInstance.on("connect", () => {
-            console.log("Header: Socket connected for notifications");
-          });
-
-          socketInstance.on("notification", (notification) => {
-            console.log("Header: New notification received", notification);
-            // Update unread count
-            setUnreadCount((prev) => prev + 1);
-          });
-
-          // Handle order update events
-          socketInstance.on("order_update", (orderData) => {
-            console.log("Header: Order update received", orderData);
-            // Update unread count for order updates
-            setUnreadCount((prev) => prev + 1);
-          });
-
-          socketInstance.on("disconnect", () => {
-            console.log("Header: Socket disconnected");
-          });
-
-          setSocket(socketInstance);
-
-          // Cleanup
-          return () => {
-            if (socketInstance) {
-              socketInstance.disconnect();
-            }
-          };
-        })
-        .catch((error) => {
-          console.warn("Header: Socket.io-client not available:", error);
-        });
-    }
-
-    // Refresh count every 30 seconds
-    const interval = setInterval(() => {
-      if (userRole === "vendor") {
+      // Refresh count every 30 seconds
+      const interval = setInterval(() => {
         fetchUnreadCount();
-      }
-    }, 30000);
+      }, 30000);
 
-    return () => {
-      clearInterval(interval);
-      if (socket) {
-        socket.disconnect();
-      }
-    };
+      return () => {
+        clearInterval(interval);
+      };
+    }
   }, [userRole]);
 
   useEffect(() => {

@@ -74,7 +74,8 @@ const InvoiceViewPage = () => {
 
           // Transform API data to match component structure
           const transformedInvoice = {
-            id: apiInvoice._id,
+            id: apiInvoice._id, // Keep _id for API calls
+            code: apiInvoice.code || apiInvoice._id, // Use code for display, fallback to _id
             invoiceNumber: apiInvoice.invoiceNumber,
             date: apiInvoice.date || apiInvoice.createdAt,
             dueDate: apiInvoice.dueDate,
@@ -287,7 +288,10 @@ const InvoiceViewPage = () => {
                 <div>
                   <h1 className="text-4xl font-bold mb-2">INVOICE</h1>
                   <p className="text-white text-lg font-semibold">
-                    {invoice.invoiceNumber}
+                    Code: {invoice.code || invoice.invoiceNumber}
+                  </p>
+                  <p className="text-white text-sm mt-1 opacity-90">
+                    Invoice #: {invoice.invoiceNumber}
                   </p>
                 </div>
                 <div className="text-right">

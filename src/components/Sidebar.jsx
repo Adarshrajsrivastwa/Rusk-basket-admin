@@ -422,6 +422,7 @@ import {
   Image,
   CreditCard,
   MessageSquare,
+  Briefcase,
 } from "lucide-react";
 import AddVendorModal from "./AddVendorModal";
 import AddProductPopup from "../components/AddProduct"; // ✅ Import Product Modal
@@ -591,6 +592,11 @@ const Sidebar = () => {
       name: "Rider Management",
       icon: <Truck size={16} />,
       path: "/Rider",
+    },
+    {
+      name: "Rider Job Posting",
+      icon: <Briefcase size={16} />,
+      path: "/admin/rider-job-posting",
     },
     {
       name: "Vendor Management",

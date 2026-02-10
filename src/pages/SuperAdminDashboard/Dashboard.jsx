@@ -1,5 +1,5 @@
 // AdminDashboard.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import AddVendorModal from "../../components/AddVendorModal";
 import NotificationsPage from "../../pages/SuperAdminDashboard/ViewAllNotification";
@@ -20,6 +20,7 @@ import {
   Edit,
   UserPlus,
   Eye,
+  Briefcase,
 } from "lucide-react";
 
 const AdminDashboard = () => {
@@ -80,8 +81,8 @@ const AdminDashboard = () => {
     fetchDashboardData();
   }, []);
 
-  // Transform API data to match component structure
-  const getStats = () => {
+  // Transform API data to match component structure - memoized for performance
+  const stats = useMemo(() => {
     if (!dashboardData) return null;
 
     return {
@@ -119,6 +120,12 @@ const AdminDashboard = () => {
         newThisMonth: dashboardData.metrics.totalUsers.new,
         growth: dashboardData.metrics.totalUsers.increasePercent,
       },
+      riderJobPosts: {
+        total: dashboardData.metrics.riderJobPosts?.total || 0,
+        active: dashboardData.metrics.riderJobPosts?.active || 0,
+        newThisMonth: dashboardData.metrics.riderJobPosts?.new || 0,
+        growth: dashboardData.metrics.riderJobPosts?.increasePercent || 0,
+      },
       inventory: {
         totalProducts: dashboardData.inventory.totalProducts,
         inStock: dashboardData.inventory.inStock,
@@ -142,23 +149,22 @@ const AdminDashboard = () => {
         escalated: dashboardData.supportTickets.escalated,
       },
     };
-  };
+  }, [dashboardData]);
 
-  const stats = getStats();
-
-  // Transform recent orders from API
-  const recentOrders =
-    dashboardData?.recentOrders.map((order) => ({
+  // Transform recent orders from API - memoized for performance
+  const recentOrders = useMemo(() => {
+    return dashboardData?.recentOrders.map((order) => ({
       id: order.orderId,
       customer: order.customer,
       amount: order.amount,
       status: order.status.charAt(0).toUpperCase() + order.status.slice(1),
       date: new Date().toISOString().split("T")[0],
     })) || [];
+  }, [dashboardData?.recentOrders]);
 
-  // Transform top vendors from API
-  const topVendors =
-    dashboardData?.topVendors.map((vendor) => ({
+  // Transform top vendors from API - memoized for performance
+  const topVendors = useMemo(() => {
+    return dashboardData?.topVendors.map((vendor) => ({
       id: vendor.vendorId,
       name: vendor.vendorName || vendor.storeName,
       sales: 0, // Not provided in API
@@ -166,6 +172,7 @@ const AdminDashboard = () => {
       rating: 0, // Not provided in API
       rank: vendor.rank,
     })) || [];
+  }, [dashboardData?.topVendors]);
 
   // Skeleton Loader
   const SkeletonLoader = () => (
@@ -390,6 +397,42 @@ const AdminDashboard = () => {
 
               {/* Secondary Stats Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                {/* Rider Job Posts Card */}
+                <div className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-cyan-100 p-2 rounded-lg">
+                        <Briefcase className="text-cyan-600" size={20} />
+                      </div>
+                      <h3 className="text-gray-700 font-semibold">Rider Jobs</h3>
+                    </div>
+                    <div className="flex items-center gap-1 text-green-600 text-xs font-semibold">
+                      <ArrowUp size={14} />
+                      {stats?.riderJobPosts.growth}%
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Total Posts:</span>
+                      <span className="font-bold text-gray-800">
+                        {stats?.riderJobPosts.total.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Active:</span>
+                      <span className="font-semibold text-green-600">
+                        {stats?.riderJobPosts.active.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">New This Month:</span>
+                      <span className="font-semibold text-blue-600">
+                        {stats?.riderJobPosts.newThisMonth}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Inventory Card */}
                 <div className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-3 mb-3">

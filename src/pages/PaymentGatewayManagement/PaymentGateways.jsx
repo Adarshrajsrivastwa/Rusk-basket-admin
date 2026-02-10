@@ -13,6 +13,8 @@ const PaymentGatewayManagement = () => {
   const [editingGateway, setEditingGateway] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [showCredentials, setShowCredentials] = useState({});
+  const [testingCredentials, setTestingCredentials] = useState(false);
+  const [testResult, setTestResult] = useState({ live: null, test: null });
 
   const [formData, setFormData] = useState({
     name: "",
@@ -77,6 +79,29 @@ const PaymentGatewayManagement = () => {
   // ================= OPEN EDIT =================
   const handleEditClick = (gateway) => {
     setEditingGateway(gateway);
+    
+    // Initialize credentials structure based on gateway type
+    let defaultCredentials = {};
+    let defaultTestCredentials = {};
+    
+    if (gateway.name === "razorpay") {
+      defaultCredentials = { razorpayKeyId: "", razorpayKeySecret: "" };
+      defaultTestCredentials = { razorpayKeyId: "", razorpayKeySecret: "" };
+    } else if (gateway.name === "phonepay") {
+      defaultCredentials = { phonepayMerchantId: "", phonepaySaltKey: "", phonepaySaltIndex: "1", phonepayAppId: "" };
+      defaultTestCredentials = { phonepayMerchantId: "", phonepaySaltKey: "", phonepaySaltIndex: "1", phonepayAppId: "" };
+    } else if (gateway.name === "shopify") {
+      defaultCredentials = { shopifyStoreUrl: "", shopifyApiKey: "", shopifyApiSecret: "", shopifyAccessToken: "" };
+      defaultTestCredentials = { shopifyStoreUrl: "", shopifyApiKey: "", shopifyApiSecret: "", shopifyAccessToken: "" };
+    }
+    
+    // Merge existing credentials with defaults (backend may hide secrets, so we merge to show structure)
+    const existingCredentials = gateway.credentials || {};
+    const existingTestCredentials = gateway.testCredentials || {};
+    
+    const mergedCredentials = { ...defaultCredentials, ...existingCredentials };
+    const mergedTestCredentials = { ...defaultTestCredentials, ...existingTestCredentials };
+    
     setFormData({
       name: gateway.name || "",
       displayName: gateway.displayName || "",
@@ -84,8 +109,8 @@ const PaymentGatewayManagement = () => {
       testMode: gateway.testMode || false,
       priority: gateway.priority || 0,
       description: gateway.description || "",
-      credentials: gateway.credentials || {},
-      testCredentials: gateway.testCredentials || {},
+      credentials: mergedCredentials,
+      testCredentials: mergedTestCredentials,
     });
     setIsModalOpen(true);
   };
@@ -180,6 +205,76 @@ const PaymentGatewayManagement = () => {
         [key]: value,
       },
     }));
+    // Clear test result when credentials change
+    setTestResult({ live: null, test: null });
+  };
+
+  // ================= TEST CREDENTIALS =================
+  const handleTestCredentials = async (isTest = false) => {
+    if (!formData.name) {
+      alert("Please select a gateway first");
+      return;
+    }
+
+    const credentialsToTest = isTest ? formData.testCredentials : formData.credentials;
+    
+    // Validate required fields based on gateway type
+    if (formData.name === "razorpay") {
+      if (!credentialsToTest?.razorpayKeyId || !credentialsToTest?.razorpayKeySecret) {
+        alert("Please enter both Key ID and Key Secret");
+        return;
+      }
+    } else if (formData.name === "phonepay") {
+      if (!credentialsToTest?.phonepayMerchantId || !credentialsToTest?.phonepaySaltKey) {
+        alert("Please enter Merchant ID and Salt Key");
+        return;
+      }
+    } else if (formData.name === "shopify") {
+      if (!credentialsToTest?.shopifyStoreUrl || !credentialsToTest?.shopifyApiKey || !credentialsToTest?.shopifyAccessToken) {
+        alert("Please enter Store URL, API Key, and Access Token");
+        return;
+      }
+    }
+
+    setTestingCredentials(true);
+
+    try {
+      const response = await api.post("/api/payment-gateway/test-credentials", {
+        gatewayName: formData.name,
+        credentials: credentialsToTest,
+        isTestMode: isTest,
+      });
+
+      if (response.data.success) {
+        setTestResult(prev => ({
+          ...prev,
+          [isTest ? 'test' : 'live']: {
+            success: true,
+            message: response.data.message,
+            data: response.data.data,
+          }
+        }));
+      } else {
+        setTestResult(prev => ({
+          ...prev,
+          [isTest ? 'test' : 'live']: {
+            success: false,
+            message: response.data.error || "Test failed",
+          }
+        }));
+      }
+    } catch (error) {
+      console.error("Error testing credentials:", error);
+      setTestResult(prev => ({
+        ...prev,
+        [isTest ? 'test' : 'live']: {
+          success: false,
+          message: error.response?.data?.error || error.message || "Failed to test credentials",
+        }
+      }));
+    } finally {
+      setTestingCredentials(false);
+    }
   };
 
   // ================= UI =================
@@ -320,7 +415,52 @@ const PaymentGatewayManagement = () => {
                   </label>
                   <select
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) => {
+                      const gatewayName = e.target.value;
+                      let defaultCredentials = {};
+                      let defaultTestCredentials = {};
+                      
+                      // Initialize default structure based on gateway type
+                      if (gatewayName === "razorpay") {
+                        defaultCredentials = { razorpayKeyId: "", razorpayKeySecret: "" };
+                        defaultTestCredentials = { razorpayKeyId: "", razorpayKeySecret: "" };
+                      } else if (gatewayName === "phonepay") {
+                        defaultCredentials = { phonepayMerchantId: "", phonepaySaltKey: "", phonepaySaltIndex: "1", phonepayAppId: "" };
+                        defaultTestCredentials = { phonepayMerchantId: "", phonepaySaltKey: "", phonepaySaltIndex: "1", phonepayAppId: "" };
+                      } else if (gatewayName === "shopify") {
+                        defaultCredentials = { shopifyStoreUrl: "", shopifyApiKey: "", shopifyApiSecret: "", shopifyAccessToken: "" };
+                        defaultTestCredentials = { shopifyStoreUrl: "", shopifyApiKey: "", shopifyApiSecret: "", shopifyAccessToken: "" };
+                      }
+                      
+                      // If editing and gateway name matches, preserve existing credentials
+                      // Otherwise, use defaults (for new gateway or switching types)
+                      const currentCredentials = formData.credentials || {};
+                      const currentTestCredentials = formData.testCredentials || {};
+                      
+                      // Merge existing values with defaults (preserve existing values if they exist)
+                      const mergedCredentials = { ...defaultCredentials };
+                      const mergedTestCredentials = { ...defaultTestCredentials };
+                      
+                      // Only preserve values that match the new gateway type
+                      Object.keys(defaultCredentials).forEach(key => {
+                        if (currentCredentials[key] !== undefined) {
+                          mergedCredentials[key] = currentCredentials[key];
+                        }
+                      });
+                      
+                      Object.keys(defaultTestCredentials).forEach(key => {
+                        if (currentTestCredentials[key] !== undefined) {
+                          mergedTestCredentials[key] = currentTestCredentials[key];
+                        }
+                      });
+                      
+                      setFormData({ 
+                        ...formData, 
+                        name: gatewayName,
+                        credentials: mergedCredentials,
+                        testCredentials: mergedTestCredentials
+                      });
+                    }}
                     className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange"
                     disabled={submitting || editingGateway}
                   >
@@ -414,66 +554,444 @@ const PaymentGatewayManagement = () => {
                 </div>
 
                 {/* Credentials Section */}
-                <div className="border-t pt-4">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800">Live Credentials</h3>
-                  <div className="space-y-2">
-                    {Object.keys(formData.credentials || {}).map((key) => (
-                      <div key={key}>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          {key}
-                        </label>
-                        <input
-                          type="password"
-                          value={formData.credentials[key] || ""}
-                          onChange={(e) => updateCredentials("credentials", key, e.target.value)}
-                          className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange"
-                          disabled={submitting}
-                        />
+                {formData.name && (
+                  <>
+                    <div className="border-t pt-4">
+                      <h3 className="text-lg font-semibold mb-3 text-gray-800">Live Credentials</h3>
+                      <div className="space-y-3">
+                        {formData.name === "razorpay" && (
+                          <>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Key ID *
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="rzp_live_..."
+                                value={formData.credentials?.razorpayKeyId || ""}
+                                onChange={(e) => updateCredentials("credentials", "razorpayKeyId", e.target.value)}
+                                className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange"
+                                disabled={submitting}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Key Secret *
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type={showCredentials["live_secret"] ? "text" : "password"}
+                                  placeholder="Enter Razorpay Key Secret"
+                                  value={formData.credentials?.razorpayKeySecret || ""}
+                                  onChange={(e) => updateCredentials("credentials", "razorpayKeySecret", e.target.value)}
+                                  className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange pr-10"
+                                  disabled={submitting}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowCredentials({ ...showCredentials, "live_secret": !showCredentials["live_secret"] })}
+                                  className="absolute right-2 top-2.5 text-gray-500 hover:text-gray-700"
+                                >
+                                  {showCredentials["live_secret"] ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                        {formData.name === "phonepay" && (
+                          <>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Merchant ID *
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Enter Merchant ID"
+                                value={formData.credentials?.phonepayMerchantId || ""}
+                                onChange={(e) => updateCredentials("credentials", "phonepayMerchantId", e.target.value)}
+                                className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange"
+                                disabled={submitting}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Salt Key *
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type={showCredentials["live_salt"] ? "text" : "password"}
+                                  placeholder="Enter Salt Key"
+                                  value={formData.credentials?.phonepaySaltKey || ""}
+                                  onChange={(e) => updateCredentials("credentials", "phonepaySaltKey", e.target.value)}
+                                  className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange pr-10"
+                                  disabled={submitting}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowCredentials({ ...showCredentials, "live_salt": !showCredentials["live_salt"] })}
+                                  className="absolute right-2 top-2.5 text-gray-500 hover:text-gray-700"
+                                >
+                                  {showCredentials["live_salt"] ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Salt Index
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="1"
+                                value={formData.credentials?.phonepaySaltIndex || ""}
+                                onChange={(e) => updateCredentials("credentials", "phonepaySaltIndex", e.target.value)}
+                                className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange"
+                                disabled={submitting}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                App ID
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Enter App ID"
+                                value={formData.credentials?.phonepayAppId || ""}
+                                onChange={(e) => updateCredentials("credentials", "phonepayAppId", e.target.value)}
+                                className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange"
+                                disabled={submitting}
+                              />
+                            </div>
+                          </>
+                        )}
+                        {formData.name === "shopify" && (
+                          <>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Store URL *
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="https://your-store.myshopify.com"
+                                value={formData.credentials?.shopifyStoreUrl || ""}
+                                onChange={(e) => updateCredentials("credentials", "shopifyStoreUrl", e.target.value)}
+                                className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange"
+                                disabled={submitting}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                API Key *
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Enter API Key"
+                                value={formData.credentials?.shopifyApiKey || ""}
+                                onChange={(e) => updateCredentials("credentials", "shopifyApiKey", e.target.value)}
+                                className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange"
+                                disabled={submitting}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                API Secret *
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type={showCredentials["live_api_secret"] ? "text" : "password"}
+                                  placeholder="Enter API Secret"
+                                  value={formData.credentials?.shopifyApiSecret || ""}
+                                  onChange={(e) => updateCredentials("credentials", "shopifyApiSecret", e.target.value)}
+                                  className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange pr-10"
+                                  disabled={submitting}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowCredentials({ ...showCredentials, "live_api_secret": !showCredentials["live_api_secret"] })}
+                                  className="absolute right-2 top-2.5 text-gray-500 hover:text-gray-700"
+                                >
+                                  {showCredentials["live_api_secret"] ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Access Token *
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type={showCredentials["live_access_token"] ? "text" : "password"}
+                                  placeholder="Enter Access Token"
+                                  value={formData.credentials?.shopifyAccessToken || ""}
+                                  onChange={(e) => updateCredentials("credentials", "shopifyAccessToken", e.target.value)}
+                                  className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange pr-10"
+                                  disabled={submitting}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowCredentials({ ...showCredentials, "live_access_token": !showCredentials["live_access_token"] })}
+                                  className="absolute right-2 top-2.5 text-gray-500 hover:text-gray-700"
+                                >
+                                  {showCredentials["live_access_token"] ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const key = prompt("Enter credential key:");
-                        if (key) updateCredentials("credentials", key, "");
-                      }}
-                      className="text-sm text-custom-orange hover:underline"
-                    >
-                      + Add Credential
-                    </button>
-                  </div>
-                </div>
+                      <div className="mt-4 pt-3 border-t">
+                        <button
+                          type="button"
+                          onClick={() => handleTestCredentials(false)}
+                          disabled={testingCredentials || submitting || !formData.name}
+                          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {testingCredentials ? (
+                            <>
+                              <Loader2 className="animate-spin" size={16} />
+                              Testing...
+                            </>
+                          ) : (
+                            <>Test Live Credentials</>
+                          )}
+                        </button>
+                        {testResult.live && !testResult.live.success && (
+                          <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                            {testResult.live.message}
+                          </div>
+                        )}
+                        {testResult.live && testResult.live.success && (
+                          <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-green-700 text-sm">
+                            ✓ {testResult.live.message}
+                            {testResult.live.data?.shopName && (
+                              <div className="mt-1 text-xs">Shop: {testResult.live.data.shopName}</div>
+                            )}
+                            {testResult.live.data?.note && (
+                              <div className="mt-1 text-xs italic">{testResult.live.data.note}</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
-                {/* Test Credentials Section */}
-                <div className="border-t pt-4">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800">Test Credentials</h3>
-                  <div className="space-y-2">
-                    {Object.keys(formData.testCredentials || {}).map((key) => (
-                      <div key={key}>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          {key}
-                        </label>
-                        <input
-                          type="password"
-                          value={formData.testCredentials[key] || ""}
-                          onChange={(e) => updateCredentials("testCredentials", key, e.target.value)}
-                          className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange"
-                          disabled={submitting}
-                        />
+                    {/* Test Credentials Section */}
+                    <div className="border-t pt-4">
+                      <h3 className="text-lg font-semibold mb-3 text-gray-800">Test Credentials</h3>
+                      <div className="space-y-3">
+                        {formData.name === "razorpay" && (
+                          <>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Key ID *
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="rzp_test_..."
+                                value={formData.testCredentials?.razorpayKeyId || ""}
+                                onChange={(e) => updateCredentials("testCredentials", "razorpayKeyId", e.target.value)}
+                                className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange"
+                                disabled={submitting}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Key Secret *
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type={showCredentials["test_secret"] ? "text" : "password"}
+                                  placeholder="Enter Razorpay Test Key Secret"
+                                  value={formData.testCredentials?.razorpayKeySecret || ""}
+                                  onChange={(e) => updateCredentials("testCredentials", "razorpayKeySecret", e.target.value)}
+                                  className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange pr-10"
+                                  disabled={submitting}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowCredentials({ ...showCredentials, "test_secret": !showCredentials["test_secret"] })}
+                                  className="absolute right-2 top-2.5 text-gray-500 hover:text-gray-700"
+                                >
+                                  {showCredentials["test_secret"] ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                        {formData.name === "phonepay" && (
+                          <>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Merchant ID *
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Enter Test Merchant ID"
+                                value={formData.testCredentials?.phonepayMerchantId || ""}
+                                onChange={(e) => updateCredentials("testCredentials", "phonepayMerchantId", e.target.value)}
+                                className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange"
+                                disabled={submitting}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Salt Key *
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type={showCredentials["test_salt"] ? "text" : "password"}
+                                  placeholder="Enter Test Salt Key"
+                                  value={formData.testCredentials?.phonepaySaltKey || ""}
+                                  onChange={(e) => updateCredentials("testCredentials", "phonepaySaltKey", e.target.value)}
+                                  className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange pr-10"
+                                  disabled={submitting}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowCredentials({ ...showCredentials, "test_salt": !showCredentials["test_salt"] })}
+                                  className="absolute right-2 top-2.5 text-gray-500 hover:text-gray-700"
+                                >
+                                  {showCredentials["test_salt"] ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Salt Index
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="1"
+                                value={formData.testCredentials?.phonepaySaltIndex || ""}
+                                onChange={(e) => updateCredentials("testCredentials", "phonepaySaltIndex", e.target.value)}
+                                className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange"
+                                disabled={submitting}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                App ID
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Enter Test App ID"
+                                value={formData.testCredentials?.phonepayAppId || ""}
+                                onChange={(e) => updateCredentials("testCredentials", "phonepayAppId", e.target.value)}
+                                className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange"
+                                disabled={submitting}
+                              />
+                            </div>
+                          </>
+                        )}
+                        {formData.name === "shopify" && (
+                          <>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Store URL *
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="https://your-store.myshopify.com"
+                                value={formData.testCredentials?.shopifyStoreUrl || ""}
+                                onChange={(e) => updateCredentials("testCredentials", "shopifyStoreUrl", e.target.value)}
+                                className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange"
+                                disabled={submitting}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                API Key *
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Enter Test API Key"
+                                value={formData.testCredentials?.shopifyApiKey || ""}
+                                onChange={(e) => updateCredentials("testCredentials", "shopifyApiKey", e.target.value)}
+                                className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange"
+                                disabled={submitting}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                API Secret *
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type={showCredentials["test_api_secret"] ? "text" : "password"}
+                                  placeholder="Enter Test API Secret"
+                                  value={formData.testCredentials?.shopifyApiSecret || ""}
+                                  onChange={(e) => updateCredentials("testCredentials", "shopifyApiSecret", e.target.value)}
+                                  className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange pr-10"
+                                  disabled={submitting}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowCredentials({ ...showCredentials, "test_api_secret": !showCredentials["test_api_secret"] })}
+                                  className="absolute right-2 top-2.5 text-gray-500 hover:text-gray-700"
+                                >
+                                  {showCredentials["test_api_secret"] ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Access Token *
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type={showCredentials["test_access_token"] ? "text" : "password"}
+                                  placeholder="Enter Test Access Token"
+                                  value={formData.testCredentials?.shopifyAccessToken || ""}
+                                  onChange={(e) => updateCredentials("testCredentials", "shopifyAccessToken", e.target.value)}
+                                  className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-orange pr-10"
+                                  disabled={submitting}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowCredentials({ ...showCredentials, "test_access_token": !showCredentials["test_access_token"] })}
+                                  className="absolute right-2 top-2.5 text-gray-500 hover:text-gray-700"
+                                >
+                                  {showCredentials["test_access_token"] ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const key = prompt("Enter credential key:");
-                        if (key) updateCredentials("testCredentials", key, "");
-                      }}
-                      className="text-sm text-custom-orange hover:underline"
-                    >
-                      + Add Test Credential
-                    </button>
-                  </div>
-                </div>
+                      <div className="mt-4 pt-3 border-t">
+                        <button
+                          type="button"
+                          onClick={() => handleTestCredentials(true)}
+                          disabled={testingCredentials || submitting || !formData.name}
+                          className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {testingCredentials ? (
+                            <>
+                              <Loader2 className="animate-spin" size={16} />
+                              Testing...
+                            </>
+                          ) : (
+                            <>Test Test Credentials</>
+                          )}
+                        </button>
+                        {testResult.test && !testResult.test.success && (
+                          <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                            {testResult.test.message}
+                          </div>
+                        )}
+                        {testResult.test && testResult.test.success && (
+                          <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-green-700 text-sm">
+                            ✓ {testResult.test.message}
+                            {testResult.test.data?.shopName && (
+                              <div className="mt-1 text-xs">Shop: {testResult.test.data.shopName}</div>
+                            )}
+                            {testResult.test.data?.note && (
+                              <div className="mt-1 text-xs italic">{testResult.test.data.note}</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div className="flex justify-end gap-3 pt-4">
                   <button

@@ -15,6 +15,24 @@ import {
 } from "react-icons/fi";
 import api, { BASE_URL } from "../../api/api";
 
+// Helper function to decode JWT token (for debugging)
+const decodeToken = (token) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Error decoding token:', error);
+    return null;
+  }
+};
+
 // Map notification types to icons
 const getNotificationIcon = (type) => {
   const iconMap = {
@@ -52,7 +70,6 @@ const Notifications = () => {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [socket, setSocket] = useState(null);
   const [error, setError] = useState(null);
 
   // Fetch notifications from API
@@ -67,6 +84,31 @@ const Notifications = () => {
         return;
       }
 
+      // Check if token exists
+      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      if (!token) {
+        setError("Please login to view notifications");
+        setLoading(false);
+        return;
+      }
+
+      // Debug: Log token info in development
+      if (process.env.NODE_ENV === 'development' || true) {
+        const decoded = decodeToken(token);
+        console.log('Token info:', {
+          hasToken: !!token,
+          tokenLength: token.length,
+          decoded: decoded,
+          decodedRole: decoded?.role,
+          decodedId: decoded?.id,
+          userRole: localStorage.getItem("userRole"),
+        });
+        // Log full decoded token
+        if (decoded) {
+          console.log('Full decoded token:', JSON.stringify(decoded, null, 2));
+        }
+      }
+
       const response = await api.get("/api/vendor/notifications", {
         params: {
           page: 1,
@@ -74,13 +116,73 @@ const Notifications = () => {
         },
       });
 
-      if (response.data.success) {
+      if (response.data && response.data.success) {
         setNotifications(response.data.data || []);
         setUnreadCount(response.data.unreadCount || 0);
+        setError(null); // Clear any previous errors
+      } else {
+        setError("Invalid response from server. Please try again.");
       }
     } catch (error) {
       console.error("Error fetching notifications:", error);
-      setError("Failed to load notifications. Please try again.");
+      
+      // Handle different error types
+      if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const errorData = error.response.data || {};
+        const backendMessage = errorData.message || errorData.error || '';
+        
+        // Log full error response for debugging
+        console.log('Full error response:', {
+          status: status,
+          data: errorData,
+          message: backendMessage,
+          error: errorData.error,
+          debug: errorData.debug,
+        });
+        
+        if (status === 401) {
+          setError(backendMessage || "Authentication required. Please login again.");
+          // Clear storage and redirect will be handled by axios interceptor
+        } else if (status === 403) {
+          // Show specific backend error message for 403
+          if (backendMessage) {
+            setError(backendMessage);
+          } else if (errorData.debug) {
+            // In development, show debug info
+            const debugInfo = typeof errorData.debug === 'object' 
+              ? JSON.stringify(errorData.debug, null, 2)
+              : errorData.debug;
+            setError(`Access denied: ${debugInfo}`);
+          } else {
+            // Check if role mismatch
+            const storedRole = localStorage.getItem("userRole");
+            if (storedRole !== "vendor") {
+              setError(`Access denied. You are logged in as "${storedRole || 'unknown'}", but vendor privileges are required. Please login as a vendor.`);
+            } else {
+              setError("Access denied. Vendor privileges required. Your account may be inactive. Please contact support or try logging in again.");
+            }
+          }
+        } else if (status === 404) {
+          setError("Notifications endpoint not found.");
+        } else if (status >= 500) {
+          setError("Server error. Please try again later.");
+        } else {
+          const errorMessage = backendMessage || `Error ${status}: Failed to load notifications.`;
+          setError(errorMessage);
+        }
+      } else if (error.request) {
+        // Request was made but no response received
+        setError("Network error. Please check your connection and try again.");
+      } else {
+        // Something else happened
+        setError(error.message || "Failed to load notifications. Please try again.");
+      }
+      
+      // Set empty arrays on error to show empty state
+      setNotifications([]);
+      setUnreadCount(0);
     } finally {
       setLoading(false);
     }
@@ -89,89 +191,24 @@ const Notifications = () => {
   // Fetch unread count
   const fetchUnreadCount = async () => {
     try {
+      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      if (!token) {
+        setUnreadCount(0);
+        return;
+      }
+
       const response = await api.get("/api/vendor/notifications/unread-count");
-      if (response.data.success) {
+      if (response.data && response.data.success) {
         setUnreadCount(response.data.unreadCount || 0);
       }
     } catch (error) {
       console.error("Error fetching unread count:", error);
+      // Don't set error state for unread count, just log it
+      setUnreadCount(0);
     }
   };
 
-  // Initialize socket.io connection
-  useEffect(() => {
-    const token = localStorage.getItem("token") || localStorage.getItem("authToken");
-    const userRole = localStorage.getItem("userRole");
-
-    // Only connect if vendor is logged in
-    if (token && userRole === "vendor") {
-      // Import socket.io-client
-      import("socket.io-client")
-        .then((ioModule) => {
-          const io = ioModule.default;
-          const socketInstance = io(BASE_URL, {
-            auth: { token },
-            transports: ["websocket", "polling"],
-          });
-
-          socketInstance.on("connect", () => {
-            console.log("Socket connected for vendor notifications");
-          });
-
-          socketInstance.on("connected", (data) => {
-            console.log("Vendor socket connected:", data);
-          });
-
-          socketInstance.on("notification", (notification) => {
-            console.log("New notification received:", notification);
-            // Add new notification to the list
-            setNotifications((prev) => [notification, ...prev]);
-            setUnreadCount((prev) => prev + 1);
-          });
-
-          // Handle order update events
-          socketInstance.on("order_update", (orderData) => {
-            console.log("Order update received:", orderData);
-            // Create notification from order update
-            const notification = {
-              _id: `order_update_${orderData.orderId}_${Date.now()}`,
-              type: "order_updated",
-              title: "Order Status Updated",
-              message: `Order #${orderData.orderNumber} status changed to ${orderData.status}`,
-              data: orderData.data || {
-                orderId: orderData.orderId,
-                orderNumber: orderData.orderNumber,
-                status: orderData.status,
-              },
-              isRead: false,
-              createdAt: orderData.timestamp || new Date().toISOString(),
-            };
-            setNotifications((prev) => [notification, ...prev]);
-            setUnreadCount((prev) => prev + 1);
-          });
-
-          socketInstance.on("disconnect", () => {
-            console.log("Socket disconnected");
-          });
-
-          socketInstance.on("error", (error) => {
-            console.error("Socket error:", error);
-          });
-
-          setSocket(socketInstance);
-
-          // Cleanup function
-          return () => {
-            if (socketInstance) {
-              socketInstance.disconnect();
-            }
-          };
-        })
-        .catch((error) => {
-          console.warn("Socket.io-client not available. Real-time notifications disabled:", error);
-        });
-    }
-  }, []);
+  // Socket.io removed - using Firebase push notifications instead
 
   // Fetch notifications on mount and when component becomes visible
   useEffect(() => {

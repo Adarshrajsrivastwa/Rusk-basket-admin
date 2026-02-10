@@ -641,7 +641,127 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
       }
 
       const data = await response.json();
-      setCategories(data.data || []);
+      console.log("=== CATEGORIES API RESPONSE ===");
+      console.log("Full response:", JSON.stringify(data, null, 2));
+      
+      // Try multiple possible response structures
+      let categoriesList = [];
+      if (Array.isArray(data)) {
+        categoriesList = data;
+      } else if (data.data && Array.isArray(data.data)) {
+        categoriesList = data.data;
+      } else if (data.categories && Array.isArray(data.categories)) {
+        categoriesList = data.categories;
+      }
+      
+      console.log("Extracted categories list:", categoriesList);
+      console.log("Number of categories:", categoriesList.length);
+      
+      if (categoriesList.length === 0) {
+        console.error("No categories found in response!");
+        alert("No categories found. Please create a category first.");
+        setCategories([]);
+        return;
+      }
+      
+      // Normalize categories - convert _id to string and ensure name exists
+      const normalizedCategories = categoriesList.map((cat, index) => {
+        // Handle MongoDB ObjectId object - it might be an object with $oid or just an object
+        let catId = '';
+        
+        if (cat._id) {
+          // If _id is already a string
+          if (typeof cat._id === 'string') {
+            catId = cat._id;
+          }
+          // If _id is an object
+          else if (typeof cat._id === 'object' && cat._id !== null) {
+            // Try BSON format first ($oid)
+            if (cat._id.$oid) {
+              catId = cat._id.$oid;
+            }
+            // Try toString method
+            else if (typeof cat._id.toString === 'function') {
+              try {
+                catId = cat._id.toString();
+                // If toString returns "[object Object]", it's not a proper ObjectId
+                if (catId === '[object Object]') {
+                  // Try accessing common ObjectId properties
+                  catId = cat._id._id || cat._id.id || cat._id.str || cat._id.value;
+                  // If still not found, try to get the hex string from ObjectId
+                  if (!catId && cat._id.toHexString) {
+                    catId = cat._id.toHexString();
+                  }
+                  // Last resort - try JSON and extract
+                  if (!catId || catId === '[object Object]') {
+                    const jsonStr = JSON.stringify(cat._id);
+                    // Try to extract hex string from JSON
+                    const hexMatch = jsonStr.match(/"([0-9a-fA-F]{24})"/);
+                    if (hexMatch) {
+                      catId = hexMatch[1];
+                    } else {
+                      // Use index as fallback
+                      catId = String(index);
+                    }
+                  }
+                }
+              } catch (e) {
+                console.error('Error converting _id:', e);
+                catId = String(index);
+              }
+            }
+            // Try accessing properties directly
+            else {
+              catId = cat._id._id || cat._id.id || cat._id.str || cat._id.value || String(index);
+            }
+          }
+          // Fallback
+          else {
+            catId = String(cat._id);
+          }
+        } else if (cat.id) {
+          if (typeof cat.id === 'string') {
+            catId = cat.id;
+          } else if (typeof cat.id === 'object' && cat.id !== null) {
+            catId = cat.id.$oid || cat.id.toString?.() || cat.id._id || cat.id.id || String(index);
+          } else {
+            catId = String(cat.id);
+          }
+        } else {
+          catId = String(index);
+        }
+        
+        // Ensure catId is a valid string (not "[object Object]")
+        if (catId === '[object Object]' || !catId || catId === 'undefined' || catId === 'null') {
+          console.warn(`Invalid category ID for ${cat.name}, using index:`, catId);
+          catId = String(index);
+        }
+        
+        const catName = cat.name || cat.categoryName || cat.category || `Category ${index + 1}`;
+        
+        console.log(`Category ${index + 1}:`, {
+          name: catName,
+          id: catId,
+          idType: typeof catId,
+          _idRaw: cat._id,
+          _idType: typeof cat._id,
+          _idIsObject: typeof cat._id === 'object',
+          _idKeys: typeof cat._id === 'object' && cat._id !== null ? Object.keys(cat._id) : 'N/A',
+          _idStringified: typeof cat._id === 'object' ? JSON.stringify(cat._id) : 'N/A',
+          _idValueOf: typeof cat._id === 'object' && cat._id !== null && typeof cat._id.valueOf === 'function' ? cat._id.valueOf() : 'N/A'
+        });
+        
+        return {
+          ...cat,
+          _id: catId,
+          name: catName
+        };
+      });
+      
+      console.log("Normalized categories:", normalizedCategories);
+      console.log("Setting categories state with", normalizedCategories.length, "items");
+      
+      setCategories(normalizedCategories);
     } catch (err) {
       console.error("Error fetching categories:", err);
       alert("Failed to load categories. Please try again.");
@@ -718,7 +838,7 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
+    // Basic validation
     if (!categoryId) {
       alert("Please select a category");
       return;
@@ -737,18 +857,33 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
     setLoading(true);
 
     try {
+      // Validate categoryId is a valid MongoDB ObjectId format (24 hex characters)
+      console.log("Submitting with categoryId:", categoryId, "Type:", typeof categoryId);
+      
+      // Convert to string if it's not already
+      const categoryIdStr = String(categoryId).trim();
+      
+      if (!/^[0-9a-fA-F]{24}$/.test(categoryIdStr)) {
+        console.error("Invalid categoryId format:", categoryIdStr);
+        alert("Please select a valid category. The selected category ID is not in the correct format.");
+        setLoading(false);
+        return;
+      }
+
       // Prepare FormData according to API requirements
       const formData = new FormData();
       formData.append("name", subCategoryName.trim());
       formData.append("description", subCategoryDesc.trim() || "");
-      formData.append("category", categoryId); // Send category ID directly
+      formData.append("category", categoryIdStr); // Send category ID as string
       formData.append("image", subCategoryImage); // Send file directly
 
       console.log("Sending form data with:", {
         name: subCategoryName.trim(),
         description: subCategoryDesc.trim(),
-        category: categoryId,
-        image: subCategoryImage.name,
+        category: categoryIdStr,
+        categoryIdLength: categoryIdStr?.length,
+        image: subCategoryImage?.name,
+        imageSize: subCategoryImage?.size,
       });
 
       // Get token from localStorage
@@ -773,8 +908,20 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
 
       const result = await response.json();
 
+      console.log("Response status:", response.status);
+      console.log("Response data:", result);
+
       if (!response.ok || !result.success) {
-        throw new Error(result.message || "Failed to create sub-category");
+        // Handle validation errors from express-validator
+        if (result.errors && Array.isArray(result.errors) && result.errors.length > 0) {
+          const errorMessages = result.errors.map(err => err.msg || err.message).join('\n');
+          console.error("Validation errors:", result.errors);
+          throw new Error(errorMessages || "Validation failed. Please check your input.");
+        }
+        // Handle other error formats
+        const errorMsg = result.message || result.error || "Failed to create sub-category";
+        console.error("API Error:", errorMsg, result);
+        throw new Error(errorMsg);
       }
 
       console.log("✅ Sub Category Created:", result);
@@ -790,7 +937,9 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
       handleClose();
     } catch (err) {
       console.error("Error creating sub-category:", err);
-      alert(err.message || "Failed to create sub-category. Please try again.");
+      // Display error message in alert
+      const errorMessage = err.message || "Failed to create sub-category. Please try again.";
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -842,7 +991,13 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
             <select
               className="w-full border border-orange-400 rounded-sm px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500 bg-white disabled:bg-gray-100"
               value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
+              onChange={(e) => {
+                const selectedValue = e.target.value;
+                const selectedCategory = categories.find(cat => cat._id === selectedValue);
+                console.log("Category selected - Value:", selectedValue, "Category:", selectedCategory);
+                console.log("Is valid ObjectId:", /^[0-9a-fA-F]{24}$/.test(selectedValue));
+                setCategoryId(selectedValue);
+              }}
               required
               disabled={loadingCategories || loading}
             >
@@ -851,11 +1006,44 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
                   ? "Loading categories..."
                   : "-- Choose Category --"}
               </option>
-              {categories.map((cat) => (
-                <option key={cat._id} value={cat._id}>
-                  {cat.name || cat.categoryName}
-                </option>
-              ))}
+              {loadingCategories ? (
+                <option value="" disabled>Loading categories...</option>
+              ) : categories.length === 0 ? (
+                <option value="" disabled>No categories available</option>
+              ) : (
+                categories.map((cat, index) => {
+                  // Get the already normalized _id (should be string now)
+                  let catId = cat._id || String(index);
+                  const catName = cat.name || cat.categoryName || `Category ${index + 1}`;
+                  
+                  // Final safety check - ensure it's a string and not "[object Object]"
+                  if (typeof catId === 'object' && catId !== null) {
+                    catId = catId.$oid || catId.toString?.() || catId._id || catId.id || String(index);
+                  }
+                  
+                  // If it's still "[object Object]", use index
+                  if (String(catId) === '[object Object]' || !catId) {
+                    console.warn(`Invalid ID for category ${catName}, using index`);
+                    catId = String(index);
+                  }
+                  
+                  // Ensure it's a string
+                  const finalId = String(catId);
+                  
+                  console.log(`Rendering option ${index + 1}:`, { 
+                    name: catName, 
+                    id: finalId,
+                    idType: typeof finalId,
+                    isValid: /^[0-9a-fA-F]{24}$/.test(finalId) || finalId === String(index)
+                  });
+                  
+                  return (
+                    <option key={finalId || index} value={finalId}>
+                      {catName}
+                    </option>
+                  );
+                })
+              )}
             </select>
           </div>
 

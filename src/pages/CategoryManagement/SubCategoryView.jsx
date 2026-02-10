@@ -36,11 +36,14 @@ const EditSubCategoryModal = ({
 
   useEffect(() => {
     if (subCategory) {
+      // Normalize category ID to string
+      const categoryId = subCategory.category?._id?.toString() || subCategory.category?._id || subCategory.category || "";
+      console.log("Setting form data - Category ID:", categoryId, "Type:", typeof categoryId);
       setFormData({
-        name: subCategory.name,
-        category: subCategory.category?._id || "",
-        description: subCategory.description,
-        isActive: subCategory.isActive,
+        name: subCategory.name || "",
+        category: categoryId,
+        description: subCategory.description || "",
+        isActive: subCategory.isActive !== undefined ? subCategory.isActive : true,
       });
       setImagePreview(subCategory.image?.url || "");
     }
@@ -114,18 +117,53 @@ const EditSubCategoryModal = ({
             </label>
             <select
               value={formData.category}
-              onChange={(e) =>
-                setFormData({ ...formData, category: e.target.value })
-              }
+              onChange={(e) => {
+                const selectedValue = e.target.value;
+                console.log("Category selected in edit - Value:", selectedValue);
+                setFormData({ ...formData, category: selectedValue });
+              }}
               className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#FF7B1D] text-black"
               required
             >
               <option value="">Select Category</option>
-              {categories.map((cat) => (
-                <option key={cat._id} value={cat._id}>
-                  {cat.name}
-                </option>
-              ))}
+              {loadingCategories ? (
+                <option value="" disabled>Loading categories...</option>
+              ) : categories.length === 0 ? (
+                <option value="" disabled>No categories available</option>
+              ) : (
+                categories.map((cat, index) => {
+                  // Get the already normalized _id (should be string now)
+                  let catId = cat._id || String(index);
+                  const catName = cat.name || cat.categoryName || `Category ${index + 1}`;
+                  
+                  // Final safety check - ensure it's a string and not "[object Object]"
+                  if (typeof catId === 'object' && catId !== null) {
+                    catId = catId.$oid || catId.toString?.() || catId._id || catId.id || String(index);
+                  }
+                  
+                  // If it's still "[object Object]", use index
+                  if (String(catId) === '[object Object]' || !catId) {
+                    console.warn(`Edit modal - Invalid ID for category ${catName}, using index`);
+                    catId = String(index);
+                  }
+                  
+                  // Ensure it's a string
+                  const finalId = String(catId);
+                  
+                  console.log(`Edit modal - Rendering option ${index + 1}:`, { 
+                    name: catName, 
+                    id: finalId,
+                    idType: typeof finalId,
+                    isValid: /^[0-9a-fA-F]{24}$/.test(finalId) || finalId === String(index)
+                  });
+                  
+                  return (
+                    <option key={finalId || index} value={finalId}>
+                      {catName}
+                    </option>
+                  );
+                })
+              )}
             </select>
           </div>
 
@@ -309,6 +347,7 @@ const SubCategoryView = () => {
   const [loading, setLoading] = useState(true);
   const [subCategory, setSubCategory] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -367,6 +406,7 @@ const SubCategoryView = () => {
 
   const fetchCategories = async () => {
     try {
+      setLoadingCategories(true);
       const response = await fetch(`${API_BASE_URL}/category`, {
         method: "GET",
         credentials: "include",
@@ -374,11 +414,133 @@ const SubCategoryView = () => {
       });
       const result = await response.json();
 
+      console.log("=== EDIT MODAL - CATEGORIES API RESPONSE ===");
+      console.log("Full response:", JSON.stringify(result, null, 2));
+
+      // Try multiple possible response structures
+      let categoriesList = [];
       if (result.success) {
-        setCategories(result.data);
+        if (Array.isArray(result.data)) {
+          categoriesList = result.data;
+        } else if (Array.isArray(result.categories)) {
+          categoriesList = result.categories;
+        } else if (Array.isArray(result)) {
+          categoriesList = result;
+        }
+      } else if (Array.isArray(result)) {
+        categoriesList = result;
       }
+      
+      console.log("Edit modal - Extracted categories list:", categoriesList);
+      console.log("Edit modal - Number of categories:", categoriesList.length);
+      
+      if (categoriesList.length === 0) {
+        console.error("Edit modal - No categories found!");
+        setCategories([]);
+        return;
+      }
+      
+      // Normalize categories - convert _id to string and ensure name exists
+      const normalizedCategories = categoriesList.map((cat, index) => {
+        // Handle MongoDB ObjectId object - it might be an object with $oid or just an object
+        let catId = '';
+        
+        if (cat._id) {
+          // If _id is already a string
+          if (typeof cat._id === 'string') {
+            catId = cat._id;
+          }
+          // If _id is an object
+          else if (typeof cat._id === 'object' && cat._id !== null) {
+            // Try BSON format first ($oid)
+            if (cat._id.$oid) {
+              catId = cat._id.$oid;
+            }
+            // Try toString method
+            else if (typeof cat._id.toString === 'function') {
+              try {
+                catId = cat._id.toString();
+                // If toString returns "[object Object]", it's not a proper ObjectId
+                if (catId === '[object Object]') {
+                  // Try accessing common ObjectId properties
+                  catId = cat._id._id || cat._id.id || cat._id.str || cat._id.value;
+                  // If still not found, try to get the hex string from ObjectId
+                  if (!catId && cat._id.toHexString) {
+                    catId = cat._id.toHexString();
+                  }
+                  // Last resort - try JSON and extract
+                  if (!catId || catId === '[object Object]') {
+                    const jsonStr = JSON.stringify(cat._id);
+                    // Try to extract hex string from JSON
+                    const hexMatch = jsonStr.match(/"([0-9a-fA-F]{24})"/);
+                    if (hexMatch) {
+                      catId = hexMatch[1];
+                    } else {
+                      // Use index as fallback
+                      catId = String(index);
+                    }
+                  }
+                }
+              } catch (e) {
+                console.error('Edit modal - Error converting _id:', e);
+                catId = String(index);
+              }
+            }
+            // Try accessing properties directly
+            else {
+              catId = cat._id._id || cat._id.id || cat._id.str || cat._id.value || String(index);
+            }
+          }
+          // Fallback
+          else {
+            catId = String(cat._id);
+          }
+        } else if (cat.id) {
+          if (typeof cat.id === 'string') {
+            catId = cat.id;
+          } else if (typeof cat.id === 'object' && cat.id !== null) {
+            catId = cat.id.$oid || cat.id.toString?.() || cat.id._id || cat.id.id || String(index);
+          } else {
+            catId = String(cat.id);
+          }
+        } else {
+          catId = String(index);
+        }
+        
+        // Ensure catId is a valid string (not "[object Object]")
+        if (catId === '[object Object]' || !catId || catId === 'undefined' || catId === 'null') {
+          console.warn(`Edit modal - Invalid category ID for ${cat.name}, using index:`, catId);
+          catId = String(index);
+        }
+        
+        const catName = cat.name || cat.categoryName || cat.category || `Category ${index + 1}`;
+        
+        console.log(`Edit modal - Category ${index + 1}:`, {
+          name: catName,
+          id: catId,
+          idType: typeof catId,
+          _idRaw: cat._id,
+          _idType: typeof cat._id,
+          _idIsObject: typeof cat._id === 'object',
+          _idKeys: typeof cat._id === 'object' ? Object.keys(cat._id || {}) : 'N/A'
+        });
+        
+        return {
+          ...cat,
+          _id: catId,
+          name: catName
+        };
+      });
+      
+      console.log("Edit modal - Normalized categories:", normalizedCategories);
+      console.log("Edit modal - Setting categories state with", normalizedCategories.length, "items");
+      
+      setCategories(normalizedCategories);
     } catch (err) {
-      console.error("Error fetching categories:", err);
+      console.error("Edit modal - Error fetching categories:", err);
+      setCategories([]);
+    } finally {
+      setLoadingCategories(false);
     }
   };
 
@@ -386,20 +548,42 @@ const SubCategoryView = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleSaveEdit = async (formData) => {
+  const handleSaveEdit = async (formDataToSend) => {
     try {
+      // Validate category ID before sending
+      const categoryValue = formDataToSend.get('category');
+      if (categoryValue && !/^[0-9a-fA-F]{24}$/.test(categoryValue)) {
+        alert("Please select a valid category. The selected category ID is not in the correct format.");
+        return;
+      }
+
+      console.log("Updating subcategory with form data:", {
+        name: formDataToSend.get('name'),
+        category: categoryValue,
+        description: formDataToSend.get('description'),
+        isActive: formDataToSend.get('isActive'),
+      });
+
       const response = await fetch(`${API_BASE_URL}/subcategory/${id}`, {
         method: "PUT",
         credentials: "include",
         headers: {
           ...getAuthHeaders(),
         },
-        body: formData,
+        body: formDataToSend,
       });
+      
       const result = await response.json();
+      console.log("Update response:", result);
 
       if (!response.ok) {
-        alert(result.message || "Failed to update subcategory");
+        // Handle validation errors from express-validator
+        if (result.errors && Array.isArray(result.errors) && result.errors.length > 0) {
+          const errorMessages = result.errors.map(err => err.msg || err.message).join('\n');
+          alert(errorMessages || "Validation failed. Please check your input.");
+        } else {
+          alert(result.message || result.error || "Failed to update subcategory");
+        }
         return;
       }
 
@@ -410,6 +594,7 @@ const SubCategoryView = () => {
         alert(result.message || "Failed to update subcategory");
       }
     } catch (err) {
+      console.error("Error updating subcategory:", err);
       alert("Error updating subcategory: " + err.message);
     }
   };
@@ -569,9 +754,9 @@ const SubCategoryView = () => {
                         {subCategory.name}
                       </h1>
                       <p className="text-black text-sm font-medium mb-1">
-                        ID:{" "}
+                        Code:{" "}
                         <span className="text-[#FF7B1D]">
-                          {subCategory._id}
+                          {subCategory.code || subCategory._id}
                         </span>
                       </p>
                       <p className="text-black text-sm flex items-center gap-2">
@@ -655,17 +840,17 @@ const SubCategoryView = () => {
               </h2>
               <div className="space-y-4">
                 <div className="p-3 bg-gray-50 rounded border border-gray-200">
-                  <p className="text-sm text-gray-600 mb-1">Sub Category ID</p>
+                  <p className="text-sm text-gray-600 mb-1">Sub Category Code</p>
                   <p className="text-black font-semibold text-sm break-all">
-                    {subCategory._id}
+                    {subCategory.code || subCategory._id}
                   </p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded border border-gray-200">
                   <p className="text-sm text-gray-600 mb-1">
-                    Parent Category ID
+                    Parent Category Code
                   </p>
                   <p className="text-black font-semibold text-sm break-all">
-                    {subCategory.category?._id || "N/A"}
+                    {subCategory.category?.code || subCategory.category?._id || "N/A"}
                   </p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded border border-gray-200">

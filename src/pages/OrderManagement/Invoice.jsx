@@ -73,7 +73,8 @@ const InvoicePage = () => {
         if (result.success && result.data) {
           // Transform API data to match component structure
           const transformedInvoices = result.data.invoices.map((invoice) => ({
-            id: invoice._id,
+            id: invoice._id, // Keep _id for API calls
+            code: invoice.code || invoice._id, // Use code for display, fallback to _id
             invoiceNumber: invoice.invoiceNumber,
             date: invoice.date || invoice.createdAt,
             vendor:
@@ -509,7 +510,7 @@ const InvoicePage = () => {
                           {invoice.serialNumber || idx + 1}
                         </td>
                         <td className="p-4 font-bold text-[#FF7B1D]">
-                          {invoice.invoiceNumber}
+                          {invoice.code || invoice.invoiceNumber}
                         </td>
                         <td className="p-4 text-black font-medium">
                           {formatDate(invoice.date)}

@@ -14,6 +14,27 @@ const ProductModal = ({ product, onClose, onSave }) => {
 
   useEffect(() => {
     if (product) {
+      // Convert "N/A" or invalid dates to empty string for date input
+      const formatDateForInput = (dateValue) => {
+        if (!dateValue || dateValue === "N/A" || dateValue === "n/a") {
+          return "";
+        }
+        // If it's already in yyyy-MM-dd format, return as is
+        if (typeof dateValue === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+          return dateValue;
+        }
+        // Try to parse and format the date
+        try {
+          const date = new Date(dateValue);
+          if (!isNaN(date.getTime())) {
+            return date.toISOString().split("T")[0];
+          }
+        } catch (e) {
+          // If parsing fails, return empty string
+        }
+        return "";
+      };
+
       setFormData({
         name: product.name,
         category: product.category,
@@ -21,7 +42,7 @@ const ProductModal = ({ product, onClose, onSave }) => {
         lowStockThreshold: product.lowStockThreshold,
         price: product.price,
         vendor: product.vendor,
-        expiryDate: product.expiryDate,
+        expiryDate: formatDateForInput(product.expiryDate),
       });
     }
   }, [product]);

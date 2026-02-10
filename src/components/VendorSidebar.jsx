@@ -674,11 +674,6 @@ const VendorSidebar = () => {
       path: "/vendor/jobs",
     },
     {
-      name: "Notifications",
-      icon: <Bell size={16} />,
-      path: "/vendor/notifications",
-    },
-    {
       name: "Support",
       icon: <MessageSquare size={16} />,
       path: "/vendor-support",
@@ -696,11 +691,6 @@ const VendorSidebar = () => {
           name: "Profile",
           path: "/vendor/settings/profile",
           icon: <User size={14} />,
-        },
-        {
-          name: "Notifications",
-          path: "/vendor/notifications",
-          icon: <Bell size={14} />,
         },
         {
           name: "Logout",

@@ -479,7 +479,7 @@ const InventoryManagement = () => {
             lowStockThreshold: 20, // Not provided by API, set default
             price: 0, // Not provided by API, needs to be fetched or added
             vendor: "Direct", // Not provided by API
-            expiryDate: "N/A", // Not provided by API
+            expiryDate: product.expiryDate || "", // Use empty string instead of "N/A" for date inputs
             status: product.isActive
               ? product.inventory + product.totalSkuInventory === 0
                 ? "Out of Stock"
@@ -631,54 +631,43 @@ const InventoryManagement = () => {
 
       if (editingProduct) {
         // Update existing product via API
+        // Note: The inventory endpoint only accepts inventory-related fields
+        // For full product updates, use /api/product/update/:id instead
+        // For now, we'll only update inventory if that's what's being changed
+        const inventoryUpdatePayload = {
+          inventory: productData.stock || 0,
+        };
+
         const response = await fetch(`${API_URL}/${editingProduct.id}`, {
           method: "PUT",
           credentials: "include",
           headers: headers,
-          body: JSON.stringify(productData),
+          body: JSON.stringify(inventoryUpdatePayload),
         });
 
         const result = await response.json();
 
         if (!response.ok || !result.success) {
-          throw new Error(result.message || "Failed to update product");
+          const errorMessage = result.message || result.error || "Failed to update product";
+          throw new Error(errorMessage);
         }
 
-        alert("Product updated successfully");
+        alert("Product inventory updated successfully");
 
         setProducts((prev) =>
           prev.map((p) =>
-            p.id === editingProduct.id ? { ...p, ...productData } : p
+            p.id === editingProduct.id 
+              ? { ...p, stock: productData.stock || p.stock } 
+              : p
           )
         );
       } else {
-        // Add new product via API
-        const response = await fetch(`${API_URL}/create`, {
-          method: "POST",
-          credentials: "include",
-          headers: headers,
-          body: JSON.stringify(productData),
-        });
-
-        const result = await response.json();
-
-        if (!response.ok || !result.success) {
-          throw new Error(result.message || "Failed to create product");
-        }
-
-        alert("Product created successfully");
-
-        const newProduct = {
-          id: result.data.productId || Date.now(),
-          ...productData,
-          status:
-            productData.stock === 0
-              ? "Out of Stock"
-              : productData.stock <= productData.lowStockThreshold
-              ? "Low Stock"
-              : "In Stock",
-        };
-        setProducts((prev) => [...prev, newProduct]);
+        // Note: Creating products should use /api/product/add endpoint
+        // The inventory endpoint doesn't support product creation
+        alert("Please use the Products page to add new products. This page is for inventory management only.");
+        setShowModal(false);
+        setEditingProduct(null);
+        return;
       }
 
       setShowModal(false);
@@ -687,7 +676,8 @@ const InventoryManagement = () => {
       fetchProducts();
     } catch (err) {
       console.error("Error saving product:", err);
-      alert(err.message || "Failed to save product");
+      const errorMessage = err.message || "Failed to save product";
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

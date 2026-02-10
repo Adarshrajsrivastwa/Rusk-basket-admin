@@ -290,7 +290,7 @@ const AllCategoryView = () => {
           <div className="flex items-center border border-black rounded overflow-hidden h-9 w-full max-w-full sm:max-w-[450px] mt-2 sm:mt-0">
             <input
               type="text"
-              placeholder="Search Category by Name, ID..."
+              placeholder="Search Category by Name, Code..."
               className="flex-1 px-3 sm:px-4 text-sm text-gray-800 focus:outline-none h-full"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

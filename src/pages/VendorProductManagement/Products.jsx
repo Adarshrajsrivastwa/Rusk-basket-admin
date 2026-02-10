@@ -103,11 +103,16 @@ const AllProduct = () => {
             }
           }
 
-          // Get category name - handle both nested object and ID
+          // Get category name - handle both nested object and code
           let categoryName = "Uncategorized";
           if (product.category) {
             if (typeof product.category === "object" && product.category.name) {
               categoryName = product.category.name;
+            } else if (
+              typeof product.category === "object" &&
+              product.category.code
+            ) {
+              categoryName = product.category.code;
             } else if (
               typeof product.category === "object" &&
               product.category._id
@@ -118,7 +123,7 @@ const AllProduct = () => {
             }
           }
 
-          // Get subcategory name - handle both nested object and ID
+          // Get subcategory name - handle both nested object and code
           let subCategoryName = "N/A";
           if (product.subCategory) {
             if (
@@ -126,6 +131,11 @@ const AllProduct = () => {
               product.subCategory.name
             ) {
               subCategoryName = product.subCategory.name;
+            } else if (
+              typeof product.subCategory === "object" &&
+              product.subCategory.code
+            ) {
+              subCategoryName = product.subCategory.code;
             } else if (
               typeof product.subCategory === "object" &&
               product.subCategory._id

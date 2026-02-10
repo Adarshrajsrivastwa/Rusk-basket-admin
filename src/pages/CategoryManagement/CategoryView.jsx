@@ -1139,7 +1139,7 @@ const CategoryView = () => {
                     {category.name}
                   </h1>
                   <p className="text-black text-sm font-medium">
-                    ID: <span className="text-[#FF7B1D]">{category._id}</span>
+                    Code: <span className="text-[#FF7B1D]">{category.code || category._id}</span>
                   </p>
                 </div>
                 <span

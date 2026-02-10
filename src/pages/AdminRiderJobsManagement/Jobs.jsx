@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { BASE_URL } from "../../api/api";
 import {
@@ -17,6 +17,7 @@ import {
 
 const RiderJobPostManagement = () => {
   const [jobs, setJobs] = useState([]);
+  const [vendors, setVendors] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -46,26 +47,53 @@ const RiderJobPostManagement = () => {
     longitude: "",
   });
 
-  // Fetch all job posts
-  const fetchJobs = async () => {
+  // Fetch all job posts - memoized with useCallback
+  const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/rider-job-post`);
+      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      
+      // Use admin endpoint to get all job posts
+      const response = await fetch(`${API_BASE_URL}/rider-job-post/admin/all`, {
+        method: "GET",
+        headers: headers,
+        credentials: "include",
+      });
       const data = await response.json();
       if (data.success) {
-        setJobs(data.data);
+        setJobs(data.data || []);
+      } else {
+        showNotification(data.message || data.error || "Failed to fetch jobs", "error");
       }
     } catch (error) {
       showNotification("Failed to fetch jobs", "error");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Fetch individual job details
   const fetchJobDetails = async (jobId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/rider-job-post/${jobId}`);
+      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/rider-job-post/${jobId}`, {
+        method: "GET",
+        headers: headers,
+        credentials: "include",
+      });
       const data = await response.json();
       if (data.success) {
         setSelectedJob(data.data);
@@ -79,13 +107,20 @@ const RiderJobPostManagement = () => {
   const createJobPost = async (jobData) => {
     setLoading(true);
     try {
+      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      
       const response = await fetch(
         `${API_BASE_URL}/rider-job-post/admin/create`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: headers,
+          credentials: "include",
           body: JSON.stringify(jobData),
         },
       );
@@ -109,11 +144,18 @@ const RiderJobPostManagement = () => {
   const updateJobPost = async (jobId, jobData) => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/rider-job-post/${jobId}`, {
+      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/rider-job-post/admin/${jobId}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: headers,
+        credentials: "include",
         body: JSON.stringify(jobData),
       });
       const data = await response.json();
@@ -123,7 +165,7 @@ const RiderJobPostManagement = () => {
         fetchJobs();
         resetForm();
       } else {
-        showNotification(data.message || "Failed to update job post", "error");
+        showNotification(data.message || data.error || "Failed to update job post", "error");
       }
     } catch (error) {
       showNotification("Failed to update job post", "error");
@@ -136,8 +178,18 @@ const RiderJobPostManagement = () => {
   const deleteJobPost = async (jobId) => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/rider-job-post/${jobId}`, {
+      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/rider-job-post/admin/${jobId}`, {
         method: "DELETE",
+        headers: headers,
+        credentials: "include",
       });
       const data = await response.json();
       if (data.success) {
@@ -146,7 +198,7 @@ const RiderJobPostManagement = () => {
         setSelectedJob(null);
         fetchJobs();
       } else {
-        showNotification(data.message || "Failed to delete job post", "error");
+        showNotification(data.message || data.error || "Failed to delete job post", "error");
       }
     } catch (error) {
       showNotification("Failed to delete job post", "error");
@@ -155,12 +207,12 @@ const RiderJobPostManagement = () => {
     }
   };
 
-  const showNotification = (message, type) => {
+  const showNotification = useCallback((message, type) => {
     setNotification({ show: true, message, type });
     setTimeout(() => {
       setNotification({ show: false, message: "", type: "" });
     }, 4000);
-  };
+  }, []);
 
   const resetForm = () => {
     setFormData({
@@ -198,39 +250,87 @@ const RiderJobPostManagement = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const jobData = {
-      jobTitle: formData.jobTitle,
-      joiningBonus: Number(formData.joiningBonus),
-      onboardingFee: Number(formData.onboardingFee),
-      vendorId: formData.vendorId,
-      location: {
-        line1: formData.line1,
-        line2: formData.line2,
-        pinCode: formData.pinCode,
-        city: formData.city,
-        state: formData.state,
-        latitude: Number(formData.latitude),
-        longitude: Number(formData.longitude),
-      },
-    };
-
+    
     if (isEditModalOpen && selectedJob) {
+      // For update, use the format expected by the admin update endpoint
+      const jobData = {
+        jobTitle: formData.jobTitle,
+        joiningBonus: Number(formData.joiningBonus),
+        onboardingFee: Number(formData.onboardingFee),
+        vendor: formData.vendorId, // Admin can change vendor
+        locationLine1: formData.line1,
+        locationLine2: formData.line2 || "",
+        locationPinCode: formData.pinCode,
+        locationCity: formData.city,
+        locationState: formData.state,
+        locationLatitude: formData.latitude ? Number(formData.latitude) : undefined,
+        locationLongitude: formData.longitude ? Number(formData.longitude) : undefined,
+      };
       updateJobPost(selectedJob._id, jobData);
     } else {
+      // For create, use the format expected by the admin/create endpoint
+      const jobData = {
+        jobTitle: formData.jobTitle,
+        joiningBonus: Number(formData.joiningBonus),
+        onboardingFee: Number(formData.onboardingFee),
+        vendor: formData.vendorId,
+        locationLine1: formData.line1,
+        locationLine2: formData.line2 || "",
+        locationPinCode: formData.pinCode,
+        locationCity: formData.city,
+        locationState: formData.state,
+        locationLatitude: formData.latitude ? Number(formData.latitude) : undefined,
+        locationLongitude: formData.longitude ? Number(formData.longitude) : undefined,
+      };
       createJobPost(jobData);
     }
   };
 
-  useEffect(() => {
-    fetchJobs();
+  // Fetch all vendors for dropdown
+  const fetchVendors = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      
+      // Fetch all vendors (with high limit to get all) - using admin endpoint
+      const response = await fetch(`${API_BASE_URL}/admin/vendors?limit=1000`, {
+        method: "GET",
+        headers: headers,
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (data.success) {
+        setVendors(data.data || []);
+      } else {
+        console.error("Failed to fetch vendors:", data.message || data.error);
+      }
+    } catch (error) {
+      console.error("Failed to fetch vendors:", error);
+    }
   }, []);
 
-  const filteredJobs = jobs.filter(
-    (job) =>
-      job.jobTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.location.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.vendor.storeName.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  useEffect(() => {
+    fetchJobs();
+    fetchVendors();
+  }, [fetchJobs, fetchVendors]);
+
+  // Memoized filtered jobs for better performance
+  const filteredJobs = useMemo(() => {
+    if (!searchQuery.trim()) return jobs;
+    
+    const query = searchQuery.toLowerCase();
+    return jobs.filter(
+      (job) =>
+        job.jobTitle?.toLowerCase().includes(query) ||
+        job.location?.city?.toLowerCase().includes(query) ||
+        job.vendor?.storeName?.toLowerCase().includes(query),
+    );
+  }, [jobs, searchQuery]);
 
   return (
     <DashboardLayout>
@@ -503,18 +603,26 @@ const RiderJobPostManagement = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Vendor ID <span className="text-red-500">*</span>
+                      Vendor <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="text"
+                    <select
                       required
                       value={formData.vendorId}
                       onChange={(e) =>
                         setFormData({ ...formData, vendorId: e.target.value })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="695d5ae61d4eb50e4668265e"
-                    />
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
+                    >
+                      <option value="">Select a vendor</option>
+                      {vendors.map((vendor) => (
+                        <option key={vendor._id} value={vendor._id}>
+                          {vendor.storeName || vendor.vendorName || vendor._id}
+                        </option>
+                      ))}
+                    </select>
+                    {vendors.length === 0 && (
+                      <p className="text-xs text-gray-500 mt-1">Loading vendors...</p>
+                    )}
                   </div>
                 </div>
 

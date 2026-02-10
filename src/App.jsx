@@ -214,6 +214,7 @@ import Suggestions from "./pages/SuggestionManagement/Suggestions";
 import AdminVendorSupport from "./pages/AdminSupportManagement/AdminVendorSupport";
 import AdminUserSupport from "./pages/AdminSupportManagement/AdminUserSupport";
 import AdminRiderSupport from "./pages/AdminSupportManagement/AdminRiderSupport";
+import RiderJobPostManagement from "./pages/AdminRiderJobsManagement/Jobs";
 function AppContent() {
   const location = useLocation();
 
@@ -449,6 +450,14 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
               <AdminRiderSupport />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/rider-job-posting"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <RiderJobPostManagement />
             </ProtectedRoute>
           }
         />
