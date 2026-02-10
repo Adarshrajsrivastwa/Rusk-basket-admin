@@ -11,17 +11,129 @@ import {
   Search,
   User,
   RefreshCw,
+  Briefcase,
+  MapPin,
 } from "lucide-react";
 
 export default function DashboardPage() {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [jobPosts, setJobPosts] = useState([]);
+  const [jobsLoading, setJobsLoading] = useState(false);
 
   // Fetch dashboard data
   useEffect(() => {
     fetchDashboardData();
+    fetchVendorJobPosts();
   }, []);
+
+  // Fetch vendor's job posts
+  const fetchVendorJobPosts = async () => {
+    console.log("========================================");
+    console.log("fetchVendorJobPosts called");
+    console.log("========================================");
+    setJobsLoading(true);
+    try {
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
+
+      console.log("Token from localStorage:", token ? "Token exists" : "No token");
+      console.log("Token length:", token ? token.length : 0);
+
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const apiUrl = `${BASE_URL}/api/vendor/my-job-posts`;
+      console.log("========================================");
+      console.log("API URL:", apiUrl);
+      console.log("Headers:", headers);
+      console.log("========================================");
+
+      const response = await fetch(apiUrl, {
+        method: "GET",
+        headers: headers,
+        credentials: "include",
+      });
+
+      console.log("========================================");
+      console.log("Response received");
+      console.log("Response status:", response.status);
+      console.log("Response statusText:", response.statusText);
+      console.log("Response ok:", response.ok);
+      console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+      console.log("========================================");
+
+      const data = await response.json();
+      console.log("========================================");
+      console.log("PARSED JSON RESPONSE:");
+      console.log("Full response object:", data);
+      console.log("Response type:", typeof data);
+      console.log("Response keys:", Object.keys(data));
+      console.log("========================================");
+      console.log("Response success:", data.success);
+      console.log("Response count:", data.count);
+      console.log("Response pagination:", data.pagination);
+      console.log("========================================");
+      console.log("Response data array:", data.data);
+      console.log("Data type:", Array.isArray(data.data) ? "Array" : typeof data.data);
+      console.log("Data length:", Array.isArray(data.data) ? data.data.length : "Not an array");
+      console.log("========================================");
+
+      if (Array.isArray(data.data)) {
+        console.log("Data is an array, iterating items:");
+        data.data.forEach((job, index) => {
+          console.log(`--- Job ${index + 1} ---`);
+          console.log("Job ID:", job._id);
+          console.log("Job Title:", job.jobTitle);
+          console.log("Joining Bonus:", job.joiningBonus);
+          console.log("Onboarding Fee:", job.onboardingFee);
+          console.log("Is Active:", job.isActive);
+          console.log("Posted By Type:", job.postedByType);
+          console.log("Location:", job.location);
+          console.log("Vendor:", job.vendor);
+          console.log("Posted By:", job.postedBy);
+          console.log("Full job object:", job);
+        });
+      }
+
+      if (data.success) {
+        const jobs = data.data || [];
+        console.log("========================================");
+        console.log("Setting job posts to state");
+        console.log("Jobs array:", jobs);
+        console.log("Jobs count:", jobs.length);
+        console.log("First job:", jobs[0]);
+        console.log("========================================");
+        setJobPosts(jobs);
+        console.log("Job posts state updated");
+      } else {
+        console.error("========================================");
+        console.error("API returned success: false");
+        console.error("Error message:", data.message);
+        console.error("Error:", data.error);
+        console.error("========================================");
+        setJobPosts([]);
+      }
+    } catch (error) {
+      console.error("========================================");
+      console.error("EXCEPTION CAUGHT:");
+      console.error("Error name:", error.name);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+      console.error("Full error object:", error);
+      console.error("========================================");
+      setJobPosts([]);
+    } finally {
+      console.log("Setting jobs loading to false");
+      setJobsLoading(false);
+      console.log("========================================");
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -427,6 +539,108 @@ export default function DashboardPage() {
                   <button className="w-full py-2 text-sm font-medium text-blue-600 hover:text-blue-700">
                     View All Inventory
                   </button>
+                </div>
+              )}
+            </div>
+
+            {/* Job Postings Section */}
+            <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-orange-600" />
+                  My Job Postings
+                </h3>
+                <button
+                  onClick={() => window.location.href = "/vendor/jobs"}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                >
+                  View All
+                </button>
+              </div>
+
+              {jobsLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-orange-500 mx-auto"></div>
+                  <p className="text-gray-500 text-sm mt-2">Loading job posts...</p>
+                </div>
+              ) : jobPosts.length === 0 ? (
+                <div className="text-center py-12">
+                  <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 font-medium">No job posts found</p>
+                  <p className="text-gray-400 text-sm mt-2">
+                    Create your first job posting to hire delivery executives
+                  </p>
+                  <button
+                    onClick={() => window.location.href = "/vendor/jobs"}
+                    className="mt-4 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    Create Job Post
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {jobPosts.slice(0, 3).map((job) => (
+                    <div
+                      key={job._id}
+                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h4 className="text-lg font-semibold text-gray-900">
+                              {job.jobTitle}
+                            </h4>
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                job.isActive
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-gray-100 text-gray-600"
+                              }`}
+                            >
+                              {job.isActive ? "Active" : "Inactive"}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="w-4 h-4 text-green-600" />
+                              <span>
+                                <strong>Joining Bonus:</strong> ₹{job.joiningBonus}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="w-4 h-4 text-blue-600" />
+                              <span>
+                                <strong>Onboarding Fee:</strong> ₹{job.onboardingFee}
+                              </span>
+                            </div>
+                          </div>
+
+                          {job.location && (
+                            <div className="flex items-start gap-2 text-sm text-gray-600">
+                              <MapPin className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <p>{job.location.line1}</p>
+                                {job.location.line2 && <p>{job.location.line2}</p>}
+                                <p>
+                                  {job.location.city}, {job.location.state} - {job.location.pinCode}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {jobPosts.length > 3 && (
+                    <button
+                      onClick={() => window.location.href = "/vendor/jobs"}
+                      className="w-full py-2 text-sm font-medium text-blue-600 hover:text-blue-700 border-t border-gray-200 pt-4"
+                    >
+                      View All {jobPosts.length} Job Posts
+                    </button>
+                  )}
                 </div>
               )}
             </div>

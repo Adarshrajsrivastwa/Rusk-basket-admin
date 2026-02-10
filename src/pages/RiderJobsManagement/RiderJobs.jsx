@@ -54,29 +54,132 @@ const RiderJobManagement = () => {
 
   // Fetch all jobs
   const fetchJobs = async (city = "") => {
+    console.log("========================================");
+    console.log("fetchJobs called");
+    console.log("City filter:", city || "No filter");
+    console.log("========================================");
     setLoading(true);
     try {
-      const url = city
-        ? `${API_BASE_URL}/rider-job-post?city=${encodeURIComponent(city)}`
-        : `${API_BASE_URL}/rider-job-post?city=bhopal`;
+      // Use vendor-specific endpoint to get vendor's job posts
+      const url = `${API_BASE_URL}/vendor/my-job-posts`;
+      
+      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      const headers = getAuthHeaders();
+      
+      console.log("========================================");
+      console.log("API REQUEST DETAILS:");
+      console.log("URL:", url);
+      console.log("Method: GET");
+      console.log("Token available:", !!token);
+      console.log("Token length:", token ? token.length : 0);
+      console.log("Headers:", headers);
+      console.log("========================================");
 
       const response = await fetch(url, {
         method: "GET",
         credentials: "include",
-        headers: getAuthHeaders(),
+        headers: headers,
       });
 
+      console.log("========================================");
+      console.log("RESPONSE RECEIVED:");
+      console.log("Status:", response.status);
+      console.log("Status Text:", response.statusText);
+      console.log("OK:", response.ok);
+      console.log("Content-Type:", response.headers.get("content-type"));
+      console.log("========================================");
+
       const result = await response.json();
+      console.log("========================================");
+      console.log("PARSED JSON RESPONSE:");
+      console.log("Full response:", result);
+      console.log("Response type:", typeof result);
+      console.log("Response keys:", Object.keys(result));
+      console.log("========================================");
+      console.log("Response success:", result.success);
+      console.log("Response count:", result.count);
+      console.log("Response pagination:", result.pagination);
+      console.log("========================================");
+      console.log("Response data:", result.data);
+      console.log("Data type:", Array.isArray(result.data) ? "Array" : typeof result.data);
+      console.log("Data length:", Array.isArray(result.data) ? result.data.length : "Not an array");
+      console.log("========================================");
+
+      if (Array.isArray(result.data)) {
+        console.log("ITERATING THROUGH JOBS:");
+        result.data.forEach((job, index) => {
+          console.log(`\n--- Job ${index + 1} ---`);
+          console.log("_id:", job._id);
+          console.log("jobTitle:", job.jobTitle);
+          console.log("joiningBonus:", job.joiningBonus);
+          console.log("onboardingFee:", job.onboardingFee);
+          console.log("isActive:", job.isActive);
+          console.log("postedByType:", job.postedByType);
+          console.log("location:", job.location);
+          console.log("vendor:", job.vendor);
+          console.log("postedBy:", job.postedBy);
+          console.log("createdAt:", job.createdAt);
+          console.log("updatedAt:", job.updatedAt);
+          console.log("Full job object:", JSON.stringify(job, null, 2));
+        });
+      }
+
       if (result.success) {
-        setJobs(result.data || []);
+        let jobsData = result.data || [];
+        console.log("========================================");
+        console.log("BEFORE FILTERING:");
+        console.log("Jobs count:", jobsData.length);
+        console.log("========================================");
+        
+        // If city filter is provided, filter by city
+        if (city && city.trim()) {
+          const cityLower = city.toLowerCase().trim();
+          console.log("Applying city filter:", cityLower);
+          const beforeFilter = jobsData.length;
+          jobsData = jobsData.filter((job) => {
+            const jobCity = job.location?.city?.toLowerCase() || "";
+            const matches = jobCity.includes(cityLower);
+            console.log(`Job ${job._id} - City: "${jobCity}" - Matches: ${matches}`);
+            return matches;
+          });
+          console.log("AFTER FILTERING:");
+          console.log("Before filter count:", beforeFilter);
+          console.log("After filter count:", jobsData.length);
+          console.log("Filtered jobs:", jobsData);
+        }
+        
+        console.log("========================================");
+        console.log("SETTING JOBS TO STATE:");
+        console.log("Final jobs array:", jobsData);
+        console.log("Final count:", jobsData.length);
+        console.log("First job:", jobsData[0]);
+        console.log("========================================");
+        setJobs(jobsData);
+        console.log("Jobs state updated successfully");
       } else {
+        console.error("========================================");
+        console.error("API RETURNED SUCCESS: FALSE");
+        console.error("Error message:", result.message);
+        console.error("Error:", result.error);
+        console.error("Full error response:", result);
+        console.error("========================================");
         alert(result.message || "Failed to fetch jobs");
+        setJobs([]);
       }
     } catch (error) {
-      console.error("Error fetching jobs:", error);
+      console.error("========================================");
+      console.error("EXCEPTION CAUGHT:");
+      console.error("Error name:", error.name);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+      console.error("Full error:", error);
+      console.error("========================================");
       alert("Failed to fetch jobs");
+      setJobs([]);
     } finally {
+      console.log("Setting loading to false");
       setLoading(false);
+      console.log("========================================");
     }
   };
 

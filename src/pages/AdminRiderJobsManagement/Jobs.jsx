@@ -49,6 +49,7 @@ const RiderJobPostManagement = () => {
 
   // Fetch all job posts - memoized with useCallback
   const fetchJobs = useCallback(async () => {
+    console.log("fetchJobs called");
     setLoading(true);
     try {
       const token = localStorage.getItem("token") || localStorage.getItem("authToken");
@@ -59,21 +60,44 @@ const RiderJobPostManagement = () => {
         headers["Authorization"] = `Bearer ${token}`;
       }
       
-      // Use admin endpoint to get all job posts
-      const response = await fetch(`${API_BASE_URL}/rider-job-post/admin/all`, {
+      console.log("Fetching jobs from:", `${API_BASE_URL}/rider-job-post`);
+      console.log("Token available:", !!token);
+      
+      // Use the correct endpoint
+      const response = await fetch(`${API_BASE_URL}/rider-job-post`, {
         method: "GET",
         headers: headers,
         credentials: "include",
       });
+      
+      console.log("Response status:", response.status);
+      console.log("Response ok:", response.ok);
+      
       const data = await response.json();
+      console.log("API Response:", data);
+      console.log("Response success:", data.success);
+      console.log("Response data:", data.data);
+      console.log("Response count:", data.count);
+      console.log("Response pagination:", data.pagination);
+      
       if (data.success) {
-        setJobs(data.data || []);
+        // Handle the response structure: {success, count, pagination, data}
+        const jobsData = data.data || [];
+        console.log("Setting jobs:", jobsData);
+        console.log("Jobs count:", jobsData.length);
+        setJobs(jobsData);
       } else {
+        console.error("API returned success: false");
+        console.error("Error message:", data.message || data.error);
         showNotification(data.message || data.error || "Failed to fetch jobs", "error");
       }
     } catch (error) {
+      console.error("Error fetching jobs:", error);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
       showNotification("Failed to fetch jobs", "error");
     } finally {
+      console.log("Setting loading to false");
       setLoading(false);
     }
   }, []);
