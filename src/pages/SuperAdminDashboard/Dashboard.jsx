@@ -29,8 +29,45 @@ const AdminDashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [error, setError] = useState(null);
+  const [adminProfile, setAdminProfile] = useState(null);
 
   const navigate = useNavigate();
+
+  // Fetch admin profile data
+  useEffect(() => {
+    const fetchAdminProfile = async () => {
+      try {
+        const token =
+          localStorage.getItem("token") || localStorage.getItem("authToken");
+
+        const headers = {
+          "Content-Type": "application/json",
+        };
+
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${BASE_URL}/api/admin/profile`, {
+          method: "GET",
+          credentials: "include",
+          headers: headers,
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            setAdminProfile(result.data);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching admin profile:", err);
+        // Don't set error, just use default values
+      }
+    };
+
+    fetchAdminProfile();
+  }, []);
 
   // Fetch dashboard data from API
   useEffect(() => {
@@ -260,27 +297,40 @@ const AdminDashboard = () => {
               <div className="mt-4 bg-white rounded-sm shadow p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-0">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
                   <img
-                    src="https://i.pravatar.cc/50"
+                    src={
+                      adminProfile?.profilePhoto?.url ||
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        adminProfile?.name || "Admin"
+                      )}&background=F26422&color=fff&size=128`
+                    }
                     alt="Profile"
-                    className="w-12 h-12 rounded-full"
+                    className="w-12 h-12 rounded-full object-cover"
+                    onError={(e) => {
+                      e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        adminProfile?.name || "Admin"
+                      )}&background=F26422&color=fff&size=128`;
+                    }}
                   />
                   <div className="flex flex-col gap-1 w-full">
                     <h2 className="text-lg font-semibold flex flex-wrap items-center gap-2">
                       Welcome Back,{" "}
-                      <span className="text-gray-700">NK Yadav</span>
+                      <span className="text-gray-700">
+                        {adminProfile?.name || "Admin"}
+                      </span>
                       <Edit
                         size={16}
-                        className="text-gray-500 cursor-pointer"
+                        className="text-gray-500 cursor-pointer hover:text-gray-700"
+                        onClick={() => navigate("/profile")}
                       />
                     </h2>
                     <p className="text-sm text-gray-600">
                       You have{" "}
                       <span className="text-red-500 font-semibold">
-                        {dashboardData?.summary.newOrders || 0}
+                        {dashboardData?.summary?.newOrders || stats?.orders?.new || 0}
                       </span>{" "}
                       New Orders &{" "}
                       <span className="text-red-500 font-semibold">
-                        {dashboardData?.summary.pendingOrders || 0}
+                        {dashboardData?.summary?.pendingOrders || stats?.orders?.pending || 0}
                       </span>{" "}
                       Pending Orders
                     </p>
