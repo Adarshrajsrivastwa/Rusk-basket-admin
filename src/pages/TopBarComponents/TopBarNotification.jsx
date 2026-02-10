@@ -266,7 +266,12 @@ const Notifications = () => {
   // Mark notification as read
   const markAsRead = async (notificationId) => {
     try {
-      await api.put(`/api/vendor/notifications/${notificationId}/read`);
+      const userRole = localStorage.getItem("userRole");
+      const endpoint = userRole === "vendor" 
+        ? `/api/vendor/notifications/${notificationId}/read`
+        : `/api/admin/notifications/${notificationId}/read`;
+      
+      await api.put(endpoint);
       setNotifications((prev) =>
         prev.map((n) =>
           n._id === notificationId ? { ...n, isRead: true, readAt: new Date() } : n
@@ -281,7 +286,12 @@ const Notifications = () => {
   // Mark all as read
   const markAllAsRead = async () => {
     try {
-      await api.put("/api/vendor/notifications/read-all");
+      const userRole = localStorage.getItem("userRole");
+      const endpoint = userRole === "vendor" 
+        ? "/api/vendor/notifications/read-all"
+        : "/api/admin/notifications/read-all";
+      
+      await api.put(endpoint);
       setNotifications((prev) =>
         prev.map((n) => ({ ...n, isRead: true, readAt: new Date() }))
       );
@@ -299,7 +309,12 @@ const Notifications = () => {
       e.stopPropagation();
     }
     try {
-      await api.delete(`/api/vendor/notifications/${notificationId}`);
+      const userRole = localStorage.getItem("userRole");
+      const endpoint = userRole === "vendor" 
+        ? `/api/vendor/notifications/${notificationId}`
+        : `/api/admin/notifications/${notificationId}`;
+      
+      await api.delete(endpoint);
       setNotifications((prev) => prev.filter((n) => n._id !== notificationId));
       // Update unread count if notification was unread
       const notification = notifications.find((n) => n._id === notificationId);
@@ -319,7 +334,12 @@ const Notifications = () => {
       return;
     }
     try {
-      await api.delete("/api/vendor/notifications");
+      const userRole = localStorage.getItem("userRole");
+      const endpoint = userRole === "vendor" 
+        ? "/api/vendor/notifications"
+        : "/api/admin/notifications";
+      
+      await api.delete(endpoint);
       setNotifications([]);
       setUnreadCount(0);
       setError(null);
