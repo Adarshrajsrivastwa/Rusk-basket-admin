@@ -628,7 +628,11 @@ const EditCategoryModal = ({ isOpen, onClose, category, onSave }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    console.log("EditCategoryModal: useEffect triggered");
+    console.log("Category:", category);
+    console.log("IsOpen:", isOpen);
     if (category && isOpen) {
+      console.log("Setting form data from category");
       setFormData({
         name: category.name || "",
         description: category.description || "",
@@ -636,6 +640,7 @@ const EditCategoryModal = ({ isOpen, onClose, category, onSave }) => {
       });
       setImagePreview(category.image?.url || "");
       setSelectedFile(null);
+      console.log("Form data initialized");
     }
   }, [category, isOpen]);
 
@@ -665,17 +670,25 @@ const EditCategoryModal = ({ isOpen, onClose, category, onSave }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("EditCategoryModal: Form submitted");
+    console.log("Form data:", formData);
+    console.log("Selected file:", selectedFile);
 
     if (!formData.name.trim()) {
+      console.warn("Category name is empty");
       alert("Category name is required");
       return;
     }
 
     setLoading(true);
+    console.log("Starting category update...");
 
     try {
       const token =
         localStorage.getItem("token") || localStorage.getItem("authToken");
+
+      console.log("Token available for update:", !!token);
+      console.log("Category ID to update:", category._id);
 
       const submitData = new FormData();
       submitData.append("name", formData.name.trim());
@@ -684,6 +697,7 @@ const EditCategoryModal = ({ isOpen, onClose, category, onSave }) => {
 
       if (selectedFile) {
         submitData.append("image", selectedFile);
+        console.log("Image file added to FormData:", selectedFile.name);
       }
 
       const headers = {};
@@ -691,6 +705,7 @@ const EditCategoryModal = ({ isOpen, onClose, category, onSave }) => {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
+      console.log("Making PUT request to:", `${API_URL}/${category._id}`);
       const response = await fetch(`${API_URL}/${category._id}`, {
         method: "PUT",
         credentials: "include",
@@ -698,19 +713,25 @@ const EditCategoryModal = ({ isOpen, onClose, category, onSave }) => {
         body: submitData,
       });
 
+      console.log("Update response status:", response.status);
       const data = await response.json();
+      console.log("Update response data:", data);
 
       if (!response.ok || !data.success) {
+        console.error("Update failed:", data.message);
         throw new Error(data.message || "Failed to update category");
       }
 
+      console.log("Category updated successfully:", data.data);
       alert("Category updated successfully!");
       onSave(data.data);
     } catch (err) {
       console.error("Error updating category:", err);
+      console.error("Error details:", err.message);
       alert(err.message || "Failed to update category. Please try again.");
     } finally {
       setLoading(false);
+      console.log("Update process completed");
     }
   };
 
@@ -926,71 +947,108 @@ const CategoryView = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  console.log("CategoryView component mounted/rendered");
+  console.log("Category ID from params:", id);
+  console.log("Current loading state:", loading);
+  console.log("Current category state:", category);
+  console.log("Current error state:", error);
+
   // Fetch category details from API
   const fetchCategoryDetails = async () => {
+    console.log("fetchCategoryDetails called with ID:", id);
     setLoading(true);
     setError(null);
     try {
       const token =
         localStorage.getItem("token") || localStorage.getItem("authToken");
 
+      console.log("Token available:", !!token);
+      console.log("API URL:", `${API_URL}/${id}`);
+
       const headers = {};
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
+      console.log("Making API request...");
       const response = await fetch(`${API_URL}/${id}`, {
         method: "GET",
         credentials: "include",
         headers: headers,
       });
 
+      console.log("API Response status:", response.status);
+      console.log("API Response ok:", response.ok);
+
       if (!response.ok) {
         if (response.status === 404) {
+          console.error("Category not found (404)");
           throw new Error("Category not found");
         }
+        console.error(`API Error: ${response.status}`);
         throw new Error(`Failed to fetch category: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log("API Response data:", data);
 
       if (!data.success) {
+        console.error("API returned success: false, message:", data.message);
         throw new Error(data.message || "Failed to fetch category");
       }
 
+      console.log("Category data received:", data.data);
       setCategory(data.data);
+      console.log("Category state updated successfully");
     } catch (err) {
       console.error("Error fetching category:", err);
+      console.error("Error message:", err.message);
+      console.error("Error stack:", err.stack);
       setError(err.message);
     } finally {
+      console.log("Setting loading to false");
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    console.log("useEffect triggered, ID:", id);
     if (id) {
+      console.log("ID exists, calling fetchCategoryDetails");
       fetchCategoryDetails();
+    } else {
+      console.warn("No ID provided in params");
     }
   }, [id]);
 
   const handleEdit = () => {
+    console.log("Edit button clicked");
+    console.log("Current category for edit:", category);
     setIsEditModalOpen(true);
   };
 
   const handleSaveEdit = (updatedCategory) => {
+    console.log("handleSaveEdit called with updated category:", updatedCategory);
     setCategory(updatedCategory);
     setIsEditModalOpen(false);
+    console.log("Category updated, modal closed");
   };
 
   const handleDeleteClick = () => {
+    console.log("Delete button clicked");
+    console.log("Category to delete:", category?.name);
     setIsDeleteModalOpen(true);
   };
 
   const handleConfirmDelete = async () => {
+    console.log("handleConfirmDelete called");
+    console.log("Deleting category ID:", id);
     setDeleteLoading(true);
     try {
       const token =
         localStorage.getItem("token") || localStorage.getItem("authToken");
+
+      console.log("Token available for delete:", !!token);
 
       const headers = {
         "Content-Type": "application/json",
@@ -999,23 +1057,29 @@ const CategoryView = () => {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
+      console.log("Making DELETE request to:", `${API_URL}/${id}`);
       const response = await fetch(`${API_URL}/${id}`, {
         method: "DELETE",
         credentials: "include",
         headers: headers,
       });
 
+      console.log("Delete response status:", response.status);
       const data = await response.json();
+      console.log("Delete response data:", data);
 
       if (!response.ok || !data.success) {
+        console.error("Delete failed:", data.message);
         throw new Error(data.message || "Failed to delete category");
       }
 
+      console.log("Category deleted successfully");
       alert(`Category "${category.name}" deleted successfully!`);
       setIsDeleteModalOpen(false);
       navigate("/category/create");
     } catch (err) {
       console.error("Error deleting category:", err);
+      console.error("Error details:", err.message);
       alert(err.message || "Failed to delete category. Please try again.");
       setDeleteLoading(false);
     }
@@ -1028,6 +1092,7 @@ const CategoryView = () => {
 
   // Loading State
   if (loading) {
+    console.log("Rendering loading state");
     return (
       <DashboardLayout>
         <div className="max-w-7xl ml-4 mx-auto px-4 py-6">
@@ -1056,6 +1121,9 @@ const CategoryView = () => {
 
   // Error or Not Found State
   if (error || !category) {
+    console.log("Rendering error/not found state");
+    console.log("Error:", error);
+    console.log("Category:", category);
     return (
       <DashboardLayout>
         <div className="max-w-7xl ml-4 mx-auto px-4 py-6">
@@ -1090,6 +1158,7 @@ const CategoryView = () => {
   }
 
   // Main Content
+  console.log("Rendering main content with category:", category);
   return (
     <DashboardLayout>
       <div className="max-w-7xl ml-4 mx-auto px-4 py-6">
