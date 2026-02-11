@@ -59,13 +59,16 @@ const AdminUserSupport = () => {
       if (response.data && response.data.success) {
         const ticketsData = response.data.data?.tickets || [];
         const paginationData = response.data.data?.pagination || {};
-        
+
         setTickets(ticketsData);
         setTotalTickets(paginationData.total || 0);
         setTotalPages(paginationData.totalPages || paginationData.pages || 1);
         setError(""); // Clear any previous errors
       } else {
-        const errorMsg = response.data?.message || response.data?.error || "Failed to load tickets";
+        const errorMsg =
+          response.data?.message ||
+          response.data?.error ||
+          "Failed to load tickets";
         setError(errorMsg);
         setTickets([]);
         setTotalTickets(0);
@@ -73,10 +76,11 @@ const AdminUserSupport = () => {
       }
     } catch (err) {
       console.error("Error fetching tickets:", err);
-      const errorMsg = err.response?.data?.message || 
-                      err.response?.data?.error || 
-                      err.message || 
-                      "Failed to load tickets. Please try again.";
+      const errorMsg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Failed to load tickets. Please try again.";
       setError(errorMsg);
       setTickets([]);
       setTotalTickets(0);
@@ -104,9 +108,7 @@ const AdminUserSupport = () => {
       }
     } catch (err) {
       console.error("Error fetching ticket details:", err);
-      setError(
-        err.response?.data?.message || "Failed to load ticket details"
-      );
+      setError(err.response?.data?.message || "Failed to load ticket details");
     }
   };
 
@@ -119,7 +121,7 @@ const AdminUserSupport = () => {
     try {
       const response = await api.post(
         `/api/admin/tickets/${selectedTicket._id}/messages`,
-        { message: messageInput.trim() }
+        { message: messageInput.trim() },
       );
       if (response.data.success) {
         setMessageInput("");
@@ -135,7 +137,7 @@ const AdminUserSupport = () => {
       setError(
         err.response?.data?.error ||
           err.response?.data?.message ||
-          "Failed to send message. Please try again."
+          "Failed to send message. Please try again.",
       );
     } finally {
       setSendingMessage(false);
@@ -156,7 +158,7 @@ const AdminUserSupport = () => {
 
       const response = await api.patch(
         `/api/admin/tickets/${selectedTicket._id}/status`,
-        payload
+        payload,
       );
       if (response.data.success) {
         // Refresh ticket details
@@ -171,7 +173,7 @@ const AdminUserSupport = () => {
       setError(
         err.response?.data?.error ||
           err.response?.data?.message ||
-          "Failed to update status. Please try again."
+          "Failed to update status. Please try again.",
       );
     } finally {
       setUpdatingStatus(false);
@@ -238,19 +240,21 @@ const AdminUserSupport = () => {
     <DashboardLayout>
       <div className="min-h-screen p-6">
         <div className="max-w-8xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6 text-gray-800">User Support</h1>
+          <h1 className="text-2xl font-bold mb-6 text-gray-800">
+            User Support
+          </h1>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-blue-500">
+            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-[#FF7B1D]">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Total Tickets</p>
-                  <p className="text-2xl font-bold text-blue-600">
+                  <p className="text-2xl font-bold text-[#FF7B1D]">
                     {stats.total}
                   </p>
                 </div>
-                <MessageSquare className="text-blue-500" size={24} />
+                <MessageSquare className="text-[#FF7B1D]" size={24} />
               </div>
             </div>
 
@@ -278,15 +282,15 @@ const AdminUserSupport = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-green-500">
+            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-[#247606]">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Resolved</p>
-                  <p className="text-2xl font-bold text-green-600">
+                  <p className="text-2xl font-bold text-[#247606]">
                     {stats.resolved}
                   </p>
                 </div>
-                <CheckCircle className="text-green-500" size={24} />
+                <CheckCircle className="text-[#247606]" size={24} />
               </div>
             </div>
 
@@ -315,8 +319,8 @@ const AdminUserSupport = () => {
                     }}
                     className={`px-4 py-2 rounded font-medium transition-colors ${
                       activeTab === "all"
-                        ? "bg-blue-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-blue-50"
+                        ? "bg-[#FF7B1D] text-white"
+                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
                     }`}
                   >
                     All Tickets
@@ -328,8 +332,8 @@ const AdminUserSupport = () => {
                     }}
                     className={`px-4 py-2 rounded font-medium transition-colors ${
                       activeTab === "active"
-                        ? "bg-blue-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-blue-50"
+                        ? "bg-[#FF7B1D] text-white"
+                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
                     }`}
                   >
                     Active
@@ -341,8 +345,8 @@ const AdminUserSupport = () => {
                     }}
                     className={`px-4 py-2 rounded font-medium transition-colors ${
                       activeTab === "pending"
-                        ? "bg-blue-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-blue-50"
+                        ? "bg-[#FF7B1D] text-white"
+                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
                     }`}
                   >
                     Pending
@@ -354,8 +358,8 @@ const AdminUserSupport = () => {
                     }}
                     className={`px-4 py-2 rounded font-medium transition-colors ${
                       activeTab === "resolved"
-                        ? "bg-blue-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-blue-50"
+                        ? "bg-[#FF7B1D] text-white"
+                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
                     }`}
                   >
                     Resolved
@@ -367,8 +371,8 @@ const AdminUserSupport = () => {
                     }}
                     className={`px-4 py-2 rounded font-medium transition-colors ${
                       activeTab === "closed"
-                        ? "bg-blue-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-blue-50"
+                        ? "bg-[#FF7B1D] text-white"
+                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
                     }`}
                   >
                     Closed
@@ -394,12 +398,12 @@ const AdminUserSupport = () => {
                         handleSearch();
                       }
                     }}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#FF7B1D] focus:border-transparent"
                   />
                 </div>
                 <button
                   onClick={handleSearch}
-                  className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors font-medium"
+                  className="bg-[#FF7B1D] text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors font-medium"
                 >
                   Search
                 </button>
@@ -424,7 +428,7 @@ const AdminUserSupport = () => {
               <>
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-blue-500 text-white">
+                    <thead className="bg-[#FF7B1D] text-white">
                       <tr>
                         <th className="px-6 py-3 text-left text-sm font-bold uppercase">
                           S.N
@@ -459,19 +463,19 @@ const AdminUserSupport = () => {
                       {tickets.map((ticket, index) => (
                         <tr
                           key={ticket._id}
-                          className="hover:bg-blue-50 transition-colors"
+                          className="hover:bg-orange-50 transition-colors"
                         >
                           <td className="px-6 py-4 whitespace-nowrap text-gray-900">
                             {(currentPage - 1) * itemsPerPage + index + 1}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="font-medium text-blue-600">
+                            <span className="font-medium text-[#FF7B1D]">
                               {ticket.ticketNumber}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-2">
-                              <User size={16} className="text-blue-500" />
+                              <User size={16} className="text-[#FF7B1D]" />
                               <span className="text-sm text-gray-900">
                                 {ticket.user?.userName || "N/A"}
                               </span>
@@ -485,21 +489,22 @@ const AdminUserSupport = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
-                              {categoryLabels[ticket.category] || ticket.category}
+                            <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
+                              {categoryLabels[ticket.category] ||
+                                ticket.category}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span
                               className={`px-3 py-1 rounded-full text-sm font-bold ${getStatusColor(
-                                ticket.status
+                                ticket.status,
                               )}`}
                             >
                               {statusLabels[ticket.status] || ticket.status}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded-sm">
+                            <span className="bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-sm">
                               {ticket.messages?.length || 0}
                             </span>
                           </td>
@@ -509,7 +514,7 @@ const AdminUserSupport = () => {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <button
                               onClick={() => fetchTicketDetails(ticket._id)}
-                              className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors"
+                              className="bg-[#FF7B1D] text-white px-3 py-1 rounded text-sm hover:bg-orange-600 transition-colors"
                             >
                               View
                             </button>
@@ -522,8 +527,13 @@ const AdminUserSupport = () => {
 
                 {tickets.length === 0 && !loading && !error && (
                   <div className="text-center py-12">
-                    <MessageSquare className="mx-auto text-gray-400 mb-4" size={48} />
-                    <p className="text-gray-500 text-lg font-medium">No Tickets Found</p>
+                    <MessageSquare
+                      className="mx-auto text-gray-400 mb-4"
+                      size={48}
+                    />
+                    <p className="text-gray-500 text-lg font-medium">
+                      No Tickets Found
+                    </p>
                     <p className="text-gray-400 text-sm mt-2">
                       {searchQueryRef.current
                         ? "No tickets match your search criteria"
@@ -553,7 +563,7 @@ const AdminUserSupport = () => {
                     onClick={() => setCurrentPage(idx + 1)}
                     className={`px-2 py-1 rounded transition-colors ${
                       currentPage === idx + 1
-                        ? "text-blue-600 font-semibold"
+                        ? "text-[#FF7B1D] font-semibold"
                         : "text-gray-700 hover:text-black"
                     }`}
                   >
@@ -579,7 +589,7 @@ const AdminUserSupport = () => {
         {showTicketDetailModal && selectedTicket && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-blue-500 text-white rounded-t-lg">
+              <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-[#FF7B1D] text-white rounded-t-lg">
                 <div>
                   <h2 className="text-2xl font-bold">
                     Ticket: {selectedTicket.ticketNumber}
@@ -611,7 +621,7 @@ const AdminUserSupport = () => {
                       User
                     </label>
                     <div className="mt-1 flex items-center gap-2">
-                      <User size={16} className="text-blue-500" />
+                      <User size={16} className="text-[#FF7B1D]" />
                       <span className="text-gray-900">
                         {selectedTicket.user?.userName || "N/A"}
                       </span>
@@ -625,7 +635,7 @@ const AdminUserSupport = () => {
                       <select
                         value={statusUpdate}
                         onChange={(e) => setStatusUpdate(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#FF7B1D] focus:border-transparent"
                       >
                         <option value="active">Active</option>
                         <option value="pending">Pending</option>
@@ -639,7 +649,7 @@ const AdminUserSupport = () => {
                       Category
                     </label>
                     <div className="mt-1">
-                      <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
+                      <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
                         {categoryLabels[selectedTicket.category] ||
                           selectedTicket.category}
                       </span>
@@ -666,7 +676,7 @@ const AdminUserSupport = () => {
                     onChange={(e) => setAdminResponse(e.target.value)}
                     placeholder="Add your response..."
                     rows="3"
-                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#FF7B1D] focus:border-transparent"
                   />
                 </div>
 
@@ -675,7 +685,7 @@ const AdminUserSupport = () => {
                   <button
                     onClick={handleUpdateStatus}
                     disabled={updatingStatus || !statusUpdate}
-                    className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    className="bg-[#FF7B1D] text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
                     {updatingStatus ? "Updating..." : "Update Status"}
                   </button>
@@ -687,7 +697,8 @@ const AdminUserSupport = () => {
                     Messages ({selectedTicket.messages?.length || 0})
                   </label>
                   <div className="space-y-3 max-h-96 overflow-y-auto border rounded p-4">
-                    {selectedTicket.messages && selectedTicket.messages.length > 0 ? (
+                    {selectedTicket.messages &&
+                    selectedTicket.messages.length > 0 ? (
                       selectedTicket.messages.map((msg, idx) => (
                         <div
                           key={idx}
@@ -695,8 +706,8 @@ const AdminUserSupport = () => {
                             msg.senderModel === "User"
                               ? "bg-blue-50 border-l-4 border-blue-500"
                               : msg.senderModel === "Admin"
-                              ? "bg-orange-50 border-l-4 border-orange-500"
-                              : "bg-gray-50 border-l-4 border-gray-500"
+                                ? "bg-orange-50 border-l-4 border-[#FF7B1D]"
+                                : "bg-gray-50 border-l-4 border-gray-500"
                           }`}
                         >
                           <div className="flex justify-between items-start mb-1">
@@ -704,8 +715,8 @@ const AdminUserSupport = () => {
                               {msg.senderModel === "User"
                                 ? msg.sender?.userName || "User"
                                 : msg.senderModel === "Admin"
-                                ? msg.sender?.name || "Admin"
-                                : "Unknown"}
+                                  ? msg.sender?.name || "Admin"
+                                  : "Unknown"}
                             </span>
                             <span className="text-xs text-gray-500">
                               {formatDate(msg.createdAt)}
@@ -732,12 +743,12 @@ const AdminUserSupport = () => {
                         onChange={(e) => setMessageInput(e.target.value)}
                         placeholder="Type your message..."
                         rows="3"
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#FF7B1D] focus:border-transparent"
                       />
                       <button
                         onClick={handleSendMessage}
                         disabled={!messageInput.trim() || sendingMessage}
-                        className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="bg-[#FF7B1D] text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
                       >
                         <Send size={18} />
                         {sendingMessage ? "Sending..." : "Send"}

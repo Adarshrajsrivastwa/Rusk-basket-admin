@@ -52,7 +52,7 @@ const VendorDailyOffers = () => {
       }
 
       const response = await api.get(
-        `/api/vendor/products/offers?${params.toString()}`
+        `/api/vendor/products/offers?${params.toString()}`,
       );
       if (response.data.success) {
         setOffers(response.data.data || []);
@@ -64,7 +64,8 @@ const VendorDailyOffers = () => {
     } catch (err) {
       console.error("Error fetching offers:", err);
       setError(
-        err.response?.data?.message || "Failed to load offers. Please try again."
+        err.response?.data?.message ||
+          "Failed to load offers. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -104,7 +105,9 @@ const VendorDailyOffers = () => {
 
     // Validation
     if (editForm.offerEnabled && editForm.offerDiscountPercentage <= 0) {
-      setError("Discount percentage must be greater than 0 when offer is enabled");
+      setError(
+        "Discount percentage must be greater than 0 when offer is enabled",
+      );
       return;
     }
 
@@ -122,16 +125,19 @@ const VendorDailyOffers = () => {
     try {
       const payload = {
         offerEnabled: editForm.offerEnabled,
-        offerDiscountPercentage: parseFloat(editForm.offerDiscountPercentage) || 0,
+        offerDiscountPercentage:
+          parseFloat(editForm.offerDiscountPercentage) || 0,
         isDailyOffer: editForm.isDailyOffer,
       };
 
       if (editForm.offerStartDate) {
-        payload.offerStartDate = new Date(editForm.offerStartDate).toISOString();
+        payload.offerStartDate = new Date(
+          editForm.offerStartDate,
+        ).toISOString();
       } else {
         payload.offerStartDate = null;
       }
-      
+
       if (editForm.offerEndDate) {
         payload.offerEndDate = new Date(editForm.offerEndDate).toISOString();
       } else {
@@ -142,7 +148,7 @@ const VendorDailyOffers = () => {
 
       const response = await api.put(
         `/api/vendor/products/${selectedProduct._id}/offer`,
-        payload
+        payload,
       );
 
       console.log("Update response:", response.data);
@@ -153,7 +159,11 @@ const VendorDailyOffers = () => {
         setSelectedProduct(null);
         fetchOffers(); // Refresh list
       } else {
-        setError(response.data.message || response.data.error || "Failed to update offer");
+        setError(
+          response.data.message ||
+            response.data.error ||
+            "Failed to update offer",
+        );
       }
     } catch (err) {
       console.error("Error updating offer:", err);
@@ -161,7 +171,7 @@ const VendorDailyOffers = () => {
       setError(
         err.response?.data?.error ||
           err.response?.data?.message ||
-          "Failed to update offer. Please try again."
+          "Failed to update offer. Please try again.",
       );
     } finally {
       setUpdating(false);
@@ -171,10 +181,10 @@ const VendorDailyOffers = () => {
   // Toggle offer quickly
   const handleQuickToggle = async (product) => {
     if (togglingId === product._id) return; // Prevent double clicks
-    
+
     setTogglingId(product._id);
     setError("");
-    
+
     try {
       // Toggle daily offer flag
       const newIsDailyOffer = !product.isDailyOffer;
@@ -185,11 +195,21 @@ const VendorDailyOffers = () => {
       // If enabling daily offer, also enable the offer if it's disabled
       if (newIsDailyOffer && !product.offerEnabled) {
         payload.offerEnabled = true;
-        
+
         // If no discount percentage exists, calculate from prices or set default
-        if (!product.offerDiscountPercentage || product.offerDiscountPercentage === 0) {
-          if (product.regularPrice && product.salePrice && product.regularPrice > product.salePrice) {
-            const calculatedDiscount = ((product.regularPrice - product.salePrice) / product.regularPrice) * 100;
+        if (
+          !product.offerDiscountPercentage ||
+          product.offerDiscountPercentage === 0
+        ) {
+          if (
+            product.regularPrice &&
+            product.salePrice &&
+            product.regularPrice > product.salePrice
+          ) {
+            const calculatedDiscount =
+              ((product.regularPrice - product.salePrice) /
+                product.regularPrice) *
+              100;
             payload.offerDiscountPercentage = Math.round(calculatedDiscount);
           } else {
             payload.offerDiscountPercentage = 10; // Default 10%
@@ -206,7 +226,7 @@ const VendorDailyOffers = () => {
 
       const response = await api.put(
         `/api/vendor/products/${product._id}/offer`,
-        payload
+        payload,
       );
 
       console.log("Toggle response:", response.data);
@@ -214,17 +234,25 @@ const VendorDailyOffers = () => {
       if (response.data.success) {
         setError(""); // Clear any previous errors
         // Update local state immediately for better UX
-        setOffers(prevOffers =>
-          prevOffers.map(offer =>
+        setOffers((prevOffers) =>
+          prevOffers.map((offer) =>
             offer._id === product._id
-              ? { ...offer, isDailyOffer: newIsDailyOffer, offerEnabled: newIsDailyOffer ? true : offer.offerEnabled }
-              : offer
-          )
+              ? {
+                  ...offer,
+                  isDailyOffer: newIsDailyOffer,
+                  offerEnabled: newIsDailyOffer ? true : offer.offerEnabled,
+                }
+              : offer,
+          ),
         );
         // Also refresh from server to get latest data
         setTimeout(() => fetchOffers(), 500);
       } else {
-        setError(response.data.message || response.data.error || "Failed to toggle offer");
+        setError(
+          response.data.message ||
+            response.data.error ||
+            "Failed to toggle offer",
+        );
       }
     } catch (err) {
       console.error("Error toggling offer:", err);
@@ -232,7 +260,7 @@ const VendorDailyOffers = () => {
       setError(
         err.response?.data?.error ||
           err.response?.data?.message ||
-          "Failed to toggle offer. Please try again."
+          "Failed to toggle offer. Please try again.",
       );
     } finally {
       setTogglingId(null);
@@ -248,7 +276,9 @@ const VendorDailyOffers = () => {
     const startDate = product.offerStartDate
       ? new Date(product.offerStartDate)
       : null;
-    const endDate = product.offerEndDate ? new Date(product.offerEndDate) : null;
+    const endDate = product.offerEndDate
+      ? new Date(product.offerEndDate)
+      : null;
 
     if (startDate && now < startDate) return "upcoming";
     if (endDate && now > endDate) return "expired";
@@ -287,7 +317,7 @@ const VendorDailyOffers = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen p-6">
+      <div className="min-h-screen p-0 ml-6">
         <div className="max-w-8xl mx-auto">
           {/* Header */}
           <div className="mb-6">
@@ -520,7 +550,8 @@ const VendorDailyOffers = () => {
                                   {offer.productName}
                                 </div>
                                 <div className="text-sm text-gray-500">
-                                  ₹{offer.regularPrice} → ₹{offer.salePrice || offer.regularPrice}
+                                  ₹{offer.regularPrice} → ₹
+                                  {offer.salePrice || offer.regularPrice}
                                 </div>
                               </div>
                             </td>
@@ -544,19 +575,19 @@ const VendorDailyOffers = () => {
                                   status === "active"
                                     ? "bg-green-100 text-green-700"
                                     : status === "upcoming"
-                                    ? "bg-blue-100 text-blue-700"
-                                    : status === "expired"
-                                    ? "bg-red-100 text-red-700"
-                                    : "bg-gray-100 text-gray-700"
+                                      ? "bg-blue-100 text-blue-700"
+                                      : status === "expired"
+                                        ? "bg-red-100 text-red-700"
+                                        : "bg-gray-100 text-gray-700"
                                 }`}
                               >
                                 {status === "active"
                                   ? "Active"
                                   : status === "upcoming"
-                                  ? "Upcoming"
-                                  : status === "expired"
-                                  ? "Expired"
-                                  : "Disabled"}
+                                    ? "Upcoming"
+                                    : status === "expired"
+                                      ? "Expired"
+                                      : "Disabled"}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -573,7 +604,10 @@ const VendorDailyOffers = () => {
                                     className="text-green-600"
                                   />
                                 ) : (
-                                  <ToggleLeft size={24} className="text-gray-400" />
+                                  <ToggleLeft
+                                    size={24}
+                                    className="text-gray-400"
+                                  />
                                 )}
                                 <span
                                   className={`text-sm font-medium ${
@@ -582,7 +616,11 @@ const VendorDailyOffers = () => {
                                       : "text-gray-500"
                                   }`}
                                 >
-                                  {togglingId === offer._id ? "Updating..." : offer.isDailyOffer ? "Yes" : "No"}
+                                  {togglingId === offer._id
+                                    ? "Updating..."
+                                    : offer.isDailyOffer
+                                      ? "Yes"
+                                      : "No"}
                                 </span>
                               </button>
                             </td>
@@ -730,7 +768,8 @@ const VendorDailyOffers = () => {
                     onChange={(e) =>
                       setEditForm({
                         ...editForm,
-                        offerDiscountPercentage: parseFloat(e.target.value) || 0,
+                        offerDiscountPercentage:
+                          parseFloat(e.target.value) || 0,
                       })
                     }
                     className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
