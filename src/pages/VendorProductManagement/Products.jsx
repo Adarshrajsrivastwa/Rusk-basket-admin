@@ -821,11 +821,14 @@ const AllProduct = () => {
   const canvasRef = useRef(null);
   // Hidden canvas for QR code generation
   const qrCanvasRef = useRef(null);
+<<<<<<< HEAD
   
   // QR Code modal state
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [selectedProductForQR, setSelectedProductForQR] = useState(null);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState(null);
+=======
+>>>>>>> 97b209872b3f9827bfaf4ee76ee605c6de1f43f3
 
   // Utility function to get auth token
   const getAuthToken = () => {
@@ -1092,6 +1095,7 @@ const AllProduct = () => {
     link.click();
   };
 
+<<<<<<< HEAD
   // 🟢 Generate QR Code Function (Show in Modal)
   const handleGenerateQR = async (product) => {
     try {
@@ -1121,6 +1125,8 @@ const AllProduct = () => {
     }
   };
 
+=======
+>>>>>>> 97b209872b3f9827bfaf4ee76ee605c6de1f43f3
   // 🟢 Download QR Code Function
   const handleDownloadQRCode = async (productId) => {
     try {
@@ -1147,6 +1153,7 @@ const AllProduct = () => {
     }
   };
 
+<<<<<<< HEAD
   // 🟢 Download QR Code from Modal
   const handleDownloadQR = () => {
     if (!qrCodeDataUrl) return;
@@ -1158,6 +1165,8 @@ const AllProduct = () => {
     link.click();
   };
 
+=======
+>>>>>>> 97b209872b3f9827bfaf4ee76ee605c6de1f43f3
   const statusColors = {
     Approved: "text-green-600 font-semibold",
     "In Review": "text-yellow-600 font-semibold",
@@ -1522,6 +1531,7 @@ const AllProduct = () => {
                     </td>
                     <td className="p-2 sm:p-3 text-right whitespace-nowrap">
                       <div className="flex justify-end gap-2 sm:gap-3 text-orange-600">
+<<<<<<< HEAD
                         {/* 🟢 Generate QR Code Button */}
                         <button
                           onClick={() => handleGenerateQR(product)}
@@ -1529,6 +1539,17 @@ const AllProduct = () => {
                           title="Generate QR Code"
                         >
                           <QrCode className="w-3 h-3 sm:w-4 sm:h-4" />
+=======
+                        {/* 🟢 Download QR Code Button */}
+                        <button
+                          onClick={() =>
+                            handleDownloadQRCode(product.productId)
+                          }
+                          className="text-orange-600 hover:text-purple-700"
+                          title="Download QR code"
+                        >
+                          <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+>>>>>>> 97b209872b3f9827bfaf4ee76ee605c6de1f43f3
                         </button>
 
                         <button
