@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { useLocation, useParams } from "react-router-dom";
 import { BASE_URL } from "../../api/api";
-import html2pdf from "html2pdf.js";
 import {
   Download,
   Printer,
@@ -189,29 +188,37 @@ const InvoiceViewPage = () => {
 
   const handlePrint = () => window.print();
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!invoiceRef.current) {
       alert("Invoice content not available for download");
       return;
     }
 
-    const element = invoiceRef.current;
-    const opt = {
-      margin: [10, 10, 10, 10],
-      filename: `Invoice-${invoice.invoiceNumber || invoice.code || "INVOICE"}.pdf`,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    };
+    try {
+      // Dynamic import for html2pdf.js to avoid build issues
+      const html2pdf = (await import("html2pdf.js")).default;
+      
+      const element = invoiceRef.current;
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: `Invoice-${invoice.invoiceNumber || invoice.code || "INVOICE"}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      };
 
-    html2pdf()
-      .set(opt)
-      .from(element)
-      .save()
-      .catch((err) => {
-        console.error("Error generating PDF:", err);
-        alert("Failed to download invoice. Please try again.");
-      });
+      html2pdf()
+        .set(opt)
+        .from(element)
+        .save()
+        .catch((err) => {
+          console.error("Error generating PDF:", err);
+          alert("Failed to download invoice. Please try again.");
+        });
+    } catch (error) {
+      console.error("Error loading html2pdf:", error);
+      alert("Failed to load PDF generator. Please try again.");
+    }
   };
 
   const handleBack = () => window.history.back();

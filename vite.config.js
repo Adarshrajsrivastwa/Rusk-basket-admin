@@ -21,5 +21,16 @@ export default defineConfig({
   },
   build: {
     assetsInclude: ["**/*.png", "**/*.jpg", "**/*.jpeg", "**/*.svg"],
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+    commonjsOptions: {
+      include: [/html2pdf\.js/, /node_modules/],
+    },
+  },
+  optimizeDeps: {
+    include: ["html2pdf.js"],
   },
 });
