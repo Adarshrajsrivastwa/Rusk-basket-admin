@@ -50,6 +50,7 @@ const SingleOrder = () => {
 
         // Transform API response to match component structure
         const transformedData = transformOrderData(result.data);
+        
         setOrderData(transformedData);
       } catch (err) {
         console.error("Error fetching order:", err);
@@ -130,23 +131,36 @@ const SingleOrder = () => {
         sku: item.sku || "N/A",
         stock: "N/A", // Not provided in API
         rating: 0, // Not provided in API
-        thumbnail: item.thumbnail?.url || item.product?.thumbnail?.url || null,
+        thumbnail:
+          item.thumbnail?.url ||
+          item.product?.thumbnail?.url ||
+          item.image?.url ||
+          null,
       })),
       cartValue: apiData.pricing?.total || 0,
       payment: {
         mode: apiData.payment?.method?.toUpperCase() || "COD",
         productValue: apiData.pricing?.subtotal || 0,
-        handlingCost: 0, // Not explicitly provided
+        handlingCost: apiData.pricing?.handlingCharge || 0,
         tax: apiData.pricing?.tax || 0,
-        deliveryCost: apiData.pricing?.shipping || 0,
+        deliveryCost: apiData.deliveryAmount || 0,
         additional: 0,
         total: apiData.pricing?.total || 0,
-        discount: apiData.pricing?.discount || 0,
+        discount: apiData.pricing?.discount || apiData.coupon?.discount || 0,
         cashback: apiData.pricing?.totalCashback || 0,
       },
       status: apiData.status || "pending",
       couponCode: apiData.coupon?.code || null,
-      rider: null, // Not provided in API response
+      rider: apiData.riderDetails || apiData.rider ? {
+        id: apiData.rider?._id || apiData.riderDetails?.riderId || "N/A",
+        name: apiData.rider?.fullName || apiData.riderDetails?.riderName || apiData.riderInfo?.name || "N/A",
+        mobile: apiData.rider?.mobileNumber || apiData.riderDetails?.mobileNumber || apiData.riderInfo?.mobileNumber || "N/A",
+        whatsapp: apiData.rider?.whatsappNumber || apiData.riderDetails?.whatsappNumber || "N/A",
+        email: "N/A",
+        verified: false,
+        rating: 0,
+        deliveryAmount: apiData.riderAmount || apiData.deliveryAmount || 0,
+      } : null,
       notes: apiData.notes || "",
       rawApiData: apiData, // Keep raw data for reference
     };
@@ -228,6 +242,17 @@ const SingleOrder = () => {
     );
   }
 
+  // Check if buttons should be shown based on order status
+  const shouldShowActionButtons = () => {
+    const allowedStatuses = [
+      "order_placed",
+      "pending",
+      "new order",
+      "confirmed",
+    ];
+    return allowedStatuses.includes(orderData.status.toLowerCase());
+  };
+
   return (
     <DashboardLayout>
       <div className="w-full min-h-screen ml-4 p-4">
@@ -251,32 +276,29 @@ const SingleOrder = () => {
                 <div className="mt-2">
                   <span
                     className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
-                      orderData.status === "pending"
+                      orderData.status.toLowerCase() === "pending" ||
+                      orderData.status.toLowerCase() === "order_placed"
                         ? "bg-yellow-100 text-yellow-800"
-                        : orderData.status === "confirmed"
+                        : orderData.status.toLowerCase() === "confirmed"
                           ? "bg-green-100 text-green-800"
-                          : orderData.status === "delivered"
+                          : orderData.status.toLowerCase() === "delivered"
                             ? "bg-blue-100 text-blue-800"
                             : "bg-gray-100 text-gray-800"
                     }`}
                   >
-                    Status: {orderData.status.toUpperCase()}
+                    Status: {orderData.status.toUpperCase().replace(/_/g, " ")}
                   </span>
                 </div>
               )}
             </div>
-            {(orderData.status === "New Order" ||
-              orderData.status === "pending") && (
+            {shouldShowActionButtons() && (
               <div className="flex gap-3 flex-wrap">
-                <button className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 font-bold rounded-sm shadow-sm hover:shadow-xl transition-all duration-200 transform hover:scale-105">
-                  Cancel Order
-                </button>
-                <button
+                {/* <button
                   className="bg-[#FF7B1D] hover:bg-[#E66A0D] text-white px-6 py-3 font-bold rounded-sm shadow-sm hover:shadow-xl transition-all duration-200 transform hover:scale-105"
                   onClick={() => setIsModalOpen(true)}
                 >
                   Assign Delivery Partner
-                </button>
+                </button> */}
                 <button
                   onClick={handleBagQRScan}
                   className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 font-bold rounded-sm shadow-sm hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
@@ -299,10 +321,6 @@ const SingleOrder = () => {
                   </svg>
                   Bag & QR Scan
                 </button>
-                <AssignDeliveryBoyModal
-                  isOpen={isModalOpen}
-                  onClose={() => setIsModalOpen(false)}
-                />
               </div>
             )}
           </div>
@@ -360,9 +378,6 @@ const SingleOrder = () => {
                   />
                 )}
               </div>
-              {/* <button className="w-full bg-gray-900 hover:bg-black text-white py-2.5 rounded-sm text-xs font-bold mt-4 transition-all duration-200 shadow-md hover:shadow-lg">
-                View Full Profile →
-              </button> */}
             </div>
           </div>
 
@@ -416,9 +431,6 @@ const SingleOrder = () => {
                   />
                 )}
               </div>
-              {/* <button className="w-full bg-gray-900 hover:bg-black text-white py-2.5 rounded-sm text-xs font-bold mt-4 transition-all duration-200 shadow-md hover:shadow-lg">
-                View Full Profile →
-              </button> */}
             </div>
           </div>
 
@@ -618,23 +630,16 @@ const SingleOrder = () => {
             <div className="p-5">
               {orderData.rider ? (
                 <div className="space-y-3 text-sm">
-                  <InfoRow label="Rider ID" value={orderData.rider.id} />
                   <InfoRow
-                    label="Name"
+                    label="Rider Name"
                     value={orderData.rider.name}
                     highlight
                   />
-                  <InfoRow
-                    label="Verified"
-                    value={orderData.rider.verified ? "YES" : "NO"}
-                    badge
-                  />
                   <InfoRow label="Mobile" value={orderData.rider.mobile} />
-                  <InfoRow label="WhatsApp" value={orderData.rider.whatsapp} />
-                  <InfoRow label="Email" value={orderData.rider.email} />
-                  <InfoRow
-                    label="Rating"
-                    value={`${orderData.rider.rating} ⭐`}
+                  <InfoRow 
+                    label="Delivery Amount" 
+                    value={`₹${orderData.rider.deliveryAmount || 0}`}
+                    highlight
                   />
                 </div>
               ) : (
@@ -646,7 +651,7 @@ const SingleOrder = () => {
                     No rider assigned yet
                   </p>
                   <p className="text-xs text-gray-600 mt-2 font-semibold">
-                    Click "Assign Delivery Partner" button to assign a rider
+                    Rider will be assigned automatically or manually
                   </p>
                 </div>
               )}
@@ -716,10 +721,7 @@ const SingleOrder = () => {
         </div>
 
         {/* Buttons */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
-          <button className="bg-gray-900 hover:bg-black text-white px-6 py-4 rounded-sm font-bold shadow-sm hover:shadow-2xl transition-all duration-200 transform hover:scale-105 text-base">
-            📄 Download Order Details
-          </button>
+        <div className="flex justify-center mt-5">
           <button className="bg-[#FF7B1D] hover:bg-[#E66A0D] text-white px-6 py-4 rounded-sm font-bold shadow-sm hover:shadow-2xl transition-all duration-200 transform hover:scale-105 text-base">
             🧾 Download Invoice
           </button>
@@ -747,6 +749,11 @@ const SingleOrder = () => {
           />
         </div>
       </div>
+
+      <AssignDeliveryBoyModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </DashboardLayout>
   );
 };

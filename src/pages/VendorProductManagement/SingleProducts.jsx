@@ -1282,6 +1282,14 @@ const SingleProduct = () => {
                 ₹{product.salePrice || 0}
               </span>
             </p>
+            {product.tax !== undefined && product.tax !== null && (
+              <p>
+                <span className="font-semibold">Tax:</span>{" "}
+                <span className="text-blue-600 font-semibold">
+                  {product.tax}%
+                </span>
+              </p>
+            )}
             {product.cashback > 0 && (
               <p>
                 <span className="font-semibold">Cashback:</span>{" "}
@@ -1385,6 +1393,7 @@ const SingleProduct = () => {
                 actualPrice: product.actualPrice,
                 regularPrice: product.regularPrice,
                 salePrice: product.salePrice,
+                tax: product.tax,
                 cashback: product.cashback,
                 discountPercentage: product.discountPercentage,
                 productType: product.productType,

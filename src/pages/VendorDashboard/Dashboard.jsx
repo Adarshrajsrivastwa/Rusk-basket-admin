@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import { BASE_URL } from "../../api/api";
+import api from "../../api/api";
 import {
   Package,
   ShoppingCart,
@@ -16,30 +18,50 @@ import {
 } from "lucide-react";
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [jobPosts, setJobPosts] = useState([]);
   const [jobsLoading, setJobsLoading] = useState(false);
+  const [inventoryData, setInventoryData] = useState(null);
+  const [inventoryLoading, setInventoryLoading] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+
+  // Fetch unread notification count
+  const fetchUnreadNotificationCount = async () => {
+    try {
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
+      if (!token) {
+        setUnreadNotificationCount(0);
+        return;
+      }
+
+      const response = await api.get("/api/vendor/notifications/unread-count");
+      if (response.data && response.data.success) {
+        setUnreadNotificationCount(response.data.unreadCount || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching unread notification count:", error);
+      setUnreadNotificationCount(0);
+    }
+  };
 
   // Fetch dashboard data
   useEffect(() => {
     fetchDashboardData();
     fetchVendorJobPosts();
+    fetchInventoryData();
+    fetchUnreadNotificationCount();
   }, []);
 
   // Fetch vendor's job posts
   const fetchVendorJobPosts = async () => {
-    console.log("========================================");
-    console.log("fetchVendorJobPosts called");
-    console.log("========================================");
     setJobsLoading(true);
     try {
       const token =
         localStorage.getItem("token") || localStorage.getItem("authToken");
-
-      console.log("Token from localStorage:", token ? "Token exists" : "No token");
-      console.log("Token length:", token ? token.length : 0);
 
       const headers = {
         "Content-Type": "application/json",
@@ -49,10 +71,6 @@ export default function DashboardPage() {
       }
 
       const apiUrl = `${BASE_URL}/api/vendor/my-job-posts`;
-      console.log("========================================");
-      console.log("API URL:", apiUrl);
-      console.log("Headers:", headers);
-      console.log("========================================");
 
       const response = await fetch(apiUrl, {
         method: "GET",
@@ -60,80 +78,21 @@ export default function DashboardPage() {
         credentials: "include",
       });
 
-      console.log("========================================");
-      console.log("Response received");
-      console.log("Response status:", response.status);
-      console.log("Response statusText:", response.statusText);
-      console.log("Response ok:", response.ok);
-      console.log("Response headers:", Object.fromEntries(response.headers.entries()));
-      console.log("========================================");
-
       const data = await response.json();
-      console.log("========================================");
-      console.log("PARSED JSON RESPONSE:");
-      console.log("Full response object:", data);
-      console.log("Response type:", typeof data);
-      console.log("Response keys:", Object.keys(data));
-      console.log("========================================");
-      console.log("Response success:", data.success);
-      console.log("Response count:", data.count);
-      console.log("Response pagination:", data.pagination);
-      console.log("========================================");
-      console.log("Response data array:", data.data);
-      console.log("Data type:", Array.isArray(data.data) ? "Array" : typeof data.data);
-      console.log("Data length:", Array.isArray(data.data) ? data.data.length : "Not an array");
-      console.log("========================================");
-
-      if (Array.isArray(data.data)) {
-        console.log("Data is an array, iterating items:");
-        data.data.forEach((job, index) => {
-          console.log(`--- Job ${index + 1} ---`);
-          console.log("Job ID:", job._id);
-          console.log("Job Title:", job.jobTitle);
-          console.log("Joining Bonus:", job.joiningBonus);
-          console.log("Onboarding Fee:", job.onboardingFee);
-          console.log("Is Active:", job.isActive);
-          console.log("Posted By Type:", job.postedByType);
-          console.log("Location:", job.location);
-          console.log("Vendor:", job.vendor);
-          console.log("Posted By:", job.postedBy);
-          console.log("Full job object:", job);
-        });
-      }
 
       if (data.success) {
         const jobs = data.data || [];
-        console.log("========================================");
-        console.log("Setting job posts to state");
-        console.log("Jobs array:", jobs);
-        console.log("Jobs count:", jobs.length);
-        console.log("First job:", jobs[0]);
-        console.log("========================================");
         setJobPosts(jobs);
-        console.log("Job posts state updated");
       } else {
-        console.error("========================================");
-        console.error("API returned success: false");
-        console.error("Error message:", data.message);
-        console.error("Error:", data.error);
-        console.error("========================================");
         setJobPosts([]);
       }
     } catch (error) {
-      console.error("========================================");
-      console.error("EXCEPTION CAUGHT:");
-      console.error("Error name:", error.name);
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
-      console.error("Full error object:", error);
-      console.error("========================================");
       setJobPosts([]);
     } finally {
-      console.log("Setting jobs loading to false");
       setJobsLoading(false);
-      console.log("========================================");
     }
   };
+
 
   const fetchDashboardData = async () => {
     try {
@@ -171,10 +130,48 @@ export default function DashboardPage() {
         throw new Error("Invalid API response");
       }
     } catch (err) {
-      console.error("Error fetching dashboard data:", err);
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch inventory data
+  const fetchInventoryData = async () => {
+    try {
+      setInventoryLoading(true);
+
+      // Get token from localStorage
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
+
+      const headers = {};
+
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(
+        `${BASE_URL}/api/analytics/vendor/inventory`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: headers,
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch inventory data: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        setInventoryData(result.data);
+      }
+    } catch (err) {
+    } finally {
+      setInventoryLoading(false);
     }
   };
 
@@ -257,7 +254,23 @@ export default function DashboardPage() {
 
   const stats = getStats();
   const recentOrders = dashboardData?.recentOrders || [];
-  const lowStockProducts = dashboardData?.lowStockAlert || [];
+  
+  // Get low stock products from inventory API or fallback to dashboard data
+  const getLowStockProducts = () => {
+    if (inventoryData?.inventory) {
+      // Filter products with low stock (stockPercentage < 20 or stockStatus !== 'in_stock')
+      return inventoryData.inventory.filter(
+        (product) =>
+          product.stockPercentage < 20 ||
+          product.stockStatus === "out_of_stock" ||
+          product.stockStatus === "low_stock"
+      );
+    }
+    // Fallback to dashboard data if inventory API data not available
+    return dashboardData?.lowStockAlert || [];
+  };
+  
+  const lowStockProducts = getLowStockProducts();
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -380,7 +393,10 @@ export default function DashboardPage() {
               Dashboard Overview
             </h1>
             <button
-              onClick={fetchDashboardData}
+              onClick={() => {
+                fetchDashboardData();
+                fetchInventoryData();
+              }}
               className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-200 rounded-lg hover:bg-gray-50 transition-all"
               title="Refresh Dashboard"
             >
@@ -414,6 +430,44 @@ export default function DashboardPage() {
                 <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
               </div>
             ))}
+          </div>
+
+          {/* Notifications Card */}
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-6 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate("/vendor/notifications")}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="bg-yellow-100 p-3 rounded-lg relative">
+                <Bell className="text-yellow-600" size={24} />
+                {unreadNotificationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center font-bold px-1">
+                    {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                  </span>
+                )}
+              </div>
+              <h3 className="text-gray-700 font-semibold text-lg">
+                Notifications
+              </h3>
+            </div>
+            <div className="space-y-3">
+              <div className="bg-orange-50 border-l-4 border-orange-500 p-3 rounded">
+                <p className="text-sm font-semibold text-gray-800">
+                  {unreadNotificationCount || 0} Unread
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  {unreadNotificationCount > 0
+                    ? "You have pending notifications"
+                    : "No new notifications"}
+                </p>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate("/vendor/notifications");
+                }}
+                className="w-full bg-[#FF7B1D] text-white py-2 rounded-md text-sm font-medium hover:bg-orange-600 transition-colors"
+              >
+                View All Notifications
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -462,7 +516,7 @@ export default function DashboardPage() {
                       {recentOrders.map((order, index) => (
                         <tr key={index} className="border-b hover:bg-gray-50">
                           <td className="py-3 px-2 text-sm font-medium text-gray-900">
-                            {order.id || order.orderNumber || "N/A"}
+                            {order.orderId || order.id || order.orderNumber || "N/A"}
                           </td>
                           <td className="py-3 px-2 text-sm text-gray-600">
                             {order.customer || order.customerName || "N/A"}
@@ -501,7 +555,12 @@ export default function DashboardPage() {
                 <AlertCircle className="w-5 h-5 text-orange-500" />
               </div>
 
-              {lowStockProducts.length === 0 ? (
+              {inventoryLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-orange-500 mx-auto"></div>
+                  <p className="text-gray-500 text-sm mt-2">Loading inventory...</p>
+                </div>
+              ) : lowStockProducts.length === 0 ? (
                 <div className="text-center py-12">
                   <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-500 font-medium">
@@ -510,33 +569,104 @@ export default function DashboardPage() {
                   <p className="text-gray-400 text-sm mt-2">
                     Products running low on stock will appear here
                   </p>
+                  {inventoryData?.summary && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <p className="text-gray-500">Total Products</p>
+                          <p className="font-semibold text-gray-900">
+                            {inventoryData.summary.totalProducts}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500">In Stock</p>
+                          <p className="font-semibold text-green-600">
+                            {inventoryData.summary.inStock}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-4">
                   {lowStockProducts.map((product, index) => (
                     <div
-                      key={index}
+                      key={product.productId || index}
                       className="flex items-center justify-between p-4 bg-orange-50 rounded-lg"
                     >
-                      <div>
+                      <div className="flex-1">
                         <p className="font-medium text-gray-900">
-                          {product.name ||
-                            product.productName ||
+                          {product.productName ||
+                            product.name ||
                             "Unknown Product"}
                         </p>
                         <p className="text-sm text-gray-600">
-                          {product.sku || "N/A"}
+                          {product.skuHsn || product.sku || "N/A"}
                         </p>
+                        {product.category && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            {product.category.name}
+                            {product.subCategory && ` / ${product.subCategory.name}`}
+                          </p>
+                        )}
                       </div>
-                      <div className="text-right">
+                      <div className="text-right ml-4">
                         <p className="text-lg font-bold text-orange-600">
-                          {product.stock || product.quantity || 0}
+                          {product.currentInventory ||
+                            product.stock ||
+                            product.quantity ||
+                            0}
                         </p>
-                        <p className="text-xs text-gray-600">in stock</p>
+                        <p className="text-xs text-gray-600">
+                          {product.stockPercentage !== undefined
+                            ? `${product.stockPercentage}%`
+                            : "in stock"}
+                        </p>
+                        {product.stockStatus && (
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded mt-1 inline-block ${
+                              product.stockStatus === "out_of_stock"
+                                ? "bg-red-100 text-red-700"
+                                : product.stockStatus === "low_stock"
+                                ? "bg-orange-100 text-orange-700"
+                                : "bg-green-100 text-green-700"
+                            }`}
+                          >
+                            {product.stockStatus.replace("_", " ")}
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))}
-                  <button className="w-full py-2 text-sm font-medium text-blue-600 hover:text-blue-700">
+                  {inventoryData?.summary && (
+                    <div className="pt-4 border-t border-gray-200">
+                      <div className="grid grid-cols-3 gap-2 text-xs mb-3">
+                        <div>
+                          <p className="text-gray-500">Total</p>
+                          <p className="font-semibold text-gray-900">
+                            {inventoryData.summary.totalProducts}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500">In Stock</p>
+                          <p className="font-semibold text-green-600">
+                            {inventoryData.summary.inStock}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500">Out of Stock</p>
+                          <p className="font-semibold text-red-600">
+                            {inventoryData.summary.outOfStock}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => window.location.href = "/vendor/inventory"}
+                    className="w-full py-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+                  >
                     View All Inventory
                   </button>
                 </div>
@@ -544,7 +674,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Job Postings Section */}
-            <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
+            <div className="lg:col-span-3 bg-white rounded-xl shadow-sm p-6 mt-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                   <Briefcase className="w-5 h-5 text-orange-600" />

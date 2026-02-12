@@ -611,6 +611,8 @@ import {
   Boxes,
   MessageSquare,
   Tag,
+  Bike,
+  Wallet,
 } from "lucide-react";
 
 const VendorSidebar = () => {
@@ -672,6 +674,16 @@ const VendorSidebar = () => {
       name: "Rider Jobs",
       icon: <Boxes size={16} />,
       path: "/vendor/jobs",
+    },
+    {
+      name: "Rider Due Amounts",
+      icon: <Bike size={16} />,
+      path: "/vendor/rider-due-amounts",
+    },
+    {
+      name: "Withdrawal Requests",
+      icon: <Wallet size={16} />,
+      path: "/vendor/withdrawal-requests",
     },
     {
       name: "Support",
@@ -740,9 +752,7 @@ const VendorSidebar = () => {
         });
 
         const data = await response.json();
-        console.log("Logout response:", data);
       } catch (apiError) {
-        console.error("Logout API error:", apiError);
         // Continue with logout even if API fails
       }
 
@@ -756,8 +766,6 @@ const VendorSidebar = () => {
       // Close mobile sidebar if open
       if (window.innerWidth < 768) setIsOpen(false);
     } catch (error) {
-      console.error("Logout error:", error);
-
       // Even if API fails, clear local storage and redirect
       localStorage.clear();
       sessionStorage.clear();

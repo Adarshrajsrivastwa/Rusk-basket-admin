@@ -9,12 +9,9 @@ const AllOrder = () => {
   const location = useLocation();
   const highlightRef = useRef(null);
 
-  // Read the active tab and orderId from query params
+  // Read the orderId from query params
   const queryParams = new URLSearchParams(location.search);
-  const tabFromQuery = queryParams.get("tab") || "all";
   const highlightOrderId = queryParams.get("orderId");
-
-  const [activeTab, setActiveTab] = useState(tabFromQuery);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -51,14 +48,13 @@ const AllOrder = () => {
           headers["Authorization"] = `Bearer ${token}`;
         }
 
-        const response = await fetch(
-          `${BASE_URL}/api/checkout/vendor/orders?page=${currentPage}&limit=${itemsPerPage}`,
-          {
-            method: "GET",
-            credentials: "include", // Same as AddCategoryModal
-            headers: headers,
-          },
-        );
+        const apiUrl = `${BASE_URL}/api/checkout/vendor/orders?page=${currentPage}&limit=${itemsPerPage}`;
+
+        const response = await fetch(apiUrl, {
+          method: "GET",
+          credentials: "include", // Same as AddCategoryModal
+          headers: headers,
+        });
 
         if (response.status === 401) {
           throw new Error("Unauthorized. Please login again.");
@@ -72,29 +68,38 @@ const AllOrder = () => {
 
         if (data.success) {
           // Transform API data to match component format
-          const transformedOrders = data.orders.map((order) => ({
-            id: order.orderNumber,
-            date: new Date(order.createdAt).toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            }),
-            vendor: order.items[0]?.vendor?.storeName || "N/A",
-            user: order.user?.contactNumber || "N/A",
-            cartValue: order.pricing.total,
-            payment: order.payment.method.toUpperCase(),
-            status: mapStatus(order.status),
-            rawStatus: order.status,
-            shippingAddress: order.shippingAddress,
-            items: order.items,
-            pricing: order.pricing,
-            notes: order.notes,
-            _id: order._id,
-          }));
+          const transformedOrders = data.orders.map((order, index) => {
+            const transformed = {
+              id: order.orderNumber,
+              date: new Date(order.createdAt).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              }),
+              vendor: order.items[0]?.vendor?.storeName || "N/A",
+              user: order.user?.contactNumber || "N/A",
+              cartValue: order.pricing.total,
+              payment: order.payment.method.toUpperCase(),
+              status: order.status || "pending", // Use API status directly
+              shippingAddress: order.shippingAddress,
+              items: order.items,
+              pricing: order.pricing,
+              notes: order.notes,
+              _id: order._id,
+            };
+
+            return transformed;
+          });
 
           setOrders(transformedOrders);
           setPagination(data.pagination);
         } else {
+          console.error("========================================");
+          console.error("=== API ERROR ===");
+          console.error("API returned success: false");
+          console.error("Error Message:", data.message);
+          console.error("Full Error Data:", data);
+          console.error("========================================");
           throw new Error(data.message || "API returned success: false");
         }
       } catch (err) {
@@ -117,18 +122,27 @@ const AllOrder = () => {
     fetchOrders();
   }, [currentPage, itemsPerPage]);
 
-  // Map API status to display status
-  const mapStatus = (apiStatus) => {
+  // Format status for display with proper labels
+  const formatStatus = (status) => {
+    if (!status) return "Order Pending Hai";
+
     const statusMap = {
-      pending: "New Order",
-      confirmed: "Assigned",
-      processing: "Assigned",
-      shipped: "Assigned",
+      pending: "Pending ",
+      order_placed: "Order Place ",
+      confirmed: "Order Confirm ",
+      processing: "Order Process ",
+      ready: " Ready ",
+      rider_assign: "Rider Assign ",
+      out_for_delivery: "Delivery ",
       delivered: "Delivered",
-      cancelled: "Cancel",
-      canceled: "Cancel",
+      cancelled: "Cancelled",
+      canceled: "Cancelled",
     };
-    return statusMap[apiStatus?.toLowerCase()] || "New Order";
+
+    return (
+      statusMap[status.toLowerCase()] ||
+      status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ")
+    );
   };
 
   // Scroll to highlighted order after loading
@@ -143,32 +157,27 @@ const AllOrder = () => {
     }
   }, [loading, highlightOrderId]);
 
-  // Update active tab if query param changes
-  useEffect(() => {
-    setActiveTab(tabFromQuery);
-    setCurrentPage(1);
-  }, [tabFromQuery]);
-
-  const statusColors = {
-    "New Order": "text-blue-600 font-semibold",
-    Assigned: "text-yellow-600 font-semibold",
-    Delivered: "text-green-600 font-semibold",
-    Cancel: "text-red-600 font-semibold",
+  // Status colors based on API status values
+  const getStatusColor = (status) => {
+    const statusLower = status?.toLowerCase() || "";
+    if (statusLower === "pending") return "text-blue-600 font-semibold";
+    if (statusLower === "order_placed") return "text-purple-600 font-semibold";
+    if (statusLower === "confirmed") return "text-yellow-600 font-semibold";
+    if (statusLower === "processing") return "text-orange-600 font-semibold";
+    if (statusLower === "ready") return "text-cyan-600 font-semibold";
+    if (statusLower === "rider_assign") return "text-indigo-600 font-semibold";
+    if (statusLower === "out_for_delivery")
+      return "text-pink-600 font-semibold";
+    if (statusLower === "delivered") return "text-green-600 font-semibold";
+    if (statusLower === "cancelled" || statusLower === "canceled")
+      return "text-red-600 font-semibold";
+    return "text-gray-600 font-semibold";
   };
 
-  // Filter orders based on active tab
-  const filteredOrders =
-    activeTab === "all"
-      ? orders
-      : orders.filter((order) => {
-          if (activeTab === "new") return order.status === "New Order";
-          if (activeTab === "assigned") return order.status === "Assigned";
-          if (activeTab === "delivered") return order.status === "Delivered";
-          if (activeTab === "cancel") return order.status === "Cancel";
-          return true;
-        });
+  // Use all orders (no filtering)
+  const filteredOrders = orders;
 
-  // Pagination (using filtered orders for display)
+  // Pagination (using all orders for display)
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
   const currentOrders = filteredOrders.slice(indexOfFirst, indexOfLast);
@@ -182,7 +191,7 @@ const AllOrder = () => {
           key={idx}
           className="animate-pulse border-b border-gray-200 bg-white"
         >
-          {Array.from({ length: 9 }).map((__, j) => (
+          {Array.from({ length: 8 }).map((__, j) => (
             <td key={j} className="p-3">
               <div className="h-4 bg-gray-200 rounded w-[80%]" />
             </td>
@@ -197,7 +206,7 @@ const AllOrder = () => {
     <tbody>
       <tr>
         <td
-          colSpan="9"
+          colSpan="8"
           className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
         >
           {error ? (
@@ -220,39 +229,10 @@ const AllOrder = () => {
     </tbody>
   );
 
-  // Handle tab click manually
-  const handleTabClick = (tabKey) => {
-    setActiveTab(tabKey);
-    setCurrentPage(1);
-    navigate(`/orders/all?tab=${tabKey}`);
-  };
-
   return (
     <DashboardLayout>
-      {/* Tabs + Search + Calendar */}
+      {/* Search + Calendar */}
       <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-2 w-full pl-4 max-w-[99%] mx-auto mt-0 mb-2">
-        <div className="flex gap-4 overflow-x-auto pb-2 lg:pb-0">
-          {[
-            { key: "all", label: "All" },
-            { key: "new", label: "New Order" },
-            { key: "assigned", label: "Assigned" },
-            { key: "delivered", label: "Delivered" },
-            { key: "cancel", label: "Cancel" },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => handleTabClick(tab.key)}
-              className={`px-4 py-1 border rounded text-xs sm:text-sm whitespace-nowrap transition-colors ${
-                activeTab === tab.key
-                  ? "bg-[#FF7B1D] text-white border-orange-500"
-                  : "bg-white text-black border-gray-300 hover:bg-gray-100"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
         <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
           {/* Search Bar */}
           <div className="flex items-center border border-black rounded overflow-hidden h-[36px] w-full sm:w-[400px]">
@@ -282,7 +262,6 @@ const AllOrder = () => {
               <th className="p-3 text-left">S.N</th>
               <th className="p-3 text-left">Order ID</th>
               <th className="p-3 text-left">Date</th>
-              <th className="p-3 text-left">Vendor</th>
               <th className="p-3 text-left">User Name</th>
               <th className="p-3 text-left">Cart Value</th>
               <th className="p-3 text-left">Payment Status</th>
@@ -299,6 +278,9 @@ const AllOrder = () => {
             <tbody>
               {currentOrders.map((order, idx) => {
                 const isHighlighted = order.id === highlightOrderId;
+                const formattedStatus = formatStatus(order.status);
+                const statusColor = getStatusColor(order.status);
+
                 return (
                   <tr
                     key={order.id}
@@ -310,13 +292,10 @@ const AllOrder = () => {
                     <td className="p-3">{indexOfFirst + idx + 1}</td>
                     <td className="p-3 font-semibold">{order.id}</td>
                     <td className="p-3">{order.date}</td>
-                    <td className="p-3">{order.vendor}</td>
                     <td className="p-3">{order.user}</td>
                     <td className="p-3">₹{order.cartValue}</td>
                     <td className="p-3">{order.payment}</td>
-                    <td className={`p-3 ${statusColors[order.status]}`}>
-                      {order.status}
-                    </td>
+                    <td className={`p-3 ${statusColor}`}>{formattedStatus}</td>
                     <td className="p-3">
                       <div className="flex gap-2 justify-end">
                         <button className="text-orange-600 hover:text-blue-700">

@@ -48,49 +48,50 @@ const VendorSupport = () => {
       // Calculate date 1 week ago
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-      
+
       // Fetch orders with delivered status
       const response = await api.get(
-        `/api/vendor/orders?status=delivered&limit=100`
+        `/api/vendor/orders?status=delivered&limit=100`,
       );
-      
+
       if (response.data.success) {
         // Handle different response structures
-        const orders = response.data.data || response.data.orders || response.data || [];
-        
+        const orders =
+          response.data.data || response.data.orders || response.data || [];
+
         // Filter orders delivered in last 1 week
         const recentDeliveredOrders = orders.filter((order) => {
           // Check if order has delivered status
           if (order.status !== "delivered") return false;
-          
+
           // Check if order has a delivery date
-          const deliveredDate = order.deliveredAt 
+          const deliveredDate = order.deliveredAt
             ? new Date(order.deliveredAt)
-            : order.updatedAt 
-            ? new Date(order.updatedAt)
-            : null;
-          
+            : order.updatedAt
+              ? new Date(order.updatedAt)
+              : null;
+
           if (!deliveredDate) return false;
-          
+
           // Check if delivered within last 1 week
           return deliveredDate >= oneWeekAgo;
         });
-        
+
         // Sort by most recent first
         recentDeliveredOrders.sort((a, b) => {
-          const dateA = a.deliveredAt 
+          const dateA = a.deliveredAt
             ? new Date(a.deliveredAt)
-            : a.updatedAt 
-            ? new Date(a.updatedAt)
-            : new Date(a.createdAt);
-          const dateB = b.deliveredAt 
+            : a.updatedAt
+              ? new Date(a.updatedAt)
+              : new Date(a.createdAt);
+          const dateB = b.deliveredAt
             ? new Date(b.deliveredAt)
-            : b.updatedAt 
-            ? new Date(b.updatedAt)
-            : new Date(b.createdAt);
+            : b.updatedAt
+              ? new Date(b.updatedAt)
+              : new Date(b.createdAt);
           return dateB - dateA;
         });
-        
+
         setRecentOrders(recentDeliveredOrders);
       }
     } catch (err) {
@@ -119,7 +120,9 @@ const VendorSupport = () => {
         params.append("search", searchQuery);
       }
 
-      const response = await api.get(`/api/vendor/tickets?${params.toString()}`);
+      const response = await api.get(
+        `/api/vendor/tickets?${params.toString()}`,
+      );
       if (response.data.success) {
         setTickets(response.data.data.tickets || []);
         setTotalTickets(response.data.data.pagination?.total || 0);
@@ -130,7 +133,8 @@ const VendorSupport = () => {
     } catch (err) {
       console.error("Error fetching tickets:", err);
       setError(
-        err.response?.data?.message || "Failed to load tickets. Please try again."
+        err.response?.data?.message ||
+          "Failed to load tickets. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -153,9 +157,7 @@ const VendorSupport = () => {
       }
     } catch (err) {
       console.error("Error fetching ticket details:", err);
-      setError(
-        err.response?.data?.message || "Failed to load ticket details"
-      );
+      setError(err.response?.data?.message || "Failed to load ticket details");
     }
   };
 
@@ -194,7 +196,7 @@ const VendorSupport = () => {
       setError(
         err.response?.data?.error ||
           err.response?.data?.message ||
-          "Failed to create ticket. Please try again."
+          "Failed to create ticket. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -210,7 +212,7 @@ const VendorSupport = () => {
     try {
       const response = await api.post(
         `/api/vendor/tickets/${selectedTicket._id}/messages`,
-        { message: messageInput.trim() }
+        { message: messageInput.trim() },
       );
       if (response.data.success) {
         setMessageInput("");
@@ -226,7 +228,7 @@ const VendorSupport = () => {
       setError(
         err.response?.data?.error ||
           err.response?.data?.message ||
-          "Failed to send message. Please try again."
+          "Failed to send message. Please try again.",
       );
     } finally {
       setSendingMessage(false);
@@ -289,7 +291,7 @@ const VendorSupport = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen p-6">
+      <div className="min-h-screen p-0 ml-6">
         <div className="max-w-8xl mx-auto">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
@@ -537,13 +539,14 @@ const VendorSupport = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
-                              {categoryLabels[ticket.category] || ticket.category}
+                              {categoryLabels[ticket.category] ||
+                                ticket.category}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span
                               className={`px-3 py-1 rounded-full text-sm font-bold ${getStatusColor(
-                                ticket.status
+                                ticket.status,
                               )}`}
                             >
                               {statusLabels[ticket.status] || ticket.status}
@@ -696,23 +699,32 @@ const VendorSupport = () => {
                       {loadingOrders
                         ? "Loading orders..."
                         : recentOrders.length === 0
-                        ? "No recent delivered orders"
-                        : "Select an order (optional)"}
+                          ? "No recent delivered orders"
+                          : "Select an order (optional)"}
                     </option>
                     {recentOrders.map((order) => {
-                      const orderNumber = order.orderNumber || order.orderId || order._id;
-                      const amount = order.totalAmount || order.vendorSubtotal || order.amount || "N/A";
-                      const deliveryDate = order.deliveredAt || order.updatedAt || order.createdAt;
+                      const orderNumber =
+                        order.orderNumber || order.orderId || order._id;
+                      const amount =
+                        order.totalAmount ||
+                        order.vendorSubtotal ||
+                        order.amount ||
+                        "N/A";
+                      const deliveryDate =
+                        order.deliveredAt || order.updatedAt || order.createdAt;
                       return (
                         <option key={order._id} value={order._id}>
-                          {orderNumber} - {amount !== "N/A" ? `₹${amount}` : amount} - {formatDate(deliveryDate)}
+                          {orderNumber} -{" "}
+                          {amount !== "N/A" ? `₹${amount}` : amount} -{" "}
+                          {formatDate(deliveryDate)}
                         </option>
                       );
                     })}
                   </select>
                   {recentOrders.length > 0 && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Showing {recentOrders.length} delivered order(s) from last 1 week
+                      Showing {recentOrders.length} delivered order(s) from last
+                      1 week
                     </p>
                   )}
                 </div>
@@ -785,7 +797,7 @@ const VendorSupport = () => {
                     <div className="mt-1">
                       <span
                         className={`px-3 py-1 rounded-full text-sm font-bold ${getStatusColor(
-                          selectedTicket.status
+                          selectedTicket.status,
                         )}`}
                       >
                         {statusLabels[selectedTicket.status] ||
@@ -821,7 +833,8 @@ const VendorSupport = () => {
                     Messages ({selectedTicket.messages?.length || 0})
                   </label>
                   <div className="space-y-3 max-h-96 overflow-y-auto border rounded p-4">
-                    {selectedTicket.messages && selectedTicket.messages.length > 0 ? (
+                    {selectedTicket.messages &&
+                    selectedTicket.messages.length > 0 ? (
                       selectedTicket.messages.map((msg, idx) => (
                         <div
                           key={idx}
@@ -834,7 +847,9 @@ const VendorSupport = () => {
                           <div className="flex justify-between items-start mb-1">
                             <span className="font-medium text-sm">
                               {msg.senderModel === "Vendor"
-                                ? msg.sender?.vendorName || msg.sender?.storeName || "You"
+                                ? msg.sender?.vendorName ||
+                                  msg.sender?.storeName ||
+                                  "You"
                                 : msg.sender?.name || "Admin"}
                             </span>
                             <span className="text-xs text-gray-500">

@@ -108,15 +108,24 @@ const AdminDashboard = () => {
         console.log("Response success:", result.success);
         console.log("Response data:", result.data);
         console.log("========================================");
-        
+
         if (result.data) {
           console.log("Dashboard data keys:", Object.keys(result.data));
           console.log("Notifications data:", result.data.notifications);
           console.log("Notifications type:", typeof result.data.notifications);
-          console.log("Notifications unread:", result.data.notifications?.unread);
-          console.log("Notifications message:", result.data.notifications?.message);
+          console.log(
+            "Notifications unread:",
+            result.data.notifications?.unread,
+          );
+          console.log(
+            "Notifications message:",
+            result.data.notifications?.message,
+          );
           console.log("Notifications total:", result.data.notifications?.total);
-          console.log("Full notifications object:", JSON.stringify(result.data.notifications, null, 2));
+          console.log(
+            "Full notifications object:",
+            JSON.stringify(result.data.notifications, null, 2),
+          );
         }
         console.log("========================================");
 
@@ -196,7 +205,10 @@ const AdminDashboard = () => {
       },
       notifications: {
         unread: dashboardData.notifications?.unread || 0,
-        total: dashboardData.notifications?.total || dashboardData.notifications?.unread || 0,
+        total:
+          dashboardData.notifications?.total ||
+          dashboardData.notifications?.unread ||
+          0,
       },
       tickets: {
         open: dashboardData.supportTickets.open,
@@ -209,25 +221,29 @@ const AdminDashboard = () => {
 
   // Transform recent orders from API - memoized for performance
   const recentOrders = useMemo(() => {
-    return dashboardData?.recentOrders.map((order) => ({
-      id: order.orderId,
-      customer: order.customer,
-      amount: order.amount,
-      status: order.status.charAt(0).toUpperCase() + order.status.slice(1),
-      date: new Date().toISOString().split("T")[0],
-    })) || [];
+    return (
+      dashboardData?.recentOrders.map((order) => ({
+        id: order.orderId,
+        customer: order.customer,
+        amount: order.amount,
+        status: order.status.charAt(0).toUpperCase() + order.status.slice(1),
+        date: new Date().toISOString().split("T")[0],
+      })) || []
+    );
   }, [dashboardData?.recentOrders]);
 
   // Transform top vendors from API - memoized for performance
   const topVendors = useMemo(() => {
-    return dashboardData?.topVendors.map((vendor) => ({
-      id: vendor.vendorId,
-      name: vendor.vendorName || vendor.storeName,
-      sales: 0, // Not provided in API
-      orders: vendor.orders,
-      rating: 0, // Not provided in API
-      rank: vendor.rank,
-    })) || [];
+    return (
+      dashboardData?.topVendors.map((vendor) => ({
+        id: vendor.vendorId,
+        name: vendor.vendorName || vendor.storeName,
+        sales: 0, // Not provided in API
+        orders: vendor.orders,
+        rating: 0, // Not provided in API
+        rank: vendor.rank,
+      })) || []
+    );
   }, [dashboardData?.topVendors]);
 
   // Skeleton Loader
@@ -300,14 +316,14 @@ const AdminDashboard = () => {
                     src={
                       adminProfile?.profilePhoto?.url ||
                       `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                        adminProfile?.name || "Admin"
+                        adminProfile?.name || "Admin",
                       )}&background=F26422&color=fff&size=128`
                     }
                     alt="Profile"
                     className="w-12 h-12 rounded-full object-cover"
                     onError={(e) => {
                       e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                        adminProfile?.name || "Admin"
+                        adminProfile?.name || "Admin",
                       )}&background=F26422&color=fff&size=128`;
                     }}
                   />
@@ -326,11 +342,15 @@ const AdminDashboard = () => {
                     <p className="text-sm text-gray-600">
                       You have{" "}
                       <span className="text-red-500 font-semibold">
-                        {dashboardData?.summary?.newOrders || stats?.orders?.new || 0}
+                        {dashboardData?.summary?.newOrders ||
+                          stats?.orders?.new ||
+                          0}
                       </span>{" "}
                       New Orders &{" "}
                       <span className="text-red-500 font-semibold">
-                        {dashboardData?.summary?.pendingOrders || stats?.orders?.pending || 0}
+                        {dashboardData?.summary?.pendingOrders ||
+                          stats?.orders?.pending ||
+                          0}
                       </span>{" "}
                       Pending Orders
                     </p>
@@ -473,7 +493,9 @@ const AdminDashboard = () => {
                       <div className="bg-cyan-100 p-2 rounded-lg">
                         <Briefcase className="text-cyan-600" size={20} />
                       </div>
-                      <h3 className="text-gray-700 font-semibold">Rider Jobs</h3>
+                      <h3 className="text-gray-700 font-semibold">
+                        Rider Jobs
+                      </h3>
                     </div>
                     <div className="flex items-center gap-1 text-green-600 text-xs font-semibold">
                       <ArrowUp size={14} />
@@ -595,7 +617,8 @@ const AdminDashboard = () => {
                         {stats?.notifications?.unread || 0} Unread
                       </p>
                       <p className="text-xs text-gray-600 mt-1">
-                        {dashboardData?.notifications?.message || "No new notifications"}
+                        {dashboardData?.notifications?.message ||
+                          "No new notifications"}
                       </p>
                     </div>
                     <button
@@ -654,12 +677,12 @@ const AdminDashboard = () => {
                     <h3 className="text-lg font-bold text-gray-800">
                       Recent Orders
                     </h3>
-                    <button
+                    {/* <button
                       onClick={() => navigate("/orders")}
                       className="text-[#F26422] text-sm font-semibold hover:underline"
                     >
                       View All
-                    </button>
+                    </button> */}
                   </div>
                   {recentOrders.length > 0 ? (
                     <div className="overflow-x-auto">
@@ -725,12 +748,12 @@ const AdminDashboard = () => {
                     <h3 className="text-lg font-bold text-gray-800">
                       Top Vendors
                     </h3>
-                    <button
+                    {/* <button
                       onClick={() => navigate("/vendors")}
                       className="text-[#F26422] text-sm font-semibold hover:underline"
                     >
                       View All
-                    </button>
+                    </button> */}
                   </div>
                   {topVendors.length > 0 ? (
                     <div className="space-y-3">

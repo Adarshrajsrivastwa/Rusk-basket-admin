@@ -160,6 +160,7 @@ import {
 import Dashboard from "./pages/SuperAdminDashboard/Dashboard";
 import ViewAllNotification from "./pages/SuperAdminDashboard/ViewAllNotification";
 import VendorDashboard from "./pages/VendorDashboard/Dashboard";
+import RiderDueAmounts from "./pages/VendorDashboard/RiderDueAmounts";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AllProduct from "./pages/ProductManagement/AllProduct";
 import PendingProduct from "./pages/ProductManagement/PendingProduct";
@@ -184,6 +185,7 @@ import SingleOrder from "./pages/OrderManagement/SingleOrder";
 import Invoice from "./pages/OrderManagement/Invoice";
 import InvoiceView from "./pages/OrderManagement/InvoiceView";
 import BagQRScan from "./pages/OrderManagement/BagQr";
+import AddExtraItemPage from "./pages/OrderManagement/AddExtraItemPage";
 import AllRider from "./pages/RiderManagement/AllRider";
 import AllCoupon from "./pages/CoupanOffer/AllCoupon";
 import SingleOffer from "./pages/CoupanOffer/SingleOffer.jsx";
@@ -215,6 +217,10 @@ import AdminVendorSupport from "./pages/AdminSupportManagement/AdminVendorSuppor
 import AdminUserSupport from "./pages/AdminSupportManagement/AdminUserSupport";
 import AdminRiderSupport from "./pages/AdminSupportManagement/AdminRiderSupport";
 import RiderJobPostManagement from "./pages/AdminRiderJobsManagement/Jobs";
+import AllAdmin from "./pages/AdminManagement/AllAdmin";
+import WithdrawalRequests from "./pages/RiderManagement/WithdrawalRequests";
+import VendorWithdrawalRequests from "./pages/VendorDashboard/WithdrawalRequests";
+import AdminVendorWithdrawalRequests from "./pages/VendorManagement/VendorWithdrawalRequests";
 function AppContent() {
   const location = useLocation();
 
@@ -306,6 +312,14 @@ function AppContent() {
           }
         />
         <Route
+          path="/admin/all"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AllAdmin />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/vendor/products"
           element={
             <ProtectedRoute allowedRoles={["admin", "vendor"]}>
@@ -370,6 +384,55 @@ function AppContent() {
           }
         />
         <Route
+          path="/vendor/rider-due-amounts"
+          element={
+            <ProtectedRoute allowedRoles={["vendor"]}>
+              <RiderDueAmounts />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/withdrawal-requests"
+          element={
+            <ProtectedRoute allowedRoles={["vendor"]}>
+              <VendorWithdrawalRequests />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/daily-offers"
+          element={
+            <ProtectedRoute allowedRoles={["vendor"]}>
+              <VendorDailyOffers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/update-profile"
+          element={
+            <ProtectedRoute allowedRoles={["vendor"]}>
+              <UpdateProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/notifications"
+          element={
+            <ProtectedRoute allowedRoles={["vendor"]}>
+              <TopBarNotification />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/settings/profile"
+          element={
+            <ProtectedRoute allowedRoles={["vendor"]}>
+              <UpdateProfile />
+            </ProtectedRoute>
+          }
+        />
+        {/* Parameterized route must come AFTER all specific routes */}
+        <Route
           path="/vendor/:id"
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
@@ -391,22 +454,6 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={["vendor"]}>
               <VendorSupport />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/vendor/daily-offers"
-          element={
-            <ProtectedRoute allowedRoles={["vendor"]}>
-              <VendorDailyOffers />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/vendor/update-profile"
-          element={
-            <ProtectedRoute allowedRoles={["vendor"]}>
-              <UpdateProfile />
             </ProtectedRoute>
           }
         />
@@ -461,6 +508,22 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/admin/rider/withdrawal-requests"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <WithdrawalRequests />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/vendors/withdrawal-requests"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminVendorWithdrawalRequests />
+            </ProtectedRoute>
+          }
+        />
 
         <Route path="/category/all" element={<AllCategory />} />
         <Route path="/category/view-all/:id" element={<AllCategoryView />} />
@@ -476,8 +539,17 @@ function AppContent() {
         <Route path="/invoice" element={<Invoice />} />
         <Route path="/invoice/view" element={<InvoiceView />} />
         <Route path="/orders/:id/bag-qr-scan" element={<BagQRScan />} />
+        <Route path="/orders/:id/add-extra-items" element={<AddExtraItemPage />} />
 
         <Route path="/Rider" element={<AllRider />} />
+        <Route
+          path="/admin/rider/withdrawal-requests"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <WithdrawalRequests />
+            </ProtectedRoute>
+          }
+        />
 
         <Route path="/coupons/all" element={<AllCoupon />} />
         <Route path="/coupons/:id" element={<SingleOffer />} />
@@ -495,22 +567,6 @@ function AppContent() {
         <Route path="/topbar-notifications" element={<TopBarNotification />} />
         <Route path="/mail" element={<TopBarMail />} />
         <Route path="/chat" element={<TopBarChat />} />
-        <Route
-          path="/vendor/notifications"
-          element={
-            <ProtectedRoute allowedRoles={["vendor"]}>
-              <TopBarNotification />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/vendor/settings/profile"
-          element={
-            <ProtectedRoute allowedRoles={["vendor"]}>
-              <UpdateProfile />
-            </ProtectedRoute>
-          }
-        />
       </Routes>
 
     </>

@@ -816,7 +816,7 @@
 //         {/* Action Buttons */}
 //         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
 //           <button
-//             onClick={() => setIsAddExtraItemModalOpen(true)}
+//             onClick={() => navigate(`/orders/${id}/add-extra-items`)}
 //             disabled={bagDetails.sealed || isUpdatingStatus}
 //             className={`${
 //               bagDetails.sealed || isUpdatingStatus
@@ -949,6 +949,7 @@ import {
   RefreshCw,
   ArrowLeft,
   Plus,
+  X,
 } from "lucide-react";
 import {
   StatCard,
@@ -977,6 +978,8 @@ const BagQRScan = () => {
   const [assignmentStatus, setAssignmentStatus] = useState("pending");
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isScanningItem, setIsScanningItem] = useState(false);
+  const [isDeliveryAmountModalOpen, setIsDeliveryAmountModalOpen] = useState(false);
+  const [deliveryAmount, setDeliveryAmount] = useState(80);
 
   // Available products for adding extra items
   const [availableProducts] = useState([
@@ -1191,9 +1194,6 @@ const BagQRScan = () => {
         }
 
         setOrderData(orderData.data);
-        console.log("Order data fetched:", orderData.data);
-        console.log("MongoDB _id:", orderData.data._id);
-        console.log("Order Number:", orderData.data.orderNumber);
 
         // Transform items from order data
         if (orderData.data.items && Array.isArray(orderData.data.items)) {
@@ -1213,10 +1213,8 @@ const BagQRScan = () => {
             }),
           );
           setProducts(transformedProducts);
-          console.log("Products loaded:", transformedProducts);
         }
       } catch (error) {
-        console.error("Error fetching order data:", error);
         alert(`Failed to load order data: ${error.message}`);
       } finally {
         setLoading(false);
@@ -1253,7 +1251,6 @@ const BagQRScan = () => {
       });
 
       const data = await response.json();
-      console.log("QR Scan response:", data);
 
       if (!response.ok || !data.success) {
         throw new Error(data.message || "Failed to scan QR code");
@@ -1261,7 +1258,6 @@ const BagQRScan = () => {
 
       return { success: true, exists: data.exists };
     } catch (error) {
-      console.error("Error scanning QR code:", error);
       return { success: false, error: error.message };
     }
   };
@@ -1287,7 +1283,6 @@ const BagQRScan = () => {
       );
 
       const data = await response.json();
-      console.log("Add items response:", data);
 
       if (!response.ok || !data.success) {
         throw new Error(data.message || "Failed to add items to order");
@@ -1295,13 +1290,12 @@ const BagQRScan = () => {
 
       return { success: true, data: data.data };
     } catch (error) {
-      console.error("Error adding items to order:", error);
       return { success: false, error: error.message };
     }
   };
 
   // API Function to Update Order Status
-  const updateOrderStatus = async (status, deliveryAmount = "100") => {
+  const updateOrderStatus = async (status, deliveryAmount = 80) => {
     setIsUpdatingStatus(true);
     try {
       const headers = getAuthHeaders();
@@ -1309,12 +1303,10 @@ const BagQRScan = () => {
       // IMPORTANT: Use MongoDB _id for the API call, not orderNumber
       const mongoId = orderData?._id || id;
 
-      console.log("Updating order status:", {
-        mongoId: mongoId,
-        orderNumber: orderData?.orderNumber,
+      const requestBody = {
         status: status,
         deliveryAmount: deliveryAmount,
-      });
+      };
 
       const response = await fetch(
         `${BASE_URL}/api/checkout/vendor/order/${mongoId}/status`,
@@ -1322,23 +1314,17 @@ const BagQRScan = () => {
           method: "PUT",
           credentials: "include",
           headers: headers,
-          body: JSON.stringify({
-            status: status,
-            deliveryAmount: deliveryAmount,
-          }),
+          body: JSON.stringify(requestBody),
         },
       );
 
       const data = await response.json();
-      console.log("Status update response:", data);
 
       if (!response.ok || !data.success) {
         throw new Error(
           data.message || `Failed to update order status: ${response.status}`,
         );
       }
-
-      console.log("Order status updated successfully:", data);
 
       // Update local orderData state with the new data from response
       if (data.data) {
@@ -1347,41 +1333,113 @@ const BagQRScan = () => {
 
       return { success: true, data: data.data };
     } catch (error) {
-      console.error("Error updating order status:", error);
       return { success: false, error: error.message };
     } finally {
       setIsUpdatingStatus(false);
     }
   };
 
-  // Handle Add Extra Item
+  // Handle Add Extra Item with API
   const handleAddExtraItem = async (product, quantity) => {
-    const newExtraItem = {
-      ...product,
-      id: nextExtraId,
-      quantity: quantity,
-      scanned: 0,
-      isExtra: true,
-    };
+    try {
+      // Get token from localStorage
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
 
-    // Add to local state first
-    setProducts([...products, newExtraItem]);
-    setNextExtraId(nextExtraId + 1);
+      if (!token) {
+        alert("⚠️ Authentication required. Please login again.");
+        return;
+      }
 
-    const newScan = {
-      id: scanHistory.length + 1,
-      productName: product.name,
-      sku: product.sku,
-      time: new Date().toLocaleString(),
-      status: "extra_added",
-      operator: "Packing Operator",
-    };
-    setScanHistory([newScan, ...scanHistory]);
+      // Get orderId from orderData (MongoDB _id) or params
+      // API requires MongoDB _id, not orderNumber
+      const orderId = orderData?._id || id;
+      
+      if (!orderId) {
+        alert("⚠️ Order ID not found. Please wait for order data to load or refresh the page.");
+        return;
+      }
 
-    alert(
-      `✅ Extra Item Added!\n\n${product.name}\nQuantity: ${quantity}\n\nRemember to scan these items before sealing the bag.`,
-    );
-    setIsAddExtraItemModalOpen(false);
+      // Get productId from product object (MongoDB _id required for API)
+      const productId = product.productId || product._id;
+      
+      if (!productId) {
+        alert("⚠️ Product ID not found. This product may not be available in the system.\n\nPlease select a product with a valid Product ID.");
+        console.error("Product object missing productId:", product);
+        return;
+      }
+      
+      // Validate productId format (should be MongoDB ObjectId)
+      if (typeof productId !== 'string' || productId.length < 10) {
+        alert("⚠️ Invalid Product ID format. Please select a valid product.");
+        return;
+      }
+
+      const headers = {
+        "Content-Type": "application/json",
+      };
+
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const apiUrl = `${BASE_URL}/api/checkout/vendor/order/${orderId}/items`;
+
+      const requestBody = {
+        items: [
+          {
+            productId: productId,
+            quantity: quantity,
+          },
+        ],
+      };
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        credentials: "include",
+        headers: headers,
+        body: JSON.stringify(requestBody),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || `Failed to add extra item: ${response.status}`);
+      }
+
+      // API call successful - update local state
+      const newExtraItem = {
+        ...product,
+        id: nextExtraId,
+        quantity: quantity,
+        scanned: 0,
+        isExtra: true,
+        productId: productId,
+      };
+
+      // Add to local state
+      setProducts([...products, newExtraItem]);
+      setNextExtraId(nextExtraId + 1);
+
+      const newScan = {
+        id: scanHistory.length + 1,
+        productName: product.name,
+        sku: product.sku,
+        time: new Date().toLocaleString(),
+        status: "extra_added",
+        operator: "Packing Operator",
+      };
+      setScanHistory([newScan, ...scanHistory]);
+
+      alert(
+        `✅ Extra Item Added Successfully!\n\n${product.name}\nQuantity: ${quantity}\n\nRemember to scan these items before sealing the bag.`,
+      );
+      setIsAddExtraItemModalOpen(false);
+
+      // Optionally refresh order data to get updated items
+    } catch (error) {
+      alert(`❌ Failed to add extra item: ${error.message}\n\nPlease try again.`);
+    }
   };
 
   // Handle Remove Extra Item
@@ -1518,70 +1576,91 @@ const BagQRScan = () => {
     }
   };
 
-  // Handle Complete Packing & Seal Bag with API Integration
-  const handleCompletePacking = async () => {
+  // Handle Complete Packing & Seal Bag - Show delivery amount input first
+  const handleCompletePacking = () => {
     if (!isPackingComplete) {
       alert("⚠️ Please scan all items before sealing the bag!");
       return;
     }
+    // Open delivery amount modal
+    setIsDeliveryAmountModalOpen(true);
+  };
 
-    const bagNumber = `BAG${Date.now().toString().slice(-8)}`;
-    const qrCode = `FKMP${Date.now().toString().slice(-10)}`;
+  // Handle Seal Bag with delivery amount
+  const handleSealBagWithAmount = async () => {
+    if (!deliveryAmount || deliveryAmount <= 0) {
+      alert("⚠️ Please enter a valid delivery amount!");
+      return;
+    }
 
-    // Check if there are extra items to add to the order
-    const extraItems = products.filter((p) => p.isExtra);
-    if (extraItems.length > 0) {
-      const itemsToAdd = extraItems.map((item) => ({
-        productId: item.productId || item.id.toString(),
-        quantity: item.quantity,
-      }));
+    setIsDeliveryAmountModalOpen(false);
+    setIsUpdatingStatus(true);
 
-      const addResult = await addItemsToOrder(itemsToAdd);
-      if (!addResult.success) {
+    try {
+      const bagNumber = `BAG${Date.now().toString().slice(-8)}`;
+      const qrCode = `FKMP${Date.now().toString().slice(-10)}`;
+
+      // Check if there are extra items to add to the order
+      const extraItems = products.filter((p) => p.isExtra);
+      if (extraItems.length > 0) {
+        const itemsToAdd = extraItems.map((item) => ({
+          productId: item.productId || item.id.toString(),
+          quantity: item.quantity,
+        }));
+
+        const addResult = await addItemsToOrder(itemsToAdd);
+        if (!addResult.success) {
+          const proceed = window.confirm(
+            `⚠️ Failed to add extra items to order!\n\nError: ${addResult.error}\n\nDo you want to seal the bag anyway?\n(Extra items won't be recorded in the backend)`,
+          );
+          if (!proceed) {
+            setIsUpdatingStatus(false);
+            return;
+          }
+        }
+      }
+
+      // Update order status to "ready" via API with user-entered deliveryAmount
+      const result = await updateOrderStatus("ready", parseFloat(deliveryAmount));
+
+      if (!result.success) {
         const proceed = window.confirm(
-          `⚠️ Failed to add extra items to order!\n\nError: ${addResult.error}\n\nDo you want to seal the bag anyway?\n(Extra items won't be recorded in the backend)`,
+          `⚠️ Failed to update order status in backend!\n\nError: ${result.error}\n\nDo you want to seal the bag locally anyway?\n(The status will need to be updated manually later)`,
         );
-        if (!proceed) return;
-      } else {
-        console.log("Extra items added successfully:", addResult.data);
+
+        if (!proceed) {
+          setIsUpdatingStatus(false);
+          return;
+        }
       }
-    }
 
-    // Update order status to "ready" via API with deliveryAmount = "100"
-    const result = await updateOrderStatus("ready", "100");
+      setBagDetails({
+        ...bagDetails,
+        bagNo: bagNumber,
+        bagQRCode: qrCode,
+        status: "Ready for Pickup",
+        sealed: true,
+        completeTime: new Date().toLocaleString(),
+      });
 
-    if (!result.success) {
-      const proceed = window.confirm(
-        `⚠️ Failed to update order status in backend!\n\nError: ${result.error}\n\nDo you want to seal the bag locally anyway?\n(The status will need to be updated manually later)`,
+      const extraItemsCount = products.filter((p) => p.isExtra).length;
+      const extraItemsText =
+        extraItemsCount > 0
+          ? `\n\n📦 Includes ${extraItemsCount} extra item(s)`
+          : "";
+
+      alert(
+        `✅ Bag Packed & Sealed Successfully!\n\nBag Number: ${bagNumber}\nQR Code: ${qrCode}${extraItemsText}\n\nDelivery Amount: ₹${deliveryAmount}\n\n${
+          result.success
+            ? "🔄 Order status updated to 'ready' in the system."
+            : "⚠️ Bag sealed locally. Please update backend status manually."
+        }\n\nBag is now ready for delivery partner assignment.`,
       );
-
-      if (!proceed) {
-        return;
-      }
+    } catch (error) {
+      alert(`❌ Failed to seal bag: ${error.message}`);
+    } finally {
+      setIsUpdatingStatus(false);
     }
-
-    setBagDetails({
-      ...bagDetails,
-      bagNo: bagNumber,
-      bagQRCode: qrCode,
-      status: "Ready for Pickup",
-      sealed: true,
-      completeTime: new Date().toLocaleString(),
-    });
-
-    const extraItemsCount = products.filter((p) => p.isExtra).length;
-    const extraItemsText =
-      extraItemsCount > 0
-        ? `\n\n📦 Includes ${extraItemsCount} extra item(s)`
-        : "";
-
-    alert(
-      `✅ Bag Packed & Sealed Successfully!\n\nBag Number: ${bagNumber}\nQR Code: ${qrCode}${extraItemsText}\n\n${
-        result.success
-          ? "🔄 Order status updated to 'ready' in the system."
-          : "⚠️ Bag sealed locally. Please update backend status manually."
-      }\n\nBag is now ready for delivery partner assignment.`,
-    );
   };
 
   // Handle Reset Packing
@@ -1918,32 +1997,6 @@ const BagQRScan = () => {
               </>
             )}
           </button>
-          <button
-            onClick={handleAssignPartner}
-            disabled={!bagDetails.sealed || assignmentStatus !== "pending"}
-            className={`${
-              !bagDetails.sealed || assignmentStatus !== "pending"
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
-            } text-white px-6 py-5 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all text-lg flex items-center justify-center gap-2`}
-          >
-            <Truck size={24} />
-            {assignmentStatus === "pending"
-              ? "Assign Partner"
-              : "Partner Assigned"}
-          </button>
-          <button
-            onClick={handleResetPacking}
-            disabled={isUpdatingStatus}
-            className={`${
-              isUpdatingStatus
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-red-600 hover:bg-red-700"
-            } text-white px-6 py-5 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all text-lg flex items-center justify-center gap-2`}
-          >
-            <RefreshCw size={24} />
-            Reset
-          </button>
         </div>
 
         {/* Modals */}
@@ -1983,8 +2036,83 @@ const BagQRScan = () => {
           isOpen={isAddExtraItemModalOpen}
           onClose={() => setIsAddExtraItemModalOpen(false)}
           onAddItem={handleAddExtraItem}
-          availableProducts={availableProducts}
+          orderId={id}
         />
+
+        {/* Delivery Amount Modal */}
+        {isDeliveryAmountModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-md p-6 border-t-4 border-green-500">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  <CheckCircle size={28} className="text-green-500" />
+                  Enter Delivery Amount
+                </h3>
+                <button
+                  onClick={() => {
+                    setIsDeliveryAmountModalOpen(false);
+                    setDeliveryAmount(80);
+                  }}
+                  className="text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Delivery Amount (₹)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={deliveryAmount}
+                  onChange={(e) => setDeliveryAmount(parseFloat(e.target.value) || 0)}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:outline-none font-semibold text-lg"
+                  placeholder="Enter delivery amount"
+                  autoFocus
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Enter the delivery amount for this order
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setIsDeliveryAmountModalOpen(false);
+                    setDeliveryAmount(80);
+                  }}
+                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 rounded-lg font-bold transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSealBagWithAmount}
+                  disabled={!deliveryAmount || deliveryAmount <= 0 || isUpdatingStatus}
+                  className={`flex-1 ${
+                    !deliveryAmount || deliveryAmount <= 0 || isUpdatingStatus
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700"
+                  } text-white px-4 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2`}
+                >
+                  {isUpdatingStatus ? (
+                    <>
+                      <RefreshCw size={20} className="animate-spin" />
+                      Sealing...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={20} />
+                      Seal Bag
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

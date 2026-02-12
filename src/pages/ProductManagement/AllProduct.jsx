@@ -782,14 +782,20 @@
 // };
 
 // export default AllProduct;
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
+import { Eye, Edit, Trash2, Download, QrCode } from "lucide-react";
 import AddProductModal from "../../components/AddProduct";
+import { useNavigate } from "react-router-dom";
+import JsBarcode from "jsbarcode";
+import QRCode from "qrcode";
 import api from "../../api/api";
 
 const AllProduct = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVendor, setSelectedVendor] = useState("All Vendors");
   const [currentPage, setCurrentPage] = useState(1);
@@ -797,7 +803,16 @@ const AllProduct = () => {
   const [products, setProducts] = useState([]);
   const [totalProducts, setTotalProducts] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const navigate = useNavigate();
   const itemsPerPage = 10;
+
+  // Hidden canvas for barcode generation
+  const canvasRef = useRef(null);
+  
+  // QR Code modal state
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [selectedProductForQR, setSelectedProductForQR] = useState(null);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState(null);
 
   // 🟢 Fetch products from API
   const fetchProducts = async (page = 1) => {
@@ -814,14 +829,23 @@ const AllProduct = () => {
         // Transform products to include productNumber in productId field and format date
         const transformedProducts = response.data.data.map((product) => ({
           ...product,
-          productId: product.productNumber || product._id,
-          date: product.createdAt
-            ? new Date(product.createdAt).toISOString().split("T")[0]
-            : "N/A",
+          // Handle both productno (from API) and productNumber field names
+          productNumber: product.productno || product.productNumber,
+          productId: product.productno || product.productNumber || product._id,
+          // Use date from API if available, otherwise format createdAt
+          date:
+            product.date ||
+            (product.createdAt
+              ? new Date(product.createdAt).toISOString().split("T")[0]
+              : "N/A"),
         }));
         setProducts(transformedProducts);
         setTotalProducts(response.data.pagination.total);
-        setTotalPages(response.data.pagination.pages || response.data.pagination.totalPages || 1);
+        setTotalPages(
+          response.data.pagination.pages ||
+            response.data.pagination.totalPages ||
+            1,
+        );
       }
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -842,14 +866,173 @@ const AllProduct = () => {
 
   // 🟢 Handle successful product addition
   const handleProductAdded = (newProduct) => {
-    console.log("New product added:", newProduct);
     fetchProducts(currentPage);
+  };
+
+  // 🟢 Download Barcode Function
+  const handleDownloadBarcode = (productId) => {
+    const canvas = canvasRef.current;
+    JsBarcode(canvas, productId, {
+      format: "CODE128",
+      displayValue: true,
+      fontSize: 16,
+      lineColor: "#000000",
+      background: "#ffffff",
+    });
+
+    const link = document.createElement("a");
+    link.download = `${productId}-barcode.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
+
+  // 🟢 Generate QR Code Function
+  const handleGenerateQR = async (product) => {
+    try {
+      const productId = product.productNumber || product.productId || product._id;
+      
+      if (!productId) {
+        alert("Product ID not found!");
+        return;
+      }
+
+      // Generate QR code with product ID
+      const qrDataUrl = await QRCode.toDataURL(productId, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+
+      setSelectedProductForQR(product);
+      setQrCodeDataUrl(qrDataUrl);
+      setQrModalOpen(true);
+    } catch (error) {
+      console.error("Error generating QR code:", error);
+      alert("Failed to generate QR code. Please try again.");
+    }
+  };
+
+  // 🟢 Download QR Code Function
+  const handleDownloadQR = () => {
+    if (!qrCodeDataUrl) return;
+
+    const link = document.createElement("a");
+    const productId = selectedProductForQR?.productNumber || selectedProductForQR?.productId || selectedProductForQR?._id;
+    link.download = `${productId}-qr-code.png`;
+    link.href = qrCodeDataUrl;
+    link.click();
+  };
+
+  // 🟢 Handle Delete Product
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this product?")) {
+      try {
+        const response = await api.delete(`/api/admin/products/${id}`);
+        if (response.data.success) {
+          alert("Product deleted successfully!");
+          fetchProducts(currentPage);
+        }
+      } catch (error) {
+        console.error("Error deleting product:", error);
+        alert("Failed to delete product. Please try again.");
+      }
+    }
+  };
+
+  // 🟢 Handle Edit Product
+  const handleEdit = async (productId) => {
+    try {
+      // Find product from current list
+      let product = products.find(
+        (p) => p._id === productId || p.id === productId,
+      );
+
+      if (!product) {
+        // If product not in current list, fetch it from API
+        const response = await api.get(`/api/admin/products/${productId}`);
+        if (response.data.success) {
+          product = response.data.data;
+        } else {
+          // Try general product endpoint as fallback
+          try {
+            const fallbackResponse = await api.get(`/api/product/${productId}`);
+            if (fallbackResponse.data.success) {
+              product = fallbackResponse.data.data;
+            }
+          } catch (fallbackError) {
+            console.error("Fallback endpoint also failed:", fallbackError);
+          }
+        }
+      }
+
+      if (product) {
+        // Normalize product data for edit modal
+        const normalizedProduct = {
+          ...product,
+          id: product._id || product.id,
+          productId: product._id || product.id || product.productId,
+          productNumber:
+            product.productNumber || product.productno || product._id,
+          name: product.productName || product.name,
+          productName: product.productName || product.name,
+          sku: product.skuHsn || product.sku,
+          skuHsn: product.skuHsn || product.sku,
+          // Ensure category and subCategory are properly formatted
+          category:
+            product.category?._id ||
+            product.category?.$oid ||
+            product.category ||
+            null,
+          subCategory:
+            product.subCategory?._id ||
+            product.subCategory?.$oid ||
+            product.subCategory ||
+            null,
+        };
+
+        setEditingProduct(normalizedProduct);
+        setIsEditMode(true);
+        setIsModalOpen(true);
+      } else {
+        alert("Product not found");
+      }
+    } catch (error) {
+      console.error("Error fetching product for edit:", error);
+      alert("Failed to load product for editing");
+    }
+  };
+
+  // 🟢 Handle Product Updated
+  const handleProductUpdated = () => {
+    setIsModalOpen(false);
+    setIsEditMode(false);
+    setEditingProduct(null);
+    // Refresh products list
+    fetchProducts(currentPage);
+  };
+
+  // 🟢 Handle View Product
+  const handleView = (id) => {
+    navigate(`/products/${id}`);
   };
 
   const statusColors = {
     approved: "text-green-600 font-semibold",
     pending: "text-yellow-600 font-semibold",
     rejected: "text-red-600 font-semibold",
+  };
+
+  // Format status label
+  const getStatusLabel = (status) => {
+    if (!status) return "pending";
+    const statusLower = status.toLowerCase();
+    if (statusLower === "pending") return "pending";
+    if (statusLower === "approved") return "approved";
+    if (statusLower === "rejected") return "rejected";
+    return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   // Format price
@@ -897,7 +1080,7 @@ const AllProduct = () => {
           key={idx}
           className="border-b border-gray-200 animate-pulse bg-white"
         >
-          {Array.from({ length: 8 }).map((__, j) => (
+          {Array.from({ length: 9 }).map((__, j) => (
             <td key={j} className="p-3">
               <div className="h-4 bg-gray-200 rounded w-[80%]"></div>
             </td>
@@ -911,7 +1094,7 @@ const AllProduct = () => {
     <tbody>
       <tr>
         <td
-          colSpan="8"
+          colSpan="9"
           className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
         >
           No products found.
@@ -931,14 +1114,19 @@ const AllProduct = () => {
 
   return (
     <DashboardLayout>
+      {/* Hidden Canvas for Barcode Generation */}
+      <canvas ref={canvasRef} className="hidden" />
+
+      {/* Header Section */}
       <div className="flex flex-col lg:flex-row lg:items-center ml-8 lg:justify-between gap-4 max-w-[99%] mx-auto mt-0 mb-2">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
+          {/* Tabs */}
           <div className="flex gap-2 items-center overflow-x-auto pb-2 lg:pb-0">
             {[
               { key: "all", label: "All" },
-              { key: "pending", label: "Pending" },
-              { key: "approved", label: "Approved" },
-              { key: "rejected", label: "Rejected" },
+              { key: "pending", label: "pending" },
+              { key: "approved", label: "Approve" },
+              { key: "rejected", label: "Reject" },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -957,6 +1145,7 @@ const AllProduct = () => {
             ))}
           </div>
 
+          {/* Vendor Filter */}
           <div className="flex items-center">
             <select
               value={selectedVendor}
@@ -975,6 +1164,7 @@ const AllProduct = () => {
             </select>
           </div>
 
+          {/* Search */}
           <div className="flex items-center border border-black rounded overflow-hidden h-[36px] w-full max-w-[100%] lg:max-w-[400px]">
             <input
               type="text"
@@ -989,11 +1179,18 @@ const AllProduct = () => {
           </div>
         </div>
 
-        <div className="text-sm font-semibold text-gray-700">
-          Total: {searchedProducts.length}
+        {/* Add Product Button */}
+        <div className="w-full md:w-auto flex justify-start md:justify-end mt-2 md:mt-0">
+          {/* <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-black text-white w-52 sm:w-60 px-4 sm:px-10 py-2.5 rounded-sm shadow hover:bg-orange-600 text-xs sm:text-sm flex items-center justify-center whitespace-nowrap"
+          >
+            + Add Product
+          </button> */}
         </div>
       </div>
 
+      {/* Table Section */}
       <div className="bg-white rounded-sm ml-8 shadow-sm overflow-x-auto max-w-[99%] mx-auto">
         <table className="w-full text-sm">
           <thead>
@@ -1006,6 +1203,7 @@ const AllProduct = () => {
               <th className="p-3 text-left">Sub Category</th>
               <th className="p-3 text-left">Sale Price</th>
               <th className="p-3 text-left">Status</th>
+              <th className="p-3 pr-6 text-right">Action</th>
             </tr>
           </thead>
 
@@ -1023,7 +1221,9 @@ const AllProduct = () => {
                   <td className="p-3">
                     {(currentPage - 1) * itemsPerPage + idx + 1}
                   </td>
-                  <td className="p-3 font-mono text-xs">{product.productNumber || product.productId || product._id}</td>
+                  <td className="p-3 font-mono text-xs">
+                    {product.productNumber || product.productId || product._id}
+                  </td>
                   <td className="p-3">{product.date}</td>
                   <td className="p-3">
                     <span
@@ -1045,11 +1245,62 @@ const AllProduct = () => {
                     <span
                       className={`${statusColors[product.status] || "text-gray-600"}`}
                     >
-                      {product.status
-                        ? product.status.charAt(0).toUpperCase() +
-                          product.status.slice(1)
-                        : "N/A"}
+                      {getStatusLabel(product.status)}
                     </span>
+                  </td>
+                  <td className="p-3 text-right">
+                    <div className="flex justify-end gap-3 text-orange-600">
+                      {/* 🟢 Download Barcode Button */}
+                      {/* <button
+                        onClick={() =>
+                          handleDownloadBarcode(
+                            product.productNumber ||
+                              product.productId ||
+                              product._id,
+                          )
+                        }
+                        className="hover:text-blue-700"
+                        title="Download barcode"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button> */}
+
+                      {/* 🟢 Edit Button */}
+                      <button
+                        onClick={() => handleEdit(product._id)}
+                        className="hover:text-blue-700 mr-2"
+                        title="Edit product"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+
+                      {/* 🟢 Delete Button */}
+                      {/* <button
+                        onClick={() => handleDelete(product._id)}
+                        className="hover:text-red-700"
+                        title="Delete product"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button> */}
+
+                      {/* 🟢 View Button */}
+                      <button
+                        onClick={() => handleView(product._id)}
+                        className="hover:text-green-700 mr-2"
+                        title="View product"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+
+                      {/* 🟢 Generate QR Code Button */}
+                      <button
+                        onClick={() => handleGenerateQR(product)}
+                        className="hover:text-purple-700"
+                        title="Generate QR Code"
+                      >
+                        <QrCode className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -1058,6 +1309,62 @@ const AllProduct = () => {
         </table>
       </div>
 
+      {/* QR Code Modal */}
+      {qrModalOpen && selectedProductForQR && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-800">Product QR Code</h2>
+              <button
+                onClick={() => {
+                  setQrModalOpen(false);
+                  setSelectedProductForQR(null);
+                  setQrCodeDataUrl(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="flex flex-col items-center justify-center space-y-4">
+              {/* QR Code Image */}
+              {qrCodeDataUrl && (
+                <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+                  <img
+                    src={qrCodeDataUrl}
+                    alt="QR Code"
+                    className="w-64 h-64 mx-auto"
+                  />
+                </div>
+              )}
+              
+              {/* Product ID below QR Code */}
+              <div className="text-center">
+                <p className="text-sm text-gray-600 mb-1">Product ID</p>
+                <p className="text-lg font-bold text-gray-800 font-mono">
+                  {selectedProductForQR.productNumber || 
+                   selectedProductForQR.productId || 
+                   selectedProductForQR._id}
+                </p>
+              </div>
+
+              {/* Download Button */}
+              <button
+                onClick={handleDownloadQR}
+                className="w-full bg-[#FF7B1D] text-white py-2 px-4 rounded-md hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Download QR Code
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pagination */}
       {!loading && totalPages > 1 && (
         <div className="flex justify-end pl-8 items-center gap-6 mt-8 max-w-[95%] mx-auto mb-6">
           <button
@@ -1120,8 +1427,16 @@ const AllProduct = () => {
 
       <AddProductModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSuccess={handleProductAdded}
+        onClose={() => {
+          setIsModalOpen(false);
+          setIsEditMode(false);
+          setEditingProduct(null);
+        }}
+        onSuccess={isEditMode ? handleProductUpdated : handleProductAdded}
+        onProductAdded={handleProductAdded}
+        onProductUpdated={handleProductUpdated}
+        isEditMode={isEditMode}
+        editingProduct={editingProduct}
       />
     </DashboardLayout>
   );

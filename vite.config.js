@@ -6,4 +6,18 @@ export default defineConfig({
   resolve: {
     dedupe: ["react", "react-dom"],
   },
+  server: {
+    port: 5173,
+    host: true,
+    hmr: {
+      clientPort: 5173,
+      protocol: "ws",
+    },
+    watch: {
+      usePolling: false,
+    },
+  },
+  build: {
+    assetsInclude: ["**/*.png", "**/*.jpg", "**/*.jpeg", "**/*.svg"],
+  },
 });

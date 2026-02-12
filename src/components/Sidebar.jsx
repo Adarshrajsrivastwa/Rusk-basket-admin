@@ -591,7 +591,10 @@ const Sidebar = () => {
     {
       name: "Rider Management",
       icon: <Truck size={16} />,
-      path: "/Rider",
+      subItems: [
+        { name: "All Riders", path: "/Rider" },
+        { name: "Withdrawal Requests", path: "/admin/rider/withdrawal-requests" },
+      ],
     },
     {
       name: "Rider Job Posting",
@@ -604,7 +607,15 @@ const Sidebar = () => {
       subItems: [
         { name: "All Vendor", path: "/vendor/all" },
         { name: "Add Vendor", path: "/vendor/add", isModal: true },
+        { name: "Withdrawal Requests", path: "/admin/vendors/withdrawal-requests" },
         // { name: "Vendor Dashboard", path: "/vendor/details" },
+      ],
+    },
+    {
+      name: "Admin Management",
+      icon: <UserCog size={16} />,
+      subItems: [
+        { name: "All Admin", path: "/admin/all" },
       ],
     },
 

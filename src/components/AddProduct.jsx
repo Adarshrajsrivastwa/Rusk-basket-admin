@@ -1078,12 +1078,6 @@ export default function AddProductPopup({
 
   useEffect(() => {
     if (isOpen) {
-      console.log(
-        "Modal opened. isEditMode:",
-        isEditMode,
-        "editingProduct:",
-        editingProduct,
-      );
       fetchCategories();
       if (isAdmin && !isEditMode) {
         fetchVendors();
@@ -1091,19 +1085,36 @@ export default function AddProductPopup({
 
       // If editing, populate form with existing data
       if (isEditMode && editingProduct) {
-        console.log("Loading product for edit:", editingProduct);
-
         // Extract category and subcategory IDs
         let categoryId = "";
         let subCategoryId = "";
 
-        // Handle category
+        // Handle category - with proper normalization for $oid format
         if (editingProduct.category) {
-          if (typeof editingProduct.category === "object") {
-            categoryId =
-              editingProduct.category._id || editingProduct.category.id || "";
+          if (typeof editingProduct.category === "object" && editingProduct.category !== null) {
+            // Try multiple ways to extract the ID (including $oid format)
+            categoryId = editingProduct.category.$oid || 
+                        editingProduct.category._id || 
+                        editingProduct.category.id || "";
+            
+            // If still not found, try JSON extraction
+            if (!categoryId || categoryId === '[object Object]') {
+              try {
+                const jsonStr = JSON.stringify(editingProduct.category);
+                const hexMatch = jsonStr.match(/"([0-9a-fA-F]{24})"/);
+                if (hexMatch) {
+                  categoryId = hexMatch[1];
+                }
+              } catch (e) {
+                console.error('Error extracting category ID from object:', e);
+              }
+            }
           } else {
-            categoryId = editingProduct.category;
+            categoryId = String(editingProduct.category);
+            // If it's "[object Object]" string, try to find it from the product data
+            if (categoryId === '[object Object]') {
+              categoryId = '';
+            }
           }
         }
 
@@ -1148,34 +1159,34 @@ export default function AddProductPopup({
         categoryId = typeof categoryId === 'string' ? categoryId : String(categoryId || '');
         subCategoryId = typeof subCategoryId === 'string' ? subCategoryId : String(subCategoryId || '');
 
-        console.log("=== EDIT MODE - EXTRACTED IDs ===");
-        console.log("Category:", {
-          original: editingProduct.category,
-          extracted: categoryId,
-          type: typeof categoryId,
-          isValid: /^[0-9a-fA-F]{24}$/.test(categoryId)
-        });
-        console.log("SubCategory:", {
-          original: editingProduct.subCategory,
-          extracted: subCategoryId,
-          type: typeof subCategoryId,
-          isValid: /^[0-9a-fA-F]{24}$/.test(subCategoryId)
-        });
-
         const newFormData = {
           productName: editingProduct.name || editingProduct.productName || "",
           description: editingProduct.description || "",
-          skuHsn: editingProduct.sku || editingProduct.skuHsn || "",
-          inventory: editingProduct.inventory?.toString() || "",
+          skuHsn: editingProduct.sku || editingProduct.skuHsn || "N/A",
+          inventory: editingProduct.inventory !== undefined && editingProduct.inventory !== null 
+            ? editingProduct.inventory.toString() 
+            : "0",
           category: categoryId,
           subCategory: subCategoryId,
-          actualPrice: editingProduct.actualPrice?.toString() || "",
-          regularPrice: editingProduct.regularPrice?.toString() || "",
-          salePrice: editingProduct.salePrice?.toString() || "",
-          cashback: editingProduct.cashback?.toString() || "",
-          tax: editingProduct.tax?.toString() || "",
+          actualPrice: editingProduct.actualPrice !== undefined && editingProduct.actualPrice !== null
+            ? editingProduct.actualPrice.toString()
+            : "0",
+          regularPrice: editingProduct.regularPrice !== undefined && editingProduct.regularPrice !== null
+            ? editingProduct.regularPrice.toString()
+            : "0",
+          salePrice: editingProduct.salePrice !== undefined && editingProduct.salePrice !== null
+            ? editingProduct.salePrice.toString()
+            : "0",
+          cashback: editingProduct.cashback !== undefined && editingProduct.cashback !== null
+            ? editingProduct.cashback.toString()
+            : "0",
+          tax: editingProduct.tax !== undefined && editingProduct.tax !== null
+            ? editingProduct.tax.toString()
+            : "0",
           productType: editingProduct.productType?.type || "",
-          productTypeValue: editingProduct.productType?.value?.toString() || "",
+          productTypeValue: editingProduct.productType?.value !== undefined && editingProduct.productType?.value !== null
+            ? editingProduct.productType.value.toString()
+            : "",
           productTypeUnit: editingProduct.productType?.unit || "",
           tags: Array.isArray(editingProduct.tags) ? editingProduct.tags : [],
           images: [], // New images to upload
@@ -1183,48 +1194,21 @@ export default function AddProductPopup({
             ? editingProduct.images
             : [], // Existing images from backend
         };
-
-        console.log("Setting form data:", newFormData);
         
-        // Store the subCategoryId to preserve it
-        const preservedSubCategoryId = subCategoryId;
-        console.log("Preserved subCategoryId for edit mode:", preservedSubCategoryId);
-
-        // Fetch subcategories FIRST, then set form data after they're loaded
+        // Set form data IMMEDIATELY
+        setFormData(newFormData);
+        
+        // Then fetch subcategories in the background (this will update the dropdown options)
         if (categoryId && /^[0-9a-fA-F]{24}$/.test(categoryId)) {
-          console.log("Edit mode: Fetching subcategories before setting form data");
           fetchSubCategories(categoryId).then((loadedSubCategories) => {
-            console.log("Edit mode: Subcategories loaded, count:", loadedSubCategories?.length || 0);
-            console.log("Edit mode: Available subcategory IDs:", loadedSubCategories?.map(sc => sc._id) || []);
-            console.log("Edit mode: Looking for preserved subCategoryId:", preservedSubCategoryId);
-            
-            // Check if the preserved subCategoryId exists in the loaded subcategories
-            const subCategoryExists = loadedSubCategories?.some(sc => {
-              const scId = typeof sc._id === 'string' ? sc._id : (sc._id?.toString?.() || String(sc._id || ''));
-              return scId === preservedSubCategoryId;
-            });
-            
-            console.log("Edit mode: SubCategory exists in loaded list:", subCategoryExists);
-            
-            // Set form data AFTER subcategories are loaded
-            setFormData({
-              ...newFormData,
-              subCategory: preservedSubCategoryId // Set the subCategory value
-            });
-            
-            console.log("Edit mode: Form data set with subCategory:", preservedSubCategoryId);
+            // Don't update formData here, just update the subCategories list
+            // The subCategory value is already set in newFormData
           }).catch((err) => {
             console.error("Error fetching subcategories in edit mode:", err);
-            // Set form data anyway, even if subcategories fetch failed
-            setFormData(newFormData);
           });
-        } else {
-          // No category, just set form data
-          setFormData(newFormData);
         }
       } else {
         // Reset form for add mode
-        console.log("Resetting form for add mode");
         setFormData({
           productName: "",
           description: "",
@@ -1262,25 +1246,25 @@ export default function AddProductPopup({
       
       // Only fetch if it's a valid MongoDB ObjectId
       if (categoryIdStr && /^[0-9a-fA-F]{24}$/.test(categoryIdStr)) {
-        console.log("Category changed, fetching subcategories for:", categoryIdStr);
         const currentSubCategory = formData.subCategory; // Preserve current subCategory
         fetchSubCategories(categoryIdStr).then(() => {
-          // If in edit mode and we had a subCategory, restore it
+          // If in edit mode and we had a subCategory, restore it (don't clear it)
           if (isEditModeWithSubCategory && currentSubCategory && /^[0-9a-fA-F]{24}$/.test(currentSubCategory)) {
-            console.log("Restoring subCategory after fetch:", currentSubCategory);
             setFormData((prev) => ({ ...prev, subCategory: currentSubCategory }));
           }
         });
       } else {
         console.warn("Invalid category ID, not fetching subcategories:", categoryIdStr);
         setSubCategories([]);
-        if (!isEditModeWithSubCategory) {
+        // Only clear subCategory if NOT in edit mode
+        if (!isEditMode) {
           setFormData((prev) => ({ ...prev, subCategory: "" }));
         }
       }
     } else {
       setSubCategories([]);
-      if (!isEditModeWithSubCategory) {
+      // Only clear subCategory if NOT in edit mode
+      if (!isEditMode) {
         setFormData((prev) => ({ ...prev, subCategory: "" }));
       }
     }
@@ -1300,10 +1284,6 @@ export default function AddProductPopup({
 
       if (response.data.success) {
         setCategories(response.data.data);
-        console.log(
-          "Categories fetched successfully:",
-          response.data.data.length,
-        );
       } else {
         throw new Error(response.data.message || "Failed to load categories");
       }
@@ -1336,8 +1316,6 @@ export default function AddProductPopup({
         return Promise.resolve([]);
       }
       
-      console.log("Fetching subcategories for categoryId:", categoryIdStr);
-      
       const response = await api.get(
         `/api/subcategory/by-category/${categoryIdStr}`,
       );
@@ -1359,27 +1337,15 @@ export default function AddProductPopup({
                 }
                 subCatId = subCat._id;
               } else if (typeof subCat._id === 'object' && subCat._id !== null) {
-                // Log the object structure for debugging
-                console.log(`SubCategory ${idx} _id object structure:`, {
-                  keys: Object.keys(subCat._id),
-                  hasToString: typeof subCat._id.toString === 'function',
-                  hasToHexString: typeof subCat._id.toHexString === 'function',
-                  hasValueOf: typeof subCat._id.valueOf === 'function',
-                  stringified: JSON.stringify(subCat._id),
-                  fullObject: subCat._id
-                });
-                
                 // Try multiple methods to extract the ID
                 // Method 1: BSON format ($oid)
                 if (subCat._id.$oid) {
                   subCatId = subCat._id.$oid;
-                  console.log(`  → Extracted via $oid: ${subCatId}`);
                 }
                 // Method 2: toHexString (MongoDB ObjectId method)
                 else if (subCat._id.toHexString && typeof subCat._id.toHexString === 'function') {
                   try {
                     subCatId = subCat._id.toHexString();
-                    console.log(`  → Extracted via toHexString: ${subCatId}`);
                   } catch (e) {
                     console.warn(`  → toHexString failed:`, e);
                   }
@@ -1390,9 +1356,6 @@ export default function AddProductPopup({
                     const idStr = subCat._id.toString();
                     if (idStr !== '[object Object]' && /^[0-9a-fA-F]{24}$/.test(idStr)) {
                       subCatId = idStr;
-                      console.log(`  → Extracted via toString: ${subCatId}`);
-                    } else {
-                      console.warn(`  → toString returned invalid: ${idStr}`);
                     }
                   } catch (e) {
                     console.warn(`  → toString failed:`, e);
@@ -1404,7 +1367,6 @@ export default function AddProductPopup({
                     const value = subCat._id.valueOf();
                     if (typeof value === 'string' && /^[0-9a-fA-F]{24}$/.test(value)) {
                       subCatId = value;
-                      console.log(`  → Extracted via valueOf: ${subCatId}`);
                     }
                   } catch (e) {
                     console.warn(`  → valueOf failed:`, e);
@@ -1413,15 +1375,11 @@ export default function AddProductPopup({
                 // Method 5: Direct properties
                 if (!subCatId) {
                   subCatId = subCat._id._id || subCat._id.id || subCat._id.str || '';
-                  if (subCatId) {
-                    console.log(`  → Extracted via direct property: ${subCatId}`);
-                  }
                 }
                 // Method 6: JSON extraction (last resort)
                 if (!subCatId || !/^[0-9a-fA-F]{24}$/.test(subCatId)) {
                   try {
                     const jsonStr = JSON.stringify(subCat._id);
-                    console.log(`  → Trying JSON extraction from: ${jsonStr}`);
                     // Try multiple patterns
                     const patterns = [
                       /"([0-9a-fA-F]{24})"/,  // Standard hex string
@@ -1432,7 +1390,6 @@ export default function AddProductPopup({
                       const match = jsonStr.match(pattern);
                       if (match && match[1]) {
                         subCatId = match[1];
-                        console.log(`  → Extracted via JSON pattern: ${subCatId}`);
                         break;
                       }
                     }
@@ -1466,12 +1423,7 @@ export default function AddProductPopup({
           })
           .filter(Boolean); // Remove null entries
         
-        console.log("Normalized subcategories:", normalizedSubCategories);
         setSubCategories(normalizedSubCategories);
-        console.log(
-          "Subcategories fetched successfully:",
-          normalizedSubCategories.length,
-        );
         return normalizedSubCategories; // Return for promise chain
       } else {
         throw new Error(
@@ -1507,7 +1459,6 @@ export default function AddProductPopup({
           });
           if (selectedSubCat) {
             processedValue = typeof selectedSubCat._id === 'string' ? selectedSubCat._id : (selectedSubCat._id?.toString?.() || selectedSubCat._id?.$oid || '');
-            console.log(`Found subCategory ID from array:`, processedValue);
           } else {
             processedValue = '';
             console.error('Could not find valid subCategory ID');
@@ -1520,7 +1471,6 @@ export default function AddProductPopup({
           });
           if (selectedCat) {
             processedValue = typeof selectedCat._id === 'string' ? selectedCat._id : (selectedCat._id?.toString?.() || selectedCat._id?.$oid || '');
-            console.log(`Found category ID from array:`, processedValue);
           } else {
             processedValue = '';
             console.error('Could not find valid category ID');
@@ -1539,7 +1489,6 @@ export default function AddProductPopup({
           processedValue = '';
         }
       }
-      console.log(`Converting ${name} ID:`, { original: value, converted: processedValue, type: typeof value, isValid: /^[0-9a-fA-F]{24}$/.test(processedValue) });
     }
     
     setFormData((prev) => ({ ...prev, [name]: processedValue }));
@@ -1551,28 +1500,11 @@ export default function AddProductPopup({
     const totalImages = formData.images.length + formData.existingImages.length;
     const remainingSlots = 6 - totalImages;
 
-    console.log("=== IMAGE UPLOAD ===");
-    console.log("Files selected:", files.length);
-    console.log("Current images count:", formData.images.length);
-    console.log("Existing images count:", formData.existingImages.length);
-    console.log("Remaining slots:", remainingSlots);
-
     if (files.length > 0) {
       const filesToAdd = files.slice(0, remainingSlots);
-      console.log("Files to add:", filesToAdd.length);
-      filesToAdd.forEach((file, idx) => {
-        console.log(`  File ${idx}:`, {
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          isFile: file instanceof File,
-          constructor: file.constructor.name
-        });
-      });
       
       setFormData((prev) => {
         const newImages = [...prev.images, ...filesToAdd];
-        console.log("Updated images array length:", newImages.length);
         return {
           ...prev,
           images: newImages,
@@ -1634,9 +1566,6 @@ export default function AddProductPopup({
     setLoading(true);
     setError("");
 
-    console.log("Submit clicked. isEditMode:", isEditMode);
-    console.log("Current form data:", formData);
-
     // Validation
     if (
       !formData.productName ||
@@ -1666,13 +1595,6 @@ export default function AddProductPopup({
 
     // Image validation - check total images (existing + new)
     const totalImages = formData.images.length + formData.existingImages.length;
-    console.log("=== IMAGE VALIDATION ===");
-    console.log("formData.images:", formData.images);
-    console.log("formData.images.length:", formData.images.length);
-    console.log("formData.existingImages:", formData.existingImages);
-    console.log("formData.existingImages.length:", formData.existingImages.length);
-    console.log("isEditMode:", isEditMode);
-    console.log("totalImages:", totalImages);
     
     // For add mode, we need at least one new image
     // For edit mode, we can have existing images OR new images
@@ -1716,7 +1638,6 @@ export default function AddProductPopup({
                 }
               }
               if (subId && subId !== '[object Object]' && /^[0-9a-fA-F]{24}$/.test(subId)) {
-                console.log('Found valid subCategory ID from array:', subId);
                 return subId;
               }
             }
@@ -1759,22 +1680,6 @@ export default function AddProductPopup({
       // Convert category and subCategory IDs to strings BEFORE validation
       const categoryId = convertIdToString(formData.category);
       const subCategoryId = convertIdToString(formData.subCategory);
-      
-      console.log("=== CONVERTING IDs ===");
-      console.log("Category:", {
-        original: formData.category,
-        originalType: typeof formData.category,
-        converted: categoryId,
-        convertedType: typeof categoryId,
-        isValid: /^[0-9a-fA-F]{24}$/.test(categoryId)
-      });
-      console.log("SubCategory:", {
-        original: formData.subCategory,
-        originalType: typeof formData.subCategory,
-        converted: subCategoryId,
-        convertedType: typeof subCategoryId,
-        isValid: /^[0-9a-fA-F]{24}$/.test(subCategoryId)
-      });
       
       // Validate IDs are valid MongoDB ObjectIds
       if (!categoryId || !/^[0-9a-fA-F]{24}$/.test(categoryId)) {
@@ -1844,62 +1749,35 @@ export default function AddProductPopup({
       }
 
       // Append NEW images - CRITICAL: Backend expects req.files.images array
-      console.log("=== IMAGES DEBUG ===");
-      console.log("formData.images:", formData.images);
-      console.log("formData.images.length:", formData.images.length);
-      console.log("formData.existingImages:", formData.existingImages);
-      console.log("formData.existingImages.length:", formData.existingImages.length);
-      console.log("isEditMode:", isEditMode);
-      
       if (formData.images.length > 0) {
-        console.log("Appending new images to FormData:");
         formData.images.forEach((image, idx) => {
-          console.log(`  Image ${idx}:`, {
-            name: image?.name,
-            type: image?.type,
-            size: image?.size,
-            isFile: image instanceof File,
-            constructor: image?.constructor?.name
-          });
           // Ensure it's a File object
           if (image instanceof File) {
             formDataToSend.append("images", image);
-          } else {
-            console.warn(`  Image ${idx} is not a File object, skipping`);
           }
         });
-        console.log(`Total new images appended: ${formData.images.length}`);
-      } else {
-        console.warn("No new images to append!");
       }
 
       // In edit mode, send existing images to keep (only for update, not for create)
       if (isEditMode && formData.existingImages.length > 0) {
-        console.log("Appending existing images (edit mode):", formData.existingImages.length);
         formDataToSend.append(
           "existingImages",
           JSON.stringify(formData.existingImages),
         );
       }
-      
-      // Final check: Log what will be sent
-      console.log("FormData images count check:", {
-        newImages: formData.images.length,
-        existingImages: isEditMode ? formData.existingImages.length : 0,
-        totalForValidation: formData.images.length + (isEditMode ? formData.existingImages.length : 0)
-      });
 
       // Determine API endpoint and method based on mode
-      const productId =
-        editingProduct?.id || editingProduct?._id || editingProduct?.productId;
+      // Handle $oid format for product ID
+      let productId = editingProduct?.id || editingProduct?._id || editingProduct?.productId;
+      if (productId && typeof productId === 'object') {
+        productId = productId.$oid || productId._id || productId.id || productId.toString();
+      }
+      productId = productId?.toString() || productId;
+      
+      // Use admin endpoint for admin users, vendor endpoint for vendors
       const apiEndpoint = isEditMode
-        ? `/api/product/update/${productId}`
+        ? (isAdmin ? `/api/admin/products/${productId}` : `/api/product/update/${productId}`)
         : `/api/product/add`;
-
-      console.log(`${isEditMode ? "Updating" : "Adding"} product...`);
-      console.log("API Endpoint:", apiEndpoint);
-      console.log("Method:", isEditMode ? "PUT" : "POST");
-      console.log("Product ID:", productId);
 
       // Make the API request
       // IMPORTANT: For FormData, we must NOT set Content-Type header
@@ -1910,18 +1788,6 @@ export default function AddProductPopup({
         },
       };
       
-      console.log("=== SENDING REQUEST ===");
-      console.log("Endpoint:", apiEndpoint);
-      console.log("Method:", isEditMode ? "PUT" : "POST");
-      console.log("FormData entries:");
-      for (let pair of formDataToSend.entries()) {
-        if (pair[1] instanceof File) {
-          console.log(`  ${pair[0]}: [File] ${pair[1].name} (${pair[1].size} bytes, ${pair[1].type})`);
-        } else {
-          console.log(`  ${pair[0]}: ${pair[1]}`);
-        }
-      }
-      
       let response;
       if (isEditMode) {
         response = await api.put(apiEndpoint, formDataToSend, config);
@@ -1931,9 +1797,6 @@ export default function AddProductPopup({
 
       // Parse response
       const result = response.data;
-
-      console.log("Response status:", response.status);
-      console.log("Response data:", result);
 
       // Handle different error status codes
       if (response.status === 401) {
@@ -1956,15 +1819,10 @@ export default function AddProductPopup({
       }
 
       // Success
-      console.log(
-        `Product ${isEditMode ? "updated" : "added"} successfully, response:`,
-        result,
-      );
       alert(`Product ${isEditMode ? "updated" : "added"} successfully!`);
 
       // Call onSuccess callback to refresh product list BEFORE closing
       if (onSuccess) {
-        console.log("Calling onSuccess callback");
         onSuccess(result.data);
       }
 
@@ -1993,7 +1851,6 @@ export default function AddProductPopup({
 
       // Close popup after a brief delay to ensure state updates
       setTimeout(() => {
-        console.log("Closing modal");
         onClose();
       }, 300);
     } catch (err) {

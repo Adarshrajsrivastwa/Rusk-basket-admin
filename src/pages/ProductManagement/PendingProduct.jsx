@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import JsBarcode from "jsbarcode";
+import AddProductModal from "../../components/AddProduct";
 import api from "../../api/api";
 
 const PendingProduct = () => {
@@ -21,6 +22,12 @@ const PendingProduct = () => {
   const [totalProducts, setTotalProducts] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [processingId, setProcessingId] = useState(null);
+
+  // Modal states (same as AllProduct)
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+
   const navigate = useNavigate();
   const itemsPerPage = 10;
 
@@ -45,7 +52,11 @@ const PendingProduct = () => {
         }));
         setProducts(transformedProducts);
         setTotalProducts(response.data.pagination.total);
-        setTotalPages(response.data.pagination.pages || response.data.pagination.totalPages || 1);
+        setTotalPages(
+          response.data.pagination.pages ||
+            response.data.pagination.totalPages ||
+            1,
+        );
       }
     } catch (error) {
       console.error("Error fetching pending products:", error);
@@ -126,6 +137,78 @@ const PendingProduct = () => {
     } finally {
       setProcessingId(null);
     }
+  };
+
+  // 🟢 Handle Edit Product (same as AllProduct)
+  const handleEdit = async (productId) => {
+    try {
+      // Find product from current list
+      let product = products.find(
+        (p) => p._id === productId || p.id === productId,
+      );
+
+      if (!product) {
+        // If product not in current list, fetch it from API
+        const response = await api.get(`/api/admin/products/${productId}`);
+        if (response.data.success) {
+          product = response.data.data;
+        } else {
+          // Try general product endpoint as fallback
+          try {
+            const fallbackResponse = await api.get(`/api/product/${productId}`);
+            if (fallbackResponse.data.success) {
+              product = fallbackResponse.data.data;
+            }
+          } catch (fallbackError) {
+            console.error("Fallback endpoint also failed:", fallbackError);
+          }
+        }
+      }
+
+      if (product) {
+        // Normalize product data for edit modal
+        const normalizedProduct = {
+          ...product,
+          id: product._id || product.id,
+          productId: product._id || product.id || product.productId,
+          productNumber:
+            product.productNumber || product.productno || product._id,
+          name: product.productName || product.name,
+          productName: product.productName || product.name,
+          sku: product.skuHsn || product.sku,
+          skuHsn: product.skuHsn || product.sku,
+          // Ensure category and subCategory are properly formatted
+          category:
+            product.category?._id ||
+            product.category?.$oid ||
+            product.category ||
+            null,
+          subCategory:
+            product.subCategory?._id ||
+            product.subCategory?.$oid ||
+            product.subCategory ||
+            null,
+        };
+
+        setEditingProduct(normalizedProduct);
+        setIsEditMode(true);
+        setIsModalOpen(true);
+      } else {
+        alert("Product not found");
+      }
+    } catch (error) {
+      console.error("Error fetching product for edit:", error);
+      alert("Failed to load product for editing");
+    }
+  };
+
+  // 🟢 Handle Product Updated (same as AllProduct)
+  const handleProductUpdated = () => {
+    setIsModalOpen(false);
+    setIsEditMode(false);
+    setEditingProduct(null);
+    // Refresh products list
+    fetchPendingProducts(currentPage);
   };
 
   // Format date
@@ -276,7 +359,9 @@ const PendingProduct = () => {
                   <td className="p-3">
                     {(currentPage - 1) * itemsPerPage + idx + 1}
                   </td>
-                  <td className="p-3 font-mono text-xs">{product.productNumber || product._id}</td>
+                  <td className="p-3 font-mono text-xs">
+                    {product.productNumber || product._id}
+                  </td>
                   <td className="p-3 font-medium">{product.productName}</td>
                   <td className="p-3">{formatDate(product.createdAt)}</td>
                   <td className="p-3">
@@ -305,12 +390,39 @@ const PendingProduct = () => {
                             : "text-red-600"
                       }`}
                     >
-                      {product.approvalStatus.charAt(0).toUpperCase() +
-                        product.approvalStatus.slice(1)}
+                      {(() => {
+                        const status =
+                          product.approvalStatus?.toLowerCase() || "pending";
+                        if (status === "pending") return "pending";
+                        if (status === "approved") return "Approved";
+                        if (status === "rejected") return "Rejected";
+                        return (
+                          product.approvalStatus?.charAt(0).toUpperCase() +
+                            product.approvalStatus?.slice(1) || "Pending"
+                        );
+                      })()}
                     </span>
                   </td>
                   <td className="p-3">
                     <div className="flex justify-center gap-3">
+                      {/* View Button */}
+                      <button
+                        onClick={() => navigate(`/products/${product._id}`)}
+                        className="text-blue-600 hover:text-blue-700 transition-colors"
+                        title="View product details"
+                      >
+                        <Eye className="w-5 h-5" />
+                      </button>
+
+                      {/* 🟢 Edit Button - Now opens modal instead of navigating */}
+                      <button
+                        onClick={() => handleEdit(product._id)}
+                        className="text-orange-600 hover:text-orange-700 transition-colors"
+                        title="Edit product"
+                      >
+                        <Edit className="w-5 h-5" />
+                      </button>
+
                       {/* Approve Button */}
                       <button
                         onClick={() => handleApprove(product._id)}
@@ -406,6 +518,21 @@ const PendingProduct = () => {
           </button>
         </div>
       )}
+
+      {/* 🟢 Add Product Modal - Same as AllProduct */}
+      <AddProductModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setIsEditMode(false);
+          setEditingProduct(null);
+        }}
+        onSuccess={handleProductUpdated}
+        onProductAdded={fetchPendingProducts}
+        onProductUpdated={handleProductUpdated}
+        isEditMode={isEditMode}
+        editingProduct={editingProduct}
+      />
     </DashboardLayout>
   );
 };

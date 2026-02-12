@@ -42,6 +42,10 @@ const VendorProfile = () => {
     serviceRadius: "",
     handlingChargePercentage: "",
   });
+  const [profileImage, setProfileImage] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState(null);
+  const [storeImage, setStoreImage] = useState(null);
+  const [storeImagePreview, setStoreImagePreview] = useState(null);
 
   useEffect(() => {
     fetchProfile();
@@ -99,6 +103,20 @@ const VendorProfile = () => {
           serviceRadius: result.data.serviceRadius || "",
           handlingChargePercentage: result.data.handlingChargePercentage || "",
         });
+        
+        // Set image previews
+        if (result.data.profileImage) {
+          const profileImgUrl = Array.isArray(result.data.profileImage) 
+            ? result.data.profileImage[0]?.url 
+            : result.data.profileImage?.url || result.data.profileImage;
+          setProfileImagePreview(profileImgUrl);
+        }
+        if (result.data.storeImage) {
+          const storeImgUrl = Array.isArray(result.data.storeImage) 
+            ? result.data.storeImage[0]?.url 
+            : result.data.storeImage?.url || result.data.storeImage;
+          setStoreImagePreview(storeImgUrl);
+        }
       }
     } catch (err) {
       setError(err.message || "Failed to load profile");
@@ -112,6 +130,64 @@ const VendorProfile = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Handle profile image change
+  const handleProfileImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        alert("Please upload a valid image file");
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Image size should be less than 5MB");
+        return;
+      }
+      setProfileImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle store image change
+  const handleStoreImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        alert("Please upload a valid image file");
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Image size should be less than 5MB");
+        return;
+      }
+      setStoreImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setStoreImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle remove profile image
+  const handleRemoveProfileImage = () => {
+    setProfileImage(null);
+    setProfileImagePreview(null);
+    const fileInput = document.getElementById("profile-image-upload");
+    if (fileInput) fileInput.value = "";
+  };
+
+  // Handle remove store image
+  const handleRemoveStoreImage = () => {
+    setStoreImage(null);
+    setStoreImagePreview(null);
+    const fileInput = document.getElementById("store-image-upload");
+    if (fileInput) fileInput.value = "";
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -121,35 +197,118 @@ const VendorProfile = () => {
       const token =
         localStorage.getItem("token") || localStorage.getItem("authToken");
 
-      const headers = {
-        "Content-Type": "application/json",
-      };
+      // If images are selected, use FormData
+      if (profileImage || storeImage) {
+        const formDataToSend = new FormData();
+        
+        // Add all form fields
+        formDataToSend.append("vendorName", formData.vendorName || "");
+        formDataToSend.append("altContactNumber", formData.altContactNumber || "");
+        formDataToSend.append("email", formData.email || "");
+        formDataToSend.append("gender", formData.gender || "");
+        formDataToSend.append("dateOfBirth", formData.dateOfBirth || "");
+        formDataToSend.append("storeName", formData.storeName || "");
+        formDataToSend.append("storeAddressLine1", formData.storeAddressLine1 || "");
+        formDataToSend.append("storeAddressLine2", formData.storeAddressLine2 || "");
+        formDataToSend.append("pinCode", formData.pinCode || "");
+        if (formData.latitude) {
+          formDataToSend.append("latitude", formData.latitude);
+        }
+        if (formData.longitude) {
+          formDataToSend.append("longitude", formData.longitude);
+        }
+        formDataToSend.append("ifsc", formData.ifsc || "");
+        formDataToSend.append("accountNumber", formData.accountNumber || "");
+        formDataToSend.append("bankName", formData.bankName || "");
+        if (formData.serviceRadius) {
+          formDataToSend.append("serviceRadius", formData.serviceRadius);
+        }
+        if (formData.handlingChargePercentage) {
+          formDataToSend.append("handlingChargePercentage", formData.handlingChargePercentage);
+        }
 
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
+        // Add images if selected
+        if (profileImage) {
+          formDataToSend.append("profileImage", profileImage);
+        }
+        if (storeImage) {
+          formDataToSend.append("storeImage", storeImage);
+        }
 
-      const response = await fetch(
-        "https://api.rushbaskets.com/api/vendor/profile",
-        {
-          method: "PUT",
-          credentials: "include",
-          headers: headers,
-          body: JSON.stringify(formData),
-        },
-      );
+        const headers = {};
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
 
-      const result = await response.json();
+        const response = await fetch(
+          "https://api.rushbaskets.com/api/vendor/profile",
+          {
+            method: "PUT",
+            credentials: "include",
+            headers: headers,
+            body: formDataToSend,
+          },
+        );
 
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || "Failed to update profile");
-      }
+        const result = await response.json();
 
-      if (result.success) {
-        setProfileData(result.data);
-        setSuccess("Profile updated successfully!");
-        setIsEditing(false);
-        setTimeout(() => setSuccess(null), 3000);
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Failed to update profile");
+        }
+
+        if (result.success) {
+          setProfileData(result.data);
+          setProfileImage(null);
+          setStoreImage(null);
+          // Update previews from response
+          if (result.data.profileImage) {
+            const profileImgUrl = Array.isArray(result.data.profileImage) 
+              ? result.data.profileImage[0]?.url 
+              : result.data.profileImage?.url || result.data.profileImage;
+            setProfileImagePreview(profileImgUrl);
+          }
+          if (result.data.storeImage) {
+            const storeImgUrl = Array.isArray(result.data.storeImage) 
+              ? result.data.storeImage[0]?.url 
+              : result.data.storeImage?.url || result.data.storeImage;
+            setStoreImagePreview(storeImgUrl);
+          }
+          setSuccess("Profile updated successfully!");
+          setIsEditing(false);
+          setTimeout(() => setSuccess(null), 3000);
+        }
+      } else {
+        // No images, use JSON
+        const headers = {
+          "Content-Type": "application/json",
+        };
+
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(
+          "https://api.rushbaskets.com/api/vendor/profile",
+          {
+            method: "PUT",
+            credentials: "include",
+            headers: headers,
+            body: JSON.stringify(formData),
+          },
+        );
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Failed to update profile");
+        }
+
+        if (result.success) {
+          setProfileData(result.data);
+          setSuccess("Profile updated successfully!");
+          setIsEditing(false);
+          setTimeout(() => setSuccess(null), 3000);
+        }
       }
     } catch (err) {
       setError(err.message || "An error occurred while updating profile");
@@ -180,6 +339,32 @@ const VendorProfile = () => {
         serviceRadius: profileData.serviceRadius || "",
         handlingChargePercentage: profileData.handlingChargePercentage || "",
       });
+      
+      // Reset images
+      setProfileImage(null);
+      setStoreImage(null);
+      if (profileData.profileImage) {
+        const profileImgUrl = Array.isArray(profileData.profileImage) 
+          ? profileData.profileImage[0]?.url 
+          : profileData.profileImage?.url || profileData.profileImage;
+        setProfileImagePreview(profileImgUrl);
+      } else {
+        setProfileImagePreview(null);
+      }
+      if (profileData.storeImage) {
+        const storeImgUrl = Array.isArray(profileData.storeImage) 
+          ? profileData.storeImage[0]?.url 
+          : profileData.storeImage?.url || profileData.storeImage;
+        setStoreImagePreview(storeImgUrl);
+      } else {
+        setStoreImagePreview(null);
+      }
+      
+      // Reset file inputs
+      const profileInput = document.getElementById("profile-image-upload");
+      const storeInput = document.getElementById("store-image-upload");
+      if (profileInput) profileInput.value = "";
+      if (storeInput) storeInput.value = "";
     }
     setIsEditing(false);
     setError(null);
@@ -200,7 +385,7 @@ const VendorProfile = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen py-2 px-4 sm:px-6 lg:px-0 ml-6">
         <div className="max-w-7xl mx-auto">
           {/* Header Section with Gradient */}
           <div
@@ -358,6 +543,66 @@ const VendorProfile = () => {
                 displayValue={`${profileData?.age} years`}
                 isEditing={false}
               />
+              {/* Profile Image Upload */}
+              <div className="lg:col-span-3">
+                <div
+                  className="p-5 rounded-sm border hover:shadow-md transition-shadow"
+                  style={{
+                    background: "linear-gradient(to bottom right, #FFF0E6, white)",
+                    borderColor: "#FFE5D1",
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="bg-white p-2 rounded-lg shadow-sm">
+                      <User size={20} style={{ color: "#FF7B1D" }} />
+                    </div>
+                    <label className="text-sm font-semibold text-gray-600">
+                      Profile Image
+                    </label>
+                  </div>
+                  <div className="ml-10 flex items-center gap-4">
+                    {profileImagePreview ? (
+                      <div className="relative">
+                        <img
+                          src={profileImagePreview}
+                          alt="Profile Preview"
+                          className="w-24 h-24 rounded-full object-cover border-2 border-orange-300"
+                        />
+                        {isEditing && (
+                          <button
+                            onClick={handleRemoveProfileImage}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center border-2 border-dashed border-gray-300">
+                        <User size={32} className="text-gray-400" />
+                      </div>
+                    )}
+                    {isEditing && (
+                      <label
+                        htmlFor="profile-image-upload"
+                        className="flex items-center gap-2 px-4 py-2 bg-[#FF7B1D] text-white rounded-lg hover:bg-orange-600 cursor-pointer transition-colors"
+                      >
+                        <Edit2 size={18} />
+                        <span className="text-sm font-medium">
+                          {profileImage ? "Change Image" : "Upload Image"}
+                        </span>
+                        <input
+                          type="file"
+                          id="profile-image-upload"
+                          accept="image/*"
+                          onChange={handleProfileImageChange}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -421,6 +666,66 @@ const VendorProfile = () => {
                 }
                 isEditing={false}
               />
+              {/* Store Image Upload */}
+              <div className="lg:col-span-4">
+                <div
+                  className="p-5 rounded-sm border hover:shadow-md transition-shadow"
+                  style={{
+                    background: "linear-gradient(to bottom right, #FFF0E6, white)",
+                    borderColor: "#FFE5D1",
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="bg-white p-2 rounded-lg shadow-sm">
+                      <Store size={20} style={{ color: "#FF7B1D" }} />
+                    </div>
+                    <label className="text-sm font-semibold text-gray-600">
+                      Store Image
+                    </label>
+                  </div>
+                  <div className="ml-10 flex items-center gap-4">
+                    {storeImagePreview ? (
+                      <div className="relative">
+                        <img
+                          src={storeImagePreview}
+                          alt="Store Preview"
+                          className="w-32 h-32 rounded-lg object-cover border-2 border-orange-300"
+                        />
+                        {isEditing && (
+                          <button
+                            onClick={handleRemoveStoreImage}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="w-32 h-32 rounded-lg bg-gray-200 flex items-center justify-center border-2 border-dashed border-gray-300">
+                        <Store size={40} className="text-gray-400" />
+                      </div>
+                    )}
+                    {isEditing && (
+                      <label
+                        htmlFor="store-image-upload"
+                        className="flex items-center gap-2 px-4 py-2 bg-[#FF7B1D] text-white rounded-lg hover:bg-orange-600 cursor-pointer transition-colors"
+                      >
+                        <Edit2 size={18} />
+                        <span className="text-sm font-medium">
+                          {storeImage ? "Change Image" : "Upload Image"}
+                        </span>
+                        <input
+                          type="file"
+                          id="store-image-upload"
+                          accept="image/*"
+                          onChange={handleStoreImageChange}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

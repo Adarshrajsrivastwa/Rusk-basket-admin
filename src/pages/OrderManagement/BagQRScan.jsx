@@ -1000,7 +1000,7 @@
 //     </div>
 //   );
 // };
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Package,
   QrCode,
@@ -1018,6 +1018,7 @@ import {
   Plus,
   X,
 } from "lucide-react";
+import { BASE_URL } from "../../api/api";
 
 // Stat Card Component
 export const StatCard = ({ icon, label, value, color, small = false }) => (
@@ -1076,16 +1077,84 @@ export const AddExtraItemModal = ({
   isOpen,
   onClose,
   onAddItem,
-  availableProducts,
+  orderId,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [quantity, setQuantity] = useState(1);
+  const [selectedProducts, setSelectedProducts] = useState({}); // { productId: quantity }
   const [searchBy, setSearchBy] = useState("all");
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Fetch vendor products when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchVendorProducts();
+    } else {
+      // Reset when modal closes
+      setSelectedProducts({});
+      setSearchQuery("");
+    }
+  }, [isOpen]);
+
+  const fetchVendorProducts = async () => {
+    try {
+      setLoading(true);
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
+
+      if (!token) {
+        alert("⚠️ Authentication required. Please login again.");
+        return;
+      }
+
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      };
+
+      const response = await fetch(`${BASE_URL}/api/vendor/products`, {
+        method: "GET",
+        headers: headers,
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch products: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.data && Array.isArray(result.data)) {
+        const transformedProducts = result.data.map((product) => ({
+          _id: product._id,
+          productId: product._id,
+          id: product._id,
+          name: product.productName || "Unnamed Product",
+          sku: product.skuHsn || "N/A",
+          category: product.category?.name || "General",
+          price: product.salePrice || product.regularPrice || 0,
+          thumbnail: product.thumbnail?.url || product.images?.[0]?.url || null,
+          inventory: product.inventory || 0,
+        }));
+
+        setProducts(transformedProducts);
+      } else {
+        console.error("Invalid API response format:", result);
+        setProducts([]);
+      }
+    } catch (error) {
+      console.error("Error fetching vendor products:", error);
+      alert(`Failed to load products: ${error.message}`);
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
 
-  const filteredProducts = availableProducts.filter((product) => {
+  const filteredProducts = products.filter((product) => {
     const query = searchQuery.toLowerCase();
     if (!query) return true;
 
@@ -1105,19 +1174,125 @@ export const AddExtraItemModal = ({
     }
   });
 
-  const handleAdd = () => {
-    if (!selectedProduct) {
-      alert("⚠️ Please select a product!");
+  // Handle product selection
+  const handleProductSelect = (productId) => {
+    setSelectedProducts((prev) => {
+      const newSelected = { ...prev };
+      if (newSelected[productId]) {
+        delete newSelected[productId];
+      } else {
+        newSelected[productId] = 1; // Default quantity 1
+      }
+      return newSelected;
+    });
+  };
+
+  // Handle quantity change
+  const handleQuantityChange = (productId, quantity, e) => {
+    e?.stopPropagation();
+    const qty = parseInt(quantity) || 1;
+    if (qty < 1) return;
+
+    setSelectedProducts((prev) => ({
+      ...prev,
+      [productId]: qty,
+    }));
+  };
+
+  // Handle submit - call API with all selected items
+  const handleSubmit = async () => {
+    const selectedItems = Object.keys(selectedProducts);
+    if (selectedItems.length === 0) {
+      alert("⚠️ Please select at least one product!");
       return;
     }
-    if (quantity < 1) {
-      alert("⚠️ Quantity must be at least 1!");
-      return;
+
+    try {
+      setSubmitting(true);
+
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
+
+      if (!token) {
+        alert("⚠️ Authentication required. Please login again.");
+        return;
+      }
+
+      // Get MongoDB order ID
+      if (!orderId) {
+        alert("⚠️ Order ID not found. Please refresh the page.");
+        return;
+      }
+
+      // First, fetch order to get MongoDB _id
+      const orderResponse = await fetch(
+        `${BASE_URL}/api/checkout/vendor/order/${orderId}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (!orderResponse.ok) {
+        throw new Error("Failed to fetch order details");
+      }
+
+      const orderResult = await orderResponse.json();
+      const mongoOrderId = orderResult.data?._id || orderId;
+
+      const items = selectedItems.map((productId) => ({
+        productId: productId,
+        quantity: selectedProducts[productId],
+      }));
+
+      const requestBody = {
+        items: items,
+      };
+
+      const apiUrl = `${BASE_URL}/api/checkout/vendor/order/${mongoOrderId}/items`;
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || `Failed to add items: ${response.status}`);
+      }
+
+      alert(
+        `✅ Items Added Successfully!\n\n${selectedItems.length} product(s) added to the order.`,
+      );
+
+      // Call onAddItem callback for each item (for local state update)
+      selectedItems.forEach((productId) => {
+        const product = products.find((p) => p.productId === productId);
+        if (product) {
+          onAddItem(product, selectedProducts[productId]);
+        }
+      });
+
+      // Reset and close
+      setSelectedProducts({});
+      setSearchQuery("");
+      onClose();
+    } catch (error) {
+      console.error("Error adding items:", error);
+      alert(`❌ Failed to add items: ${error.message}\n\nPlease try again.`);
+    } finally {
+      setSubmitting(false);
     }
-    onAddItem(selectedProduct, quantity);
-    setSelectedProduct(null);
-    setQuantity(1);
-    setSearchQuery("");
   };
 
   return (
@@ -1204,93 +1379,166 @@ export const AddExtraItemModal = ({
           </div>
         </div>
 
-        <div className="space-y-3 mb-6 max-h-80 overflow-y-auto">
-          {filteredProducts.length === 0 ? (
-            <div className="text-center py-8">
-              <Package className="mx-auto text-gray-300 mb-3" size={48} />
-              <p className="text-gray-500 font-medium">No products found</p>
-            </div>
-          ) : (
-            filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                onClick={() => setSelectedProduct(product)}
-                className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                  selectedProduct?.id === product.id
-                    ? "border-purple-500 bg-purple-50 shadow-lg"
-                    : "border-gray-200 hover:border-purple-300 hover:shadow-md"
-                }`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-white rounded-lg border-2 border-purple-500 flex items-center justify-center flex-shrink-0">
-                    <Package className="text-purple-500" size={32} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-lg font-bold text-gray-900">
-                        {product.name}
-                      </h4>
-                      {selectedProduct?.id === product.id && (
-                        <CheckCircle className="text-purple-600" size={24} />
-                      )}
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="text-gray-700">
-                        <span className="font-semibold">SKU:</span>{" "}
-                        {product.sku}
-                      </div>
-                      <div className="text-gray-700">
-                        <span className="font-semibold">Category:</span>{" "}
-                        {product.category}
-                      </div>
-                      <div className="text-gray-700">
-                        <span className="font-semibold">Price:</span> ₹
-                        {product.price.toLocaleString("en-IN")}
-                      </div>
-                      <div className="text-gray-700">
-                        <span className="font-semibold">Seller:</span>{" "}
-                        {product.seller}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mx-auto"></div>
+            <p className="text-gray-600 mt-4">Loading products...</p>
+          </div>
+        ) : (
+          <div className="space-y-3 mb-6 max-h-80 overflow-y-auto">
+            {filteredProducts.length === 0 ? (
+              <div className="text-center py-8">
+                <Package className="mx-auto text-gray-300 mb-3" size={48} />
+                <p className="text-gray-500 font-medium">No products found</p>
+                <p className="text-gray-400 text-sm mt-2">
+                  {searchQuery
+                    ? "Try adjusting your search criteria"
+                    : "No products available"}
+                </p>
               </div>
-            ))
-          )}
-        </div>
+            ) : (
+              filteredProducts.map((product) => {
+                const isSelected = !!selectedProducts[product.productId];
+                const quantity = selectedProducts[product.productId] || 1;
 
-        {selectedProduct && (
+                return (
+                  <div
+                    key={product.productId}
+                    onClick={() => handleProductSelect(product.productId)}
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      isSelected
+                        ? "border-purple-500 bg-purple-50 shadow-lg"
+                        : "border-gray-200 hover:border-purple-300 hover:shadow-md"
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Product Image */}
+                      <div className="w-20 h-20 flex-shrink-0">
+                        {product.thumbnail ? (
+                          <img
+                            src={product.thumbnail}
+                            alt={product.name}
+                            className="w-full h-full object-cover rounded-lg border-2 border-purple-200"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-100 rounded-lg border-2 border-purple-200 flex items-center justify-center">
+                            <Package className="text-purple-400" size={32} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-lg font-bold text-gray-900 truncate">
+                            {product.name}
+                          </h4>
+                          {isSelected && (
+                            <CheckCircle className="text-purple-600 flex-shrink-0" size={24} />
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div className="text-gray-700">
+                            <span className="font-semibold">SKU:</span>{" "}
+                            {product.sku}
+                          </div>
+                          <div className="text-gray-700">
+                            <span className="font-semibold">Category:</span>{" "}
+                            {product.category}
+                          </div>
+                          <div className="text-gray-700">
+                            <span className="font-semibold">Price:</span> ₹
+                            {product.price.toLocaleString("en-IN")}
+                          </div>
+                          <div className="text-gray-700">
+                            <span className="font-semibold">Stock:</span>{" "}
+                            {product.inventory}
+                          </div>
+                        </div>
+
+                        {/* Quantity Input (only if selected) */}
+                        {isSelected && (
+                          <div className="mt-3 flex items-center gap-2">
+                            <label className="text-sm font-semibold text-purple-900">
+                              Quantity:
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={(e) =>
+                                  handleQuantityChange(
+                                    product.productId,
+                                    quantity - 1,
+                                    e,
+                                  )
+                                }
+                                className="w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded flex items-center justify-center font-bold transition-all"
+                              >
+                                −
+                              </button>
+                              <input
+                                type="number"
+                                min="1"
+                                value={quantity}
+                                onChange={(e) =>
+                                  handleQuantityChange(
+                                    product.productId,
+                                    e.target.value,
+                                    e,
+                                  )
+                                }
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-16 px-2 py-1 border-2 border-purple-300 rounded text-center text-sm font-semibold focus:border-purple-500 focus:outline-none"
+                              />
+                              <button
+                                onClick={(e) =>
+                                  handleQuantityChange(
+                                    product.productId,
+                                    quantity + 1,
+                                    e,
+                                  )
+                                }
+                                className="w-8 h-8 bg-green-500 hover:bg-green-600 text-white rounded flex items-center justify-center font-bold transition-all"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {Object.keys(selectedProducts).length > 0 && (
           <div className="bg-purple-50 border-2 border-purple-500 p-4 rounded-lg mb-4">
-            <h4 className="font-bold text-purple-900 mb-3">
-              Selected: {selectedProduct.name}
+            <h4 className="font-bold text-purple-900 mb-2">
+              Selected Items: {Object.keys(selectedProducts).length}
             </h4>
-            <div className="flex items-center gap-4">
-              <label className="text-sm font-bold text-purple-900">
-                Quantity:
-              </label>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold transition-all"
-                >
-                  −
-                </button>
-                <input
-                  type="number"
-                  value={quantity}
-                  onChange={(e) =>
-                    setQuantity(Math.max(1, parseInt(e.target.value) || 1))
-                  }
-                  min="1"
-                  className="w-20 px-3 py-2 border-2 border-purple-300 rounded-lg text-center font-bold text-lg focus:border-purple-500 focus:outline-none"
-                />
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-bold transition-all"
-                >
-                  +
-                </button>
-              </div>
+            <div className="space-y-2 text-sm">
+              {Object.keys(selectedProducts).map((productId) => {
+                const product = products.find((p) => p.productId === productId);
+                return product ? (
+                  <div
+                    key={productId}
+                    className="flex items-center justify-between text-gray-700"
+                  >
+                    <span>
+                      {product.name} (Qty: {selectedProducts[productId]})
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleProductSelect(productId);
+                      }}
+                      className="text-red-600 hover:text-red-700 font-bold"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : null;
+              })}
             </div>
           </div>
         )}
@@ -1298,21 +1546,31 @@ export const AddExtraItemModal = ({
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 rounded-lg font-bold transition-all"
+            disabled={submitting}
+            className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 rounded-lg font-bold transition-all disabled:opacity-50"
           >
             Cancel
           </button>
           <button
-            onClick={handleAdd}
-            disabled={!selectedProduct}
+            onClick={handleSubmit}
+            disabled={Object.keys(selectedProducts).length === 0 || submitting}
             className={`flex-1 ${
-              !selectedProduct
+              Object.keys(selectedProducts).length === 0 || submitting
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-purple-600 hover:bg-purple-700"
             } text-white px-4 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2`}
           >
-            <Plus size={20} />
-            Add to Bag
+            {submitting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                Adding...
+              </>
+            ) : (
+              <>
+                <Plus size={20} />
+                Submit ({Object.keys(selectedProducts).length})
+              </>
+            )}
           </button>
         </div>
       </div>

@@ -30,6 +30,10 @@ const AdminProfile = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [editFormData, setEditFormData] = useState({});
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [profileImage, setProfileImage] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState(null);
+  const [companyLogo, setCompanyLogo] = useState(null);
+  const [companyLogoPreview, setCompanyLogoPreview] = useState(null);
 
   // Fetch admin profile data
   useEffect(() => {
@@ -43,6 +47,23 @@ const AdminProfile = () => {
 
         if (result.success) {
           setProfileData(result.data);
+
+          // Set profile image preview (check multiple possible field names)
+          const imageUrl = result.data.profileImage || 
+                          result.data.profilePhoto?.url || 
+                          result.data.profilePhoto ||
+                          null;
+          if (imageUrl) {
+            setProfileImagePreview(imageUrl);
+          }
+          
+          // Set company logo preview
+          const logoUrl = result.data.companyLogo || 
+                         result.data.companyLogo?.url ||
+                         null;
+          if (logoUrl) {
+            setCompanyLogoPreview(logoUrl);
+          }
 
           // Map nested response data to flat structure for editing
           const flatFormData = {
@@ -112,119 +133,331 @@ const AdminProfile = () => {
     }));
   };
 
+  // Handle profile image change
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        alert("Please upload a valid image file");
+        return;
+      }
+      
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Image size should be less than 5MB");
+        return;
+      }
+
+      setProfileImage(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle remove image
+  const handleRemoveImage = () => {
+    setProfileImage(null);
+    setProfileImagePreview(null);
+    // Reset file input
+    const fileInput = document.getElementById("profile-image-upload");
+    if (fileInput) {
+      fileInput.value = "";
+    }
+  };
+
+  // Handle company logo change
+  const handleCompanyLogoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        alert("Please upload a valid image file");
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Image size should be less than 5MB");
+        return;
+      }
+      setCompanyLogo(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCompanyLogoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle remove company logo
+  const handleRemoveCompanyLogo = () => {
+    setCompanyLogo(null);
+    setCompanyLogoPreview(null);
+    const fileInput = document.getElementById("company-logo-upload");
+    if (fileInput) {
+      fileInput.value = "";
+    }
+  };
+
   // Handle save profile
   const handleSaveProfile = async () => {
     try {
       setIsSaving(true);
       setError(null);
 
-      // Prepare flat request body according to API structure
-      const requestBody = {
-        name: editFormData.name,
-        companyName: editFormData.companyName,
-        legalName: editFormData.legalName,
-        website: editFormData.website,
-        alternatePhone: editFormData.alternatePhone,
-        contactPerson: editFormData.contactPerson,
-        designation: editFormData.designation,
-        bankName: editFormData.bankName,
-        branchName: editFormData.branchName,
-        accountNumber: editFormData.accountNumber,
-        ifscCode: editFormData.ifscCode,
-        foundedYear: editFormData.foundedYear
-          ? Number(editFormData.foundedYear)
-          : undefined,
-        registrationNumber: editFormData.registrationNumber,
-        gstNumber: editFormData.gstNumber,
-        panNumber: editFormData.panNumber,
-        streetAddress: editFormData.streetAddress,
-        city: editFormData.city,
-        state: editFormData.state,
-        pincode: editFormData.pincode,
-        country: editFormData.country,
-        latitude: editFormData.latitude
-          ? Number(editFormData.latitude)
-          : undefined,
-        longitude: editFormData.longitude
-          ? Number(editFormData.longitude)
-          : undefined,
-        yearsInBusiness: editFormData.yearsInBusiness
-          ? Number(editFormData.yearsInBusiness)
-          : undefined,
-        totalEmployees: editFormData.totalEmployees
-          ? Number(editFormData.totalEmployees)
-          : undefined,
-        activeClients: editFormData.activeClients
-          ? Number(editFormData.activeClients)
-          : undefined,
-        totalLeads: editFormData.totalLeads
-          ? Number(editFormData.totalLeads)
-          : undefined,
-      };
-
-      // Remove undefined values
-      Object.keys(requestBody).forEach((key) => {
-        if (requestBody[key] === undefined || requestBody[key] === "") {
-          delete requestBody[key];
+      // If profile image or company logo is selected, use FormData
+      if (profileImage || companyLogo) {
+        const formData = new FormData();
+        
+        // Add all form fields
+        formData.append("name", editFormData.name || "");
+        formData.append("companyName", editFormData.companyName || "");
+        formData.append("legalName", editFormData.legalName || "");
+        formData.append("website", editFormData.website || "");
+        formData.append("alternatePhone", editFormData.alternatePhone || "");
+        formData.append("contactPerson", editFormData.contactPerson || "");
+        formData.append("designation", editFormData.designation || "");
+        formData.append("bankName", editFormData.bankName || "");
+        formData.append("branchName", editFormData.branchName || "");
+        formData.append("accountNumber", editFormData.accountNumber || "");
+        formData.append("ifscCode", editFormData.ifscCode || "");
+        if (editFormData.foundedYear) {
+          formData.append("foundedYear", Number(editFormData.foundedYear));
         }
-      });
+        formData.append("registrationNumber", editFormData.registrationNumber || "");
+        formData.append("gstNumber", editFormData.gstNumber || "");
+        formData.append("panNumber", editFormData.panNumber || "");
+        formData.append("streetAddress", editFormData.streetAddress || "");
+        formData.append("city", editFormData.city || "");
+        formData.append("state", editFormData.state || "");
+        formData.append("pincode", editFormData.pincode || "");
+        formData.append("country", editFormData.country || "India");
+        if (editFormData.latitude) {
+          formData.append("latitude", Number(editFormData.latitude));
+        }
+        if (editFormData.longitude) {
+          formData.append("longitude", Number(editFormData.longitude));
+        }
+        if (editFormData.yearsInBusiness) {
+          formData.append("yearsInBusiness", Number(editFormData.yearsInBusiness));
+        }
+        if (editFormData.totalEmployees) {
+          formData.append("totalEmployees", Number(editFormData.totalEmployees));
+        }
+        if (editFormData.activeClients) {
+          formData.append("activeClients", Number(editFormData.activeClients));
+        }
+        if (editFormData.totalLeads) {
+          formData.append("totalLeads", Number(editFormData.totalLeads));
+        }
+        
+        // Add profile image - API only accepts "profileImage" field name
+        if (profileImage) {
+          formData.append("profileImage", profileImage);
+        }
+        
+        // Add company logo
+        if (companyLogo) {
+          formData.append("companyLogo", companyLogo);
+        }
 
-      const response = await api.put("/api/admin/profile", requestBody);
-      const result = response.data;
+        // API interceptor will handle FormData Content-Type automatically
+        const response = await api.put("/api/admin/profile", formData);
+        const result = response.data;
+        
+        if (result.success) {
+          setProfileData(result.data);
+          
+          // Update profile image preview (check multiple possible field names)
+          const updatedImageUrl = result.data.profileImage || 
+                                 result.data.profilePhoto?.url || 
+                                 result.data.profilePhoto ||
+                                 null;
+          if (updatedImageUrl) {
+            setProfileImagePreview(updatedImageUrl);
+          }
+          setProfileImage(null); // Clear selected file
+          
+          // Update company logo preview
+          const updatedLogoUrl = result.data.companyLogo || 
+                                result.data.companyLogo?.url ||
+                                null;
+          if (updatedLogoUrl) {
+            setCompanyLogoPreview(updatedLogoUrl);
+          }
+          setCompanyLogo(null); // Clear selected file
 
-      if (result.success) {
-        setProfileData(result.data);
+          // Map the updated response back to flat form data
+          const flatFormData = {
+            name: result.data.name || "",
+            email: result.data.email || "",
+            mobile: result.data.mobile || "",
+            companyName: result.data.companyName || "",
+            legalName: result.data.legalName || "",
+            website: result.data.website || "",
+            alternatePhone: result.data.alternatePhone || "",
+            contactPerson: result.data.contactPerson || "",
+            designation: result.data.designation || "",
+            foundedYear: result.data.foundedYear || "",
+            bankName: result.data.bankName || "",
+            branchName: result.data.branchName || "",
+            accountNumber: result.data.accountNumber || "",
+            ifscCode: result.data.ifscCode || "",
+            registrationNumber: result.data.registrationNumber || "",
+            gstNumber: result.data.gstNumber || "",
+            panNumber: result.data.panNumber || "",
+            streetAddress: result.data.officeAddress?.streetAddress || "",
+            city: result.data.officeAddress?.city || "",
+            state: result.data.officeAddress?.state || "",
+            pincode: result.data.officeAddress?.pincode || "",
+            country: result.data.officeAddress?.country || "India",
+            latitude: result.data.officeAddress?.latitude || "",
+            longitude: result.data.officeAddress?.longitude || "",
+            yearsInBusiness: result.data.keyMetrics?.yearsInBusiness || "",
+            totalEmployees: result.data.keyMetrics?.totalEmployees || "",
+            activeClients: result.data.keyMetrics?.activeClients || "",
+            totalLeads: result.data.keyMetrics?.totalLeads || "",
+          };
 
-        // Map the updated response back to flat form data
-        const flatFormData = {
-          name: result.data.name || "",
-          email: result.data.email || "",
-          mobile: result.data.mobile || "",
-          companyName: result.data.companyName || "",
-          legalName: result.data.legalName || "",
-          website: result.data.website || "",
-          alternatePhone: result.data.alternatePhone || "",
-          contactPerson: result.data.contactPerson || "",
-          designation: result.data.designation || "",
-          foundedYear: result.data.foundedYear || "",
-          bankName: result.data.bankName || "",
-          branchName: result.data.branchName || "",
-          accountNumber: result.data.accountNumber || "",
-          ifscCode: result.data.ifscCode || "",
-          registrationNumber: result.data.registrationNumber || "",
-          gstNumber: result.data.gstNumber || "",
-          panNumber: result.data.panNumber || "",
-          streetAddress: result.data.officeAddress?.streetAddress || "",
-          city: result.data.officeAddress?.city || "",
-          state: result.data.officeAddress?.state || "",
-          pincode: result.data.officeAddress?.pincode || "",
-          country: result.data.officeAddress?.country || "India",
-          latitude: result.data.officeAddress?.latitude || "",
-          longitude: result.data.officeAddress?.longitude || "",
-          yearsInBusiness: result.data.keyMetrics?.yearsInBusiness || "",
-          totalEmployees: result.data.keyMetrics?.totalEmployees || "",
-          activeClients: result.data.keyMetrics?.activeClients || "",
-          totalLeads: result.data.keyMetrics?.totalLeads || "",
+          setEditFormData(flatFormData);
+          setIsEditing(false);
+          setSaveSuccess(true);
+
+          // Hide success message after 3 seconds
+          setTimeout(() => {
+            setSaveSuccess(false);
+          }, 3000);
+        } else {
+          setError(result.message || "Failed to update profile");
+        }
+      } else {
+        // No image, use regular JSON request
+        const requestBody = {
+          name: editFormData.name,
+          companyName: editFormData.companyName,
+          legalName: editFormData.legalName,
+          website: editFormData.website,
+          alternatePhone: editFormData.alternatePhone,
+          contactPerson: editFormData.contactPerson,
+          designation: editFormData.designation,
+          bankName: editFormData.bankName,
+          branchName: editFormData.branchName,
+          accountNumber: editFormData.accountNumber,
+          ifscCode: editFormData.ifscCode,
+          foundedYear: editFormData.foundedYear
+            ? Number(editFormData.foundedYear)
+            : undefined,
+          registrationNumber: editFormData.registrationNumber,
+          gstNumber: editFormData.gstNumber,
+          panNumber: editFormData.panNumber,
+          streetAddress: editFormData.streetAddress,
+          city: editFormData.city,
+          state: editFormData.state,
+          pincode: editFormData.pincode,
+          country: editFormData.country,
+          latitude: editFormData.latitude
+            ? Number(editFormData.latitude)
+            : undefined,
+          longitude: editFormData.longitude
+            ? Number(editFormData.longitude)
+            : undefined,
+          yearsInBusiness: editFormData.yearsInBusiness
+            ? Number(editFormData.yearsInBusiness)
+            : undefined,
+          totalEmployees: editFormData.totalEmployees
+            ? Number(editFormData.totalEmployees)
+            : undefined,
+          activeClients: editFormData.activeClients
+            ? Number(editFormData.activeClients)
+            : undefined,
+          totalLeads: editFormData.totalLeads
+            ? Number(editFormData.totalLeads)
+            : undefined,
         };
 
-        setEditFormData(flatFormData);
-        setIsEditing(false);
-        setSaveSuccess(true);
+        // Remove undefined values
+        Object.keys(requestBody).forEach((key) => {
+          if (requestBody[key] === undefined || requestBody[key] === "") {
+            delete requestBody[key];
+          }
+        });
 
-        // Hide success message after 3 seconds
-        setTimeout(() => {
-          setSaveSuccess(false);
-        }, 3000);
-      } else {
-        setError(result.message || "Failed to update profile");
+        const response = await api.put("/api/admin/profile", requestBody);
+        const result = response.data;
+
+        if (result.success) {
+          setProfileData(result.data);
+
+          // Map the updated response back to flat form data
+          const flatFormData = {
+            name: result.data.name || "",
+            email: result.data.email || "",
+            mobile: result.data.mobile || "",
+            companyName: result.data.companyName || "",
+            legalName: result.data.legalName || "",
+            website: result.data.website || "",
+            alternatePhone: result.data.alternatePhone || "",
+            contactPerson: result.data.contactPerson || "",
+            designation: result.data.designation || "",
+            foundedYear: result.data.foundedYear || "",
+            bankName: result.data.bankName || "",
+            branchName: result.data.branchName || "",
+            accountNumber: result.data.accountNumber || "",
+            ifscCode: result.data.ifscCode || "",
+            registrationNumber: result.data.registrationNumber || "",
+            gstNumber: result.data.gstNumber || "",
+            panNumber: result.data.panNumber || "",
+            streetAddress: result.data.officeAddress?.streetAddress || "",
+            city: result.data.officeAddress?.city || "",
+            state: result.data.officeAddress?.state || "",
+            pincode: result.data.officeAddress?.pincode || "",
+            country: result.data.officeAddress?.country || "India",
+            latitude: result.data.officeAddress?.latitude || "",
+            longitude: result.data.officeAddress?.longitude || "",
+            yearsInBusiness: result.data.keyMetrics?.yearsInBusiness || "",
+            totalEmployees: result.data.keyMetrics?.totalEmployees || "",
+            activeClients: result.data.keyMetrics?.activeClients || "",
+            totalLeads: result.data.keyMetrics?.totalLeads || "",
+          };
+
+          setEditFormData(flatFormData);
+          setIsEditing(false);
+          setSaveSuccess(true);
+
+          // Hide success message after 3 seconds
+          setTimeout(() => {
+            setSaveSuccess(false);
+          }, 3000);
+        } else {
+          setError(result.message || "Failed to update profile");
+        }
       }
     } catch (error) {
       console.error("Error updating profile:", error);
-      setError(
-        error.response?.data?.message ||
-          error.message ||
-          "Error updating profile data",
-      );
+      console.error("Error details:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+      });
+      
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error ||
+                          error.message ||
+                          "Error updating profile data. Please check console for details.";
+      
+      setError(errorMessage);
+      
+      // Show alert for better visibility
+      if (error.response?.status === 413) {
+        alert("File too large! Please upload an image smaller than 5MB.");
+      } else if (error.response?.status === 400) {
+        alert("Invalid file format. Please upload a valid image file (JPG, PNG, etc.).");
+      } else if (error.response?.status === 500) {
+        alert("Server error. Please try again later.");
+      }
     } finally {
       setIsSaving(false);
     }
@@ -265,6 +498,27 @@ const AdminProfile = () => {
     };
 
     setEditFormData(flatFormData);
+    // Reset image state
+    setProfileImage(null);
+    setCompanyLogo(null);
+    const originalImageUrl = profileData.profileImage || 
+                             profileData.profilePhoto?.url || 
+                             profileData.profilePhoto ||
+                             null;
+    setProfileImagePreview(originalImageUrl);
+    const originalLogoUrl = profileData.companyLogo || 
+                            profileData.companyLogo?.url ||
+                            null;
+    setCompanyLogoPreview(originalLogoUrl);
+    // Reset file inputs
+    const fileInput = document.getElementById("profile-image-upload");
+    const logoInput = document.getElementById("company-logo-upload");
+    if (fileInput) {
+      fileInput.value = "";
+    }
+    if (logoInput) {
+      logoInput.value = "";
+    }
     setIsEditing(false);
     setError(null);
   };
@@ -358,9 +612,71 @@ const AdminProfile = () => {
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="flex items-center gap-4 mb-4 md:mb-0">
               {/* Profile Picture */}
-              <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg ring-4 ring-orange-300">
-                <UserIcon className="w-12 h-12 text-orange-600" />
+              <div className="relative">
+                <label
+                  htmlFor="profile-image-upload"
+                  className={`relative block ${isEditing ? 'cursor-pointer' : 'cursor-default'}`}
+                >
+                  <div className={`w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg ring-4 ring-orange-300 overflow-hidden transition-all ${isEditing ? 'hover:ring-orange-400 hover:scale-105' : ''}`}>
+                    {profileImagePreview || profileData.profileImage || profileData.profilePhoto?.url ? (
+                      <img
+                        src={profileImagePreview || profileData.profileImage || profileData.profilePhoto?.url}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    {!(profileImagePreview || profileData.profileImage || profileData.profilePhoto?.url) && (
+                      <UserIcon className="w-12 h-12 text-orange-600" />
+                    )}
+                    {isEditing && (
+                      <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all">
+                        <PencilIcon className="w-6 h-6 text-white opacity-0 hover:opacity-100 transition-opacity" />
+                      </div>
+                    )}
+                  </div>
+                  {isEditing && (
+                    <div className="absolute -bottom-1 -right-1 bg-orange-600 text-white rounded-full p-1.5 shadow-lg z-10">
+                      <PencilIcon className="w-3 h-3" />
+                    </div>
+                  )}
+                </label>
+                <input
+                  type="file"
+                  id="profile-image-upload"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                  disabled={!isEditing}
+                />
               </div>
+              {/* Upload Button - More Visible */}
+              {isEditing && (
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="profile-image-upload"
+                    className="flex items-center gap-2 bg-white text-orange-600 px-4 py-2.5 rounded-lg font-semibold hover:bg-orange-50 transition-colors shadow-md cursor-pointer border-2 border-orange-300 hover:border-orange-400"
+                  >
+                    <PencilIcon className="w-5 h-5" />
+                    <span className="text-sm font-medium">Upload Profile Image</span>
+                  </label>
+                  {profileImage && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-600">{profileImage.name}</span>
+                      <button
+                        onClick={handleRemoveImage}
+                        className="flex items-center gap-1 bg-red-50 text-red-600 px-3 py-1.5 rounded-lg font-semibold hover:bg-red-100 transition-colors shadow-sm border border-red-200 text-xs"
+                      >
+                        <XMarkIcon className="w-3 h-3" />
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="text-white">
                 <h1 className="text-3xl font-bold mb-1">{profileData.name}</h1>
                 <p className="text-orange-100 text-lg">
@@ -588,6 +904,58 @@ const AdminProfile = () => {
                     handleInputChange("registrationNumber", value)
                   }
                 />
+                {/* Company Logo Upload */}
+                <div className="sm:col-span-2">
+                  <div className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors border border-gray-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <BuildingOfficeIcon className="w-4 h-4 text-gray-500" />
+                      <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+                        Company Logo
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {companyLogoPreview ? (
+                        <div className="relative">
+                          <img
+                            src={companyLogoPreview}
+                            alt="Company Logo Preview"
+                            className="w-32 h-32 rounded-lg object-cover border-2 border-orange-300"
+                          />
+                          {isEditing && (
+                            <button
+                              onClick={handleRemoveCompanyLogo}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                            >
+                              <XMarkIcon className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="w-32 h-32 rounded-lg bg-gray-200 flex items-center justify-center border-2 border-dashed border-gray-300">
+                          <BuildingOfficeIcon className="w-12 h-12 text-gray-400" />
+                        </div>
+                      )}
+                      {isEditing && (
+                        <label
+                          htmlFor="company-logo-upload"
+                          className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 cursor-pointer transition-colors shadow-md"
+                        >
+                          <PencilIcon className="w-5 h-5" />
+                          <span className="text-sm font-medium">
+                            {companyLogo ? "Change Logo" : "Upload Logo"}
+                          </span>
+                          <input
+                            type="file"
+                            id="company-logo-upload"
+                            accept="image/*"
+                            onChange={handleCompanyLogoChange}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </InfoGrid>
             </InfoSection>
 
