@@ -1092,7 +1092,6 @@ const AllProduct = () => {
     link.click();
   };
 
-<<<<<<< HEAD
   // 🟢 Generate QR Code Function (Show in Modal)
   const handleGenerateQR = async (product) => {
     try {
@@ -1148,7 +1147,6 @@ const AllProduct = () => {
     }
   };
 
-<<<<<<< HEAD
   // 🟢 Download QR Code from Modal
   const handleDownloadQR = () => {
     if (!qrCodeDataUrl) return;

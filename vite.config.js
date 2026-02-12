@@ -12,9 +12,11 @@ export default defineConfig({
     hmr: {
       clientPort: 5173,
       protocol: "ws",
+      overlay: true,
     },
     watch: {
       usePolling: false,
+      interval: 100,
     },
   },
   build: {
