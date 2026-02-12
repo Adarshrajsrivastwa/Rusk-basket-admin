@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
-import { Download, Eye, Truck } from "lucide-react";
+import { Download, Eye } from "lucide-react";
 import { BASE_URL } from "../../api/api";
 
 const API_BASE_URL = `${BASE_URL}/api`;
@@ -92,6 +92,7 @@ const AllOrder = () => {
         // Transform API data to match component structure
         const transformedOrders = result.orders.map((order) => ({
           id: order._id,
+          _id: order._id, // Keep MongoDB _id for invoice navigation
           orderId: order.orderNumber || order.orderId,
           date: order.date || "N/A",
           vendor: order.vendor || "Unknown Vendor",
@@ -217,18 +218,14 @@ const AllOrder = () => {
     navigate(`/orders/all?tab=${tabKey}`);
   };
 
-  // Handle download invoice
+  // Handle download invoice - navigate to invoice page
   const handleDownloadInvoice = (orderId) => {
-    console.log("Download invoice for order:", orderId);
-    // TODO: Implement invoice download
-    alert("Invoice download feature coming soon!");
-  };
-
-  // Handle assign delivery
-  const handleAssignDelivery = (orderId) => {
-    console.log("Assign delivery for order:", orderId);
-    // TODO: Implement delivery assignment
-    alert("Delivery assignment feature coming soon!");
+    console.log("Opening invoice for order:", orderId);
+    // Navigate to invoice view page with orderId
+    navigate(`/invoice/view/${orderId}`, {
+      state: { orderId: orderId },
+      replace: false,
+    });
   };
 
   return (
@@ -333,9 +330,9 @@ const AllOrder = () => {
                     <td className="p-3">
                       <div className="flex gap-2 justify-end">
                         <button
-                          onClick={() => handleDownloadInvoice(order.id)}
+                          onClick={() => handleDownloadInvoice(order._id || order.id)}
                           className="text-orange-600 hover:text-blue-700"
-                          title="Download Invoice"
+                          title="View Invoice"
                         >
                           <Download className="w-4 h-4" />
                         </button>
@@ -345,13 +342,6 @@ const AllOrder = () => {
                           title="View Order Details"
                         >
                           <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleAssignDelivery(order.id)}
-                          className="text-orange-600 hover:text-blue-700"
-                          title="Assign Delivery"
-                        >
-                          <Truck className="w-4 h-4" />
                         </button>
                       </div>
                     </td>

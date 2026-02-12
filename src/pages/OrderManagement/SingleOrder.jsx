@@ -21,6 +21,12 @@ const SingleOrder = () => {
         setLoading(true);
         setError(null);
 
+        console.log("========================================");
+        console.log("📦 FETCHING ORDER DATA:");
+        console.log("Order ID from params:", id);
+        console.log("API Endpoint:", `${API_BASE_URL}/checkout/vendor/order/${id}`);
+        console.log("========================================");
+
         // Get token from localStorage
         const token =
           localStorage.getItem("token") || localStorage.getItem("authToken");
@@ -42,7 +48,39 @@ const SingleOrder = () => {
           },
         );
 
+        console.log("========================================");
+        console.log("📡 API RESPONSE:");
+        console.log("Response Status:", response.status);
+        console.log("Response OK:", response.ok);
+        console.log("========================================");
+
         const result = await response.json();
+
+        console.log("========================================");
+        console.log("📦 PARSED RESPONSE DATA:");
+        console.log("Full Response (JSON):", JSON.stringify(result, null, 2));
+        console.log("----------------------------------------");
+        console.log("Result type:", typeof result);
+        console.log("Result keys:", Object.keys(result));
+        console.log("Result.success:", result.success);
+        console.log("Result.message:", result.message);
+        console.log("----------------------------------------");
+        console.log("Result.data:", result.data);
+        console.log("Result.data type:", typeof result.data);
+        if (result.data) {
+          console.log("Result.data keys:", Object.keys(result.data));
+        console.log("Result.data._id:", result.data._id);
+        console.log("Result.data.orderNumber:", result.data.orderNumber);
+        console.log("Result.data.status:", result.data.status);
+        console.log("Result.data.createdAt:", result.data.createdAt);
+        console.log("Result.data.deliveryImage:", result.data.deliveryImage);
+        console.log("Result.data.deliveryImage?.url:", result.data.deliveryImage?.url);
+        console.log("Result.data.deliveredImage:", result.data.deliveredImage);
+        console.log("Result.data.deliveredImage?.url:", result.data.deliveredImage?.url);
+        console.log("Result.data.riderInfo:", result.data.riderInfo);
+        console.log("Result.data (Full JSON):", JSON.stringify(result.data, null, 2));
+        }
+        console.log("========================================");
 
         if (!response.ok || !result.success) {
           throw new Error(result.message || "Failed to fetch order data");
@@ -50,6 +88,22 @@ const SingleOrder = () => {
 
         // Transform API response to match component structure
         const transformedData = transformOrderData(result.data);
+        
+        console.log("========================================");
+        console.log("🔄 TRANSFORMED ORDER DATA:");
+        console.log("Transformed Data (JSON):", JSON.stringify(transformedData, null, 2));
+        console.log("----------------------------------------");
+        console.log("Transformed Data Keys:", Object.keys(transformedData));
+        console.log("Transformed Data._id:", transformedData._id);
+        console.log("Transformed Data.id:", transformedData.id);
+        console.log("Transformed Data.date:", transformedData.date);
+        console.log("Transformed Data.status:", transformedData.status);
+        console.log("Transformed Data.vendor:", transformedData.vendor);
+        console.log("Transformed Data.buyer:", transformedData.buyer);
+        console.log("Transformed Data.products:", transformedData.products);
+        console.log("Transformed Data.deliveryImage:", transformedData.deliveryImage);
+        console.log("Transformed Data.deliveredImage:", transformedData.deliveredImage);
+        console.log("========================================");
         
         setOrderData(transformedData);
       } catch (err) {
@@ -85,6 +139,7 @@ const SingleOrder = () => {
 
     return {
       id: apiData.orderNumber || apiData._id,
+      _id: apiData._id, // Keep MongoDB _id for invoice navigation
       date: formattedDate,
       time: formattedTime,
       vendor: {
@@ -151,6 +206,8 @@ const SingleOrder = () => {
       },
       status: apiData.status || "pending",
       couponCode: apiData.coupon?.code || null,
+      deliveryImage: apiData.deliveryImage?.url || null,
+      deliveredImage: apiData.deliveredImage?.url || null,
       rider: apiData.riderDetails || apiData.rider ? {
         id: apiData.rider?._id || apiData.riderDetails?.riderId || "N/A",
         name: apiData.rider?.fullName || apiData.riderDetails?.riderName || apiData.riderInfo?.name || "N/A",
@@ -722,7 +779,21 @@ const SingleOrder = () => {
 
         {/* Buttons */}
         <div className="flex justify-center mt-5">
-          <button className="bg-[#FF7B1D] hover:bg-[#E66A0D] text-white px-6 py-4 rounded-sm font-bold shadow-sm hover:shadow-2xl transition-all duration-200 transform hover:scale-105 text-base">
+          <button
+            onClick={() => {
+              // Use MongoDB _id from orderData or fallback to id from params
+              const orderId = orderData?._id || id;
+              if (orderId) {
+                navigate(`/invoice/view/${orderId}`, {
+                  state: { orderId: orderId },
+                  replace: false,
+                });
+              } else {
+                alert("Order ID not available");
+              }
+            }}
+            className="bg-[#FF7B1D] hover:bg-[#E66A0D] text-white px-6 py-4 rounded-sm font-bold shadow-sm hover:shadow-2xl transition-all duration-200 transform hover:scale-105 text-base"
+          >
             🧾 Download Invoice
           </button>
         </div>
@@ -730,16 +801,18 @@ const SingleOrder = () => {
         {/* Images */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-5">
           <ImageCard
-            title="Pickup Confirmation"
+            title="Delivery Image"
             subtitle="Image by Delivery Partner"
             color="orange"
             icon="📦"
+            imageUrl={orderData.deliveryImage}
           />
           <ImageCard
-            title="Delivery Confirmation"
+            title="Delivered Image"
             subtitle="Image by Delivery Partner"
             color="orange"
             icon="🚚"
+            imageUrl={orderData.deliveredImage}
           />
           <ImageCard
             title="Additional Documents"
@@ -810,18 +883,38 @@ const PriceRow = ({
   </div>
 );
 
-const ImageCard = ({ title, subtitle, color, icon }) => {
+const ImageCard = ({ title, subtitle, color, icon, imageUrl }) => {
+  const [imageError, setImageError] = useState(false);
   const colors = {
     orange: "bg-gradient-to-br from-orange-100 to-orange-200 border-[#FF7B1D]",
     gray: "bg-gradient-to-br from-gray-100 to-gray-200 border-gray-400",
   };
+  
   return (
     <div
-      className={`${colors[color]} border-4 h-64 rounded-sm flex flex-col items-center justify-center text-center p-4 hover:shadow-2xl transition-all duration-300 transform hover:scale-105`}
+      className={`${colors[color]} border-4 h-64 rounded-sm flex flex-col items-center justify-center text-center p-4 hover:shadow-2xl transition-all duration-300 transform hover:scale-105 overflow-hidden relative`}
     >
-      <div className="text-6xl mb-3">{icon}</div>
-      <p className="font-bold text-gray-900 text-base">{title}</p>
-      <p className="text-sm text-gray-700 mt-2 font-semibold">{subtitle}</p>
+      {imageUrl && !imageError ? (
+        <>
+          <img
+            src={imageUrl}
+            alt={title}
+            className="w-full h-full object-cover absolute inset-0"
+            onError={() => setImageError(true)}
+          />
+          <div className="absolute inset-0 bg-black bg-opacity-30 flex flex-col items-center justify-center text-white z-10">
+            <div className="text-4xl mb-2">{icon}</div>
+            <p className="font-bold text-white text-base">{title}</p>
+            <p className="text-xs text-white mt-1 font-semibold">{subtitle}</p>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="text-6xl mb-3">{icon}</div>
+          <p className="font-bold text-gray-900 text-base">{title}</p>
+          <p className="text-sm text-gray-700 mt-2 font-semibold">{subtitle}</p>
+        </>
+      )}
     </div>
   );
 };

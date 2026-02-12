@@ -551,7 +551,6 @@ const Sidebar = () => {
         // { name: "Pending Order", path: "/orders/pending" },
         // { name: "Delivered", path: "/orders/all?tab=delivered" },
         // { name: "Cancel", path: "/orders/all?tab=cancel" },
-        { name: "Invoice", path: "/invoice" },
       ],
     },
     {

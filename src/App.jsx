@@ -537,6 +537,7 @@ function AppContent() {
         <Route path="/orders/all" element={<AllOrder />} />
         <Route path="/order/:id" element={<SingleOrder />} />
         <Route path="/invoice" element={<Invoice />} />
+        <Route path="/invoice/view/:orderId" element={<InvoiceView />} />
         <Route path="/invoice/view" element={<InvoiceView />} />
         <Route path="/orders/:id/bag-qr-scan" element={<BagQRScan />} />
         <Route path="/orders/:id/add-extra-items" element={<AddExtraItemPage />} />

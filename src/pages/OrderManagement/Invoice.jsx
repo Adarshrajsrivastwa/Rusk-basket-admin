@@ -71,32 +71,46 @@ const InvoicePage = () => {
         const result = await response.json();
 
         if (result.success && result.data) {
+          // Handle both array response and object with invoices property
+          const invoicesData = Array.isArray(result.data) 
+            ? result.data 
+            : (result.data.invoices || []);
+          
           // Transform API data to match component structure
-          const transformedInvoices = result.data.invoices.map((invoice) => ({
-            id: invoice._id, // Keep _id for API calls
-            code: invoice.code || invoice._id, // Use code for display, fallback to _id
-            invoiceNumber: invoice.invoiceNumber,
-            date: invoice.date || invoice.createdAt,
-            vendor:
-              invoice.vendor?.vendorName ||
-              invoice.vendor?.storeName ||
-              "Unknown",
-            vendorId: invoice.vendor?._id,
-            user: invoice.user?.userName || invoice.userName || "Unknown",
-            userId: invoice.user?._id,
-            orderId: invoice.order?.orderNumber || invoice.orderId,
-            orderStatus: invoice.order?.status,
-            amount: invoice.amount || 0,
-            payment: invoice.payment?.method?.toUpperCase() || "COD",
-            paymentStatus: invoice.payment?.status,
-            status: capitalizeStatus(invoice.status),
-            serialNumber: invoice.serialNumber,
-          }));
+          const transformedInvoices = invoicesData
+            .map((invoice, index) => ({
+              id: invoice._id, // Keep _id for API calls
+              code: invoice.code || invoice.invoiceNumber || `INV${String(invoice._id).slice(-6).toUpperCase()}`,
+              invoiceNumber: invoice.invoiceNumber || invoice.code || `INV${String(invoice._id).slice(-6).toUpperCase()}`,
+              date: invoice.date || invoice.createdAt,
+              vendor:
+                invoice.vendor?.vendorName ||
+                invoice.vendor?.storeName ||
+                "N/A",
+              vendorId: invoice.vendor?._id,
+              user: invoice.user?.userName || invoice.userName || "N/A",
+              userId: invoice.user?._id,
+              orderId: invoice.orderNumber || invoice.order?.orderNumber || invoice.orderId || "N/A",
+              orderStatus: invoice.order?.status,
+              amount: invoice.amount || invoice.pricing?.totalAmount || 0,
+              payment: invoice.payment?.method?.toUpperCase() || "COD",
+              paymentStatus: invoice.payment?.status,
+              status: capitalizeStatus(invoice.status),
+              serialNumber: invoice.serialNumber || index + 1,
+            }))
+            // Filter out invoices with PROCESSING status
+            .filter((invoice) => {
+              const orderStatus = invoice.orderStatus?.toUpperCase();
+              const invoiceStatus = invoice.status?.toUpperCase();
+              return orderStatus !== "PROCESSING" && invoiceStatus !== "PROCESSING";
+            });
 
           setApiInvoices(transformedInvoices);
           setInvoices(transformedInvoices);
-          setTotalInvoices(result.data.pagination.total);
-          setTotalPages(result.data.pagination.pages);
+          // Handle pagination from different response structures
+          const pagination = result.data.pagination || result.pagination || {};
+          setTotalInvoices(pagination.total || transformedInvoices.length);
+          setTotalPages(pagination.pages || 1);
         } else {
           throw new Error("Invalid API response");
         }
@@ -185,11 +199,14 @@ const InvoicePage = () => {
 
   const handleViewInvoice = (invoiceId) => {
     const invoiceData = invoices.find((inv) => inv.id === invoiceId);
-    if (invoiceData) {
-      navigate("/invoice/view", {
-        state: { invoice: invoiceData },
+    if (invoiceData && invoiceData.orderId) {
+      // Navigate with orderId for the new API endpoint
+      navigate(`/invoice/view/${invoiceData.orderId}`, {
+        state: { orderId: invoiceData.orderId, invoice: invoiceData },
         replace: false,
       });
+    } else {
+      console.error("Invoice data or orderId not found");
     }
   };
 
@@ -507,10 +524,10 @@ const InvoicePage = () => {
                         className="hover:bg-gray-50 transition-all border-b border-gray-200 group"
                       >
                         <td className="p-4 text-black font-semibold">
-                          {invoice.serialNumber || idx + 1}
+                          {(currentPage - 1) * itemsPerPage + idx + 1}
                         </td>
                         <td className="p-4 font-bold text-[#FF7B1D]">
-                          {invoice.code || invoice.invoiceNumber}
+                          {invoice.invoiceNumber || invoice.code || `INV${String(invoice.id).slice(-6).toUpperCase()}`}
                         </td>
                         <td className="p-4 text-black font-medium">
                           {formatDate(invoice.date)}
@@ -532,9 +549,11 @@ const InvoicePage = () => {
                         <td className="p-4">
                           <span
                             className={`px-3 py-1.5 rounded-sm text-xs font-bold shadow-sm ${
-                              invoice.payment === "COD"
+                              invoice.payment === "COD" || invoice.payment === "COD"
                                 ? "bg-[#FF7B1D] text-white"
-                                : "bg-green-500 text-white"
+                                : invoice.payment === "PREPAID" || invoice.payment === "ONLINE"
+                                ? "bg-green-500 text-white"
+                                : "bg-blue-500 text-white"
                             }`}
                           >
                             {invoice.payment}
@@ -543,8 +562,11 @@ const InvoicePage = () => {
                         <td className="p-4">
                           <span
                             className={`px-3 py-1.5 rounded-sm text-xs font-bold border-2 ${
-                              statusColors[invoice.status] ||
-                              "bg-gray-50 text-gray-700 border-gray-300"
+                              invoice.status === "Pending" || invoice.status === "pending"
+                                ? "bg-yellow-50 text-yellow-700 border-yellow-300"
+                                : invoice.status === "Paid" || invoice.status === "paid" || invoice.status === "Completed"
+                                ? "bg-green-50 text-green-700 border-green-300"
+                                : statusColors[invoice.status] || "bg-gray-50 text-gray-700 border-gray-300"
                             }`}
                           >
                             {invoice.status}

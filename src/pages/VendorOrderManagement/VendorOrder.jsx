@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
-import { Download, Eye, Truck } from "lucide-react";
+import { Download, Eye } from "lucide-react";
 import { BASE_URL } from "../../api/api";
 
 const AllOrder = () => {
@@ -143,6 +143,16 @@ const AllOrder = () => {
       statusMap[status.toLowerCase()] ||
       status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ")
     );
+  };
+
+  // Handle download invoice - navigate to invoice page
+  const handleDownloadInvoice = (orderId) => {
+    console.log("Opening invoice for order:", orderId);
+    // Navigate to invoice view page with orderId
+    navigate(`/invoice/view/${orderId}`, {
+      state: { orderId: orderId },
+      replace: false,
+    });
   };
 
   // Scroll to highlighted order after loading
@@ -298,17 +308,19 @@ const AllOrder = () => {
                     <td className={`p-3 ${statusColor}`}>{formattedStatus}</td>
                     <td className="p-3">
                       <div className="flex gap-2 justify-end">
-                        <button className="text-orange-600 hover:text-blue-700">
+                        <button
+                          onClick={() => handleDownloadInvoice(order._id)}
+                          className="text-orange-600 hover:text-blue-700"
+                          title="View Invoice"
+                        >
                           <Download className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => navigate(`/order/${order.id}`)}
+                          onClick={() => navigate(`/order/${order.id || order._id}`)}
                           className="text-orange-600 hover:text-blue-700"
+                          title="View Order Details"
                         >
                           <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="text-orange-600 hover:text-blue-700">
-                          <Truck className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
