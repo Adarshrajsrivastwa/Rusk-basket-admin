@@ -41,6 +41,7 @@ const VendorProfile = () => {
     bankName: "",
     serviceRadius: "",
     handlingChargePercentage: "",
+    fssaiNumber: "",
   });
   const [profileImage, setProfileImage] = useState(null);
   const [profileImagePreview, setProfileImagePreview] = useState(null);
@@ -102,6 +103,7 @@ const VendorProfile = () => {
           bankName: result.data.bankDetails.bankName || "",
           serviceRadius: result.data.serviceRadius || "",
           handlingChargePercentage: result.data.handlingChargePercentage || "",
+          fssaiNumber: result.data.fssaiNumber || "",
         });
         
         // Set image previews
@@ -226,6 +228,9 @@ const VendorProfile = () => {
         if (formData.handlingChargePercentage) {
           formDataToSend.append("handlingChargePercentage", formData.handlingChargePercentage);
         }
+        if (formData.fssaiNumber) {
+          formDataToSend.append("fssaiNumber", formData.fssaiNumber);
+        }
 
         // Add images if selected
         if (profileImage) {
@@ -338,6 +343,7 @@ const VendorProfile = () => {
         bankName: profileData.bankDetails.bankName || "",
         serviceRadius: profileData.serviceRadius || "",
         handlingChargePercentage: profileData.handlingChargePercentage || "",
+        fssaiNumber: profileData.fssaiNumber || "",
       });
       
       // Reset images
@@ -656,6 +662,16 @@ const VendorProfile = () => {
               />
               <FormField
                 icon={<Shield size={20} style={{ color: "#FF7B1D" }} />}
+                label="FSSAI Number"
+                name="fssaiNumber"
+                value={formData.fssaiNumber}
+                displayValue={profileData?.fssaiNumber || "N/A"}
+                isEditing={isEditing}
+                onChange={handleInputChange}
+                placeholder="Enter FSSAI Number"
+              />
+              <FormField
+                icon={<Shield size={20} style={{ color: "#FF7B1D" }} />}
                 label="Status"
                 displayValue={
                   <span
@@ -949,6 +965,7 @@ const FormField = ({
           value={value}
           onChange={onChange}
           step={step}
+          placeholder={placeholder}
           className="w-full px-4 py-2.5 ml-10 border-2 rounded-xl focus:ring-2 focus:outline-none transition-all"
           style={{ borderColor: "#FFE5D1" }}
         />

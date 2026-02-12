@@ -63,7 +63,16 @@ const AllOrder = () => {
         params.append("search", searchQuery.trim());
       }
 
-      console.log("Fetching orders with params:", params.toString());
+      console.log("========================================");
+      console.log("📦 FETCHING ORDERS:");
+      console.log("API Endpoint:", `${API_BASE_URL}/admin/orders`);
+      console.log("Query Params:", params.toString());
+      console.log("Full URL:", `${API_BASE_URL}/admin/orders?${params.toString()}`);
+      console.log("Active Tab:", activeTab);
+      console.log("Current Page:", currentPage);
+      console.log("Items Per Page:", itemsPerPage);
+      console.log("Search Query:", searchQuery);
+      console.log("========================================");
 
       const response = await fetch(
         `${API_BASE_URL}/admin/orders?${params.toString()}`,
@@ -74,7 +83,12 @@ const AllOrder = () => {
         },
       );
 
-      console.log("Fetch response status:", response.status);
+      console.log("========================================");
+      console.log("📡 API RESPONSE:");
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+      console.log("Response Headers:", response.headers);
+      console.log("========================================");
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -84,26 +98,66 @@ const AllOrder = () => {
 
       const result = await response.json();
 
-      console.log("Fetched orders result:", result);
+      console.log("========================================");
+      console.log("📡 API RESPONSE:");
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+      console.log("========================================");
+      console.log("📦 PARSED RESPONSE DATA:");
+      console.log("Full Response (JSON):", JSON.stringify(result, null, 2));
+      console.log("----------------------------------------");
+      console.log("Result.success:", result.success);
+      console.log("Result.count:", result.count);
+      console.log("Result.orders:", result.orders);
+      console.log("Result.orders length:", result.orders?.length || 0);
+      console.log("Result.pagination:", result.pagination);
+      console.log("========================================");
 
       if (result.success && result.orders && Array.isArray(result.orders)) {
+        console.log("========================================");
+        console.log("✅ API SUCCESS - Processing Orders:");
         console.log("Number of orders fetched:", result.orders.length);
+        console.log("========================================");
 
         // Transform API data to match component structure
-        const transformedOrders = result.orders.map((order) => ({
-          id: order._id,
-          _id: order._id, // Keep MongoDB _id for invoice navigation
-          orderId: order.orderNumber || order.orderId,
-          date: order.date || "N/A",
-          vendor: order.vendor || "Unknown Vendor",
-          user: order.userName || "N/A",
-          cartValue: order.cartValue || 0,
-          payment: order.paymentStatus || "pending",
-          status: formatStatus(order.status),
-          rawStatus: order.status, // Keep original status for filtering
-        }));
+        const transformedOrders = result.orders.map((order, index) => {
+          console.log(`\n--- 📌 Order ${index + 1} ---`);
+          console.log("Raw Order Data (JSON):", JSON.stringify(order, null, 2));
+          console.log("Order._id:", order._id);
+          console.log("Order.orderId:", order.orderId);
+          console.log("Order.orderNumber:", order.orderNumber);
+          console.log("Order.date:", order.date);
+          console.log("Order.vendor:", order.vendor);
+          console.log("Order.userName:", order.userName);
+          console.log("Order.username:", order.username);
+          console.log("Order.user:", order.user);
+          console.log("Order.cartValue:", order.cartValue);
+          console.log("Order.paymentStatus:", order.paymentStatus);
+          console.log("Order.status:", order.status);
 
-        console.log("Transformed orders:", transformedOrders);
+          const transformed = {
+            id: order._id || order.orderId,
+            _id: order._id || order.orderId, // Keep MongoDB _id for invoice navigation
+            orderId: order.orderNumber || order.orderId || order._id,
+            date: order.date || "N/A",
+            vendor: order.vendor || "Unknown Vendor",
+            user: order.userName || order.username || order.user?.userName || order.user?.contactNumber || "",
+            cartValue: order.cartValue || 0,
+            payment: order.paymentStatus || "pending",
+            status: formatStatus(order.status),
+            rawStatus: order.status, // Keep original status for filtering
+          };
+
+          console.log("Transformed Order:", JSON.stringify(transformed, null, 2));
+          return transformed;
+        });
+
+        console.log("========================================");
+        console.log("🔄 TRANSFORMED ORDERS SUMMARY:");
+        console.log("Total Transformed Orders:", transformedOrders.length);
+        console.log("Transformed Orders (Full JSON):", JSON.stringify(transformedOrders, null, 2));
+        console.log("========================================");
+        
         setOrders(transformedOrders);
         setTotalOrders(result.pagination?.total || result.count || 0);
         setTotalPages(result.pagination?.pages || 1);
@@ -187,7 +241,7 @@ const AllOrder = () => {
           key={idx}
           className="animate-pulse border-b border-gray-200 bg-white"
         >
-          {Array.from({ length: 9 }).map((__, j) => (
+          {Array.from({ length: 8 }).map((__, j) => (
             <td key={j} className="p-3">
               <div className="h-4 bg-gray-200 rounded w-[80%]" />
             </td>
@@ -202,7 +256,7 @@ const AllOrder = () => {
     <tbody>
       <tr>
         <td
-          colSpan="9"
+          colSpan="8"
           className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
         >
           No orders found.
@@ -260,7 +314,7 @@ const AllOrder = () => {
           <div className="flex items-center border border-black rounded overflow-hidden h-[36px] w-full sm:w-[400px]">
             <input
               type="text"
-              placeholder="Search Order by Order Id, Products, User name, Tag"
+              placeholder="Search Order by Order Id, Products, Tag"
               className="flex-1 px-4 text-sm focus:outline-none h-full"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -291,7 +345,6 @@ const AllOrder = () => {
               <th className="p-3 text-left">Order ID</th>
               <th className="p-3 text-left">Date</th>
               <th className="p-3 text-left">Vendor</th>
-              <th className="p-3 text-left">User Name</th>
               <th className="p-3 text-left">Cart Value</th>
               <th className="p-3 text-left">Payment Status</th>
               <th className="p-3 text-left">Status</th>
@@ -321,7 +374,6 @@ const AllOrder = () => {
                     <td className="p-3 font-semibold">{order.orderId}</td>
                     <td className="p-3">{order.date}</td>
                     <td className="p-3">{order.vendor}</td>
-                    <td className="p-3">{order.user}</td>
                     <td className="p-3">₹{order.cartValue}</td>
                     <td className="p-3 capitalize">{order.payment}</td>
                     <td className={`p-3 ${statusColors[order.status]}`}>
