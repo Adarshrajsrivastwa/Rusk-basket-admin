@@ -293,12 +293,6 @@ const SingleOrder = () => {
             </div>
             {shouldShowActionButtons() && (
               <div className="flex gap-3 flex-wrap">
-<<<<<<< HEAD
-=======
-                <button className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 font-bold rounded-sm shadow-sm hover:shadow-xl transition-all duration-200 transform hover:scale-105">
-                  Cancel Order
-                </button>
->>>>>>> 97b209872b3f9827bfaf4ee76ee605c6de1f43f3
                 {/* <button
                   className="bg-[#FF7B1D] hover:bg-[#E66A0D] text-white px-6 py-3 font-bold rounded-sm shadow-sm hover:shadow-xl transition-all duration-200 transform hover:scale-105"
                   onClick={() => setIsModalOpen(true)}
