@@ -48,7 +48,8 @@ api.interceptors.response.use(
   },
   (error) => {
     // Enhanced error logging for debugging
-    if (process.env.NODE_ENV === 'development' || true) { // Always log for now to debug 403
+    const isDev = import.meta.env.DEV || process.env.NODE_ENV === 'development';
+    if (isDev) {
       if (error.response) {
         // Server responded with error status
         console.error('API Error Response:', {
@@ -63,14 +64,21 @@ api.interceptors.response.use(
           console.error('Error response data:', JSON.stringify(error.response.data, null, 2));
         }
       } else if (error.request) {
-        // Request was made but no response received
-        console.error('API Network Error:', {
-          message: error.message,
-          url: error.config?.url,
-        });
+        // Request was made but no response received (network error)
+        // Only log in development mode and if it's not a timeout
+        const isDev = import.meta.env.DEV || process.env.NODE_ENV === 'development';
+        if (isDev && !error.message.includes('timeout')) {
+          console.warn('API Network Error:', {
+            message: error.message,
+            url: error.config?.url,
+          });
+        }
       } else {
         // Something else happened
-        console.error('API Error:', error.message);
+        const isDev = import.meta.env.DEV || process.env.NODE_ENV === 'development';
+        if (isDev) {
+          console.error('API Error:', error.message);
+        }
       }
     }
 

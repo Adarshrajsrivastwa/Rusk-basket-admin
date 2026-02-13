@@ -171,6 +171,7 @@ import Inventory from "./pages/InventoryManagement/Inventory";
 import AllVendor from "./pages/VendorManagement/AllVendor";
 import VendorDetails from "./pages/VendorManagement/VendorDetails";
 import VendorPermissionPage from "./pages/VendorManagement/VendorPermissionPage";
+import VendorCommissionManagement from "./pages/VendorManagement/VendorCommissionManagement";
 import VendorSupport from "./pages/VendorSupportManagement/VendorSupport";
 import VendorDailyOffers from "./pages/VendorDailyOffers/VendorDailyOffers";
 import AllCategory from "./pages/CategoryManagement/AllCategory";
@@ -308,6 +309,14 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
               <AllVendor />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/commission"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <VendorCommissionManagement />
             </ProtectedRoute>
           }
         />

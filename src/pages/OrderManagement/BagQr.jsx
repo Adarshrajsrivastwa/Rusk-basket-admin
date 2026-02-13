@@ -934,7 +934,7 @@
 // };
 
 // export default BagQRScan;
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import { BASE_URL } from "../../api/api";
@@ -950,6 +950,8 @@ import {
   ArrowLeft,
   Plus,
   X,
+  MapPin,
+  Navigation,
 } from "lucide-react";
 import {
   StatCard,
@@ -980,6 +982,12 @@ const BagQRScan = () => {
   const [isScanningItem, setIsScanningItem] = useState(false);
   const [isDeliveryAmountModalOpen, setIsDeliveryAmountModalOpen] = useState(false);
   const [deliveryAmount, setDeliveryAmount] = useState(80);
+  const [distance, setDistance] = useState(null);
+  const [expectedTime, setExpectedTime] = useState(null);
+  const [showWaitingAnimation, setShowWaitingAnimation] = useState(false);
+  const [countdown, setCountdown] = useState(120); // 2 minutes in seconds
+  const countdownIntervalRef = useRef(null);
+  const redirectTimeoutRef = useRef(null);
 
   // Available products for adding extra items
   const [availableProducts] = useState([
@@ -1576,6 +1584,116 @@ const BagQRScan = () => {
     }
   };
 
+  // Calculate distance using Haversine formula (open-source, no API key needed)
+  const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c; // Distance in kilometers
+    return distance;
+  };
+
+  // Format distance for display
+  const formatDistance = (distanceInKm) => {
+    if (distanceInKm < 1) {
+      return `${Math.round(distanceInKm * 1000)} m`;
+    }
+    return `${distanceInKm.toFixed(2)} km`;
+  };
+
+  // Calculate estimated time based on distance (assuming average speed of 30 km/h in city)
+  const calculateEstimatedTime = (distanceInKm) => {
+    const averageSpeed = 30; // km/h (city driving speed)
+    const timeInHours = distanceInKm / averageSpeed;
+    const timeInMinutes = Math.round(timeInHours * 60);
+    
+    if (timeInMinutes < 60) {
+      return `${timeInMinutes} min`;
+    }
+    const hours = Math.floor(timeInMinutes / 60);
+    const minutes = timeInMinutes % 60;
+    return minutes > 0 ? `${hours} hr ${minutes} min` : `${hours} hr`;
+  };
+
+  // Calculate distance and time using lat/long
+  useEffect(() => {
+    if (isDeliveryAmountModalOpen && orderData) {
+      try {
+        // Get vendor/store latitude and longitude
+        let vendorLat = null;
+        let vendorLng = null;
+        
+        if (orderData.items && orderData.items[0]?.vendor?.storeAddress) {
+          const storeAddr = orderData.items[0].vendor.storeAddress;
+          vendorLat = parseFloat(storeAddr.latitude || storeAddr.lat);
+          vendorLng = parseFloat(storeAddr.longitude || storeAddr.lng || storeAddr.lon);
+        }
+        
+        // Get shipping address latitude and longitude
+        let shippingLat = null;
+        let shippingLng = null;
+        
+        if (orderData.shippingAddress) {
+          shippingLat = parseFloat(orderData.shippingAddress.latitude || orderData.shippingAddress.lat);
+          shippingLng = parseFloat(orderData.shippingAddress.longitude || orderData.shippingAddress.lng || orderData.shippingAddress.lon);
+        }
+
+        // Check if we have valid coordinates
+        if (!vendorLat || !vendorLng || !shippingLat || !shippingLng || 
+            isNaN(vendorLat) || isNaN(vendorLng) || isNaN(shippingLat) || isNaN(shippingLng)) {
+          console.error("Latitude/Longitude not available or invalid in order data");
+          setDistance("N/A");
+          setExpectedTime("N/A");
+          return;
+        }
+
+        // Calculate distance using Haversine formula
+        const distanceInKm = calculateHaversineDistance(
+          vendorLat,
+          vendorLng,
+          shippingLat,
+          shippingLng
+        );
+
+        // Format and set distance
+        const formattedDistance = formatDistance(distanceInKm);
+        setDistance(formattedDistance);
+
+        // Calculate and set estimated time
+        const estimatedTime = calculateEstimatedTime(distanceInKm);
+        setExpectedTime(estimatedTime);
+      } catch (error) {
+        console.error("Error calculating distance and time:", error);
+        setDistance("N/A");
+        setExpectedTime("N/A");
+      }
+    } else {
+      // Reset when modal closes
+      setDistance(null);
+      setExpectedTime(null);
+    }
+  }, [isDeliveryAmountModalOpen, orderData]);
+
+  // Cleanup intervals on unmount
+  useEffect(() => {
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
+
+
   // Handle Complete Packing & Seal Bag - Show delivery amount input first
   const handleCompletePacking = () => {
     if (!isPackingComplete) {
@@ -1649,16 +1767,43 @@ const BagQRScan = () => {
           ? `\n\n📦 Includes ${extraItemsCount} extra item(s)`
           : "";
 
-      alert(
-        `✅ Bag Packed & Sealed Successfully!\n\nBag Number: ${bagNumber}\nQR Code: ${qrCode}${extraItemsText}\n\nDelivery Amount: ₹${deliveryAmount}\n\n${
-          result.success
-            ? "🔄 Order status updated to 'ready' in the system."
-            : "⚠️ Bag sealed locally. Please update backend status manually."
-        }\n\nBag is now ready for delivery partner assignment.`,
-      );
+      // Show waiting animation
+      setShowWaitingAnimation(true);
+      setCountdown(120); // Reset countdown to 2 minutes
+      
+      // Clear any existing intervals/timeouts
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+      
+      // Countdown timer
+      countdownIntervalRef.current = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            if (countdownIntervalRef.current) {
+              clearInterval(countdownIntervalRef.current);
+            }
+            setShowWaitingAnimation(false);
+            navigate("/vendor/orders");
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+      // Set timeout to redirect after 2 minutes (120000 ms) as backup
+      redirectTimeoutRef.current = setTimeout(() => {
+        if (countdownIntervalRef.current) {
+          clearInterval(countdownIntervalRef.current);
+        }
+        setShowWaitingAnimation(false);
+        navigate("/vendor/orders");
+      }, 120000); // 2 minutes
     } catch (error) {
       alert(`❌ Failed to seal bag: ${error.message}`);
-    } finally {
       setIsUpdatingStatus(false);
     }
   };
@@ -2039,24 +2184,44 @@ const BagQRScan = () => {
           orderId={id}
         />
 
-        {/* Delivery Amount Modal */}
+        {/* Delivery Amount Modal with Map */}
         {isDeliveryAmountModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-2xl w-full max-w-md p-6 border-t-4 border-green-500">
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl p-6 border-t-4 border-green-500 my-8">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                  <CheckCircle size={28} className="text-green-500" />
-                  Enter Delivery Amount
+                  <MapPin size={28} className="text-green-500" />
+                  Delivery Route & Amount
                 </h3>
                 <button
                   onClick={() => {
                     setIsDeliveryAmountModalOpen(false);
                     setDeliveryAmount(80);
+                    setDistance(null);
+                    setExpectedTime(null);
                   }}
                   className="text-gray-500 hover:text-gray-700 transition-colors"
                 >
                   <X size={24} />
                 </button>
+              </div>
+
+              {/* Distance and Time Info */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Navigation className="text-blue-600" size={20} />
+                    <span className="text-sm font-semibold text-blue-700">Distance</span>
+                  </div>
+                  <p className="text-2xl font-bold text-blue-900">{distance || "Calculating..."}</p>
+                </div>
+                <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="text-green-600" size={20} />
+                    <span className="text-sm font-semibold text-green-700">Expected Time</span>
+                  </div>
+                  <p className="text-2xl font-bold text-green-900">{expectedTime || "Calculating..."}</p>
+                </div>
               </div>
 
               <div className="mb-6">
@@ -2083,6 +2248,8 @@ const BagQRScan = () => {
                   onClick={() => {
                     setIsDeliveryAmountModalOpen(false);
                     setDeliveryAmount(80);
+                    setDistance(null);
+                    setExpectedTime(null);
                   }}
                   className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 rounded-lg font-bold transition-all"
                 >
@@ -2109,6 +2276,58 @@ const BagQRScan = () => {
                     </>
                   )}
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Waiting Animation Modal */}
+        {showWaitingAnimation && (
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[100] p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 border-t-4 border-orange-500 animate-pulse">
+              <div className="text-center">
+                {/* Animated Icon */}
+                <div className="mb-6 flex justify-center">
+                  <div className="relative">
+                    <div className="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center animate-bounce">
+                      <Clock className="text-orange-500" size={48} />
+                    </div>
+                    <div className="absolute inset-0 border-4 border-orange-300 rounded-full animate-ping opacity-75"></div>
+                  </div>
+                </div>
+
+                {/* Title */}
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                  ⏳ Waiting for Assignment
+                </h3>
+
+                {/* Message */}
+                <p className="text-gray-700 mb-6 leading-relaxed">
+                  Please wait for <span className="font-bold text-orange-600">2 minutes</span>. Someone will accept the order, or else it will be assigned automatically.
+                </p>
+
+                {/* Countdown Timer */}
+                <div className="mb-6">
+                  <div className="inline-flex items-center justify-center bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-full shadow-lg">
+                    <Clock className="mr-2" size={20} />
+                    <span className="text-xl font-bold">
+                      {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+                  <div
+                    className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-1000"
+                    style={{ width: `${((120 - countdown) / 120) * 100}%` }}
+                  ></div>
+                </div>
+
+                {/* Info Text */}
+                <p className="text-sm text-gray-500">
+                  You will be redirected automatically...
+                </p>
               </div>
             </div>
           </div>

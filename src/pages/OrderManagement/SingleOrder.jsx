@@ -3,6 +3,7 @@ import DashboardLayout from "../../components/DashboardLayout";
 import { useParams, useNavigate } from "react-router-dom";
 import AssignDeliveryBoyModal from "../../components/AssignDeliveryBoyModal";
 import { BASE_URL } from "../../api/api";
+import { Truck, X, Clock, User, Phone } from "lucide-react";
 
 const API_BASE_URL = `${BASE_URL}/api`;
 
@@ -13,6 +14,12 @@ const SingleOrder = () => {
   const [loading, setLoading] = useState(true);
   const [orderData, setOrderData] = useState(null);
   const [error, setError] = useState(null);
+  const [showAssignRiderModal, setShowAssignRiderModal] = useState(false);
+  const [vendorsWithRiders, setVendorsWithRiders] = useState([]);
+  const [loadingRiders, setLoadingRiders] = useState(false);
+  const [selectedRider, setSelectedRider] = useState(null);
+  const [assignmentNotes, setAssignmentNotes] = useState("");
+  const [assigningRider, setAssigningRider] = useState(false);
 
   // Fetch order data from API
   useEffect(() => {
@@ -228,6 +235,136 @@ const SingleOrder = () => {
     navigate(`/orders/${orderData.id}/bag-qr-scan`);
   };
 
+  // Fetch vendors with riders who have no orders
+  const fetchVendorsWithRiders = async () => {
+    try {
+      setLoadingRiders(true);
+      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/analytics/vendor/riders/no-orders`, {
+        method: "GET",
+        credentials: "include",
+        headers: headers,
+      });
+
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        setVendorsWithRiders(result.data.vendors || []);
+      } else {
+        setVendorsWithRiders([]);
+      }
+    } catch (error) {
+      console.error("Error fetching vendors with riders:", error);
+      setVendorsWithRiders([]);
+    } finally {
+      setLoadingRiders(false);
+    }
+  };
+
+  // Handle assign rider
+  const handleAssignRider = async () => {
+    if (!selectedRider) {
+      alert("⚠️ Please select a rider!");
+      return;
+    }
+
+    try {
+      setAssigningRider(true);
+      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const payload = {
+        riderId: selectedRider.riderId,
+        assignmentNotes: assignmentNotes || undefined,
+      };
+
+      const response = await fetch(`${API_BASE_URL}/vendor/orders/${id}/assign-rider`, {
+        method: "PUT",
+        credentials: "include",
+        headers: headers,
+        body: JSON.stringify(payload),
+      });
+
+      // Check if response is ok
+      if (!response.ok) {
+        // Try to parse error response as JSON first
+        let errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        const contentType = response.headers.get("content-type");
+        
+        if (contentType && contentType.includes("application/json")) {
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (e) {
+            // If JSON parsing fails, use default message
+          }
+        } else {
+          // If response is HTML (error page), read as text to extract error
+          try {
+            const text = await response.text();
+            // Try to extract error message from HTML if possible
+            if (text.includes("Error") || text.includes("error")) {
+              errorMessage = `Server error (${response.status}): Please check the server logs or contact support.`;
+            }
+          } catch (e) {
+            // Use default error message
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      // Parse JSON response only if status is ok
+      const result = await response.json();
+
+      if (result.success) {
+        alert("✅ Rider assigned successfully!");
+        setShowAssignRiderModal(false);
+        setSelectedRider(null);
+        setAssignmentNotes("");
+        // Refresh order data
+        window.location.reload();
+      } else {
+        alert(`❌ Failed to assign rider: ${result.message || "Unknown error"}`);
+      }
+    } catch (error) {
+      console.error("Error assigning rider:", error);
+      
+      // Provide user-friendly error message
+      let errorMessage = "Failed to assign rider. ";
+      if (error.message.includes("500")) {
+        errorMessage += "Server error occurred. Please try again later or contact support.";
+      } else if (error.message.includes("Network")) {
+        errorMessage += "Network error. Please check your connection.";
+      } else {
+        errorMessage += error.message || "Unknown error occurred.";
+      }
+      
+      alert(`❌ ${errorMessage}`);
+    } finally {
+      setAssigningRider(false);
+    }
+  };
+
+  // Fetch vendors when modal opens
+  useEffect(() => {
+    if (showAssignRiderModal) {
+      fetchVendorsWithRiders();
+    }
+  }, [showAssignRiderModal]);
+
   const SkeletonLoader = () => (
     <div className="w-full space-y-4 p-4 animate-pulse">
       <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border-l-4 border-[#FF7B1D]">
@@ -330,7 +467,7 @@ const SingleOrder = () => {
                 <span className="font-semibold">{orderData.time}</span>
               </div>
               {orderData.status && (
-                <div className="mt-2">
+                <div className="mt-2 flex items-center gap-3 flex-wrap">
                   <span
                     className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
                       orderData.status.toLowerCase() === "pending" ||
@@ -340,11 +477,23 @@ const SingleOrder = () => {
                           ? "bg-green-100 text-green-800"
                           : orderData.status.toLowerCase() === "delivered"
                             ? "bg-blue-100 text-blue-800"
-                            : "bg-gray-100 text-gray-800"
+                            : orderData.status.toLowerCase() === "ready"
+                              ? "bg-orange-100 text-orange-800"
+                              : "bg-gray-100 text-gray-800"
                     }`}
                   >
                     Status: {orderData.status.toUpperCase().replace(/_/g, " ")}
                   </span>
+                  {/* Show Assign Rider button if status is ready and no rider assigned */}
+                  {orderData.status.toLowerCase() === "ready" && !orderData.rider && (
+                    <button
+                      onClick={() => setShowAssignRiderModal(true)}
+                      className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-2"
+                    >
+                      <Truck size={14} />
+                      Assign Rider
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -827,6 +976,155 @@ const SingleOrder = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />
+
+      {/* Assign Rider Modal */}
+      {showAssignRiderModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl p-6 border-t-4 border-green-500 my-8">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <Truck size={28} className="text-green-500" />
+                Assign Rider
+              </h3>
+              <button
+                onClick={() => {
+                  setShowAssignRiderModal(false);
+                  setSelectedRider(null);
+                  setAssignmentNotes("");
+                }}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {loadingRiders ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+                <span className="ml-3 text-gray-600">Loading riders...</span>
+              </div>
+            ) : vendorsWithRiders.length === 0 ? (
+              <div className="text-center py-12">
+                <Clock size={48} className="mx-auto text-gray-400 mb-4" />
+                <p className="text-lg font-semibold text-gray-700 mb-2">
+                  No riders available
+                </p>
+                <p className="text-gray-500">
+                  Please wait for some time. Riders will be available soon.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="mb-6 max-h-96 overflow-y-auto">
+                  {vendorsWithRiders.map((vendor, vendorIndex) => (
+                    <div
+                      key={vendor.vendorId || vendorIndex}
+                      className="mb-4 border-2 border-gray-200 rounded-lg p-4"
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <User size={20} className="text-orange-500" />
+                        <h4 className="font-bold text-gray-900">{vendor.vendorName || vendor.storeName}</h4>
+                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                          {vendor.totalRidersWithNoOrders || vendor.riders?.length || 0} riders
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {vendor.riders && vendor.riders.length > 0 ? (
+                          vendor.riders.map((rider, riderIndex) => (
+                            <div
+                              key={rider.riderId || riderIndex}
+                              onClick={() => setSelectedRider(rider)}
+                              className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                                selectedRider?.riderId === rider.riderId
+                                  ? "border-green-500 bg-green-50"
+                                  : "border-gray-200 hover:border-green-300 hover:bg-green-50"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 mb-2">
+                                <User size={16} className="text-gray-600" />
+                                <span className="font-semibold text-gray-900">
+                                  {rider.fullName}
+                                </span>
+                                {selectedRider?.riderId === rider.riderId && (
+                                  <span className="ml-auto text-green-600">✓</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <Phone size={14} />
+                                <span>{rider.mobileNumber}</span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-gray-500 text-sm">No riders available for this vendor</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {selectedRider && (
+                  <div className="mb-6 p-4 bg-green-50 border-2 border-green-200 rounded-lg">
+                    <p className="text-sm font-semibold text-gray-700 mb-2">
+                      Selected Rider:
+                    </p>
+                    <p className="font-bold text-green-700">
+                      {selectedRider.fullName} - {selectedRider.mobileNumber}
+                    </p>
+                  </div>
+                )}
+
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Assignment Notes (Optional)
+                  </label>
+                  <textarea
+                    value={assignmentNotes}
+                    onChange={(e) => setAssignmentNotes(e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:outline-none"
+                    placeholder="Add any notes about this assignment..."
+                    rows={3}
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowAssignRiderModal(false);
+                      setSelectedRider(null);
+                      setAssignmentNotes("");
+                    }}
+                    className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 rounded-lg font-bold transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAssignRider}
+                    disabled={!selectedRider || assigningRider}
+                    className={`flex-1 ${
+                      !selectedRider || assigningRider
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-green-600 hover:bg-green-700"
+                    } text-white px-4 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2`}
+                  >
+                    {assigningRider ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        Assigning...
+                      </>
+                    ) : (
+                      <>
+                        <Truck size={20} />
+                        Assign Rider
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 };

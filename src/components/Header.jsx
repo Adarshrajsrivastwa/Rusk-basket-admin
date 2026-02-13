@@ -44,7 +44,13 @@ const Header = () => {
         setVendorProfile(response.data.data);
       }
     } catch (error) {
-      console.error("Error fetching vendor profile:", error);
+      // Only log if it's not a network error or 401/403 (expected when not logged in)
+      const isDev = import.meta.env.DEV || process.env.NODE_ENV === 'development';
+      if (isDev && 
+          error.response?.status !== 401 && 
+          error.response?.status !== 403) {
+        console.warn("Error fetching vendor profile:", error.message);
+      }
       // Don't show error to user for profile fetch, just log it
       // The profile will show default values if fetch fails
     } finally {
@@ -78,7 +84,13 @@ const Header = () => {
       }
       console.log("========================================");
     } catch (error) {
-      console.error("Error fetching admin profile:", error);
+      // Only log if it's not a network error or 401/403 (expected when not logged in)
+      const isDev = import.meta.env.DEV || process.env.NODE_ENV === 'development';
+      if (isDev && 
+          error.response?.status !== 401 && 
+          error.response?.status !== 403) {
+        console.warn("Error fetching admin profile:", error.message);
+      }
       // Don't show error to user for profile fetch, just log it
       // The profile will show default values if fetch fails
     } finally {
@@ -137,12 +149,14 @@ const Header = () => {
         setUnreadCount(response.data.unreadCount || 0);
       }
     } catch (error) {
-      console.error("Error fetching unread count:", error);
-      console.error("Error details:", {
-        status: error.response?.status,
-        message: error.response?.data?.message,
-        userRole: userRole
-      });
+      // Only log if it's not a network error or 401/403/404 (expected when not logged in or endpoint doesn't exist)
+      const isDev = import.meta.env.DEV || process.env.NODE_ENV === 'development';
+      if (isDev && 
+          error.response?.status !== 401 && 
+          error.response?.status !== 403 &&
+          error.response?.status !== 404) {
+        console.warn("Error fetching unread count:", error.message);
+      }
       // Don't show error to user, just set count to 0
       setUnreadCount(0);
     }

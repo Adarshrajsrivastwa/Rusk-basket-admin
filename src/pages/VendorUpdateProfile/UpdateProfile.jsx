@@ -298,7 +298,10 @@ const VendorProfile = () => {
             method: "PUT",
             credentials: "include",
             headers: headers,
-            body: JSON.stringify(formData),
+            body: JSON.stringify({
+              ...formData,
+              fssaiNumber: formData.fssaiNumber || "",
+            }),
           },
         );
 
@@ -875,43 +878,6 @@ const VendorProfile = () => {
             </div>
           </div>
 
-          {/* Permissions */}
-          <div
-            className="bg-white rounded-sm shadow-lg p-8 border-t-4"
-            style={{ borderTopColor: "#FF7B1D" }}
-          >
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-orange-100">
-              <div
-                className="p-3 rounded-xl"
-                style={{ backgroundColor: "#FFF0E6" }}
-              >
-                <Settings style={{ color: "#FF7B1D" }} size={28} />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800">Permissions</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {profileData &&
-                Object.entries(profileData.permissions).map(([key, value]) => (
-                  <div
-                    key={key}
-                    className={`flex items-center gap-3 p-4 rounded-sm transition-all ${
-                      value
-                        ? "bg-green-50 border-2 border-green-200"
-                        : "bg-gray-50 border-2 border-gray-200"
-                    }`}
-                  >
-                    <div
-                      className={`w-4 h-4 rounded-full flex-shrink-0 ${value ? "bg-green-500 shadow-lg shadow-green-200" : "bg-gray-300"}`}
-                    ></div>
-                    <span
-                      className={`text-sm font-medium ${value ? "text-green-700" : "text-gray-600"}`}
-                    >
-                      {key.replace(/([A-Z])/g, " $1").trim()}
-                    </span>
-                  </div>
-                ))}
-            </div>
-          </div>
         </div>
       </div>
     </DashboardLayout>
@@ -931,6 +897,7 @@ const FormField = ({
   step,
   options,
   capitalize = false,
+  placeholder = "",
 }) => (
   <div
     className="p-5 rounded-sm border hover:shadow-md transition-shadow"

@@ -606,6 +606,7 @@ const Sidebar = () => {
       subItems: [
         { name: "All Vendor", path: "/vendor/all" },
         { name: "Add Vendor", path: "/vendor/add", isModal: true },
+        { name: "Commission Management", path: "/vendor/commission" },
         { name: "Withdrawal Requests", path: "/admin/vendors/withdrawal-requests" },
         // { name: "Vendor Dashboard", path: "/vendor/details" },
       ],
