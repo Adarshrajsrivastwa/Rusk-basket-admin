@@ -364,12 +364,12 @@ const AdminDashboard = () => {
                   >
                     + Add Vendor
                   </button>
-                  <button
+                  {/* <button
                     onClick={() => navigate("/vendor/:id")}
                     className="bg-[#F26422] text-white px-4 py-2 rounded-md flex items-center justify-center gap-2 w-full sm:w-auto hover:bg-[#d95a1f] transition-colors"
                   >
                     <Eye size={18} /> View
-                  </button>
+                  </button> */}
                 </div>
               </div>
 

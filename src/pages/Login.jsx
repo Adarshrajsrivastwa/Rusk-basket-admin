@@ -912,7 +912,20 @@ export default function Login() {
         mobile: formData.mobile,
         role: formData.role,
       };
-      const response = await api.post("/api/auth/login", loginData);
+      
+      // Use axios directly with BASE_URL for consistency with verify-otp
+      const response = await axios.post(
+        `${BASE_URL}/api/auth/login`,
+        loginData,
+        {
+          withCredentials: false, // Disable to avoid CORS error
+          headers: {
+            "Content-Type": "application/json",
+          },
+          timeout: 30000, // 30 seconds timeout
+        }
+      );
+      
       const data = response.data;
 
       if (data.success) {
@@ -923,7 +936,19 @@ export default function Login() {
         setError(data.message || "Failed to send OTP. Please try again.");
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Network error. Please check your connection and try again.");
+      console.error("Login API Error:", err);
+      
+      // Better error handling
+      if (err.response) {
+        // Server responded with error status
+        setError(err.response?.data?.message || `Server error: ${err.response.status}`);
+      } else if (err.request) {
+        // Request was made but no response received (network error)
+        setError("Network error. Please check your internet connection and try again.");
+      } else {
+        // Something else happened
+        setError(err.message || "An unexpected error occurred. Please try again.");
+      }
     } finally {
       setSending(false);
     }

@@ -1339,6 +1339,38 @@ const BagQRScan = () => {
         setOrderData(data.data);
       }
 
+      // Auto-generate PDF if status is updated to "order_placed"
+      if (status && status.toLowerCase() === "order_placed" && data.data?.orderNumber) {
+        try {
+          console.log("========================================");
+          console.log("📄 AUTO-GENERATING INVOICE PDF (from status update):");
+          console.log("Order Number:", data.data.orderNumber);
+          console.log("Status:", status);
+          console.log("API Endpoint:", `${BASE_URL}/api/invoice/order/${data.data.orderNumber}/generate-pdf`);
+          console.log("========================================");
+
+          const pdfResponse = await fetch(
+            `${BASE_URL}/api/invoice/order/${data.data.orderNumber}/generate-pdf`,
+            {
+              method: "POST",
+              credentials: "include",
+              headers: headers,
+            },
+          );
+
+          const pdfResult = await pdfResponse.json();
+
+          if (pdfResponse.ok && pdfResult.success) {
+            console.log("✅ Invoice PDF generated successfully:", pdfResult);
+          } else {
+            console.warn("⚠️ Failed to generate invoice PDF:", pdfResult.message || "Unknown error");
+          }
+        } catch (pdfError) {
+          console.error("❌ Error generating invoice PDF:", pdfError);
+          // Don't throw error, just log it - status update was successful
+        }
+      }
+
       return { success: true, data: data.data };
     } catch (error) {
       return { success: false, error: error.message };

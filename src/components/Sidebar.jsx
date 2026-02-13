@@ -480,14 +480,11 @@ const Sidebar = () => {
       }
 
       // Call logout API
-      const response = await fetch(
-        `${BASE_URL}/api/auth/admin/logout`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: headers,
-        },
-      );
+      const response = await fetch(`${BASE_URL}/api/auth/admin/logout`, {
+        method: "POST",
+        credentials: "include",
+        headers: headers,
+      });
 
       const data = await response.json();
 
@@ -592,7 +589,10 @@ const Sidebar = () => {
       icon: <Truck size={16} />,
       subItems: [
         { name: "All Riders", path: "/Rider" },
-        { name: "Withdrawal Requests", path: "/admin/rider/withdrawal-requests" },
+        {
+          name: "Withdrawal Requests",
+          path: "/admin/rider/withdrawal-requests",
+        },
       ],
     },
     {
@@ -607,16 +607,17 @@ const Sidebar = () => {
         { name: "All Vendor", path: "/vendor/all" },
         { name: "Add Vendor", path: "/vendor/add", isModal: true },
         { name: "Commission Management", path: "/vendor/commission" },
-        { name: "Withdrawal Requests", path: "/admin/vendors/withdrawal-requests" },
+        {
+          name: "Withdrawal Requests",
+          path: "/admin/vendors/withdrawal-requests",
+        },
         // { name: "Vendor Dashboard", path: "/vendor/details" },
       ],
     },
     {
       name: "Admin Management",
       icon: <UserCog size={16} />,
-      subItems: [
-        { name: "All Admin", path: "/admin/all" },
-      ],
+      subItems: [{ name: "All Admin", path: "/admin/all" }],
     },
 
     {

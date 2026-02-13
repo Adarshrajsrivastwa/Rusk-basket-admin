@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { useParams, useNavigate } from "react-router-dom";
 import AssignDeliveryBoyModal from "../../components/AssignDeliveryBoyModal";
@@ -20,6 +20,7 @@ const SingleOrder = () => {
   const [selectedRider, setSelectedRider] = useState(null);
   const [assignmentNotes, setAssignmentNotes] = useState("");
   const [assigningRider, setAssigningRider] = useState(false);
+  const pdfGeneratedRef = useRef(false); // Track if PDF has been generated for this order
 
   // Fetch order data from API
   useEffect(() => {
@@ -124,6 +125,70 @@ const SingleOrder = () => {
     if (id) {
       fetchOrderData();
     }
+  }, [id]);
+
+  // Auto-generate PDF when order status becomes "order_placed"
+  useEffect(() => {
+    const generateInvoicePDF = async () => {
+      // Check if order data exists, status is "order_placed", and PDF hasn't been generated yet
+      if (
+        orderData &&
+        orderData.status &&
+        orderData.status.toLowerCase() === "order_placed" &&
+        !pdfGeneratedRef.current &&
+        orderData.id
+      ) {
+        try {
+          console.log("========================================");
+          console.log("📄 AUTO-GENERATING INVOICE PDF:");
+          console.log("Order Number:", orderData.id);
+          console.log("Status:", orderData.status);
+          console.log("API Endpoint:", `${API_BASE_URL}/invoice/order/${orderData.id}/generate-pdf`);
+          console.log("========================================");
+
+          // Get token from localStorage
+          const token =
+            localStorage.getItem("token") || localStorage.getItem("authToken");
+
+          const headers = {
+            "Content-Type": "application/json",
+          };
+
+          if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+          }
+
+          const response = await fetch(
+            `${API_BASE_URL}/invoice/order/${orderData.id}/generate-pdf`,
+            {
+              method: "POST",
+              credentials: "include",
+              headers: headers,
+            },
+          );
+
+          const result = await response.json();
+
+          if (response.ok && result.success) {
+            console.log("✅ Invoice PDF generated successfully:", result);
+            pdfGeneratedRef.current = true; // Mark as generated to avoid duplicate calls
+          } else {
+            console.warn("⚠️ Failed to generate invoice PDF:", result.message || "Unknown error");
+            // Don't mark as generated if it failed, so it can retry
+          }
+        } catch (err) {
+          console.error("❌ Error generating invoice PDF:", err);
+          // Don't mark as generated if it failed, so it can retry
+        }
+      }
+    };
+
+    generateInvoicePDF();
+  }, [orderData]);
+
+  // Reset PDF generation flag when order ID changes
+  useEffect(() => {
+    pdfGeneratedRef.current = false;
   }, [id]);
 
   // Transform API response to component structure
