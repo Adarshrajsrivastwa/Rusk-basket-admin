@@ -826,26 +826,41 @@ const AllProduct = () => {
       });
 
       if (response.data.success) {
-        // Transform products to include productNumber in productId field and format date
-        const transformedProducts = response.data.data.map((product) => ({
+        // Handle new response structure: { success, count, pagination, data }
+        const responseData = response.data;
+        
+        // Transform products according to new API structure
+        const transformedProducts = (responseData.data || []).map((product) => ({
           ...product,
-          // Handle both productno (from API) and productNumber field names
-          productNumber: product.productno || product.productNumber,
-          productId: product.productno || product.productNumber || product._id,
-          // Use date from API if available, otherwise format createdAt
-          date:
-            product.date ||
-            (product.createdAt
-              ? new Date(product.createdAt).toISOString().split("T")[0]
-              : "N/A"),
+          // Map productId from API response
+          productId: product.productId || product._id,
+          // Map productno to productNumber for backward compatibility
+          productNumber: product.productno || product.productNumber || product.productId || product._id,
+          // Use date from API (already in DD/MM/YYYY format)
+          date: product.date || "N/A",
+          // Map vendor (should be string from API)
+          vendor: product.vendor || "No Vendor",
+          // Map category (should be string from API)
+          category: product.category || "N/A",
+          // Map subCategory (should be string from API)
+          subCategory: product.subCategory || "N/A",
+          // Map salePrice
+          salePrice: product.salePrice || 0,
+          // Map status (pending | approved | rejected)
+          status: product.status || "pending",
         }));
+        
         setProducts(transformedProducts);
-        setTotalProducts(response.data.pagination.total);
-        setTotalPages(
-          response.data.pagination.pages ||
-            response.data.pagination.totalPages ||
-            1,
-        );
+        
+        // Set pagination from response
+        if (responseData.pagination) {
+          setTotalProducts(responseData.pagination.total || responseData.count || 0);
+          setTotalPages(responseData.pagination.pages || 1);
+        } else {
+          // Fallback if pagination not in expected format
+          setTotalProducts(responseData.count || 0);
+          setTotalPages(1);
+        }
       }
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -1045,11 +1060,12 @@ const AllProduct = () => {
     return product.vendor || "No Vendor";
   };
 
-  // Filtering logic
+  // Filtering logic - use status field from API
   const filteredByTab = products.filter((p) => {
-    if (activeTab === "approved") return p.status === "approved";
-    if (activeTab === "pending") return p.status === "pending";
-    if (activeTab === "rejected") return p.status === "rejected";
+    const status = (p.status || "").toLowerCase();
+    if (activeTab === "approved") return status === "approved";
+    if (activeTab === "pending") return status === "pending";
+    if (activeTab === "rejected") return status === "rejected";
     return true;
   });
 

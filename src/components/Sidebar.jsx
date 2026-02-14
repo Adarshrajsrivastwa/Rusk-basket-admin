@@ -590,6 +590,10 @@ const Sidebar = () => {
       subItems: [
         { name: "All Riders", path: "/Rider" },
         {
+          name: "Commission Management",
+          path: "/rider/commission",
+        },
+        {
           name: "Withdrawal Requests",
           path: "/admin/rider/withdrawal-requests",
         },

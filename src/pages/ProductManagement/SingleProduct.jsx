@@ -40,46 +40,32 @@ const SingleProduct = () => {
 
         let foundProduct = null;
 
-        // Try to fetch from all products list first (more reliable)
+        // Primary endpoint: /api/product/{id}
         try {
-          console.log("Fetching all products to find product with ID:", id);
-          const productsResponse = await fetch(
-            `${BASE_URL}/api/admin/products?limit=1000`,
-            {
-              method: "GET",
-              headers: headers,
-              credentials: "include",
-            },
-          );
+          console.log("Fetching product with ID:", id);
+          const response = await fetch(`${BASE_URL}/api/product/${id}`, {
+            method: "GET",
+            headers: headers,
+            credentials: "include",
+          });
 
-          if (productsResponse.ok) {
-            const productsResult = await productsResponse.json();
-
-            if (productsResult.success && Array.isArray(productsResult.data)) {
-              // Try to find product by _id, productNumber, or productno
-              foundProduct = productsResult.data.find(
-                (p) =>
-                  p._id === id ||
-                  p.id === id ||
-                  p.productNumber === id ||
-                  p.productno === id,
-              );
-
-              if (foundProduct) {
-                console.log("Found product in products list:", foundProduct);
-              }
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.data) {
+              foundProduct = data.data;
+              console.log("Found product via /api/product endpoint:", foundProduct);
             }
+          } else {
+            console.error("Product endpoint returned error:", response.status);
           }
         } catch (err) {
-          console.error("Error fetching from products list:", err);
+          console.error("Error fetching product:", err);
         }
 
-        // If not found in list, try direct endpoints
+        // Fallback: Try admin endpoint if primary fails
         if (!foundProduct) {
-          console.log("Product not found in list, trying direct endpoints");
-
-          // Try admin-specific endpoint
           try {
+            console.log("Trying admin endpoint as fallback");
             const response = await fetch(
               `${BASE_URL}/api/admin/products/${id}`,
               {
@@ -91,7 +77,7 @@ const SingleProduct = () => {
 
             if (response.ok) {
               const data = await response.json();
-              if (data.success) {
+              if (data.success && data.data) {
                 foundProduct = data.data;
                 console.log("Found product via admin endpoint:", foundProduct);
               }
@@ -101,44 +87,13 @@ const SingleProduct = () => {
           }
         }
 
-        // If still not found, try general product endpoint
-        if (!foundProduct) {
-          try {
-            const response = await fetch(`${BASE_URL}/api/product/${id}`, {
-              method: "GET",
-              headers: headers,
-              credentials: "include",
-            });
-
-            if (response.ok) {
-              const data = await response.json();
-              if (data.success) {
-                foundProduct = data.data;
-                console.log(
-                  "Found product via general endpoint:",
-                  foundProduct,
-                );
-              }
-            }
-          } catch (err) {
-            console.error("General endpoint error:", err);
-          }
-        }
-
         // If product found, normalize and set it
         if (foundProduct) {
           const normalizedProduct = {
             ...foundProduct,
-            productNumber:
-              foundProduct.productNumber ||
-              foundProduct.productno ||
-              foundProduct._id,
-            approvalStatus:
-              foundProduct.approvalStatus || foundProduct.status || "pending",
-            productName:
-              foundProduct.productName ||
-              foundProduct.name ||
-              "Unnamed Product",
+            // Ensure all fields are properly mapped
+            productNumber: foundProduct.productNumber || foundProduct._id,
+            productName: foundProduct.productName || "Unnamed Product",
             description: foundProduct.description || "",
             inventory: foundProduct.inventory || 0,
             initialInventory: foundProduct.initialInventory || 0,
@@ -149,14 +104,31 @@ const SingleProduct = () => {
             tax: foundProduct.tax || 0,
             discountPercentage: foundProduct.discountPercentage || 0,
             skuHsn: foundProduct.skuHsn || "N/A",
-            isActive:
-              foundProduct.isActive !== undefined
-                ? foundProduct.isActive
-                : true,
-            hasOffer:
-              foundProduct.hasOffer !== undefined
-                ? foundProduct.hasOffer
-                : false,
+            approvalStatus: foundProduct.approvalStatus || "pending",
+            isActive: foundProduct.isActive !== undefined ? foundProduct.isActive : true,
+            hasOffer: foundProduct.hasOffer !== undefined ? foundProduct.hasOffer : false,
+            // Handle thumbnail - can be object with url or direct string
+            thumbnail: foundProduct.thumbnail?.url || foundProduct.thumbnail || null,
+            // Handle images - ensure they have url property
+            images: foundProduct.images?.map(img => ({
+              url: img.url || img,
+              publicId: img.publicId,
+              mediaType: img.mediaType || "image"
+            })) || [],
+            // Handle category
+            category: foundProduct.category || null,
+            // Handle subCategory
+            subCategory: foundProduct.subCategory || null,
+            // Handle vendor
+            vendor: foundProduct.vendor || null,
+            // Handle productType
+            productType: foundProduct.productType || null,
+            // Handle skus
+            skus: foundProduct.skus || [],
+            // Handle tags
+            tags: foundProduct.tags || [],
+            // Handle offer
+            offer: foundProduct.offer || null,
           };
 
           setProduct(normalizedProduct);
@@ -477,11 +449,11 @@ const SingleProduct = () => {
             </p>
             <p>
               <span className="font-semibold">Category:</span>{" "}
-              {product.category?.name || "N/A"}
+              {product.category?.name || product.category?.categoryName || "N/A"}
             </p>
             <p>
               <span className="font-semibold">Sub Category:</span>{" "}
-              {product.subCategory?.name || "N/A"}
+              {product.subCategory?.name || product.subCategory?.subCategoryName || "N/A"}
             </p>
             <p>
               <span className="font-semibold">SKU/HSN:</span>{" "}
@@ -489,9 +461,25 @@ const SingleProduct = () => {
             </p>
             <p>
               <span className="font-semibold">Product Type:</span>{" "}
-              {product.productType?.value || "N/A"}{" "}
-              {product.productType?.unit || ""}
+              {product.productType ? (
+                `${product.productType.value || "N/A"} ${product.productType.unit || ""} (${product.productType.type || "N/A"})`
+              ) : "N/A"}
             </p>
+            {product.skus && product.skus.length > 0 && (
+              <div className="col-span-full">
+                <span className="font-semibold">SKUs:</span>{" "}
+                <div className="inline-flex flex-wrap gap-2 mt-1">
+                  {product.skus.map((sku, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs"
+                    >
+                      {sku.sku}: {sku.inventory} units
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Vendor Information */}

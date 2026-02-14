@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
-import { Settings, IndianRupee, Percent, Calendar, Wallet } from "lucide-react";
+import { Settings, IndianRupee, Percent, Calendar, Wallet, DollarSign, Loader2 } from "lucide-react";
 import api from "../../api/api";
 import { X } from "lucide-react";
 
-const VendorCommissionManagement = () => {
-  const [vendors, setVendors] = useState([]);
+const RiderCommissionManagement = () => {
+  const [riders, setRiders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -16,21 +16,21 @@ const VendorCommissionManagement = () => {
     limit: 10,
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedVendor, setSelectedVendor] = useState(null);
+  const [selectedRider, setSelectedRider] = useState(null);
   const [commissionData, setCommissionData] = useState({
     type: "percentage",
     percentage: 10,
-    fixedAmount: 20,
-    subscriptionAmount: 999,
+    fixedAmount: 0,
+    subscriptionAmount: 0,
     subscriptionPeriod: "monthly",
   });
   const [saving, setSaving] = useState(false);
 
-  // Fetch vendors from API
-  const fetchVendors = async (page = 1, limit = 10) => {
+  // Fetch riders with wallet data from API
+  const fetchRiders = async (page = 1, limit = 10) => {
     try {
       setLoading(true);
-      const response = await api.get(`/api/admin/vendors/wallets`, {
+      const response = await api.get(`/api/admin/riders/wallets`, {
         params: {
           page: page,
           limit: limit,
@@ -40,7 +40,7 @@ const VendorCommissionManagement = () => {
       const result = response.data;
 
       if (result.success) {
-        setVendors(result.data.wallets || []);
+        setRiders(result.data.wallets || []);
         setPagination(
           result.data.pagination || {
             total: result.data.pagination?.total || 0,
@@ -50,32 +50,32 @@ const VendorCommissionManagement = () => {
           }
         );
       } else {
-        console.error("Failed to fetch vendors:", result.message);
-        setVendors([]);
+        console.error("Failed to fetch riders:", result.message);
+        setRiders([]);
       }
     } catch (error) {
-      console.error("Error fetching vendors:", error);
-      setVendors([]);
+      console.error("Error fetching riders:", error);
+      setRiders([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchVendors(currentPage, 10);
+    fetchRiders(currentPage, 10);
   }, [currentPage]);
 
   // Open modal to set commission
-  const handleSetCommission = (vendor) => {
-    setSelectedVendor(vendor);
+  const handleSetCommission = (rider) => {
+    setSelectedRider(rider);
     // Initialize with existing commission if available
-    if (vendor.commissionType || vendor.commission) {
+    if (rider.commission || rider.commissionType) {
       setCommissionData({
-        type: vendor.commissionType || vendor.commission?.type || "percentage",
-        percentage: vendor.commissionPercentage || vendor.commission?.percentage || 10,
-        fixedAmount: vendor.commissionFixedAmount || vendor.commission?.fixedAmount || 0,
-        subscriptionAmount: vendor.commission?.subscriptionAmount || 0,
-        subscriptionPeriod: vendor.commission?.subscriptionPeriod || "monthly",
+        type: rider.commissionType || rider.commission?.type || "percentage",
+        percentage: rider.commissionPercentage || rider.commission?.percentage || 10,
+        fixedAmount: rider.commission?.fixedAmount || 0,
+        subscriptionAmount: rider.commission?.subscriptionAmount || 0,
+        subscriptionPeriod: rider.commission?.subscriptionPeriod || "monthly",
       });
     } else {
       setCommissionData({
@@ -91,7 +91,7 @@ const VendorCommissionManagement = () => {
 
   // Save commission
   const handleSaveCommission = async () => {
-    if (!selectedVendor) return;
+    if (!selectedRider) return;
 
     try {
       setSaving(true);
@@ -111,83 +111,44 @@ const VendorCommissionManagement = () => {
         payload.subscriptionPeriod = commissionData.subscriptionPeriod;
       }
 
-      // Try multiple endpoint paths
-      let response;
-      let endpointUsed = '';
-      let error = null;
-
-      // Try endpoint 1: /api/admin/vendors/{id}/commission
-      try {
-        endpointUsed = `/api/admin/vendors/${selectedVendor.vendorId || selectedVendor._id}/commission`;
-        console.log("📍 Trying endpoint:", endpointUsed);
-        response = await api.put(endpointUsed, payload);
-        console.log("✅ Endpoint SUCCESS!");
-      } catch (firstError) {
-        console.log("❌ Endpoint 1 FAILED");
-        error = firstError;
-        
-        // Try endpoint 2: /api/vendor/{id}/commission (fallback)
-        if (firstError.response?.status === 404) {
-          try {
-            endpointUsed = `/api/vendor/${selectedVendor.vendorId || selectedVendor._id}/commission`;
-            console.log("📍 Trying endpoint 2:", endpointUsed);
-            response = await api.put(endpointUsed, payload);
-            console.log("✅ Endpoint 2 SUCCESS!");
-            error = null;
-          } catch (secondError) {
-            console.log("❌ Endpoint 2 FAILED");
-            error = secondError;
-          }
-        }
-      }
-
-      if (error) {
-        throw error;
-      }
+      const response = await api.put(
+        `/api/admin/riders/${selectedRider.riderId || selectedRider._id}/commission`,
+        payload
+      );
 
       const result = response.data;
 
       if (result.success) {
         alert("Commission updated successfully!");
         setIsModalOpen(false);
-        setSelectedVendor(null);
-        fetchVendors(currentPage, 10); // Refresh vendors list
+        setSelectedRider(null);
+        fetchRiders(currentPage, 10); // Refresh riders list
       } else {
         alert(result.message || "Failed to update commission");
       }
     } catch (error) {
       console.error("Error updating commission:", error);
-      
-      // More informative error message
-      if (error.response?.status === 404) {
-        alert(
-          "Commission endpoint not found. Please ensure the backend API endpoint is implemented:\n" +
-          `PUT /api/vendor/${selectedVendor._id}/commission\n\n` +
-          "Error: " + (error.response?.data?.message || "Endpoint not found")
-        );
-      } else {
-        alert(
-          error.response?.data?.message ||
+      alert(
+        error.response?.data?.message ||
           error.message ||
           "Error updating commission. Please try again."
-        );
-      }
+      );
     } finally {
       setSaving(false);
     }
   };
 
   // Format commission display
-  const formatCommission = (vendor) => {
-    if (!vendor.commissionType && !vendor.commission) return "Not Set";
+  const formatCommission = (rider) => {
+    if (!rider.commissionType && !rider.commission) return "Not Set";
     
-    const commType = vendor.commissionType || vendor.commission?.type;
-    const comm = vendor.commission || {};
+    const commType = rider.commissionType || rider.commission?.type;
+    const comm = rider.commission || {};
 
     if (commType === "percentage") {
-      return `${vendor.commissionPercentage || comm.percentage || 0}%`;
+      return `${rider.commissionPercentage || comm.percentage || 0}%`;
     } else if (commType === "fixed") {
-      return `₹${vendor.commissionFixedAmount || comm.fixedAmount || 0}`;
+      return `₹${comm.fixedAmount || 0}`;
     } else if (commType === "hybrid") {
       return `${comm.percentage || 0}% + ₹${comm.fixedAmount || 0}`;
     } else if (commType === "subscription") {
@@ -196,16 +157,14 @@ const VendorCommissionManagement = () => {
     return "Not Set";
   };
 
-  // Filter vendors by search
-  const filteredVendors = vendors.filter((vendor) => {
+  // Filter riders by search
+  const filteredRiders = riders.filter((rider) => {
     if (searchQuery) {
       const searchLower = searchQuery.toLowerCase();
       return (
-        vendor.vendorName?.toLowerCase().includes(searchLower) ||
-        vendor.vendorId?.toLowerCase().includes(searchLower) ||
-        vendor.storeId?.toLowerCase().includes(searchLower) ||
-        vendor.storeName?.toLowerCase().includes(searchLower) ||
-        vendor.contactNumber?.toLowerCase().includes(searchLower)
+        rider.fullName?.toLowerCase().includes(searchLower) ||
+        rider.mobileNumber?.toLowerCase().includes(searchLower) ||
+        rider.riderId?.toLowerCase().includes(searchLower)
       );
     }
     return true;
@@ -237,7 +196,7 @@ const VendorCommissionManagement = () => {
           colSpan="7"
           className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
         >
-          No vendors found.
+          No riders found.
         </td>
       </tr>
     </tbody>
@@ -249,14 +208,14 @@ const VendorCommissionManagement = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-0 mb-2">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
           <h1 className="text-2xl font-bold text-gray-800">
-            Vendor Commission Management
+            Rider Commission & Wallet Management
           </h1>
 
           {/* Search */}
           <div className="flex items-center border border-black rounded overflow-hidden h-9 w-full max-w-full sm:max-w-[450px] mt-2 sm:mt-0">
             <input
               type="text"
-              placeholder="Search Vendor by Name, ID..."
+              placeholder="Search Rider by Name, Mobile..."
               className="flex-1 px-3 sm:px-4 text-sm text-gray-800 focus:outline-none h-full"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -274,10 +233,10 @@ const VendorCommissionManagement = () => {
           <thead>
             <tr className="bg-[#FF7B1D] text-black">
               <th className="p-3 text-left">S.N</th>
-              <th className="p-3 text-left">Vendor ID</th>
-              <th className="p-3 text-left">Vendor Name</th>
-              <th className="p-3 text-left">Store Name</th>
-              <th className="p-3 text-left">Earning Wallet</th>
+              <th className="p-3 text-left">Rider Name</th>
+              <th className="p-3 text-left">Mobile Number</th>
+              <th className="p-3 text-left">Wallet Balance</th>
+              <th className="p-3 text-left">Due Balance</th>
               <th className="p-3 text-left">Current Commission</th>
               <th className="p-3 pr-6 text-right">Action</th>
             </tr>
@@ -285,37 +244,42 @@ const VendorCommissionManagement = () => {
 
           {loading ? (
             <TableSkeleton />
-          ) : filteredVendors.length === 0 ? (
+          ) : filteredRiders.length === 0 ? (
             <EmptyState />
           ) : (
             <tbody>
-              {filteredVendors.map((vendor, idx) => (
+              {filteredRiders.map((rider, idx) => (
                 <tr
-                  key={vendor.vendorId || vendor._id}
+                  key={rider.riderId || rider._id}
                   className="bg-white shadow-sm hover:bg-gray-50 transition border-b-4 border-gray-200"
                 >
                   <td className="p-3">
                     {(currentPage - 1) * pagination.limit + idx + 1}
                   </td>
-                  <td className="p-3 font-mono text-xs">
-                    {vendor.storeId || "N/A"}
-                  </td>
-                  <td className="p-3">{vendor.vendorName || "N/A"}</td>
-                  <td className="p-3">{vendor.storeName || "N/A"}</td>
+                  <td className="p-3 font-semibold">{rider.fullName || "N/A"}</td>
+                  <td className="p-3">{rider.mobileNumber || "N/A"}</td>
                   <td className="p-3">
                     <div className="flex items-center gap-2">
                       <Wallet className="w-4 h-4 text-green-600" />
                       <span className="font-semibold text-green-700">
-                        ₹{vendor.earningWallet?.toFixed(2) || "0.00"}
+                        ₹{rider.walletBalance?.toFixed(2) || "0.00"}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-orange-600" />
+                      <span className="font-semibold text-orange-700">
+                        ₹{rider.dueBalance?.toFixed(2) || "0.00"}
                       </span>
                     </div>
                   </td>
                   <td className="p-3 font-semibold text-gray-700">
-                    {formatCommission(vendor)}
+                    {formatCommission(rider)}
                   </td>
                   <td className="p-3 text-right">
                     <button
-                      onClick={() => handleSetCommission(vendor)}
+                      onClick={() => handleSetCommission(rider)}
                       className="bg-[#FF7B1D] hover:bg-orange-600 text-white px-4 py-2 rounded text-xs sm:text-sm flex items-center gap-2 transition-colors"
                     >
                       <Settings className="w-4 h-4" />
@@ -330,7 +294,7 @@ const VendorCommissionManagement = () => {
       </div>
 
       {/* Pagination */}
-      {!loading && filteredVendors.length > 0 && pagination.pages > 1 && (
+      {!loading && filteredRiders.length > 0 && pagination.pages > 1 && (
         <div className="flex justify-end items-center gap-6 mt-8 max-w-[95%] mx-auto pl-8">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
@@ -390,23 +354,23 @@ const VendorCommissionManagement = () => {
       )}
 
       {/* Commission Modal */}
-      {isModalOpen && selectedVendor && (
+      {isModalOpen && selectedRider && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b">
               <div>
                 <h2 className="text-xl font-bold text-gray-800">
-                  Set Commission - {selectedVendor.vendorName || selectedVendor.storeName}
+                  Set Commission - {selectedRider.fullName || "Rider"}
                 </h2>
                 <p className="text-sm text-gray-600 mt-1">
-                  Store ID: {selectedVendor.storeId || "N/A"}
+                  Mobile: {selectedRider.mobileNumber || "N/A"}
                 </p>
               </div>
               <button
                 onClick={() => {
                   setIsModalOpen(false);
-                  setSelectedVendor(null);
+                  setSelectedRider(null);
                 }}
                 className="text-gray-500 hover:text-gray-700 transition-colors"
               >
@@ -420,11 +384,19 @@ const VendorCommissionManagement = () => {
                 <Wallet className="w-5 h-5 text-blue-600" />
                 Wallet Information
               </h3>
-              <div className="bg-white p-4 rounded-lg shadow-sm">
-                <p className="text-xs text-gray-600 mb-1">Earning Wallet</p>
-                <p className="text-lg font-bold text-green-700">
-                  ₹{selectedVendor.earningWallet?.toFixed(2) || "0.00"}
-                </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white p-4 rounded-lg shadow-sm">
+                  <p className="text-xs text-gray-600 mb-1">Wallet Balance</p>
+                  <p className="text-lg font-bold text-green-700">
+                    ₹{selectedRider.walletBalance?.toFixed(2) || "0.00"}
+                  </p>
+                </div>
+                <div className="bg-white p-4 rounded-lg shadow-sm">
+                  <p className="text-xs text-gray-600 mb-1">Due Balance</p>
+                  <p className="text-lg font-bold text-orange-700">
+                    ₹{selectedRider.dueBalance?.toFixed(2) || "0.00"}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -574,8 +546,11 @@ const VendorCommissionManagement = () => {
                         })
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF7B1D]"
-                      placeholder="999"
+                      placeholder="500"
                     />
+                    <p className="mt-1 text-xs text-red-600">
+                      ⚠️ Subscription amount will be automatically deducted from rider wallet
+                    </p>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
@@ -592,14 +567,12 @@ const VendorCommissionManagement = () => {
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF7B1D]"
                     >
-                      <option value="daily">Daily</option>
-                      <option value="weekly">Weekly</option>
                       <option value="monthly">Monthly</option>
                       <option value="yearly">Yearly</option>
                     </select>
                   </div>
                   <p className="text-xs text-gray-500">
-                    Example: ₹999/month means vendor pays ₹999 per month
+                    Example: ₹500/month means rider pays ₹500 per month (deducted from wallet)
                   </p>
                 </div>
               )}
@@ -627,7 +600,7 @@ const VendorCommissionManagement = () => {
               <button
                 onClick={() => {
                   setIsModalOpen(false);
-                  setSelectedVendor(null);
+                  setSelectedRider(null);
                 }}
                 className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
                 disabled={saving}
@@ -637,9 +610,16 @@ const VendorCommissionManagement = () => {
               <button
                 onClick={handleSaveCommission}
                 disabled={saving}
-                className="px-6 py-2 bg-[#FF7B1D] text-white rounded-md hover:bg-orange-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="px-6 py-2 bg-[#FF7B1D] text-white rounded-md hover:bg-orange-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                {saving ? "Saving..." : "Save Commission"}
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Commission"
+                )}
               </button>
             </div>
           </div>
@@ -649,4 +629,4 @@ const VendorCommissionManagement = () => {
   );
 };
 
-export default VendorCommissionManagement;
+export default RiderCommissionManagement;

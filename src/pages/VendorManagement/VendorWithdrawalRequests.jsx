@@ -567,6 +567,7 @@
 
 // export default AdminVendorWithdrawalRequests;
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import api from "../../api/api";
 import {
@@ -584,6 +585,7 @@ import {
 } from "lucide-react";
 
 const AdminVendorWithdrawalRequests = () => {
+  const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -1089,13 +1091,26 @@ const AdminVendorWithdrawalRequests = () => {
                     </td>
                     <td className="p-3 text-right">
                       <div className="flex justify-end gap-2 items-center">
-                        {/* Eye Icon - Visual indicator only */}
-                        <span
-                          className="text-[#FF7B1D] p-1"
-                          title="View Details"
+                        {/* Eye Icon - Clickable to view vendor */}
+                        <button
+                          onClick={() => {
+                            // Get vendor ID from request
+                            const vendorId = request.vendor?._id || 
+                                          request.vendorId || 
+                                          request.vendor?.vendorId;
+                            
+                            if (vendorId) {
+                              navigate(`/vendor/${vendorId}`);
+                            } else {
+                              console.error("Vendor ID not found in request:", request);
+                              setError("Vendor ID not found. Cannot navigate to vendor page.");
+                            }
+                          }}
+                          className="text-[#FF7B1D] p-1 hover:text-orange-600 transition-colors cursor-pointer"
+                          title="View Vendor Details"
                         >
                           <Eye size={20} />
-                        </span>
+                        </button>
 
                         {/* Approve/Reject buttons - Only for pending requests */}
                         {request.status === "pending" && requestId && (

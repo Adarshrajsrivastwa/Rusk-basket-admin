@@ -188,6 +188,7 @@ import InvoiceView from "./pages/OrderManagement/InvoiceView";
 import BagQRScan from "./pages/OrderManagement/BagQr";
 import AddExtraItemPage from "./pages/OrderManagement/AddExtraItemPage";
 import AllRider from "./pages/RiderManagement/AllRider";
+import RiderCommissionManagement from "./pages/RiderManagement/RiderCommissionManagement";
 import AllCoupon from "./pages/CoupanOffer/AllCoupon";
 import SingleOffer from "./pages/CoupanOffer/SingleOffer.jsx";
 import CreateCoupon from "./components/CreateCoupon";
@@ -552,6 +553,14 @@ function AppContent() {
         <Route path="/orders/:id/add-extra-items" element={<AddExtraItemPage />} />
 
         <Route path="/Rider" element={<AllRider />} />
+        <Route
+          path="/rider/commission"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <RiderCommissionManagement />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/admin/rider/withdrawal-requests"
           element={

@@ -13,7 +13,6 @@ import {
   Check,
   AlertCircle,
   Clock,
-  Eye,
 } from "lucide-react";
 import api from "../../api/api";
 
@@ -37,7 +36,9 @@ const VendorDailyOffers = () => {
     offerEnabled: false,
     offerDiscountPercentage: 0,
     offerStartDate: "",
+    offerStartTime: "",
     offerEndDate: "",
+    offerEndTime: "",
     isDailyOffer: false,
   });
 
@@ -88,15 +89,38 @@ const VendorDailyOffers = () => {
   // Open edit modal
   const handleEditOffer = (product) => {
     setSelectedProduct(product);
+    
+    // Extract date and time from offerStartDate
+    let startDate = "";
+    let startTime = "";
+    if (product.offerStartDate) {
+      const startDateTime = new Date(product.offerStartDate);
+      startDate = startDateTime.toISOString().split("T")[0];
+      // Extract time in HH:MM format
+      const hours = String(startDateTime.getHours()).padStart(2, "0");
+      const minutes = String(startDateTime.getMinutes()).padStart(2, "0");
+      startTime = `${hours}:${minutes}`;
+    }
+    
+    // Extract date and time from offerEndDate
+    let endDate = "";
+    let endTime = "";
+    if (product.offerEndDate) {
+      const endDateTime = new Date(product.offerEndDate);
+      endDate = endDateTime.toISOString().split("T")[0];
+      // Extract time in HH:MM format
+      const hours = String(endDateTime.getHours()).padStart(2, "0");
+      const minutes = String(endDateTime.getMinutes()).padStart(2, "0");
+      endTime = `${hours}:${minutes}`;
+    }
+    
     setEditForm({
       offerEnabled: product.offerEnabled || false,
       offerDiscountPercentage: product.offerDiscountPercentage || 0,
-      offerStartDate: product.offerStartDate
-        ? new Date(product.offerStartDate).toISOString().split("T")[0]
-        : "",
-      offerEndDate: product.offerEndDate
-        ? new Date(product.offerEndDate).toISOString().split("T")[0]
-        : "",
+      offerStartDate: startDate,
+      offerStartTime: startTime,
+      offerEndDate: endDate,
+      offerEndTime: endTime,
       isDailyOffer: product.isDailyOffer || false,
     });
     setShowEditModal(true);
@@ -114,43 +138,103 @@ const VendorDailyOffers = () => {
       return;
     }
 
+    // Validate date and time combination - End must be after Start
     if (editForm.offerStartDate && editForm.offerEndDate) {
-      const startDate = new Date(editForm.offerStartDate);
-      const endDate = new Date(editForm.offerEndDate);
-      if (endDate <= startDate) {
-        setError("End date must be after start date");
+      let startDateTime = new Date(editForm.offerStartDate);
+      let endDateTime = new Date(editForm.offerEndDate);
+      
+      // Add time if provided
+      if (editForm.offerStartTime) {
+        const timeParts = editForm.offerStartTime.split(":");
+        const hours = parseInt(timeParts[0]) || 0;
+        const minutes = parseInt(timeParts[1]) || 0;
+        const seconds = parseInt(timeParts[2]) || 0;
+        startDateTime.setHours(hours, minutes, seconds, 0);
+      } else {
+        startDateTime.setHours(0, 0, 0, 0);
+      }
+      
+      if (editForm.offerEndTime) {
+        const timeParts = editForm.offerEndTime.split(":");
+        const hours = parseInt(timeParts[0]) || 0;
+        const minutes = parseInt(timeParts[1]) || 0;
+        const seconds = parseInt(timeParts[2]) || 0;
+        endDateTime.setHours(hours, minutes, seconds, 0);
+      } else {
+        endDateTime.setHours(23, 59, 59, 999);
+      }
+      
+      if (endDateTime <= startDateTime) {
+        setError("End date and time must be after start date and time");
         return;
       }
+    } else if (editForm.offerStartDate && !editForm.offerEndDate) {
+      setError("Please provide end date if start date is provided");
+      return;
+    } else if (!editForm.offerStartDate && editForm.offerEndDate) {
+      setError("Please provide start date if end date is provided");
+      return;
     }
 
     setUpdating(true);
     setError("");
     try {
-      const payload = {
-        offerEnabled: editForm.offerEnabled,
-        offerDiscountPercentage:
-          parseFloat(editForm.offerDiscountPercentage) || 0,
-        isDailyOffer: editForm.isDailyOffer,
-      };
+      // Build payload - all fields are optional as per API spec
+      const payload = {};
 
-      if (editForm.offerStartDate) {
-        payload.offerStartDate = new Date(
-          editForm.offerStartDate,
-        ).toISOString();
-      } else {
-        payload.offerStartDate = null;
+      // Only include fields that have values
+      if (editForm.offerEnabled !== undefined) {
+        payload.offerEnabled = editForm.offerEnabled;
       }
 
+      if (editForm.offerDiscountPercentage !== undefined && editForm.offerDiscountPercentage !== null) {
+        payload.offerDiscountPercentage = parseFloat(editForm.offerDiscountPercentage) || 0;
+      }
+
+      if (editForm.isDailyOffer !== undefined) {
+        payload.isDailyOffer = editForm.isDailyOffer;
+      }
+
+      // Handle start date and time
+      if (editForm.offerStartDate) {
+        payload.offerStartDate = editForm.offerStartDate;
+        if (editForm.offerStartTime) {
+          // Convert HH:MM to HH:MM:SS format if needed
+          let startTime = editForm.offerStartTime;
+          if (startTime.length === 5) {
+            // If format is HH:MM, convert to HH:MM:SS
+            startTime = `${startTime}:00`;
+          }
+          // Validate time format (HH:MM:SS)
+          const timePattern = /^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/;
+          if (timePattern.test(startTime)) {
+            payload.offerStartTime = startTime;
+          }
+        }
+      }
+
+      // Handle end date and time
       if (editForm.offerEndDate) {
-        payload.offerEndDate = new Date(editForm.offerEndDate).toISOString();
-      } else {
-        payload.offerEndDate = null;
+        payload.offerEndDate = editForm.offerEndDate;
+        if (editForm.offerEndTime) {
+          // Convert HH:MM to HH:MM:SS format if needed
+          let endTime = editForm.offerEndTime;
+          if (endTime.length === 5) {
+            // If format is HH:MM, convert to HH:MM:SS
+            endTime = `${endTime}:00`;
+          }
+          // Validate time format (HH:MM:SS)
+          const timePattern = /^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/;
+          if (timePattern.test(endTime)) {
+            payload.offerEndTime = endTime;
+          }
+        }
       }
 
       console.log("Updating offer with payload:", payload);
 
       const response = await api.put(
-        `/api/vendor/products/${selectedProduct._id}/offer`,
+        `/api/vendor/daily-offers/${selectedProduct._id}`,
         payload,
       );
 
@@ -228,7 +312,7 @@ const VendorDailyOffers = () => {
       console.log("Toggling daily offer with payload:", payload);
 
       const response = await api.put(
-        `/api/vendor/products/${product._id}/offer`,
+        `/api/vendor/daily-offers/${product._id}`,
         payload,
       );
 
@@ -270,22 +354,115 @@ const VendorDailyOffers = () => {
     }
   };
 
-  // Get offer status
+  // Get offer status based on current date/time
   const getOfferStatus = (product) => {
     if (!product.offerEnabled) return "disabled";
     if (!product.isDailyOffer) return "regular";
 
     const now = new Date();
-    const startDate = product.offerStartDate
-      ? new Date(product.offerStartDate)
-      : null;
-    const endDate = product.offerEndDate
-      ? new Date(product.offerEndDate)
-      : null;
+    
+    // Parse start date and time
+    let startDateTime = null;
+    if (product.offerStartDate) {
+      startDateTime = new Date(product.offerStartDate);
+      // Add start time if available
+      if (product.offerStartTime) {
+        const timeParts = product.offerStartTime.split(":");
+        const hours = parseInt(timeParts[0]) || 0;
+        const minutes = parseInt(timeParts[1]) || 0;
+        const seconds = parseInt(timeParts[2]) || 0;
+        startDateTime.setHours(hours, minutes, seconds, 0);
+      } else {
+        startDateTime.setHours(0, 0, 0, 0);
+      }
+    }
+    
+    // Parse end date and time
+    let endDateTime = null;
+    if (product.offerEndDate) {
+      endDateTime = new Date(product.offerEndDate);
+      // Add end time if available
+      if (product.offerEndTime) {
+        const timeParts = product.offerEndTime.split(":");
+        const hours = parseInt(timeParts[0]) || 0;
+        const minutes = parseInt(timeParts[1]) || 0;
+        const seconds = parseInt(timeParts[2]) || 0;
+        endDateTime.setHours(hours, minutes, seconds, 0);
+      } else {
+        endDateTime.setHours(23, 59, 59, 999);
+      }
+    }
 
-    if (startDate && now < startDate) return "upcoming";
-    if (endDate && now > endDate) return "expired";
+    // Check if current time is before start
+    if (startDateTime && now < startDateTime) return "upcoming";
+    
+    // Check if current time is after end
+    if (endDateTime && now > endDateTime) return "expired";
+    
+    // Check if current time is within the offer period
+    if (startDateTime && endDateTime) {
+      if (now >= startDateTime && now <= endDateTime) {
+        return "active";
+      }
+    } else if (startDateTime && now >= startDateTime) {
+      return "active";
+    } else if (endDateTime && now <= endDateTime) {
+      return "active";
+    } else if (!startDateTime && !endDateTime) {
+      // No date restrictions, check if enabled
+      return product.offerEnabled ? "active" : "disabled";
+    }
+    
     return "active";
+  };
+  
+  // Check if offer is currently active (for display in Actions column)
+  const isOfferCurrentlyActive = (offer) => {
+    if (!offer.offerEnabled || !offer.isDailyOffer) return false;
+    
+    const now = new Date();
+    
+    // Parse start date and time
+    let startDateTime = null;
+    if (offer.offerStartDate) {
+      startDateTime = new Date(offer.offerStartDate);
+      if (offer.offerStartTime) {
+        const timeParts = offer.offerStartTime.split(":");
+        const hours = parseInt(timeParts[0]) || 0;
+        const minutes = parseInt(timeParts[1]) || 0;
+        const seconds = parseInt(timeParts[2]) || 0;
+        startDateTime.setHours(hours, minutes, seconds, 0);
+      } else {
+        startDateTime.setHours(0, 0, 0, 0);
+      }
+    }
+    
+    // Parse end date and time
+    let endDateTime = null;
+    if (offer.offerEndDate) {
+      endDateTime = new Date(offer.offerEndDate);
+      if (offer.offerEndTime) {
+        const timeParts = offer.offerEndTime.split(":");
+        const hours = parseInt(timeParts[0]) || 0;
+        const minutes = parseInt(timeParts[1]) || 0;
+        const seconds = parseInt(timeParts[2]) || 0;
+        endDateTime.setHours(hours, minutes, seconds, 0);
+      } else {
+        endDateTime.setHours(23, 59, 59, 999);
+      }
+    }
+    
+    // Check if current time is within the offer period
+    if (startDateTime && endDateTime) {
+      return now >= startDateTime && now <= endDateTime;
+    } else if (startDateTime) {
+      return now >= startDateTime;
+    } else if (endDateTime) {
+      return now <= endDateTime;
+    } else {
+      // No date restrictions, check if enabled
+      return offer.offerEnabled && offer.isDailyOffer;
+    }
   };
 
   // Format date
@@ -304,9 +481,7 @@ const VendorDailyOffers = () => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      offer.productName?.toLowerCase().includes(query) ||
-      offer.category?.categoryName?.toLowerCase().includes(query) ||
-      offer.subCategory?.subCategoryName?.toLowerCase().includes(query)
+      offer.productName?.toLowerCase().includes(query)
     );
   });
 
@@ -517,16 +692,7 @@ const VendorDailyOffers = () => {
                           Product
                         </th>
                         <th className="px-6 py-3 text-left text-sm font-bold uppercase">
-                          Category
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
                           Discount
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
-                          Daily Offer
                         </th>
                         <th className="px-6 py-3 text-left text-sm font-bold uppercase">
                           Dates
@@ -538,7 +704,6 @@ const VendorDailyOffers = () => {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredOffers.map((offer, index) => {
-                        const status = getOfferStatus(offer);
                         return (
                           <tr
                             key={offer._id}
@@ -559,73 +724,10 @@ const VendorDailyOffers = () => {
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">
-                                {offer.category?.categoryName || "N/A"}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                {offer.subCategory?.subCategoryName || ""}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
                               <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
                                 <Percent size={14} />
                                 {offer.offerDiscountPercentage || 0}%
                               </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span
-                                className={`px-3 py-1 rounded-full text-sm font-bold ${
-                                  status === "active"
-                                    ? "bg-green-100 text-green-700"
-                                    : status === "upcoming"
-                                      ? "bg-blue-100 text-blue-700"
-                                      : status === "expired"
-                                        ? "bg-red-100 text-red-700"
-                                        : "bg-gray-100 text-gray-700"
-                                }`}
-                              >
-                                {status === "active"
-                                  ? "Active"
-                                  : status === "upcoming"
-                                    ? "Upcoming"
-                                    : status === "expired"
-                                      ? "Expired"
-                                      : "Disabled"}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <button
-                                onClick={() => handleQuickToggle(offer)}
-                                disabled={togglingId === offer._id || updating}
-                                className="flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80 transition-opacity"
-                              >
-                                {togglingId === offer._id ? (
-                                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-500"></div>
-                                ) : offer.isDailyOffer ? (
-                                  <ToggleRight
-                                    size={24}
-                                    className="text-green-600"
-                                  />
-                                ) : (
-                                  <ToggleLeft
-                                    size={24}
-                                    className="text-gray-400"
-                                  />
-                                )}
-                                <span
-                                  className={`text-sm font-medium ${
-                                    offer.isDailyOffer
-                                      ? "text-green-600"
-                                      : "text-gray-500"
-                                  }`}
-                                >
-                                  {togglingId === offer._id
-                                    ? "Updating..."
-                                    : offer.isDailyOffer
-                                      ? "Yes"
-                                      : "No"}
-                                </span>
-                              </button>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               <div>
@@ -641,58 +743,16 @@ const VendorDailyOffers = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => {
-                                    // Get vendor ID from offer data or use current vendor ID
-                                    let vendorId = null;
-                                    
-                                    // Try to get vendor ID from offer data
-                                    if (offer.vendor) {
-                                      if (typeof offer.vendor === "string") {
-                                        vendorId = offer.vendor;
-                                      } else if (offer.vendor._id) {
-                                        vendorId = offer.vendor._id;
-                                      }
-                                    }
-                                    
-                                    // If not found, try vendorId field
-                                    if (!vendorId && offer.vendorId) {
-                                      vendorId = offer.vendorId;
-                                    }
-                                    
-                                    // If still not found, get from current user data
-                                    if (!vendorId) {
-                                      try {
-                                        const userData = JSON.parse(localStorage.getItem("userData") || "{}");
-                                        vendorId = userData._id || userData.id;
-                                      } catch (e) {
-                                        console.error("Error parsing userData:", e);
-                                      }
-                                    }
-                                    
-                                    // Final fallback - try user field
-                                    if (!vendorId) {
-                                      try {
-                                        const user = JSON.parse(localStorage.getItem("user") || "{}");
-                                        vendorId = user._id || user.id;
-                                      } catch (e) {
-                                        console.error("Error parsing user:", e);
-                                      }
-                                    }
-                                    
-                                    if (vendorId) {
-                                      navigate(`/vendor/${vendorId}`);
-                                    } else {
-                                      console.error("Vendor ID not found in offer data or user data");
-                                      alert("Vendor ID not found. Please try again.");
-                                    }
-                                  }}
-                                  className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors flex items-center gap-1"
-                                  title="View Vendor"
-                                >
-                                  <Eye size={14} />
-                                  View
-                                </button>
+                                {/* Show Offer Status based on current date/time check */}
+                                {isOfferCurrentlyActive(offer) ? (
+                                  <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                                    Offer Enabled
+                                  </span>
+                                ) : (
+                                  <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
+                                    Disabled
+                                  </span>
+                                )}
                                 <button
                                   onClick={() => handleEditOffer(offer)}
                                   className="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600 transition-colors flex items-center gap-1"
@@ -853,6 +913,26 @@ const VendorDailyOffers = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Start Time (Optional) - HH:MM
+                    </label>
+                    <input
+                      type="time"
+                      value={editForm.offerStartTime}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          offerStartTime: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      placeholder="HH:MM"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       End Date (Optional)
                     </label>
                     <input
@@ -865,6 +945,24 @@ const VendorDailyOffers = () => {
                         })
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      End Time (Optional) - HH:MM
+                    </label>
+                    <input
+                      type="time"
+                      value={editForm.offerEndTime}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          offerEndTime: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      placeholder="HH:MM"
                     />
                   </div>
                 </div>
