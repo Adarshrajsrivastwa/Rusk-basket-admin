@@ -39,7 +39,7 @@ const VendorWithdrawalRequests = () => {
       console.log("========================================");
 
       const response = await api.get(
-        "/api/vendor/wallet/earning/withdrawal-requests"
+        "/api/vendor/wallet/earning/withdrawal-requests",
       );
 
       console.log("========================================");
@@ -61,15 +61,33 @@ const VendorWithdrawalRequests = () => {
       console.log("----------------------------------------");
       console.log("✅ Result.success:", result.success);
       console.log("📊 Result.count:", result.count);
-      console.log("📄 Result.pagination:", JSON.stringify(result.pagination, null, 2));
-      console.log("💵 Result.earningWallet:", JSON.stringify(result.earningWallet, null, 2));
-      console.log("💰 Result.earningWallet.currentBalance:", result.earningWallet?.currentBalance);
+      console.log(
+        "📄 Result.pagination:",
+        JSON.stringify(result.pagination, null, 2),
+      );
+      console.log(
+        "💵 Result.earningWallet:",
+        JSON.stringify(result.earningWallet, null, 2),
+      );
+      console.log(
+        "💰 Result.earningWallet.currentBalance:",
+        result.earningWallet?.currentBalance,
+      );
       console.log("----------------------------------------");
       console.log("📋 Result.data:", result.data);
-      console.log("📋 Result.data type:", Array.isArray(result.data) ? "Array" : typeof result.data);
-      console.log("📋 Result.data length:", Array.isArray(result.data) ? result.data.length : "Not an array");
+      console.log(
+        "📋 Result.data type:",
+        Array.isArray(result.data) ? "Array" : typeof result.data,
+      );
+      console.log(
+        "📋 Result.data length:",
+        Array.isArray(result.data) ? result.data.length : "Not an array",
+      );
       if (Array.isArray(result.data)) {
-        console.log("📋 Result.data (JSON):", JSON.stringify(result.data, null, 2));
+        console.log(
+          "📋 Result.data (JSON):",
+          JSON.stringify(result.data, null, 2),
+        );
       }
       console.log("========================================");
 
@@ -80,14 +98,17 @@ const VendorWithdrawalRequests = () => {
         console.log(`Total Requests: ${result.data.length}`);
         result.data.forEach((request, index) => {
           console.log(`\n--- 📌 Request ${index + 1} ---`);
-          console.log("Full request object (JSON):", JSON.stringify(request, null, 2));
+          console.log(
+            "Full request object (JSON):",
+            JSON.stringify(request, null, 2),
+          );
           console.log("_id:", request._id);
           console.log("amount:", request.amount);
           console.log("status:", request.status);
           console.log("createdAt:", request.createdAt);
           console.log("All keys:", Object.keys(request));
           // Log all properties
-          Object.keys(request).forEach(key => {
+          Object.keys(request).forEach((key) => {
             console.log(`  ${key}:`, request[key]);
           });
         });
@@ -111,7 +132,10 @@ const VendorWithdrawalRequests = () => {
         console.log("✅ API SUCCESS SUMMARY:");
         console.log("========================================");
         console.log("Total Requests:", result.data?.length || 0);
-        console.log("Wallet Balance:", result.earningWallet?.currentBalance || "N/A");
+        console.log(
+          "Wallet Balance:",
+          result.earningWallet?.currentBalance || "N/A",
+        );
         console.log("Count:", result.count || 0);
         console.log("Pagination:", result.pagination || "N/A");
         console.log("========================================");
@@ -131,8 +155,7 @@ const VendorWithdrawalRequests = () => {
       console.error("Error response status:", error.response?.status);
       console.error("========================================");
       setError(
-        error.response?.data?.message ||
-          "Error fetching withdrawal requests"
+        error.response?.data?.message || "Error fetching withdrawal requests",
       );
       setRequests([]);
     } finally {
@@ -181,8 +204,7 @@ const VendorWithdrawalRequests = () => {
     } catch (error) {
       console.error("Error creating withdrawal request:", error);
       setError(
-        error.response?.data?.message ||
-          "Error creating withdrawal request"
+        error.response?.data?.message || "Error creating withdrawal request",
       );
     } finally {
       setActionLoading(false);
@@ -281,7 +303,7 @@ const VendorWithdrawalRequests = () => {
         </div>
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="px-4 py-2 bg-[#FF7B1D] text-white rounded-md hover:bg-orange-600 transition-colors flex items-center gap-2"
+          className="px-4 py-2 bg-black text-white rounded-sm hover:bg-orange-600 transition-colors flex items-center gap-2"
         >
           <Plus size={20} />
           Create Request
@@ -370,7 +392,7 @@ const VendorWithdrawalRequests = () => {
                   <td className="p-3">
                     <span
                       className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(
-                        request.status
+                        request.status,
                       )}`}
                     >
                       {request.status
@@ -490,7 +512,9 @@ const VendorWithdrawalRequests = () => {
             <div className="p-6">
               <div className="text-center">
                 <div className="mb-4">
-                  <p className="text-sm text-gray-600 mb-2">Available Balance</p>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Available Balance
+                  </p>
                   <p className="text-4xl font-bold text-green-600">
                     {formatCurrency(availableBalance)}
                   </p>

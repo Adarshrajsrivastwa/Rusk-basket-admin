@@ -428,33 +428,33 @@ const AdminRiderSupport = () => {
               <>
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-[#FF7B1D] text-white">
+                    <thead className="bg-[#FF7B1D] text-black">
                       <tr>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           S.N
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Ticket Number
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Rider
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Complaint
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Category
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Status
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Messages
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Created At
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Actions
                         </th>
                       </tr>

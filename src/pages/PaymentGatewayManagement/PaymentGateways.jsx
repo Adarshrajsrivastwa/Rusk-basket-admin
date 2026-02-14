@@ -351,7 +351,7 @@ const PaymentGatewayManagement = () => {
             </h1>
             <button
               onClick={handleAddClick}
-              className="bg-[#FF7B1D] text-white px-5 py-2.5 rounded-lg flex items-center gap-2 hover:bg-orange-600 transition-colors shadow-md"
+              className="bg-black text-white px-5 py-2.5 rounded-sm flex items-center gap-2 hover:bg-orange-600 transition-colors shadow-md"
             >
               <Plus size={18} /> Add Gateway
             </button>
@@ -366,9 +366,9 @@ const PaymentGatewayManagement = () => {
 
           {/* Table */}
           {!loading && (
-            <div className="bg-white shadow-sm border rounded-lg overflow-hidden">
+            <div className="bg-white shadow-sm border rounded-sm overflow-hidden">
               <table className="w-full">
-                <thead className="bg-[#FF7B1D] text-white">
+                <thead className="bg-[#FF7B1D] text-black">
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-semibold">
                       Gateway

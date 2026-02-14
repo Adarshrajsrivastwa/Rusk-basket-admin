@@ -158,7 +158,7 @@ const BannerManagement = () => {
     } catch (error) {
       console.error("Error saving banner:", error);
       alert(
-        error.message || "Failed to save banner. Check if backend is running."
+        error.message || "Failed to save banner. Check if backend is running.",
       );
     } finally {
       setSubmitting(false);
@@ -202,7 +202,7 @@ const BannerManagement = () => {
             </h1>
             <button
               onClick={handleAddClick}
-              className="bg-orange-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 hover:bg-orange-600 transition-colors shadow-md"
+              className="bg-black text-white px-5 py-2.5 rounded-sm flex items-center gap-2 hover:bg-orange-600 transition-colors shadow-md"
             >
               <Plus size={18} /> Add Banner
             </button>
@@ -349,14 +349,14 @@ const BannerManagement = () => {
                 <div className="flex justify-end gap-3 pt-4">
                   <button
                     onClick={() => setIsModalOpen(false)}
-                    className="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                    className="px-5 py-2 bg-gray-200 text-gray-700 rounded-sm hover:bg-gray-300 transition-colors"
                     disabled={submitting}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSubmit}
-                    className="px-5 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-5 py-2 bg-orange-500 text-white rounded-sm hover:bg-orange-600 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={submitting}
                   >
                     {submitting ? (

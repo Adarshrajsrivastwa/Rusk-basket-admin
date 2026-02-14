@@ -981,11 +981,10 @@ const BagQRScan = () => {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isScanningItem, setIsScanningItem] = useState(false);
   const [isDeliveryAmountModalOpen, setIsDeliveryAmountModalOpen] = useState(false);
-  const [deliveryAmount, setDeliveryAmount] = useState(80);
   const [distance, setDistance] = useState(null);
   const [expectedTime, setExpectedTime] = useState(null);
   const [showWaitingAnimation, setShowWaitingAnimation] = useState(false);
-  const [countdown, setCountdown] = useState(120); // 2 minutes in seconds
+  const [countdown, setCountdown] = useState(5); // 5 seconds
   const countdownIntervalRef = useRef(null);
   const redirectTimeoutRef = useRef(null);
 
@@ -1303,8 +1302,7 @@ const BagQRScan = () => {
   };
 
   // API Function to Update Order Status
-  const updateOrderStatus = async (status, deliveryAmount = 80) => {
-    setIsUpdatingStatus(true);
+  const updateOrderStatus = async (status) => {
     try {
       const headers = getAuthHeaders();
 
@@ -1313,7 +1311,6 @@ const BagQRScan = () => {
 
       const requestBody = {
         status: status,
-        deliveryAmount: deliveryAmount,
       };
 
       const response = await fetch(
@@ -1736,13 +1733,8 @@ const BagQRScan = () => {
     setIsDeliveryAmountModalOpen(true);
   };
 
-  // Handle Seal Bag with delivery amount
-  const handleSealBagWithAmount = async () => {
-    if (!deliveryAmount || deliveryAmount <= 0) {
-      alert("⚠️ Please enter a valid delivery amount!");
-      return;
-    }
-
+  // Handle Seal Bag - Save distance and expected time, update status after 15 seconds
+  const handleSealBag = async () => {
     setIsDeliveryAmountModalOpen(false);
     setIsUpdatingStatus(true);
 
@@ -1770,20 +1762,36 @@ const BagQRScan = () => {
         }
       }
 
-      // Update order status to "ready" via API with user-entered deliveryAmount
-      const result = await updateOrderStatus("ready", parseFloat(deliveryAmount));
-
-      if (!result.success) {
-        const proceed = window.confirm(
-          `⚠️ Failed to update order status in backend!\n\nError: ${result.error}\n\nDo you want to seal the bag locally anyway?\n(The status will need to be updated manually later)`,
-        );
-
-        if (!proceed) {
-          setIsUpdatingStatus(false);
-          return;
-        }
+      // Extract numeric distance value (remove "km" or "m" suffix)
+      let distanceValue = null;
+      if (distance && distance !== "N/A" && distance !== "Calculating...") {
+        const distanceStr = distance.toString().replace(/[^\d.]/g, '');
+        distanceValue = parseFloat(distanceStr);
       }
 
+      // Extract numeric expected time value (convert to minutes)
+      let expectedTimeValue = null;
+      if (expectedTime && expectedTime !== "N/A" && expectedTime !== "Calculating...") {
+        // Parse time string like "15 min" or "1 hr 30 min"
+        const timeStr = expectedTime.toString().toLowerCase();
+        let totalMinutes = 0;
+        
+        // Extract hours
+        const hourMatch = timeStr.match(/(\d+)\s*hr/);
+        if (hourMatch) {
+          totalMinutes += parseInt(hourMatch[1]) * 60;
+        }
+        
+        // Extract minutes
+        const minMatch = timeStr.match(/(\d+)\s*min/);
+        if (minMatch) {
+          totalMinutes += parseInt(minMatch[1]);
+        }
+        
+        expectedTimeValue = totalMinutes > 0 ? totalMinutes : null;
+      }
+
+      // Update bag details immediately
       setBagDetails({
         ...bagDetails,
         bagNo: bagNumber,
@@ -1791,6 +1799,8 @@ const BagQRScan = () => {
         status: "Ready for Pickup",
         sealed: true,
         completeTime: new Date().toLocaleString(),
+        distance: distanceValue,
+        expectedTime: expectedTimeValue,
       });
 
       const extraItemsCount = products.filter((p) => p.isExtra).length;
@@ -1799,9 +1809,24 @@ const BagQRScan = () => {
           ? `\n\n📦 Includes ${extraItemsCount} extra item(s)`
           : "";
 
+      // Update order status after 15 seconds delay
+      setTimeout(async () => {
+        try {
+          // Update order status to "ready" via API (without deliveryAmount)
+          const result = await updateOrderStatus("ready");
+
+          if (!result.success) {
+            console.error("Failed to update order status:", result.error);
+            // Don't show alert, just log the error
+          }
+        } catch (error) {
+          console.error("Error updating order status:", error);
+        }
+      }, 15000); // 15 seconds delay
+
       // Show waiting animation
       setShowWaitingAnimation(true);
-      setCountdown(120); // Reset countdown to 2 minutes
+      setCountdown(5); // Reset countdown to 5 seconds
       
       // Clear any existing intervals/timeouts
       if (countdownIntervalRef.current) {
@@ -1826,14 +1851,16 @@ const BagQRScan = () => {
         });
       }, 1000);
       
-      // Set timeout to redirect after 2 minutes (120000 ms) as backup
+      // Set timeout to redirect after 5 seconds (5000 ms) as backup
       redirectTimeoutRef.current = setTimeout(() => {
         if (countdownIntervalRef.current) {
           clearInterval(countdownIntervalRef.current);
         }
         setShowWaitingAnimation(false);
         navigate("/vendor/orders");
-      }, 120000); // 2 minutes
+      }, 5000); // 5 seconds
+      
+      setIsUpdatingStatus(false);
     } catch (error) {
       alert(`❌ Failed to seal bag: ${error.message}`);
       setIsUpdatingStatus(false);
@@ -2223,12 +2250,11 @@ const BagQRScan = () => {
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                   <MapPin size={28} className="text-green-500" />
-                  Delivery Route & Amount
+                  Delivery Route Information
                 </h3>
                 <button
                   onClick={() => {
                     setIsDeliveryAmountModalOpen(false);
-                    setDeliveryAmount(80);
                     setDistance(null);
                     setExpectedTime(null);
                   }}
@@ -2256,30 +2282,10 @@ const BagQRScan = () => {
                 </div>
               </div>
 
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Delivery Amount (₹)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={deliveryAmount}
-                  onChange={(e) => setDeliveryAmount(parseFloat(e.target.value) || 0)}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:outline-none font-semibold text-lg"
-                  placeholder="Enter delivery amount"
-                  autoFocus
-                />
-                <p className="text-xs text-gray-500 mt-2">
-                  Enter the delivery amount for this order
-                </p>
-              </div>
-
               <div className="flex gap-3">
                 <button
                   onClick={() => {
                     setIsDeliveryAmountModalOpen(false);
-                    setDeliveryAmount(80);
                     setDistance(null);
                     setExpectedTime(null);
                   }}
@@ -2288,10 +2294,10 @@ const BagQRScan = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={handleSealBagWithAmount}
-                  disabled={!deliveryAmount || deliveryAmount <= 0 || isUpdatingStatus}
+                  onClick={handleSealBag}
+                  disabled={isUpdatingStatus}
                   className={`flex-1 ${
-                    !deliveryAmount || deliveryAmount <= 0 || isUpdatingStatus
+                    isUpdatingStatus
                       ? "bg-gray-400 cursor-not-allowed"
                       : "bg-green-600 hover:bg-green-700"
                   } text-white px-4 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2`}
@@ -2335,7 +2341,7 @@ const BagQRScan = () => {
 
                 {/* Message */}
                 <p className="text-gray-700 mb-6 leading-relaxed">
-                  Please wait for <span className="font-bold text-orange-600">2 minutes</span>. Someone will accept the order, or else it will be assigned automatically.
+                  Please wait for <span className="font-bold text-orange-600">5 seconds</span>. Someone will accept the order, or else it will be assigned automatically.
                 </p>
 
                 {/* Countdown Timer */}
@@ -2343,7 +2349,10 @@ const BagQRScan = () => {
                   <div className="inline-flex items-center justify-center bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-full shadow-lg">
                     <Clock className="mr-2" size={20} />
                     <span className="text-xl font-bold">
-                      {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}
+                      {countdown < 60 
+                        ? `${countdown}s` 
+                        : `${Math.floor(countdown / 60)}:${(countdown % 60).toString().padStart(2, '0')}`
+                      }
                     </span>
                   </div>
                 </div>
@@ -2352,7 +2361,7 @@ const BagQRScan = () => {
                 <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
                   <div
                     className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-1000"
-                    style={{ width: `${((120 - countdown) / 120) * 100}%` }}
+                    style={{ width: `${((5 - countdown) / 5) * 100}%` }}
                   ></div>
                 </div>
 

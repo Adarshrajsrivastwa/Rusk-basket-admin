@@ -32,7 +32,10 @@ const SingleOrder = () => {
         console.log("========================================");
         console.log("📦 FETCHING ORDER DATA:");
         console.log("Order ID from params:", id);
-        console.log("API Endpoint:", `${API_BASE_URL}/checkout/vendor/order/${id}`);
+        console.log(
+          "API Endpoint:",
+          `${API_BASE_URL}/checkout/vendor/order/${id}`,
+        );
         console.log("========================================");
 
         // Get token from localStorage
@@ -77,16 +80,28 @@ const SingleOrder = () => {
         console.log("Result.data type:", typeof result.data);
         if (result.data) {
           console.log("Result.data keys:", Object.keys(result.data));
-        console.log("Result.data._id:", result.data._id);
-        console.log("Result.data.orderNumber:", result.data.orderNumber);
-        console.log("Result.data.status:", result.data.status);
-        console.log("Result.data.createdAt:", result.data.createdAt);
-        console.log("Result.data.deliveryImage:", result.data.deliveryImage);
-        console.log("Result.data.deliveryImage?.url:", result.data.deliveryImage?.url);
-        console.log("Result.data.deliveredImage:", result.data.deliveredImage);
-        console.log("Result.data.deliveredImage?.url:", result.data.deliveredImage?.url);
-        console.log("Result.data.riderInfo:", result.data.riderInfo);
-        console.log("Result.data (Full JSON):", JSON.stringify(result.data, null, 2));
+          console.log("Result.data._id:", result.data._id);
+          console.log("Result.data.orderNumber:", result.data.orderNumber);
+          console.log("Result.data.status:", result.data.status);
+          console.log("Result.data.createdAt:", result.data.createdAt);
+          console.log("Result.data.deliveryImage:", result.data.deliveryImage);
+          console.log(
+            "Result.data.deliveryImage?.url:",
+            result.data.deliveryImage?.url,
+          );
+          console.log(
+            "Result.data.deliveredImage:",
+            result.data.deliveredImage,
+          );
+          console.log(
+            "Result.data.deliveredImage?.url:",
+            result.data.deliveredImage?.url,
+          );
+          console.log("Result.data.riderInfo:", result.data.riderInfo);
+          console.log(
+            "Result.data (Full JSON):",
+            JSON.stringify(result.data, null, 2),
+          );
         }
         console.log("========================================");
 
@@ -96,10 +111,13 @@ const SingleOrder = () => {
 
         // Transform API response to match component structure
         const transformedData = transformOrderData(result.data);
-        
+
         console.log("========================================");
         console.log("🔄 TRANSFORMED ORDER DATA:");
-        console.log("Transformed Data (JSON):", JSON.stringify(transformedData, null, 2));
+        console.log(
+          "Transformed Data (JSON):",
+          JSON.stringify(transformedData, null, 2),
+        );
         console.log("----------------------------------------");
         console.log("Transformed Data Keys:", Object.keys(transformedData));
         console.log("Transformed Data._id:", transformedData._id);
@@ -109,10 +127,16 @@ const SingleOrder = () => {
         console.log("Transformed Data.vendor:", transformedData.vendor);
         console.log("Transformed Data.buyer:", transformedData.buyer);
         console.log("Transformed Data.products:", transformedData.products);
-        console.log("Transformed Data.deliveryImage:", transformedData.deliveryImage);
-        console.log("Transformed Data.deliveredImage:", transformedData.deliveredImage);
+        console.log(
+          "Transformed Data.deliveryImage:",
+          transformedData.deliveryImage,
+        );
+        console.log(
+          "Transformed Data.deliveredImage:",
+          transformedData.deliveredImage,
+        );
         console.log("========================================");
-        
+
         setOrderData(transformedData);
       } catch (err) {
         console.error("Error fetching order:", err);
@@ -143,7 +167,10 @@ const SingleOrder = () => {
           console.log("📄 AUTO-GENERATING INVOICE PDF:");
           console.log("Order Number:", orderData.id);
           console.log("Status:", orderData.status);
-          console.log("API Endpoint:", `${API_BASE_URL}/invoice/order/${orderData.id}/generate-pdf`);
+          console.log(
+            "API Endpoint:",
+            `${API_BASE_URL}/invoice/order/${orderData.id}/generate-pdf`,
+          );
           console.log("========================================");
 
           // Get token from localStorage
@@ -173,7 +200,10 @@ const SingleOrder = () => {
             console.log("✅ Invoice PDF generated successfully:", result);
             pdfGeneratedRef.current = true; // Mark as generated to avoid duplicate calls
           } else {
-            console.warn("⚠️ Failed to generate invoice PDF:", result.message || "Unknown error");
+            console.warn(
+              "⚠️ Failed to generate invoice PDF:",
+              result.message || "Unknown error",
+            );
             // Don't mark as generated if it failed, so it can retry
           }
         } catch (err) {
@@ -280,16 +310,31 @@ const SingleOrder = () => {
       couponCode: apiData.coupon?.code || null,
       deliveryImage: apiData.deliveryImage?.url || null,
       deliveredImage: apiData.deliveredImage?.url || null,
-      rider: apiData.riderDetails || apiData.rider ? {
-        id: apiData.rider?._id || apiData.riderDetails?.riderId || "N/A",
-        name: apiData.rider?.fullName || apiData.riderDetails?.riderName || apiData.riderInfo?.name || "N/A",
-        mobile: apiData.rider?.mobileNumber || apiData.riderDetails?.mobileNumber || apiData.riderInfo?.mobileNumber || "N/A",
-        whatsapp: apiData.rider?.whatsappNumber || apiData.riderDetails?.whatsappNumber || "N/A",
-        email: "N/A",
-        verified: false,
-        rating: 0,
-        deliveryAmount: apiData.riderAmount || apiData.deliveryAmount || 0,
-      } : null,
+      rider:
+        apiData.riderDetails || apiData.rider
+          ? {
+              id: apiData.rider?._id || apiData.riderDetails?.riderId || "N/A",
+              name:
+                apiData.rider?.fullName ||
+                apiData.riderDetails?.riderName ||
+                apiData.riderInfo?.name ||
+                "N/A",
+              mobile:
+                apiData.rider?.mobileNumber ||
+                apiData.riderDetails?.mobileNumber ||
+                apiData.riderInfo?.mobileNumber ||
+                "N/A",
+              whatsapp:
+                apiData.rider?.whatsappNumber ||
+                apiData.riderDetails?.whatsappNumber ||
+                "N/A",
+              email: "N/A",
+              verified: false,
+              rating: 0,
+              deliveryAmount:
+                apiData.riderAmount || apiData.deliveryAmount || 0,
+            }
+          : null,
       notes: apiData.notes || "",
       rawApiData: apiData, // Keep raw data for reference
     };
@@ -304,7 +349,8 @@ const SingleOrder = () => {
   const fetchVendorsWithRiders = async () => {
     try {
       setLoadingRiders(true);
-      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
       const headers = {
         "Content-Type": "application/json",
       };
@@ -312,14 +358,17 @@ const SingleOrder = () => {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${API_BASE_URL}/analytics/vendor/riders/no-orders`, {
-        method: "GET",
-        credentials: "include",
-        headers: headers,
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/analytics/vendor/riders/no-orders`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: headers,
+        },
+      );
 
       const result = await response.json();
-      
+
       if (result.success && result.data) {
         setVendorsWithRiders(result.data.vendors || []);
       } else {
@@ -342,7 +391,8 @@ const SingleOrder = () => {
 
     try {
       setAssigningRider(true);
-      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
       const headers = {
         "Content-Type": "application/json",
       };
@@ -355,19 +405,22 @@ const SingleOrder = () => {
         assignmentNotes: assignmentNotes || undefined,
       };
 
-      const response = await fetch(`${API_BASE_URL}/vendor/orders/${id}/assign-rider`, {
-        method: "PUT",
-        credentials: "include",
-        headers: headers,
-        body: JSON.stringify(payload),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/vendor/orders/${id}/assign-rider`,
+        {
+          method: "PUT",
+          credentials: "include",
+          headers: headers,
+          body: JSON.stringify(payload),
+        },
+      );
 
       // Check if response is ok
       if (!response.ok) {
         // Try to parse error response as JSON first
         let errorMessage = `Server error: ${response.status} ${response.statusText}`;
         const contentType = response.headers.get("content-type");
-        
+
         if (contentType && contentType.includes("application/json")) {
           try {
             const errorData = await response.json();
@@ -387,7 +440,7 @@ const SingleOrder = () => {
             // Use default error message
           }
         }
-        
+
         throw new Error(errorMessage);
       }
 
@@ -402,21 +455,24 @@ const SingleOrder = () => {
         // Refresh order data
         window.location.reload();
       } else {
-        alert(`❌ Failed to assign rider: ${result.message || "Unknown error"}`);
+        alert(
+          `❌ Failed to assign rider: ${result.message || "Unknown error"}`,
+        );
       }
     } catch (error) {
       console.error("Error assigning rider:", error);
-      
+
       // Provide user-friendly error message
       let errorMessage = "Failed to assign rider. ";
       if (error.message.includes("500")) {
-        errorMessage += "Server error occurred. Please try again later or contact support.";
+        errorMessage +=
+          "Server error occurred. Please try again later or contact support.";
       } else if (error.message.includes("Network")) {
         errorMessage += "Network error. Please check your connection.";
       } else {
         errorMessage += error.message || "Unknown error occurred.";
       }
-      
+
       alert(`❌ ${errorMessage}`);
     } finally {
       setAssigningRider(false);
@@ -550,15 +606,16 @@ const SingleOrder = () => {
                     Status: {orderData.status.toUpperCase().replace(/_/g, " ")}
                   </span>
                   {/* Show Assign Rider button if status is ready and no rider assigned */}
-                  {orderData.status.toLowerCase() === "ready" && !orderData.rider && (
-                    <button
-                      onClick={() => setShowAssignRiderModal(true)}
-                      className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-2"
-                    >
-                      <Truck size={14} />
-                      Assign Rider
-                    </button>
-                  )}
+                  {orderData.status.toLowerCase() === "ready" &&
+                    !orderData.rider && (
+                      <button
+                        onClick={() => setShowAssignRiderModal(true)}
+                        className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-2"
+                      >
+                        <Truck size={14} />
+                        Assign Rider
+                      </button>
+                    )}
                 </div>
               )}
             </div>
@@ -762,9 +819,9 @@ const SingleOrder = () => {
                         )}
                       </div>
                       <div className="flex gap-1.5 flex-wrap">
-                        <button className="bg-[#FF7B1D] hover:bg-[#E66A0D] text-white px-3 py-1 text-xs font-bold rounded transition">
+                        {/* <button className="bg-[#FF7B1D] hover:bg-[#E66A0D] text-white px-3 py-1 text-xs font-bold rounded transition">
                           View
-                        </button>
+                        </button> */}
                         {product.stock !== "N/A" && (
                           <span className="bg-green-600 text-white px-3 py-1 text-xs font-bold rounded">
                             {product.stock} Stock
@@ -775,9 +832,9 @@ const SingleOrder = () => {
                             ⭐ {product.rating}
                           </span>
                         )}
-                        <button className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 text-xs font-bold rounded transition">
+                        {/* <button className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 text-xs font-bold rounded transition">
                           Remove
-                        </button>
+                        </button> */}
                       </div>
                     </div>
                   </div>
@@ -907,8 +964,8 @@ const SingleOrder = () => {
                     highlight
                   />
                   <InfoRow label="Mobile" value={orderData.rider.mobile} />
-                  <InfoRow 
-                    label="Delivery Amount" 
+                  <InfoRow
+                    label="Delivery Amount"
                     value={`₹${orderData.rider.deliveryAmount || 0}`}
                     highlight
                   />
@@ -1088,9 +1145,14 @@ const SingleOrder = () => {
                     >
                       <div className="flex items-center gap-2 mb-3">
                         <User size={20} className="text-orange-500" />
-                        <h4 className="font-bold text-gray-900">{vendor.vendorName || vendor.storeName}</h4>
+                        <h4 className="font-bold text-gray-900">
+                          {vendor.vendorName || vendor.storeName}
+                        </h4>
                         <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
-                          {vendor.totalRidersWithNoOrders || vendor.riders?.length || 0} riders
+                          {vendor.totalRidersWithNoOrders ||
+                            vendor.riders?.length ||
+                            0}{" "}
+                          riders
                         </span>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1111,7 +1173,9 @@ const SingleOrder = () => {
                                   {rider.fullName}
                                 </span>
                                 {selectedRider?.riderId === rider.riderId && (
-                                  <span className="ml-auto text-green-600">✓</span>
+                                  <span className="ml-auto text-green-600">
+                                    ✓
+                                  </span>
                                 )}
                               </div>
                               <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -1121,7 +1185,9 @@ const SingleOrder = () => {
                             </div>
                           ))
                         ) : (
-                          <p className="text-gray-500 text-sm">No riders available for this vendor</p>
+                          <p className="text-gray-500 text-sm">
+                            No riders available for this vendor
+                          </p>
                         )}
                       </div>
                     </div>
@@ -1252,7 +1318,7 @@ const ImageCard = ({ title, subtitle, color, icon, imageUrl }) => {
     orange: "bg-gradient-to-br from-orange-100 to-orange-200 border-[#FF7B1D]",
     gray: "bg-gradient-to-br from-gray-100 to-gray-200 border-gray-400",
   };
-  
+
   return (
     <div
       className={`${colors[color]} border-4 h-64 rounded-sm flex flex-col items-center justify-center text-center p-4 hover:shadow-2xl transition-all duration-300 transform hover:scale-105 overflow-hidden relative`}

@@ -62,10 +62,11 @@ const RiderJobManagement = () => {
     try {
       // Use vendor-specific endpoint to get vendor's job posts
       const url = `${API_BASE_URL}/vendor/my-job-posts`;
-      
-      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
       const headers = getAuthHeaders();
-      
+
       console.log("========================================");
       console.log("API REQUEST DETAILS:");
       console.log("URL:", url);
@@ -101,8 +102,14 @@ const RiderJobManagement = () => {
       console.log("Response pagination:", result.pagination);
       console.log("========================================");
       console.log("Response data:", result.data);
-      console.log("Data type:", Array.isArray(result.data) ? "Array" : typeof result.data);
-      console.log("Data length:", Array.isArray(result.data) ? result.data.length : "Not an array");
+      console.log(
+        "Data type:",
+        Array.isArray(result.data) ? "Array" : typeof result.data,
+      );
+      console.log(
+        "Data length:",
+        Array.isArray(result.data) ? result.data.length : "Not an array",
+      );
       console.log("========================================");
 
       if (Array.isArray(result.data)) {
@@ -130,7 +137,7 @@ const RiderJobManagement = () => {
         console.log("BEFORE FILTERING:");
         console.log("Jobs count:", jobsData.length);
         console.log("========================================");
-        
+
         // If city filter is provided, filter by city
         if (city && city.trim()) {
           const cityLower = city.toLowerCase().trim();
@@ -139,7 +146,9 @@ const RiderJobManagement = () => {
           jobsData = jobsData.filter((job) => {
             const jobCity = job.location?.city?.toLowerCase() || "";
             const matches = jobCity.includes(cityLower);
-            console.log(`Job ${job._id} - City: "${jobCity}" - Matches: ${matches}`);
+            console.log(
+              `Job ${job._id} - City: "${jobCity}" - Matches: ${matches}`,
+            );
             return matches;
           });
           console.log("AFTER FILTERING:");
@@ -147,7 +156,7 @@ const RiderJobManagement = () => {
           console.log("After filter count:", jobsData.length);
           console.log("Filtered jobs:", jobsData);
         }
-        
+
         console.log("========================================");
         console.log("SETTING JOBS TO STATE:");
         console.log("Final jobs array:", jobsData);
@@ -348,7 +357,7 @@ const RiderJobManagement = () => {
               </div>
               <button
                 onClick={handleCreate}
-                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-sm transition-colors"
+                className="flex items-center gap-2 bg-black hover:bg-orange-600 text-white px-6 py-3 rounded-sm transition-colors"
               >
                 <Plus size={20} />
                 Create Job Post

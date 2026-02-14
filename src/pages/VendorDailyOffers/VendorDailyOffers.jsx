@@ -89,7 +89,7 @@ const VendorDailyOffers = () => {
   // Open edit modal
   const handleEditOffer = (product) => {
     setSelectedProduct(product);
-    
+
     // Extract date and time from offerStartDate
     let startDate = "";
     let startTime = "";
@@ -101,7 +101,7 @@ const VendorDailyOffers = () => {
       const minutes = String(startDateTime.getMinutes()).padStart(2, "0");
       startTime = `${hours}:${minutes}`;
     }
-    
+
     // Extract date and time from offerEndDate
     let endDate = "";
     let endTime = "";
@@ -113,7 +113,7 @@ const VendorDailyOffers = () => {
       const minutes = String(endDateTime.getMinutes()).padStart(2, "0");
       endTime = `${hours}:${minutes}`;
     }
-    
+
     setEditForm({
       offerEnabled: product.offerEnabled || false,
       offerDiscountPercentage: product.offerDiscountPercentage || 0,
@@ -142,7 +142,7 @@ const VendorDailyOffers = () => {
     if (editForm.offerStartDate && editForm.offerEndDate) {
       let startDateTime = new Date(editForm.offerStartDate);
       let endDateTime = new Date(editForm.offerEndDate);
-      
+
       // Add time if provided
       if (editForm.offerStartTime) {
         const timeParts = editForm.offerStartTime.split(":");
@@ -153,7 +153,7 @@ const VendorDailyOffers = () => {
       } else {
         startDateTime.setHours(0, 0, 0, 0);
       }
-      
+
       if (editForm.offerEndTime) {
         const timeParts = editForm.offerEndTime.split(":");
         const hours = parseInt(timeParts[0]) || 0;
@@ -163,7 +163,7 @@ const VendorDailyOffers = () => {
       } else {
         endDateTime.setHours(23, 59, 59, 999);
       }
-      
+
       if (endDateTime <= startDateTime) {
         setError("End date and time must be after start date and time");
         return;
@@ -187,8 +187,12 @@ const VendorDailyOffers = () => {
         payload.offerEnabled = editForm.offerEnabled;
       }
 
-      if (editForm.offerDiscountPercentage !== undefined && editForm.offerDiscountPercentage !== null) {
-        payload.offerDiscountPercentage = parseFloat(editForm.offerDiscountPercentage) || 0;
+      if (
+        editForm.offerDiscountPercentage !== undefined &&
+        editForm.offerDiscountPercentage !== null
+      ) {
+        payload.offerDiscountPercentage =
+          parseFloat(editForm.offerDiscountPercentage) || 0;
       }
 
       if (editForm.isDailyOffer !== undefined) {
@@ -360,7 +364,7 @@ const VendorDailyOffers = () => {
     if (!product.isDailyOffer) return "regular";
 
     const now = new Date();
-    
+
     // Parse start date and time
     let startDateTime = null;
     if (product.offerStartDate) {
@@ -376,7 +380,7 @@ const VendorDailyOffers = () => {
         startDateTime.setHours(0, 0, 0, 0);
       }
     }
-    
+
     // Parse end date and time
     let endDateTime = null;
     if (product.offerEndDate) {
@@ -395,10 +399,10 @@ const VendorDailyOffers = () => {
 
     // Check if current time is before start
     if (startDateTime && now < startDateTime) return "upcoming";
-    
+
     // Check if current time is after end
     if (endDateTime && now > endDateTime) return "expired";
-    
+
     // Check if current time is within the offer period
     if (startDateTime && endDateTime) {
       if (now >= startDateTime && now <= endDateTime) {
@@ -412,16 +416,16 @@ const VendorDailyOffers = () => {
       // No date restrictions, check if enabled
       return product.offerEnabled ? "active" : "disabled";
     }
-    
+
     return "active";
   };
-  
+
   // Check if offer is currently active (for display in Actions column)
   const isOfferCurrentlyActive = (offer) => {
     if (!offer.offerEnabled || !offer.isDailyOffer) return false;
-    
+
     const now = new Date();
-    
+
     // Parse start date and time
     let startDateTime = null;
     if (offer.offerStartDate) {
@@ -436,7 +440,7 @@ const VendorDailyOffers = () => {
         startDateTime.setHours(0, 0, 0, 0);
       }
     }
-    
+
     // Parse end date and time
     let endDateTime = null;
     if (offer.offerEndDate) {
@@ -451,7 +455,7 @@ const VendorDailyOffers = () => {
         endDateTime.setHours(23, 59, 59, 999);
       }
     }
-    
+
     // Check if current time is within the offer period
     if (startDateTime && endDateTime) {
       return now >= startDateTime && now <= endDateTime;
@@ -480,9 +484,7 @@ const VendorDailyOffers = () => {
   const filteredOffers = offers.filter((offer) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
-    return (
-      offer.productName?.toLowerCase().includes(query)
-    );
+    return offer.productName?.toLowerCase().includes(query);
   });
 
   const stats = {
@@ -683,21 +685,21 @@ const VendorDailyOffers = () => {
               <>
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-orange-500 text-white">
+                    <thead className="bg-orange-500 text-black">
                       <tr>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           S.N
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Product
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Discount
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Dates
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Actions
                         </th>
                       </tr>

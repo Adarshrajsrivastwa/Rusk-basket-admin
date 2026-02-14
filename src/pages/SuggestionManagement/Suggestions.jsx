@@ -83,7 +83,7 @@ const SuggestionManagement = () => {
     try {
       const response = await api.put(
         `/api/suggestion/${editingSuggestion._id}`,
-        { text: formData.text }
+        { text: formData.text },
       );
 
       if (response.data.success) {
@@ -104,7 +104,8 @@ const SuggestionManagement = () => {
 
   // ================= DELETE =================
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this suggestion?")) return;
+    if (!window.confirm("Are you sure you want to delete this suggestion?"))
+      return;
 
     try {
       const response = await api.delete(`/api/suggestion/${id}`);
@@ -122,7 +123,7 @@ const SuggestionManagement = () => {
 
   // ================= FILTER SUGGESTIONS =================
   const filteredSuggestions = suggestions.filter((suggestion) =>
-    suggestion.text?.toLowerCase().includes(searchQuery.toLowerCase())
+    suggestion.text?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // ================= UI =================
@@ -161,12 +162,15 @@ const SuggestionManagement = () => {
               {filteredSuggestions.map((suggestion) => (
                 <div
                   key={suggestion._id}
-                  className="bg-white shadow-lg border rounded-lg p-6 hover:shadow-xl transition-shadow"
+                  className="bg-white shadow-lg border rounded-sm p-6 hover:shadow-xl transition-shadow"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <MessageSquare className="text-custom-orange" size={20} />
+                        <MessageSquare
+                          className="text-custom-orange"
+                          size={20}
+                        />
                         <span className="text-xs text-gray-500">
                           {new Date(suggestion.createdAt).toLocaleString()}
                         </span>
@@ -178,7 +182,7 @@ const SuggestionManagement = () => {
                     <div className="flex gap-2 ml-4">
                       <button
                         onClick={() => handleViewClick(suggestion)}
-                        className="bg-blue-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-1"
+                        className="bg-orange-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-1"
                       >
                         <Eye size={14} /> View
                       </button>
@@ -205,7 +209,9 @@ const SuggestionManagement = () => {
             <div className="text-center py-20">
               <MessageSquare className="mx-auto text-gray-400" size={64} />
               <p className="text-gray-500 text-lg mt-4">
-                {searchQuery ? "No suggestions found matching your search" : "No suggestions found"}
+                {searchQuery
+                  ? "No suggestions found matching your search"
+                  : "No suggestions found"}
               </p>
             </div>
           )}
@@ -224,7 +230,9 @@ const SuggestionManagement = () => {
                 Page {currentPage} of {totalPages}
               </span>
               <button
-                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -314,7 +322,9 @@ const SuggestionManagement = () => {
                         Created At
                       </label>
                       <p className="text-gray-800">
-                        {new Date(selectedSuggestion?.createdAt).toLocaleString()}
+                        {new Date(
+                          selectedSuggestion?.createdAt,
+                        ).toLocaleString()}
                       </p>
                     </div>
                     <div>
@@ -342,7 +352,7 @@ const SuggestionManagement = () => {
                           setEditingSuggestion(selectedSuggestion);
                           setFormData({ text: selectedSuggestion?.text || "" });
                         }}
-                        className="px-5 py-2 bg-custom-orange text-white rounded-lg hover:bg-custom-hover-blue transition-colors flex items-center gap-2"
+                        className="px-5 py-2 bg-custom-orange text-white rounded-sm hover:bg-custom-hover-blue transition-colors flex items-center gap-2"
                       >
                         <Edit2 size={16} /> Edit
                       </button>

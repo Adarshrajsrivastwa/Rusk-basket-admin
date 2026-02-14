@@ -1020,7 +1020,14 @@ import { useParams } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import api from "../../api/api";
-import { Wallet, TrendingUp, TrendingDown, ArrowUpCircle, ArrowDownCircle, RefreshCw } from "lucide-react";
+import {
+  Wallet,
+  TrendingUp,
+  TrendingDown,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  RefreshCw,
+} from "lucide-react";
 
 const VendorDetails = () => {
   const { id } = useParams();
@@ -1041,12 +1048,15 @@ const VendorDetails = () => {
         console.log("🚀 STARTING VENDOR DATA FETCH");
         console.log("========================================");
         console.log("Vendor ID:", id);
-        console.log("Full URL will be:", `${api.defaults.baseURL}/vendor/${id}`);
-        
+        console.log(
+          "Full URL will be:",
+          `${api.defaults.baseURL}/vendor/${id}`,
+        );
+
         // Try /vendor/${id} first (as per user's route), then fallback to /api/vendor/${id}
         let response;
-        let endpointUsed = '';
-        
+        let endpointUsed = "";
+
         try {
           endpointUsed = `/vendor/${id}`;
           console.log("📍 Trying endpoint 1:", endpointUsed);
@@ -1058,7 +1068,7 @@ const VendorDetails = () => {
           console.log("Error status:", firstError.response?.status);
           console.log("Error message:", firstError.message);
           console.log("Error data:", firstError.response?.data);
-          
+
           if (firstError.response?.status === 404) {
             endpointUsed = `/api/vendor/${id}`;
             console.log("📍 Trying endpoint 2:", endpointUsed);
@@ -1069,7 +1079,7 @@ const VendorDetails = () => {
             throw firstError;
           }
         }
-        
+
         console.log("========================================");
         console.log("📦 RAW RESPONSE RECEIVED");
         console.log("========================================");
@@ -1081,23 +1091,31 @@ const VendorDetails = () => {
         console.log("Response.data:", response.data);
         console.log("Response.data type:", typeof response.data);
         console.log("Response.data is array?", Array.isArray(response.data));
-        
+
         const result = response.data;
-        
+
         console.log("========================================");
         console.log("🔍 ANALYZING RESPONSE STRUCTURE");
         console.log("========================================");
         console.log("Result:", result);
         console.log("Result type:", typeof result);
-        console.log("Result keys:", result ? Object.keys(result) : "Result is null/undefined");
-        
+        console.log(
+          "Result keys:",
+          result ? Object.keys(result) : "Result is null/undefined",
+        );
+
         if (result) {
           console.log("Result.success:", result.success);
           console.log("Result.message:", result.message);
           console.log("Result.data:", result.data);
           console.log("Result.data type:", typeof result.data);
-          console.log("Result.data keys:", result.data ? Object.keys(result.data) : "result.data is null/undefined");
-          
+          console.log(
+            "Result.data keys:",
+            result.data
+              ? Object.keys(result.data)
+              : "result.data is null/undefined",
+          );
+
           // Log full JSON structure
           console.log("========================================");
           console.log("📄 FULL JSON RESPONSE");
@@ -1110,21 +1128,24 @@ const VendorDetails = () => {
           console.log("========================================");
           console.log("✅ API CALL SUCCESSFUL");
           console.log("========================================");
-          
+
           // Handle different response structures
           let dataToUse = result.data;
-          
+
           console.log("Initial dataToUse:", dataToUse);
           console.log("dataToUse type:", typeof dataToUse);
-          console.log("dataToUse keys:", dataToUse ? Object.keys(dataToUse) : "dataToUse is null/undefined");
-          
+          console.log(
+            "dataToUse keys:",
+            dataToUse ? Object.keys(dataToUse) : "dataToUse is null/undefined",
+          );
+
           // If result.data doesn't exist, maybe data is directly in result
           if (!dataToUse && result.vendor) {
             console.log("⚠️ result.data is null, but result.vendor exists");
             console.log("Using result directly as dataToUse");
             dataToUse = result;
           }
-          
+
           // Check if data exists
           if (!dataToUse) {
             console.error("❌ No data found in response");
@@ -1142,10 +1163,10 @@ const VendorDetails = () => {
           // Set the full dashboard data
           setDashboardData(dataToUse);
           console.log("✅ Dashboard data set");
-          
+
           // Try multiple ways to get vendor data
           let vendorData = {};
-          
+
           // Method 1: Check if vendor is in dataToUse.vendor
           if (dataToUse.vendor && Object.keys(dataToUse.vendor).length > 0) {
             vendorData = dataToUse.vendor;
@@ -1153,7 +1174,9 @@ const VendorDetails = () => {
           }
           // Method 2: Check if vendor data is directly in dataToUse (flat structure)
           else if (dataToUse.id || dataToUse.vendorName || dataToUse.storeId) {
-            console.log("⚠️ Vendor data appears to be directly in dataToUse (flat structure)");
+            console.log(
+              "⚠️ Vendor data appears to be directly in dataToUse (flat structure)",
+            );
             vendorData = dataToUse;
             console.log("✅ Using dataToUse directly as vendor data");
           }
@@ -1167,14 +1190,15 @@ const VendorDetails = () => {
             console.log("⚠️ Result appears to be vendor data directly");
             vendorData = result;
             console.log("✅ Using result directly as vendor data");
-          }
-          else {
-            console.warn("⚠️ Could not find vendor data in any expected location");
+          } else {
+            console.warn(
+              "⚠️ Could not find vendor data in any expected location",
+            );
             console.warn("dataToUse:", dataToUse);
             console.warn("result:", result);
             vendorData = {};
           }
-          
+
           setVendor(vendorData);
           console.log("✅ Vendor data set");
           console.log("Vendor data keys:", Object.keys(vendorData));
@@ -1183,9 +1207,9 @@ const VendorDetails = () => {
             vendorName: vendorData.vendorName,
             storeId: vendorData.storeId,
             storeName: vendorData.storeName,
-            isActive: vendorData.isActive
+            isActive: vendorData.isActive,
           });
-          
+
           console.log("========================================");
           console.log("🔎 EXTRACTED DATA DETAILS");
           console.log("========================================");
@@ -1193,30 +1217,68 @@ const VendorDetails = () => {
           console.log("Vendor data keys:", Object.keys(vendorData));
           console.log("Vendor data length:", Object.keys(vendorData).length);
           console.log("StoreInfo:", dataToUse.storeInfo);
-          console.log("StoreInfo keys:", dataToUse.storeInfo ? Object.keys(dataToUse.storeInfo) : "No storeInfo");
+          console.log(
+            "StoreInfo keys:",
+            dataToUse.storeInfo
+              ? Object.keys(dataToUse.storeInfo)
+              : "No storeInfo",
+          );
           console.log("StoreDetails:", dataToUse.storeDetails);
-          console.log("StoreDetails keys:", dataToUse.storeDetails ? Object.keys(dataToUse.storeDetails) : "No storeDetails");
+          console.log(
+            "StoreDetails keys:",
+            dataToUse.storeDetails
+              ? Object.keys(dataToUse.storeDetails)
+              : "No storeDetails",
+          );
           console.log("StoreAddress:", dataToUse.storeAddress);
-          console.log("StoreAddress keys:", dataToUse.storeAddress ? Object.keys(dataToUse.storeAddress) : "No storeAddress");
+          console.log(
+            "StoreAddress keys:",
+            dataToUse.storeAddress
+              ? Object.keys(dataToUse.storeAddress)
+              : "No storeAddress",
+          );
           console.log("OrderOverview:", dataToUse.orderOverview);
-          console.log("OrderOverview keys:", dataToUse.orderOverview ? Object.keys(dataToUse.orderOverview) : "No orderOverview");
+          console.log(
+            "OrderOverview keys:",
+            dataToUse.orderOverview
+              ? Object.keys(dataToUse.orderOverview)
+              : "No orderOverview",
+          );
           console.log("Metrics:", dataToUse.metrics);
-          console.log("Metrics keys:", dataToUse.metrics ? Object.keys(dataToUse.metrics) : "No metrics");
+          console.log(
+            "Metrics keys:",
+            dataToUse.metrics ? Object.keys(dataToUse.metrics) : "No metrics",
+          );
           console.log("Wallet:", dataToUse.wallet);
-          console.log("Wallet keys:", dataToUse.wallet ? Object.keys(dataToUse.wallet) : "No wallet");
+          console.log(
+            "Wallet keys:",
+            dataToUse.wallet ? Object.keys(dataToUse.wallet) : "No wallet",
+          );
           console.log("DeliveryPartners:", dataToUse.deliveryPartners);
-          console.log("DeliveryPartners length:", dataToUse.deliveryPartners ? dataToUse.deliveryPartners.length : 0);
+          console.log(
+            "DeliveryPartners length:",
+            dataToUse.deliveryPartners ? dataToUse.deliveryPartners.length : 0,
+          );
           console.log("Invoices:", dataToUse.invoices);
-          console.log("Invoices length:", dataToUse.invoices ? dataToUse.invoices.length : 0);
+          console.log(
+            "Invoices length:",
+            dataToUse.invoices ? dataToUse.invoices.length : 0,
+          );
           console.log("========================================");
-          
+
           // If vendor is empty but we have other data, still proceed
           if (!vendorData || Object.keys(vendorData).length === 0) {
-            console.warn("⚠️ Vendor object is empty, but proceeding with dashboard data");
+            console.warn(
+              "⚠️ Vendor object is empty, but proceeding with dashboard data",
+            );
           } else {
-            console.log("✅ Vendor data has", Object.keys(vendorData).length, "keys");
+            console.log(
+              "✅ Vendor data has",
+              Object.keys(vendorData).length,
+              "keys",
+            );
           }
-          
+
           console.log("========================================");
           console.log("✅ DATA LOADING COMPLETE");
           console.log("========================================");
@@ -1238,14 +1300,17 @@ const VendorDetails = () => {
         console.error("Error stack:", error.stack);
         console.error("Error response:", error.response);
         console.error("Error response status:", error.response?.status);
-        console.error("Error response status text:", error.response?.statusText);
+        console.error(
+          "Error response status text:",
+          error.response?.statusText,
+        );
         console.error("Error response data:", error.response?.data);
         console.error("Error response headers:", error.response?.headers);
         console.error("Error config:", error.config);
         console.error("Error config URL:", error.config?.url);
         console.error("Error config method:", error.config?.method);
         console.error("========================================");
-        
+
         if (error.response?.status === 404) {
           setError("Vendor not found. Please check the vendor ID.");
         } else if (error.response?.status === 401) {
@@ -1299,9 +1364,7 @@ const VendorDetails = () => {
           <p className="text-lg text-gray-600 mb-4">
             {error || "Vendor not found"}
           </p>
-          <div className="text-sm text-gray-500 mb-4">
-            Vendor ID: {id}
-          </div>
+          <div className="text-sm text-gray-500 mb-4">Vendor ID: {id}</div>
           <button
             onClick={() => window.history.back()}
             className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded"
@@ -1312,19 +1375,19 @@ const VendorDetails = () => {
       </DashboardLayout>
     );
   }
-  
+
   // Use dashboardData if vendor is empty - always try to get vendor from dashboardData
   const vendorData = dashboardData?.vendor || vendor || {};
-  
+
   // If no data at all, show error
   if (!dashboardData && (!vendor || Object.keys(vendor).length === 0)) {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-[70vh]">
-          <p className="text-lg text-gray-600 mb-4">Vendor data not available</p>
-          <div className="text-sm text-gray-500 mb-4">
-            Vendor ID: {id}
-          </div>
+          <p className="text-lg text-gray-600 mb-4">
+            Vendor data not available
+          </p>
+          <div className="text-sm text-gray-500 mb-4">Vendor ID: {id}</div>
           <button
             onClick={() => window.history.back()}
             className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded"
@@ -1364,7 +1427,10 @@ const VendorDetails = () => {
   console.log("🔍 RENDER - DATA EXTRACTION CHECK");
   console.log("========================================");
   console.log("dashboardData:", dashboardData);
-  console.log("dashboardData keys:", dashboardData ? Object.keys(dashboardData) : "No dashboardData");
+  console.log(
+    "dashboardData keys:",
+    dashboardData ? Object.keys(dashboardData) : "No dashboardData",
+  );
   console.log("wallet:", wallet);
   console.log("wallet keys:", wallet ? Object.keys(wallet) : "No wallet");
   console.log("wallet.earningWallet:", wallet?.earningWallet);
@@ -1381,29 +1447,37 @@ const VendorDetails = () => {
     ? [
         {
           name: "Completed",
-          value: orderOverview.statusDistribution.completed?.percentage || 
-                 orderOverview.statusDistribution.completed || 0,
+          value:
+            orderOverview.statusDistribution.completed?.percentage ||
+            orderOverview.statusDistribution.completed ||
+            0,
           count: orderOverview.statusDistribution.completed?.count || 0,
           color: "#222f5cff",
         },
         {
           name: "In Progress",
-          value: orderOverview.statusDistribution.in_progress?.percentage || 
-                 orderOverview.statusDistribution.in_progress || 0,
+          value:
+            orderOverview.statusDistribution.in_progress?.percentage ||
+            orderOverview.statusDistribution.in_progress ||
+            0,
           count: orderOverview.statusDistribution.in_progress?.count || 0,
           color: "#16A34A",
         },
         {
           name: "Pending",
-          value: orderOverview.statusDistribution.pending?.percentage || 
-                 orderOverview.statusDistribution.pending || 0,
+          value:
+            orderOverview.statusDistribution.pending?.percentage ||
+            orderOverview.statusDistribution.pending ||
+            0,
           count: orderOverview.statusDistribution.pending?.count || 0,
           color: "#FACC15",
         },
         {
           name: "Cancelled",
-          value: orderOverview.statusDistribution.cancelled?.percentage || 
-                 orderOverview.statusDistribution.cancelled || 0,
+          value:
+            orderOverview.statusDistribution.cancelled?.percentage ||
+            orderOverview.statusDistribution.cancelled ||
+            0,
           count: orderOverview.statusDistribution.cancelled?.count || 0,
           color: "#DC2626",
         },
@@ -1418,7 +1492,7 @@ const VendorDetails = () => {
   return (
     <DashboardLayout>
       {/* Main Grid for Three Columns */}
-      <div className="max-w-[100%] mx-auto mt-4 grid pl-4 pr-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="max-w-[100%] mx-auto mt-4 grid ml-6 pr-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Column 1 - Vendor & Store Info */}
         <div className="space-y-4 w-full">
           {/* Vendor Info */}
@@ -1530,7 +1604,9 @@ const VendorDetails = () => {
               </p>
               <p>
                 <strong>Authorized Person :</strong>{" "}
-                {storeDetails.authorizedPerson || vendorData.vendorName || "N/A"}
+                {storeDetails.authorizedPerson ||
+                  vendorData.vendorName ||
+                  "N/A"}
               </p>
               <p>
                 <strong>Contact :</strong>{" "}
@@ -1541,7 +1617,9 @@ const VendorDetails = () => {
               </p>
               <p>
                 <strong>Alt Contact :</strong>{" "}
-                {storeDetails.altContact || vendorData.altContactNumber || "N/A"}
+                {storeDetails.altContact ||
+                  vendorData.altContactNumber ||
+                  "N/A"}
               </p>
               <p>
                 <strong>Email :</strong>{" "}
@@ -1553,8 +1631,7 @@ const VendorDetails = () => {
                 {vendorData.age && ` (Age: ${vendorData.age})`}
               </p>
               <p>
-                <strong>Age :</strong>{" "}
-                {vendorData.age || "N/A"}
+                <strong>Age :</strong> {vendorData.age || "N/A"}
               </p>
               <p>
                 <strong>Gender :</strong>{" "}
@@ -1605,7 +1682,9 @@ const VendorDetails = () => {
               </p>
               <p>
                 <strong>PIN :</strong>{" "}
-                {storeAddress.pinCode || vendorData.storeAddress?.pinCode || "N/A"}
+                {storeAddress.pinCode ||
+                  vendorData.storeAddress?.pinCode ||
+                  "N/A"}
               </p>
             </div>
           </div>
@@ -1706,28 +1785,30 @@ const VendorDetails = () => {
               <h2 className="font-semibold text-gray-700 mb-2">Permissions</h2>
               <div className="border rounded-lg shadow p-4 bg-white text-sm">
                 <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(vendorData.permissions).map(([key, value]) => (
-                    <div
-                      key={key}
-                      className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                    >
-                      <span className="text-gray-700">
-                        {key
-                          .replace(/([A-Z])/g, " $1")
-                          .replace(/^./, (str) => str.toUpperCase())
-                          .trim()}
-                      </span>
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-semibold ${
-                          value
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                        }`}
+                  {Object.entries(vendorData.permissions).map(
+                    ([key, value]) => (
+                      <div
+                        key={key}
+                        className="flex items-center justify-between p-2 bg-gray-50 rounded"
                       >
-                        {value ? "✓ Allowed" : "✗ Denied"}
-                      </span>
-                    </div>
-                  ))}
+                        <span className="text-gray-700">
+                          {key
+                            .replace(/([A-Z])/g, " $1")
+                            .replace(/^./, (str) => str.toUpperCase())
+                            .trim()}
+                        </span>
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-semibold ${
+                            value
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {value ? "✓ Allowed" : "✗ Denied"}
+                        </span>
+                      </div>
+                    ),
+                  )}
                 </div>
               </div>
             </div>
@@ -1740,23 +1821,29 @@ const VendorDetails = () => {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Wallet className="w-5 h-5 text-orange-600" />
-                  <span className="text-sm font-semibold text-gray-700">Balance</span>
+                  <span className="text-sm font-semibold text-gray-700">
+                    Balance
+                  </span>
                 </div>
               </div>
               <div className="mb-4">
                 <p className="text-2xl font-bold text-orange-600">
-                  {wallet?.formattedEarningWallet || 
-                   (wallet?.earningWallet ? `₹${parseFloat(wallet.earningWallet).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "₹0.00")}
+                  {wallet?.formattedEarningWallet ||
+                    (wallet?.earningWallet
+                      ? `₹${parseFloat(wallet.earningWallet).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                      : "₹0.00")}
                 </p>
                 <p className="text-xs text-gray-600 mt-1">
                   Total Transactions: {wallet?.totalTransactions || 0}
                 </p>
               </div>
-              
+
               {/* Recent Transactions */}
               {recentTransactions.length > 0 && (
                 <div className="mt-4">
-                  <h3 className="text-xs font-semibold text-gray-700 mb-2">Recent Transactions</h3>
+                  <h3 className="text-xs font-semibold text-gray-700 mb-2">
+                    Recent Transactions
+                  </h3>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {recentTransactions.slice(0, 5).map((transaction) => (
                       <div
@@ -1783,7 +1870,9 @@ const VendorDetails = () => {
                               )}
                               <p className="text-xs text-gray-400">
                                 {transaction.createdAt
-                                  ? new Date(transaction.createdAt).toLocaleDateString("en-GB", {
+                                  ? new Date(
+                                      transaction.createdAt,
+                                    ).toLocaleDateString("en-GB", {
                                       day: "2-digit",
                                       month: "short",
                                       year: "numeric",
@@ -1798,11 +1887,15 @@ const VendorDetails = () => {
                                 transaction.type === "credit"
                                   ? "text-green-600"
                                   : transaction.type === "debit"
-                                  ? "text-red-600"
-                                  : "text-gray-600"
+                                    ? "text-red-600"
+                                    : "text-gray-600"
                               }`}
                             >
-                              {transaction.type === "credit" ? "+" : transaction.type === "debit" ? "-" : ""}
+                              {transaction.type === "credit"
+                                ? "+"
+                                : transaction.type === "debit"
+                                  ? "-"
+                                  : ""}
                               ₹{parseFloat(transaction.amount || 0).toFixed(2)}
                             </p>
                             <span
@@ -1810,8 +1903,8 @@ const VendorDetails = () => {
                                 transaction.type === "credit"
                                   ? "bg-green-100 text-green-700"
                                   : transaction.type === "debit"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-gray-100 text-gray-700"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-gray-100 text-gray-700"
                               }`}
                             >
                               {transaction.type?.toUpperCase() || "N/A"}
@@ -1934,7 +2027,9 @@ const VendorDetails = () => {
             <div className="absolute top-32 left-1/2 transform -translate-x-1/2 text-center">
               <p className="text-gray-500 text-sm">Total Orders</p>
               <p className="text-2xl font-bold">
-                {orderOverview?.totalOrders || orderOverview?.totalAttendance || 0}
+                {orderOverview?.totalOrders ||
+                  orderOverview?.totalAttendance ||
+                  0}
               </p>
             </div>
 
@@ -2017,7 +2112,8 @@ const VendorDetails = () => {
               <p className="text-sm text-gray-700">
                 {vendorData.createdBy && (
                   <>
-                    <strong>Created By:</strong> {vendorData.createdBy.name} ({vendorData.createdBy.email})
+                    <strong>Created By:</strong> {vendorData.createdBy.name} (
+                    {vendorData.createdBy.email})
                     <br />
                     <strong>Last Updated:</strong>{" "}
                     {vendorData.updatedAt
@@ -2185,8 +2281,8 @@ const VendorDetails = () => {
               },
               {
                 title: "Amount",
-                value: metrics.amount 
-                  ? `₹${parseFloat(metrics.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                value: metrics.amount
+                  ? `₹${parseFloat(metrics.amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                   : "₹0.00",
                 iconColor: "bg-red-500",
                 iconType: "redIcon",
@@ -2302,8 +2398,8 @@ const VendorDetails = () => {
                             partner.status === "Online"
                               ? "bg-blue-100 text-blue-600"
                               : partner.status === "Offline"
-                              ? "bg-gray-100 text-gray-600"
-                              : "bg-green-100 text-green-600"
+                                ? "bg-gray-100 text-gray-600"
+                                : "bg-green-100 text-green-600"
                           }`}
                         >
                           {partner.status}
@@ -2323,7 +2419,7 @@ const VendorDetails = () => {
       </div>
 
       {/* Invoices Section */}
-      <div className="bg-white shadow rounded-md border border-blue-300 max-w-7xl w-[98%] mx-auto p-4 mt-6">
+      <div className="bg-white shadow rounded-md border border-blue-300 max-w-7xl w-[98%] mx-auto ml-6 mt-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-3 relative">
           {/* Left: Heading */}
@@ -2375,7 +2471,11 @@ const VendorDetails = () => {
 
                   {/* Payment */}
                   <div className="text-center text-gray-700 font-semibold">
-                    ₹{parseFloat(inv.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ₹
+                    {parseFloat(inv.amount || 0).toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </div>
 
                   {/* Status */}

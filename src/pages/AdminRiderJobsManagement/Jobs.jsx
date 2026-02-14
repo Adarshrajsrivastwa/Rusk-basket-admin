@@ -52,34 +52,35 @@ const RiderJobPostManagement = () => {
     console.log("fetchJobs called");
     setLoading(true);
     try {
-      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
       const headers = {
         "Content-Type": "application/json",
       };
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
-      
+
       console.log("Fetching jobs from:", `${API_BASE_URL}/rider-job-post`);
       console.log("Token available:", !!token);
-      
+
       // Use the correct endpoint
       const response = await fetch(`${API_BASE_URL}/rider-job-post`, {
         method: "GET",
         headers: headers,
         credentials: "include",
       });
-      
+
       console.log("Response status:", response.status);
       console.log("Response ok:", response.ok);
-      
+
       const data = await response.json();
       console.log("API Response:", data);
       console.log("Response success:", data.success);
       console.log("Response data:", data.data);
       console.log("Response count:", data.count);
       console.log("Response pagination:", data.pagination);
-      
+
       if (data.success) {
         // Handle the response structure: {success, count, pagination, data}
         const jobsData = data.data || [];
@@ -89,7 +90,10 @@ const RiderJobPostManagement = () => {
       } else {
         console.error("API returned success: false");
         console.error("Error message:", data.message || data.error);
-        showNotification(data.message || data.error || "Failed to fetch jobs", "error");
+        showNotification(
+          data.message || data.error || "Failed to fetch jobs",
+          "error",
+        );
       }
     } catch (error) {
       console.error("Error fetching jobs:", error);
@@ -105,14 +109,15 @@ const RiderJobPostManagement = () => {
   // Fetch individual job details
   const fetchJobDetails = async (jobId) => {
     try {
-      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
       const headers = {
         "Content-Type": "application/json",
       };
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
-      
+
       const response = await fetch(`${API_BASE_URL}/rider-job-post/${jobId}`, {
         method: "GET",
         headers: headers,
@@ -131,14 +136,15 @@ const RiderJobPostManagement = () => {
   const createJobPost = async (jobData) => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
       const headers = {
         "Content-Type": "application/json",
       };
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
-      
+
       const response = await fetch(
         `${API_BASE_URL}/rider-job-post/admin/create`,
         {
@@ -168,20 +174,24 @@ const RiderJobPostManagement = () => {
   const updateJobPost = async (jobId, jobData) => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
       const headers = {
         "Content-Type": "application/json",
       };
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
-      
-      const response = await fetch(`${API_BASE_URL}/rider-job-post/admin/${jobId}`, {
-        method: "PUT",
-        headers: headers,
-        credentials: "include",
-        body: JSON.stringify(jobData),
-      });
+
+      const response = await fetch(
+        `${API_BASE_URL}/rider-job-post/admin/${jobId}`,
+        {
+          method: "PUT",
+          headers: headers,
+          credentials: "include",
+          body: JSON.stringify(jobData),
+        },
+      );
       const data = await response.json();
       if (data.success) {
         showNotification("Job post updated successfully!", "success");
@@ -189,7 +199,10 @@ const RiderJobPostManagement = () => {
         fetchJobs();
         resetForm();
       } else {
-        showNotification(data.message || data.error || "Failed to update job post", "error");
+        showNotification(
+          data.message || data.error || "Failed to update job post",
+          "error",
+        );
       }
     } catch (error) {
       showNotification("Failed to update job post", "error");
@@ -202,19 +215,23 @@ const RiderJobPostManagement = () => {
   const deleteJobPost = async (jobId) => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
       const headers = {
         "Content-Type": "application/json",
       };
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
-      
-      const response = await fetch(`${API_BASE_URL}/rider-job-post/admin/${jobId}`, {
-        method: "DELETE",
-        headers: headers,
-        credentials: "include",
-      });
+
+      const response = await fetch(
+        `${API_BASE_URL}/rider-job-post/admin/${jobId}`,
+        {
+          method: "DELETE",
+          headers: headers,
+          credentials: "include",
+        },
+      );
       const data = await response.json();
       if (data.success) {
         showNotification("Job post deleted successfully!", "success");
@@ -222,7 +239,10 @@ const RiderJobPostManagement = () => {
         setSelectedJob(null);
         fetchJobs();
       } else {
-        showNotification(data.message || data.error || "Failed to delete job post", "error");
+        showNotification(
+          data.message || data.error || "Failed to delete job post",
+          "error",
+        );
       }
     } catch (error) {
       showNotification("Failed to delete job post", "error");
@@ -274,7 +294,7 @@ const RiderJobPostManagement = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (isEditModalOpen && selectedJob) {
       // For update, use the format expected by the admin update endpoint
       const jobData = {
@@ -287,8 +307,12 @@ const RiderJobPostManagement = () => {
         locationPinCode: formData.pinCode,
         locationCity: formData.city,
         locationState: formData.state,
-        locationLatitude: formData.latitude ? Number(formData.latitude) : undefined,
-        locationLongitude: formData.longitude ? Number(formData.longitude) : undefined,
+        locationLatitude: formData.latitude
+          ? Number(formData.latitude)
+          : undefined,
+        locationLongitude: formData.longitude
+          ? Number(formData.longitude)
+          : undefined,
       };
       updateJobPost(selectedJob._id, jobData);
     } else {
@@ -303,8 +327,12 @@ const RiderJobPostManagement = () => {
         locationPinCode: formData.pinCode,
         locationCity: formData.city,
         locationState: formData.state,
-        locationLatitude: formData.latitude ? Number(formData.latitude) : undefined,
-        locationLongitude: formData.longitude ? Number(formData.longitude) : undefined,
+        locationLatitude: formData.latitude
+          ? Number(formData.latitude)
+          : undefined,
+        locationLongitude: formData.longitude
+          ? Number(formData.longitude)
+          : undefined,
       };
       createJobPost(jobData);
     }
@@ -313,14 +341,15 @@ const RiderJobPostManagement = () => {
   // Fetch all vendors for dropdown
   const fetchVendors = useCallback(async () => {
     try {
-      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
       const headers = {
         "Content-Type": "application/json",
       };
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
-      
+
       // Fetch all vendors (with high limit to get all) - using admin endpoint
       const response = await fetch(`${API_BASE_URL}/admin/vendors?limit=1000`, {
         method: "GET",
@@ -346,7 +375,7 @@ const RiderJobPostManagement = () => {
   // Memoized filtered jobs for better performance
   const filteredJobs = useMemo(() => {
     if (!searchQuery.trim()) return jobs;
-    
+
     const query = searchQuery.toLowerCase();
     return jobs.filter(
       (job) =>
@@ -392,7 +421,7 @@ const RiderJobPostManagement = () => {
                   resetForm();
                   setIsCreateModalOpen(true);
                 }}
-                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-sm transition-colors font-medium"
+                className="flex items-center gap-2 bg-black hover:bg-orange-600 text-white px-6 py-3 rounded-sm transition-colors font-medium"
               >
                 <Plus size={20} />
                 Create Job Post
@@ -645,7 +674,9 @@ const RiderJobPostManagement = () => {
                       ))}
                     </select>
                     {vendors.length === 0 && (
-                      <p className="text-xs text-gray-500 mt-1">Loading vendors...</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Loading vendors...
+                      </p>
                     )}
                   </div>
                 </div>

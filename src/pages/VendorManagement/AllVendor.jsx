@@ -661,7 +661,7 @@ const AllVendor = () => {
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button
+                      {/* <button
                         onClick={() =>
                           navigate(`/vendors/${vendor._id}/settings`)
                         }
@@ -669,7 +669,7 @@ const AllVendor = () => {
                         title="Settings"
                       >
                         <Settings className="w-4 h-4" />
-                      </button>
+                      </button> */}
                     </div>
                   </td>
                 </tr>

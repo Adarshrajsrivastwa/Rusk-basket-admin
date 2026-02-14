@@ -14,6 +14,7 @@ import {
   Mail,
   Calendar,
   Shield,
+  Truck,
 } from "lucide-react";
 
 const VendorProfile = () => {
@@ -42,6 +43,7 @@ const VendorProfile = () => {
     serviceRadius: "",
     handlingChargePercentage: "",
     fssaiNumber: "",
+    deliveryChargePerKm: "",
   });
   const [profileImage, setProfileImage] = useState(null);
   const [profileImagePreview, setProfileImagePreview] = useState(null);
@@ -104,6 +106,9 @@ const VendorProfile = () => {
           serviceRadius: result.data.serviceRadius || "",
           handlingChargePercentage: result.data.handlingChargePercentage || "",
           fssaiNumber: result.data.fssaiNumber || "",
+          deliveryChargePerKm: result.data.deliveryChargePerKm !== undefined && result.data.deliveryChargePerKm !== null 
+            ? result.data.deliveryChargePerKm 
+            : "",
         });
         
         // Set image previews
@@ -231,6 +236,11 @@ const VendorProfile = () => {
         if (formData.fssaiNumber) {
           formDataToSend.append("fssaiNumber", formData.fssaiNumber);
         }
+        // Always send deliveryChargePerKm, even if it's 0
+        const deliveryChargeValue = formData.deliveryChargePerKm !== undefined && formData.deliveryChargePerKm !== null && formData.deliveryChargePerKm !== ""
+          ? parseFloat(formData.deliveryChargePerKm) || 0
+          : 0;
+        formDataToSend.append("deliveryChargePerKm", deliveryChargeValue.toString());
 
         // Add images if selected
         if (profileImage) {
@@ -301,6 +311,9 @@ const VendorProfile = () => {
             body: JSON.stringify({
               ...formData,
               fssaiNumber: formData.fssaiNumber || "",
+              deliveryChargePerKm: formData.deliveryChargePerKm !== undefined && formData.deliveryChargePerKm !== null && formData.deliveryChargePerKm !== ""
+                ? parseFloat(formData.deliveryChargePerKm) || 0
+                : 0,
             }),
           },
         );
@@ -347,6 +360,9 @@ const VendorProfile = () => {
         serviceRadius: profileData.serviceRadius || "",
         handlingChargePercentage: profileData.handlingChargePercentage || "",
         fssaiNumber: profileData.fssaiNumber || "",
+        deliveryChargePerKm: profileData.deliveryChargePerKm !== undefined && profileData.deliveryChargePerKm !== null 
+          ? profileData.deliveryChargePerKm 
+          : "",
       });
       
       // Reset images
@@ -662,6 +678,23 @@ const VendorProfile = () => {
                 displayValue={`${profileData?.handlingChargePercentage}%`}
                 isEditing={isEditing}
                 onChange={handleInputChange}
+              />
+              <FormField
+                icon={<Truck size={20} style={{ color: "#FF7B1D" }} />}
+                label="Delivery Charge Per Km"
+                name="deliveryChargePerKm"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.deliveryChargePerKm}
+                displayValue={
+                  profileData?.deliveryChargePerKm !== undefined && profileData?.deliveryChargePerKm !== null
+                    ? `₹${Number(profileData.deliveryChargePerKm).toFixed(2)} / km`
+                    : "₹0.00 / km"
+                }
+                isEditing={isEditing}
+                onChange={handleInputChange}
+                placeholder="Enter delivery charge per km"
               />
               <FormField
                 icon={<Shield size={20} style={{ color: "#FF7B1D" }} />}

@@ -267,7 +267,7 @@ const VendorSupport = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case "active":
-        return "bg-blue-100 text-blue-700";
+        return " text-blue-700";
       case "pending":
         return "bg-orange-100 text-orange-700";
       case "resolved":
@@ -433,7 +433,7 @@ const VendorSupport = () => {
                     setShowNewTicketModal(true);
                     fetchRecentOrders(); // Fetch orders when modal opens
                   }}
-                  className="flex items-center gap-2 bg-orange-500 text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors font-medium"
+                  className="flex items-center gap-2 bg-black text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors font-medium"
                 >
                   <Plus size={20} />
                   New Ticket
@@ -488,30 +488,30 @@ const VendorSupport = () => {
               <>
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-orange-500 text-white">
+                    <thead className="bg-orange-500 text-black">
                       <tr>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           S.N
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Ticket Number
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Complaint
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Category
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Status
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Messages
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Created At
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Actions
                         </th>
                       </tr>
@@ -538,7 +538,7 @@ const VendorSupport = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
+                            <span className=" text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
                               {categoryLabels[ticket.category] ||
                                 ticket.category}
                             </span>
@@ -553,7 +553,7 @@ const VendorSupport = () => {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-sm">
+                            <span className=" text-orange-600 text-xs px-2 py-1 rounded-sm">
                               {ticket.messages?.length || 0}
                             </span>
                           </td>
@@ -563,7 +563,7 @@ const VendorSupport = () => {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <button
                               onClick={() => fetchTicketDetails(ticket._id)}
-                              className="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600 transition-colors"
+                              className=" text-orange-600 px-3 py-1 rounded text-sm font-bold hover:bg-orange-100 transition-colors"
                             >
                               View
                             </button>

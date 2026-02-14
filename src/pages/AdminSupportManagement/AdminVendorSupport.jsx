@@ -59,13 +59,16 @@ const AdminVendorSupport = () => {
       if (response.data && response.data.success) {
         const ticketsData = response.data.data?.tickets || [];
         const paginationData = response.data.data?.pagination || {};
-        
+
         setTickets(ticketsData);
         setTotalTickets(paginationData.total || 0);
         setTotalPages(paginationData.totalPages || paginationData.pages || 1);
         setError(""); // Clear any previous errors
       } else {
-        const errorMsg = response.data?.message || response.data?.error || "Failed to load tickets";
+        const errorMsg =
+          response.data?.message ||
+          response.data?.error ||
+          "Failed to load tickets";
         setError(errorMsg);
         setTickets([]);
         setTotalTickets(0);
@@ -73,10 +76,11 @@ const AdminVendorSupport = () => {
       }
     } catch (err) {
       console.error("Error fetching tickets:", err);
-      const errorMsg = err.response?.data?.message || 
-                      err.response?.data?.error || 
-                      err.message || 
-                      "Failed to load tickets. Please try again.";
+      const errorMsg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Failed to load tickets. Please try again.";
       setError(errorMsg);
       setTickets([]);
       setTotalTickets(0);
@@ -104,9 +108,7 @@ const AdminVendorSupport = () => {
       }
     } catch (err) {
       console.error("Error fetching ticket details:", err);
-      setError(
-        err.response?.data?.message || "Failed to load ticket details"
-      );
+      setError(err.response?.data?.message || "Failed to load ticket details");
     }
   };
 
@@ -119,7 +121,7 @@ const AdminVendorSupport = () => {
     try {
       const response = await api.post(
         `/api/admin/tickets/${selectedTicket._id}/messages`,
-        { message: messageInput.trim() }
+        { message: messageInput.trim() },
       );
       if (response.data.success) {
         setMessageInput("");
@@ -135,7 +137,7 @@ const AdminVendorSupport = () => {
       setError(
         err.response?.data?.error ||
           err.response?.data?.message ||
-          "Failed to send message. Please try again."
+          "Failed to send message. Please try again.",
       );
     } finally {
       setSendingMessage(false);
@@ -156,7 +158,7 @@ const AdminVendorSupport = () => {
 
       const response = await api.patch(
         `/api/admin/tickets/${selectedTicket._id}/status`,
-        payload
+        payload,
       );
       if (response.data.success) {
         // Refresh ticket details
@@ -171,7 +173,7 @@ const AdminVendorSupport = () => {
       setError(
         err.response?.data?.error ||
           err.response?.data?.message ||
-          "Failed to update status. Please try again."
+          "Failed to update status. Please try again.",
       );
     } finally {
       setUpdatingStatus(false);
@@ -210,7 +212,7 @@ const AdminVendorSupport = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case "active":
-        return "bg-blue-100 text-blue-700";
+        return " text-blue-700";
       case "pending":
         return "bg-orange-100 text-orange-700";
       case "resolved":
@@ -238,7 +240,9 @@ const AdminVendorSupport = () => {
     <DashboardLayout>
       <div className="min-h-screen p-6">
         <div className="max-w-8xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6 text-gray-800">Vendor Support</h1>
+          <h1 className="text-2xl font-bold mb-6 text-gray-800">
+            Vendor Support
+          </h1>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
@@ -424,33 +428,33 @@ const AdminVendorSupport = () => {
               <>
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-orange-500 text-white">
+                    <thead className="bg-[#FF7B1D] text-black">
                       <tr>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           S.N
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Ticket Number
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Vendor
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Complaint
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Category
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Status
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Messages
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Created At
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold uppercase">
+                        <th className="px-6 py-3 text-left text-sm font-bold ">
                           Actions
                         </th>
                       </tr>
@@ -473,7 +477,9 @@ const AdminVendorSupport = () => {
                             <div className="flex items-center gap-2">
                               <Store size={16} className="text-orange-500" />
                               <span className="text-sm text-gray-900">
-                                {ticket.vendor?.vendorName || ticket.vendor?.storeName || "N/A"}
+                                {ticket.vendor?.vendorName ||
+                                  ticket.vendor?.storeName ||
+                                  "N/A"}
                               </span>
                             </div>
                           </td>
@@ -485,21 +491,22 @@ const AdminVendorSupport = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
-                              {categoryLabels[ticket.category] || ticket.category}
+                            <span className=" text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
+                              {categoryLabels[ticket.category] ||
+                                ticket.category}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span
                               className={`px-3 py-1 rounded-full text-sm font-bold ${getStatusColor(
-                                ticket.status
+                                ticket.status,
                               )}`}
                             >
                               {statusLabels[ticket.status] || ticket.status}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-sm">
+                            <span className=" text-orange-600 text-xs px-2 py-1 rounded-sm">
                               {ticket.messages?.length || 0}
                             </span>
                           </td>
@@ -509,7 +516,7 @@ const AdminVendorSupport = () => {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <button
                               onClick={() => fetchTicketDetails(ticket._id)}
-                              className="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600 transition-colors"
+                              className=" text-orange-600 px-3 py-1 rounded text-sm hover:bg-orange-100  font-bold transition-colors"
                             >
                               View
                             </button>
@@ -522,8 +529,13 @@ const AdminVendorSupport = () => {
 
                 {tickets.length === 0 && !loading && !error && (
                   <div className="text-center py-12">
-                    <MessageSquare className="mx-auto text-gray-400 mb-4" size={48} />
-                    <p className="text-gray-500 text-lg font-medium">No Tickets Found</p>
+                    <MessageSquare
+                      className="mx-auto text-gray-400 mb-4"
+                      size={48}
+                    />
+                    <p className="text-gray-500 text-lg font-medium">
+                      No Tickets Found
+                    </p>
                     <p className="text-gray-400 text-sm mt-2">
                       {searchQueryRef.current
                         ? "No tickets match your search criteria"
@@ -613,7 +625,9 @@ const AdminVendorSupport = () => {
                     <div className="mt-1 flex items-center gap-2">
                       <Store size={16} className="text-orange-500" />
                       <span className="text-gray-900">
-                        {selectedTicket.vendor?.vendorName || selectedTicket.vendor?.storeName || "N/A"}
+                        {selectedTicket.vendor?.vendorName ||
+                          selectedTicket.vendor?.storeName ||
+                          "N/A"}
                       </span>
                     </div>
                   </div>
@@ -687,7 +701,8 @@ const AdminVendorSupport = () => {
                     Messages ({selectedTicket.messages?.length || 0})
                   </label>
                   <div className="space-y-3 max-h-96 overflow-y-auto border rounded p-4">
-                    {selectedTicket.messages && selectedTicket.messages.length > 0 ? (
+                    {selectedTicket.messages &&
+                    selectedTicket.messages.length > 0 ? (
                       selectedTicket.messages.map((msg, idx) => (
                         <div
                           key={idx}
@@ -695,17 +710,19 @@ const AdminVendorSupport = () => {
                             msg.senderModel === "Vendor"
                               ? "bg-orange-50 border-l-4 border-orange-500"
                               : msg.senderModel === "Admin"
-                              ? "bg-blue-50 border-l-4 border-blue-500"
-                              : "bg-gray-50 border-l-4 border-gray-500"
+                                ? "bg-blue-50 border-l-4 border-blue-500"
+                                : "bg-gray-50 border-l-4 border-gray-500"
                           }`}
                         >
                           <div className="flex justify-between items-start mb-1">
                             <span className="font-medium text-sm">
                               {msg.senderModel === "Vendor"
-                                ? msg.sender?.vendorName || msg.sender?.storeName || "Vendor"
+                                ? msg.sender?.vendorName ||
+                                  msg.sender?.storeName ||
+                                  "Vendor"
                                 : msg.senderModel === "Admin"
-                                ? msg.sender?.name || "Admin"
-                                : "Unknown"}
+                                  ? msg.sender?.name || "Admin"
+                                  : "Unknown"}
                             </span>
                             <span className="text-xs text-gray-500">
                               {formatDate(msg.createdAt)}
