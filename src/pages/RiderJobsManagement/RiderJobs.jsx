@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import {
@@ -26,6 +26,10 @@ const RiderJobManagement = () => {
   const [searchCity, setSearchCity] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+  const [showMap, setShowMap] = useState(false);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const mapInstanceRef = useRef(null);
+  const markerInstanceRef = useRef(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -50,6 +54,184 @@ const RiderJobManagement = () => {
       headers["Authorization"] = `Bearer ${token}`;
     }
     return headers;
+  };
+
+  // Load Leaflet CSS
+  useEffect(() => {
+    if (!document.querySelector('link[href*="leaflet.css"]')) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "https://unpkg.com/leaflet@1.7.1/dist/leaflet.css";
+      document.head.appendChild(link);
+    }
+  }, []);
+
+  // Load Leaflet JS
+  useEffect(() => {
+    if (!window.L) {
+      const script = document.createElement("script");
+      script.src = "https://unpkg.com/leaflet@1.7.1/dist/leaflet.js";
+      script.async = true;
+      script.defer = true;
+      script.onload = () => setMapLoaded(true);
+      script.onerror = () => {
+        console.error("Failed to load Leaflet JS");
+      };
+      document.head.appendChild(script);
+    } else {
+      setMapLoaded(true);
+    }
+  }, []);
+
+  // Initialize map when modal opens and map is loaded
+  useEffect(() => {
+    if (isModalOpen && showMap && mapLoaded && window.L) {
+      const timer = setTimeout(() => {
+        initializeMap();
+      }, 200);
+      return () => {
+        clearTimeout(timer);
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.remove();
+          mapInstanceRef.current = null;
+        }
+        markerInstanceRef.current = null;
+      };
+    }
+  }, [isModalOpen, showMap, mapLoaded, formData.locationLatitude, formData.locationLongitude]);
+
+  const initializeMap = () => {
+    const mapContainer = document.getElementById("rider-map-container");
+    if (!mapContainer || !window.L) {
+      return;
+    }
+
+    if (mapInstanceRef.current) {
+      if (formData.locationLatitude && formData.locationLongitude && markerInstanceRef.current) {
+        const newPos = [parseFloat(formData.locationLatitude), parseFloat(formData.locationLongitude)];
+        markerInstanceRef.current.setLatLng(newPos);
+        mapInstanceRef.current.setView(newPos, mapInstanceRef.current.getZoom());
+      }
+      return;
+    }
+
+    const center = formData.locationLatitude && formData.locationLongitude
+      ? [parseFloat(formData.locationLatitude), parseFloat(formData.locationLongitude)]
+      : [23.2599, 77.4126]; // Default: Bhopal
+
+    const map = window.L.map(mapContainer, {
+      center: center,
+      zoom: 15,
+      zoomControl: true,
+    });
+
+    window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map);
+
+    mapInstanceRef.current = map;
+    let marker = null;
+
+    if (formData.locationLatitude && formData.locationLongitude) {
+      marker = window.L.marker([parseFloat(formData.locationLatitude), parseFloat(formData.locationLongitude)], {
+        draggable: true,
+      }).addTo(map);
+
+      marker.on('dragend', (e) => {
+        const lat = e.target.getLatLng().lat;
+        const lng = e.target.getLatLng().lng;
+        updateLocationFromCoords(lat, lng);
+      });
+
+      markerInstanceRef.current = marker;
+    }
+
+    map.on('click', (e) => {
+      const lat = e.latlng.lat;
+      const lng = e.latlng.lng;
+      updateLocationFromCoords(lat, lng);
+
+      if (marker) {
+        marker.setLatLng([lat, lng]);
+      } else {
+        marker = window.L.marker([lat, lng], {
+          draggable: true,
+        }).addTo(map);
+
+        marker.on('dragend', (e) => {
+          const newLat = e.target.getLatLng().lat;
+          const newLng = e.target.getLatLng().lng;
+          updateLocationFromCoords(newLat, newLng);
+        });
+
+        markerInstanceRef.current = marker;
+      }
+    });
+
+    const searchInput = document.getElementById("rider-map-search-input");
+    if (searchInput) {
+      searchInput.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const query = searchInput.value;
+          if (query) {
+            try {
+              const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`);
+              const data = await response.json();
+              if (data && data.length > 0) {
+                const place = data[0];
+                const lat = parseFloat(place.lat);
+                const lng = parseFloat(place.lon);
+                updateLocationFromCoords(lat, lng);
+                map.setView([lat, lng], 15);
+
+                if (marker) {
+                  marker.setLatLng([lat, lng]);
+                } else {
+                  marker = window.L.marker([lat, lng], { draggable: true }).addTo(map);
+                  marker.on('dragend', (ev) => {
+                    const newLat = ev.target.getLatLng().lat;
+                    const newLng = ev.target.getLatLng().lng;
+                    updateLocationFromCoords(newLat, newLng);
+                  });
+                  markerInstanceRef.current = marker;
+                }
+              } else {
+                alert("No results found for your search.");
+              }
+            } catch (error) {
+              console.error("Error searching location:", error);
+              alert("Error searching location. Please try again.");
+            }
+          }
+        }
+      });
+    }
+  };
+
+  const updateLocationFromCoords = async (lat, lng) => {
+    setFormData((prev) => ({
+      ...prev,
+      locationLatitude: lat.toFixed(6),
+      locationLongitude: lng.toFixed(6),
+    }));
+
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+      const data = await response.json();
+      if (data && data.address) {
+        const address = data.address;
+        setFormData((prev) => ({
+          ...prev,
+          locationLine1: address.road || address.building || address.house_number || prev.locationLine1,
+          locationCity: address.city || address.town || address.village || prev.locationCity,
+          locationState: address.state || prev.locationState,
+          locationPinCode: address.postcode || prev.locationPinCode,
+        }));
+      }
+    } catch (error) {
+      console.error("Error reverse geocoding:", error);
+    }
   };
 
   // Fetch all jobs
@@ -219,6 +401,7 @@ const RiderJobManagement = () => {
       locationLatitude: "",
       locationLongitude: "",
     });
+    setShowMap(false);
   };
 
   // Open modal for create
@@ -290,6 +473,7 @@ const RiderJobManagement = () => {
             `Job ${isEdit ? "updated" : "created"} successfully`,
         );
         setIsModalOpen(false);
+        setShowMap(false);
         fetchJobs(searchCity);
         resetForm();
       } else {
@@ -343,44 +527,44 @@ const RiderJobManagement = () => {
   return (
     <DashboardLayout>
       <div className="min-h-screen p-0 ml-6">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          {/* Header Section */}
+          <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-6 mb-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
                   Rider Job Management
                 </h1>
-                <p className="text-gray-600 text-sm mt-1">
-                  Manage delivery executive job postings
+                <p className="text-gray-600">
+                  Manage and monitor delivery executive job postings
                 </p>
               </div>
               <button
                 onClick={handleCreate}
-                className="flex items-center gap-2 bg-black hover:bg-orange-600 text-white px-6 py-3 rounded-sm transition-colors"
+                className="flex items-center gap-2 bg-gradient-to-r from-[#FF7B1D] to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3 rounded-lg transition-all shadow-lg hover:shadow-xl font-bold"
               >
                 <Plus size={20} />
                 Create Job Post
               </button>
             </div>
 
-            {/* Search */}
-            <div className="mt-6 max-w-xl">
-              <div className="flex items-center gap-3 bg-white rounded-xl shadow-md border border-gray-200 focus-within:ring-2 focus-within:ring-orange-400 transition">
-                {/* Input */}
+            {/* Search Bar */}
+            <div className="mt-6 max-w-2xl">
+              <div className="flex items-center gap-0 bg-white rounded-xl shadow-md border-2 border-gray-200 focus-within:ring-2 focus-within:ring-[#FF7B1D] focus-within:border-[#FF7B1D] transition-all">
+                <div className="pl-5">
+                  <Search className="text-gray-400" size={20} />
+                </div>
                 <input
                   type="text"
-                  placeholder=" Search by city (e.g., Bhopal)"
+                  placeholder="Search by city (e.g., Bhopal)"
                   value={searchCity}
                   onChange={(e) => setSearchCity(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="flex-1 px-5 py-3 text-gray-700 placeholder-gray-400 rounded-xl focus:outline-none"
+                  className="flex-1 px-4 py-3 text-gray-700 placeholder-gray-400 rounded-xl focus:outline-none"
                 />
-
-                {/* Button */}
                 <button
                   onClick={handleSearch}
-                  className="mr-2 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white p-3 rounded-lg shadow transition duration-200 flex items-center justify-center"
+                  className="mr-2 bg-[#FF7B1D] hover:bg-orange-600 active:scale-95 text-white p-3 rounded-lg shadow transition duration-200 flex items-center justify-center"
                 >
                   <Search size={20} />
                 </button>
@@ -388,122 +572,142 @@ const RiderJobManagement = () => {
             </div>
           </div>
 
-          {/* Job Cards */}
+          {/* Jobs Grid */}
           {loading ? (
-            <div className="grid grid-cols-1 gap-4">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="bg-white rounded-lg shadow-sm p-6 animate-pulse"
-                >
-                  <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-                  <div className="h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                </div>
-              ))}
+            <div className="flex justify-center items-center py-20">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF7B1D] mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading job posts...</p>
+              </div>
             </div>
           ) : jobs.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-              <Briefcase className="mx-auto mb-4 text-gray-400" size={48} />
-              <p className="text-gray-600">No job posts found</p>
+            <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-16 text-center">
+              <div className="bg-gray-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Briefcase className="text-gray-400" size={48} />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-700 mb-3">
+                No jobs found
+              </h3>
+              <p className="text-gray-500 mb-6">
+                {searchCity ? "Try adjusting your search criteria" : "Get started by creating your first job post"}
+              </p>
+              {!searchCity && (
+                <button
+                  onClick={handleCreate}
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-[#FF7B1D] to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3 rounded-lg transition-all shadow-lg hover:shadow-xl font-bold"
+                >
+                  <Plus size={20} />
+                  Create Job Post
+                </button>
+              )}
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-6">
                 {currentJobs.map((job) => (
                   <div
                     key={job._id}
-                    className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+                    className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-6 hover:shadow-xl hover:border-[#FF7B1D] transition-all duration-300"
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <div className="flex items-start gap-4">
-                          <div className="bg-orange-100 p-3 rounded-lg">
-                            <Briefcase className="text-orange-600" size={24} />
+                        <div className="flex items-start gap-5">
+                          <div className="bg-gradient-to-br from-[#FF7B1D] to-orange-600 p-4 rounded-xl shadow-lg flex-shrink-0">
+                            <Briefcase className="text-white" size={28} />
                           </div>
                           <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {job.jobTitle}
-                            </h3>
-                            <p className="text-sm text-gray-600 mt-1">
+                            <div className="flex items-start justify-between mb-3">
+                              <h3 className="text-xl font-bold text-gray-900">
+                                {job.jobTitle}
+                              </h3>
+                              <span
+                                className={`px-4 py-1.5 rounded-full text-xs font-bold ${
+                                  job.isActive
+                                    ? "bg-green-100 text-green-700 border-2 border-green-300"
+                                    : "bg-gray-100 text-gray-600 border-2 border-gray-300"
+                                }`}
+                              >
+                                {job.isActive ? "Active" : "Inactive"}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 mb-3 p-2 bg-blue-50 rounded-lg w-fit">
+                              <span className="text-sm font-semibold text-gray-700">
+                                {job.vendor?.storeName}
+                              </span>
+                            </div>
+
+                            <p className="text-sm text-gray-600 mb-4">
                               Posted by:{" "}
-                              {job.postedBy?.vendorName || job.postedBy?.name} (
-                              {job.postedByType})
+                              <span className="font-semibold text-gray-800">
+                                {job.postedBy?.vendorName || job.postedBy?.name}
+                              </span>{" "}
+                              ({job.postedByType})
                             </p>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                              <div className="flex items-center gap-2 text-sm">
-                                <DollarSign
-                                  className="text-green-600"
-                                  size={18}
-                                />
-                                <span className="text-gray-700">
-                                  <strong>Joining Bonus:</strong> ₹
-                                  {job.joiningBonus}
-                                </span>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border-2 border-green-200">
+                                <div className="bg-green-500 p-2 rounded-lg">
+                                  <DollarSign className="text-white" size={18} />
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-600 font-medium">Joining Bonus</p>
+                                  <p className="text-lg font-bold text-gray-900">
+                                    ₹{job.joiningBonus?.toLocaleString() || job.joiningBonus}
+                                  </p>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <DollarSign
-                                  className="text-blue-600"
-                                  size={18}
-                                />
-                                <span className="text-gray-700">
-                                  <strong>Onboarding Fee:</strong> ₹
-                                  {job.onboardingFee}
-                                </span>
+                              <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
+                                <div className="bg-blue-500 p-2 rounded-lg">
+                                  <DollarSign className="text-white" size={18} />
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-600 font-medium">Onboarding Fee</p>
+                                  <p className="text-lg font-bold text-gray-900">
+                                    ₹{job.onboardingFee?.toLocaleString() || job.onboardingFee}
+                                  </p>
+                                </div>
                               </div>
                             </div>
 
-                            <div className="flex items-start gap-2 mt-3">
-                              <MapPin
-                                className="text-orange-600 flex-shrink-0 mt-1"
-                                size={18}
-                              />
+                            <div className="flex items-start gap-3 p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
+                              <MapPin className="text-[#FF7B1D] flex-shrink-0 mt-1" size={20} />
                               <div className="text-sm text-gray-700">
-                                <p>{job.location?.line1}</p>
+                                <p className="font-semibold mb-1">{job.location?.line1}</p>
                                 {job.location?.line2 && (
-                                  <p>{job.location.line2}</p>
+                                  <p className="mb-1">{job.location.line2}</p>
                                 )}
-                                <p>
+                                <p className="font-medium">
                                   {job.location?.city}, {job.location?.state} -{" "}
                                   {job.location?.pinCode}
                                 </p>
                               </div>
                             </div>
-
-                            <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
-                              <span>Vendor: {job.vendor?.storeName}</span>
-                              <span>•</span>
-                              <span>
-                                Status:{" "}
-                                {job.isActive ? "✅ Active" : "❌ Inactive"}
-                              </span>
-                            </div>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex gap-2 ml-4">
+                      <div className="flex flex-col gap-2 ml-4">
                         <button
                           onClick={() => handleViewApplications(job._id)}
-                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                          className="p-3 text-green-600 hover:bg-green-50 rounded-xl transition-all border-2 border-green-200 hover:border-green-400 hover:shadow-md"
                           title="View Applications"
                         >
-                          <Eye size={18} />
+                          <Eye size={20} />
                         </button>
                         <button
                           onClick={() => handleEdit(job)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-3 text-blue-600 hover:bg-blue-50 rounded-xl transition-all border-2 border-blue-200 hover:border-blue-400 hover:shadow-md"
                           title="Edit"
                         >
-                          <Edit2 size={18} />
+                          <Edit2 size={20} />
                         </button>
                         <button
                           onClick={() => handleDelete(job._id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-3 text-red-600 hover:bg-red-50 rounded-xl transition-all border-2 border-red-200 hover:border-red-400 hover:shadow-md"
                           title="Delete"
                         >
-                          <Trash2 size={18} />
+                          <Trash2 size={20} />
                         </button>
                       </div>
                     </div>
@@ -513,15 +717,15 @@ const RiderJobManagement = () => {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-6">
+                <div className="flex justify-center items-center gap-3 mt-8 bg-white rounded-xl shadow-md border-2 border-gray-100 p-5">
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 bg-orange-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-2.5 bg-[#FF7B1D] hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-all shadow-lg hover:shadow-xl font-bold disabled:hover:shadow-lg"
                   >
                     Previous
                   </button>
-                  <span className="px-4 py-2 text-gray-700">
+                  <span className="px-6 py-2.5 text-gray-700 font-semibold">
                     Page {currentPage} of {totalPages}
                   </span>
                   <button
@@ -529,7 +733,7 @@ const RiderJobManagement = () => {
                       setCurrentPage((p) => Math.min(totalPages, p + 1))
                     }
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 bg-orange-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-2.5 bg-[#FF7B1D] hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-all shadow-lg hover:shadow-xl font-bold disabled:hover:shadow-lg"
                   >
                     Next
                   </button>
@@ -541,72 +745,123 @@ const RiderJobManagement = () => {
 
         {/* Modal */}
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm animate-fadeIn">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto border-2 border-gray-200">
+              <div className="sticky top-0 bg-gradient-to-r from-[#FF7B1D] to-orange-600 px-6 py-5 flex justify-between items-center rounded-t-xl">
+                <h2 className="text-2xl font-bold text-white">
                   {isEdit ? "Edit Job Post" : "Create Job Post"}
                 </h2>
                 <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="text-gray-500 hover:text-gray-700"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setShowMap(false);
+                  }}
+                  className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
                 >
                   <X size={24} />
                 </button>
               </div>
 
-              <div className="p-6 space-y-4">
-                {/* Job Title */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Job Title <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="jobTitle"
-                    value={formData.jobTitle}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  />
-                </div>
+              <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="p-6 space-y-6">
+                {/* Job Details Section */}
+                <div className="space-y-5">
+                  <div className="flex items-center gap-3 pb-3 border-b-2 border-gray-200">
+                    <div className="bg-gradient-to-br from-[#FF7B1D] to-orange-600 p-2 rounded-lg">
+                      <Briefcase size={20} className="text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900">
+                      Job Details
+                    </h3>
+                  </div>
 
-                {/* Joining Bonus & Onboarding Fee */}
-                <div className="grid grid-cols-2 gap-4">
+                  {/* Job Title */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Joining Bonus (₹) <span className="text-red-500">*</span>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Job Title <span className="text-red-500">*</span>
                     </label>
                     <input
-                      type="number"
-                      name="joiningBonus"
-                      value={formData.joiningBonus}
+                      type="text"
+                      name="jobTitle"
+                      value={formData.jobTitle}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF7B1D] focus:border-[#FF7B1D] transition-all"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Onboarding Fee (₹) <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="onboardingFee"
-                      value={formData.onboardingFee}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    />
+
+                  {/* Joining Bonus & Onboarding Fee */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Joining Bonus (₹) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="joiningBonus"
+                        value={formData.joiningBonus}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF7B1D] focus:border-[#FF7B1D] transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Onboarding Fee (₹) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="onboardingFee"
+                        value={formData.onboardingFee}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF7B1D] focus:border-[#FF7B1D] transition-all"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Location Details */}
-                <div className="border-t pt-4 mt-4">
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">
-                    Location Details
-                  </h3>
+                {/* Location Details Section */}
+                <div className="border-t-2 border-gray-200 pt-6 mt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-gradient-to-br from-[#FF7B1D] to-orange-600 p-2 rounded-lg">
+                        <MapPin size={20} className="text-white" />
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900">
+                        Location Details
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowMap(!showMap)}
+                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#FF7B1D] to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg transition-all shadow-md hover:shadow-lg text-sm font-semibold"
+                    >
+                      <MapPin size={16} />
+                      {showMap ? "Hide Map" : "Show Map"}
+                    </button>
+                  </div>
+
+                  {showMap && (
+                    <div className="mb-4 border-2 border-gray-300 rounded-lg overflow-hidden">
+                      <div className="p-3 bg-gray-50 border-b border-gray-300">
+                        <input
+                          type="text"
+                          id="rider-map-search-input"
+                          placeholder="Search for a location..."
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div
+                        id="rider-map-container"
+                        style={{ height: "400px", width: "100%" }}
+                        className="bg-gray-100"
+                      ></div>
+                      <div className="p-3 bg-gray-50 text-xs text-gray-600">
+                        💡 Click on the map to select location or drag the marker to adjust
+                      </div>
+                    </div>
+                  )}
 
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Address Line 1 <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -615,12 +870,12 @@ const RiderJobManagement = () => {
                         value={formData.locationLine1}
                         onChange={handleInputChange}
                         placeholder="House No. 21, MG Road"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF7B1D] focus:border-[#FF7B1D] transition-all"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Address Line 2
                       </label>
                       <input
@@ -629,13 +884,13 @@ const RiderJobManagement = () => {
                         value={formData.locationLine2}
                         onChange={handleInputChange}
                         placeholder="Near City Mall"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF7B1D] focus:border-[#FF7B1D] transition-all"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
                           City <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -644,11 +899,11 @@ const RiderJobManagement = () => {
                           value={formData.locationCity}
                           onChange={handleInputChange}
                           placeholder="Bhopal"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF7B1D] focus:border-[#FF7B1D] transition-all"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
                           State <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -657,13 +912,13 @@ const RiderJobManagement = () => {
                           value={formData.locationState}
                           onChange={handleInputChange}
                           placeholder="Madhya Pradesh"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF7B1D] focus:border-[#FF7B1D] transition-all"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Pin Code <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -672,13 +927,13 @@ const RiderJobManagement = () => {
                         value={formData.locationPinCode}
                         onChange={handleInputChange}
                         placeholder="462001"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF7B1D] focus:border-[#FF7B1D] transition-all"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
                           Latitude
                         </label>
                         <input
@@ -688,11 +943,11 @@ const RiderJobManagement = () => {
                           value={formData.locationLatitude}
                           onChange={handleInputChange}
                           placeholder="23.2599"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF7B1D] focus:border-[#FF7B1D] transition-all"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
                           Longitude
                         </label>
                         <input
@@ -702,7 +957,7 @@ const RiderJobManagement = () => {
                           value={formData.locationLongitude}
                           onChange={handleInputChange}
                           placeholder="77.4126"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF7B1D] focus:border-[#FF7B1D] transition-all"
                         />
                       </div>
                     </div>
@@ -710,21 +965,25 @@ const RiderJobManagement = () => {
                 </div>
 
                 {/* Submit Buttons */}
-                <div className="flex justify-end gap-3 pt-4 border-t">
+                <div className="flex justify-end gap-3 pt-6 border-t-2 border-gray-200 mt-6">
                   <button
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    type="button"
+                    onClick={() => {
+                      setIsModalOpen(false);
+                      setShowMap(false);
+                    }}
+                    className="px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-all font-semibold text-gray-700"
                   >
                     Cancel
                   </button>
                   <button
-                    onClick={handleSubmit}
-                    className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors"
+                    type="submit"
+                    className="px-6 py-3 bg-gradient-to-r from-[#FF7B1D] to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg transition-all shadow-lg hover:shadow-xl font-bold"
                   >
                     {isEdit ? "Update Job Post" : "Create Job Post"}
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
           </div>
         )}

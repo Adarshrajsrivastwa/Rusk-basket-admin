@@ -6,7 +6,7 @@ import api from "../../api/api";
 import {
   Package,
   ShoppingCart,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   AlertCircle,
   Bell,
@@ -15,6 +15,8 @@ import {
   RefreshCw,
   Briefcase,
   MapPin,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -181,10 +183,10 @@ export default function DashboardPage() {
       return [
         {
           label: "Total Revenue",
-          value: "$0.00",
+          value: "₹0.00",
           change: "+0%",
-          icon: DollarSign,
-          color: "bg-green-500",
+          icon: IndianRupee,
+          color: "bg-gradient-to-br from-green-500 to-green-600",
           changeType: "positive",
         },
         {
@@ -192,7 +194,7 @@ export default function DashboardPage() {
           value: "0",
           change: "+0%",
           icon: ShoppingCart,
-          color: "bg-blue-500",
+          color: "bg-gradient-to-br from-blue-500 to-blue-600",
           changeType: "positive",
         },
         {
@@ -200,7 +202,7 @@ export default function DashboardPage() {
           value: "0",
           change: "0",
           icon: Package,
-          color: "bg-purple-500",
+          color: "bg-gradient-to-br from-purple-500 to-purple-600",
           changeType: "positive",
         },
         {
@@ -208,7 +210,7 @@ export default function DashboardPage() {
           value: "0%",
           change: "+0%",
           icon: TrendingUp,
-          color: "bg-orange-500",
+          color: "bg-gradient-to-br from-[#FF7B1D] to-orange-600",
           changeType: "positive",
         },
       ];
@@ -219,10 +221,10 @@ export default function DashboardPage() {
     return [
       {
         label: "Total Revenue",
-        value: metrics.totalRevenue?.formattedValue || "$0.00",
+        value: metrics.totalRevenue?.formattedValue || "₹0.00",
         change: metrics.totalRevenue?.change || "+0%",
-        icon: DollarSign,
-        color: "bg-green-500",
+        icon: IndianRupee,
+        color: "bg-gradient-to-br from-green-500 to-green-600",
         changeType: metrics.totalRevenue?.changeType || "positive",
       },
       {
@@ -230,7 +232,7 @@ export default function DashboardPage() {
         value: metrics.totalOrders?.formattedValue || "0",
         change: metrics.totalOrders?.change || "+0%",
         icon: ShoppingCart,
-        color: "bg-blue-500",
+        color: "bg-gradient-to-br from-blue-500 to-blue-600",
         changeType: metrics.totalOrders?.changeType || "positive",
       },
       {
@@ -238,7 +240,7 @@ export default function DashboardPage() {
         value: metrics.products?.formattedValue || "0",
         change: metrics.products?.change || "0",
         icon: Package,
-        color: "bg-purple-500",
+        color: "bg-gradient-to-br from-purple-500 to-purple-600",
         changeType: metrics.products?.changeType || "positive",
       },
       {
@@ -246,7 +248,7 @@ export default function DashboardPage() {
         value: metrics.growth?.formattedValue || "0%",
         change: metrics.growth?.change || "+0%",
         icon: TrendingUp,
-        color: "bg-orange-500",
+        color: "bg-gradient-to-br from-[#FF7B1D] to-orange-600",
         changeType: metrics.growth?.changeType || "positive",
       },
     ];
@@ -388,71 +390,86 @@ export default function DashboardPage() {
         {/* Dashboard Content */}
         <main className="p-0 ml-6">
           {/* Header with Refresh */}
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">
-              Dashboard Overview
-            </h1>
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Dashboard Overview
+              </h1>
+              <p className="text-gray-600">
+                Welcome back! Here's what's happening with your store today.
+              </p>
+            </div>
             <button
               onClick={() => {
                 fetchDashboardData();
                 fetchInventoryData();
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-200 rounded-lg hover:bg-gray-50 transition-all"
+              className="flex items-center gap-2 px-5 py-2.5 bg-white border-2 border-[#FF7B1D] rounded-lg hover:bg-[#FF7B1D] hover:text-white transition-all shadow-sm"
               title="Refresh Dashboard"
             >
-              <RefreshCw className="w-4 h-4 text-gray-600" />
-              <span className="text-sm font-semibold text-gray-700">
-                Refresh
-              </span>
+              <RefreshCw className="w-4 h-4" />
+              <span className="text-sm font-semibold">Refresh</span>
             </button>
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {stats.map((stat, index) => (
               <div
                 key={index}
-                className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow"
+                className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-6 hover:shadow-xl hover:border-[#FF7B1D] transition-all duration-300 group"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <div className={`${stat.color} p-3 rounded-lg`}>
+                  <div className={`${stat.color} p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform`}>
                     <stat.icon className="w-6 h-6 text-white" />
                   </div>
-                  <span
-                    className={`text-sm font-semibold ${getChangeColor(
-                      stat.changeType,
-                    )}`}
-                  >
-                    {stat.change}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    {stat.changeType === "positive" ? (
+                      <ArrowUpRight className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <ArrowDownRight className="w-4 h-4 text-red-600" />
+                    )}
+                    <span
+                      className={`text-sm font-bold ${getChangeColor(
+                        stat.changeType,
+                      )}`}
+                    >
+                      {stat.change}
+                    </span>
+                  </div>
                 </div>
-                <h3 className="text-gray-600 text-sm mb-1">{stat.label}</h3>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                <h3 className="text-gray-500 text-sm font-medium mb-2 uppercase tracking-wide">
+                  {stat.label}
+                </h3>
+                <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
               </div>
             ))}
           </div>
 
           {/* Notifications Card */}
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-6 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate("/vendor/notifications")}>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="bg-yellow-100 p-3 rounded-lg relative">
-                <Bell className="text-yellow-600" size={24} />
+          <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl shadow-md border-2 border-yellow-200 p-6 mb-8 hover:shadow-xl hover:border-[#FF7B1D] transition-all duration-300 cursor-pointer" onClick={() => navigate("/vendor/notifications")}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-gradient-to-br from-yellow-400 to-orange-500 p-3 rounded-xl shadow-lg relative">
+                <Bell className="text-white" size={24} />
                 {unreadNotificationCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center font-bold px-1">
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[24px] h-6 flex items-center justify-center font-bold px-1.5 animate-pulse">
                     {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
                   </span>
                 )}
               </div>
-              <h3 className="text-gray-700 font-semibold text-lg">
-                Notifications
-              </h3>
+              <div>
+                <h3 className="text-gray-800 font-bold text-lg">
+                  Notifications
+                </h3>
+                <p className="text-xs text-gray-600">Stay updated with your store</p>
+              </div>
             </div>
             <div className="space-y-3">
-              <div className="bg-orange-50 border-l-4 border-orange-500 p-3 rounded">
-                <p className="text-sm font-semibold text-gray-800">
+              <div className="bg-white border-2 border-orange-300 rounded-lg p-4 shadow-sm">
+                <p className="text-lg font-bold text-gray-900">
                   {unreadNotificationCount || 0} Unread
                 </p>
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-sm text-gray-600 mt-1">
                   {unreadNotificationCount > 0
                     ? "You have pending notifications"
                     : "No new notifications"}
@@ -463,7 +480,7 @@ export default function DashboardPage() {
                   e.stopPropagation();
                   navigate("/vendor/notifications");
                 }}
-                className="w-full bg-[#FF7B1D] text-white py-2 rounded-md text-sm font-medium hover:bg-orange-600 transition-colors"
+                className="w-full bg-[#FF7B1D] text-white py-3 rounded-lg text-sm font-bold hover:bg-orange-600 transition-all shadow-md hover:shadow-lg"
               >
                 View All Notifications
               </button>
@@ -472,13 +489,20 @@ export default function DashboardPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Recent Orders */}
-            <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900">
-                  Recent Orders
-                </h3>
-                <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+            <div className="lg:col-span-2 bg-white rounded-xl shadow-md border-2 border-gray-100 p-6 hover:shadow-lg transition-shadow">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-1">
+                    Recent Orders
+                  </h3>
+                  <p className="text-sm text-gray-500">Latest customer orders</p>
+                </div>
+                <button 
+                  onClick={() => navigate("/vendor/orders")}
+                  className="text-[#FF7B1D] hover:text-orange-600 text-sm font-semibold flex items-center gap-1 hover:underline"
+                >
                   View All
+                  <ArrowUpRight className="w-4 h-4" />
                 </button>
               </div>
 
@@ -494,44 +518,44 @@ export default function DashboardPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-2 text-sm font-semibold text-gray-600">
+                      <tr className="border-b-2 border-gray-200 bg-gray-50">
+                        <th className="text-left py-4 px-4 text-sm font-bold text-gray-700 uppercase tracking-wide">
                           Order ID
                         </th>
-                        <th className="text-left py-3 px-2 text-sm font-semibold text-gray-600">
+                        <th className="text-left py-4 px-4 text-sm font-bold text-gray-700 uppercase tracking-wide">
                           Customer
                         </th>
-                        <th className="text-left py-3 px-2 text-sm font-semibold text-gray-600">
+                        <th className="text-left py-4 px-4 text-sm font-bold text-gray-700 uppercase tracking-wide">
                           Product
                         </th>
-                        <th className="text-left py-3 px-2 text-sm font-semibold text-gray-600">
+                        <th className="text-left py-4 px-4 text-sm font-bold text-gray-700 uppercase tracking-wide">
                           Amount
                         </th>
-                        <th className="text-left py-3 px-2 text-sm font-semibold text-gray-600">
+                        <th className="text-left py-4 px-4 text-sm font-bold text-gray-700 uppercase tracking-wide">
                           Status
                         </th>
                       </tr>
                     </thead>
                     <tbody>
                       {recentOrders.map((order, index) => (
-                        <tr key={index} className="border-b hover:bg-gray-50">
-                          <td className="py-3 px-2 text-sm font-medium text-gray-900">
+                        <tr key={index} className="border-b border-gray-100 hover:bg-orange-50 transition-colors">
+                          <td className="py-4 px-4 text-sm font-semibold text-gray-900">
                             {order.orderId || order.id || order.orderNumber || "N/A"}
                           </td>
-                          <td className="py-3 px-2 text-sm text-gray-600">
+                          <td className="py-4 px-4 text-sm text-gray-700">
                             {order.customer || order.customerName || "N/A"}
                           </td>
-                          <td className="py-3 px-2 text-sm text-gray-600">
+                          <td className="py-4 px-4 text-sm text-gray-700">
                             {order.product || order.productName || "N/A"}
                           </td>
-                          <td className="py-3 px-2 text-sm font-medium text-gray-900">
+                          <td className="py-4 px-4 text-sm font-bold text-gray-900">
                             {order.amount || order.totalAmount
                               ? `₹${(order.amount || order.totalAmount).toLocaleString()}`
                               : "N/A"}
                           </td>
-                          <td className="py-3 px-2">
+                          <td className="py-4 px-4">
                             <span
-                              className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                              className={`px-3 py-1.5 rounded-full text-xs font-bold ${getStatusColor(
                                 order.status,
                               )}`}
                             >
@@ -547,12 +571,17 @@ export default function DashboardPage() {
             </div>
 
             {/* Low Stock Alert */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900">
-                  Low Stock Alert
-                </h3>
-                <AlertCircle className="w-5 h-5 text-orange-500" />
+            <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-6 hover:shadow-lg transition-shadow">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-1">
+                    Low Stock Alert
+                  </h3>
+                  <p className="text-sm text-gray-500">Products needing attention</p>
+                </div>
+                <div className="bg-orange-100 p-2 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-orange-600" />
+                </div>
               </div>
 
               {inventoryLoading ? (
@@ -589,11 +618,11 @@ export default function DashboardPage() {
                   )}
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {lowStockProducts.map((product, index) => (
                     <div
                       key={product.productId || index}
-                      className="flex items-center justify-between p-4 bg-orange-50 rounded-lg"
+                      className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-200 rounded-xl hover:shadow-md transition-all"
                     >
                       <div className="flex-1">
                         <p className="font-medium text-gray-900">
@@ -674,17 +703,25 @@ export default function DashboardPage() {
             </div>
 
             {/* Job Postings Section */}
-            <div className="lg:col-span-3 bg-white rounded-xl shadow-sm p-6 mt-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <Briefcase className="w-5 h-5 text-orange-600" />
-                  My Job Postings
-                </h3>
+            <div className="lg:col-span-3 bg-white rounded-xl shadow-md border-2 border-gray-100 p-6 mt-6 hover:shadow-lg transition-shadow">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="bg-gradient-to-br from-[#FF7B1D] to-orange-600 p-2 rounded-lg">
+                    <Briefcase className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">
+                      My Job Postings
+                    </h3>
+                    <p className="text-sm text-gray-500">Manage your delivery job listings</p>
+                  </div>
+                </div>
                 <button
-                  onClick={() => window.location.href = "/vendor/jobs"}
-                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  onClick={() => navigate("/vendor/jobs")}
+                  className="text-[#FF7B1D] hover:text-orange-600 text-sm font-semibold flex items-center gap-1 hover:underline"
                 >
                   View All
+                  <ArrowUpRight className="w-4 h-4" />
                 </button>
               </div>
 
@@ -712,7 +749,7 @@ export default function DashboardPage() {
                   {jobPosts.slice(0, 3).map((job) => (
                     <div
                       key={job._id}
-                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                      className="border-2 border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-[#FF7B1D] transition-all bg-gradient-to-br from-white to-gray-50"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -733,13 +770,13 @@ export default function DashboardPage() {
                           
                           <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
                             <div className="flex items-center gap-1">
-                              <DollarSign className="w-4 h-4 text-green-600" />
+                              <IndianRupee className="w-4 h-4 text-green-600" />
                               <span>
                                 <strong>Joining Bonus:</strong> ₹{job.joiningBonus}
                               </span>
                             </div>
                             <div className="flex items-center gap-1">
-                              <DollarSign className="w-4 h-4 text-blue-600" />
+                              <IndianRupee className="w-4 h-4 text-blue-600" />
                               <span>
                                 <strong>Onboarding Fee:</strong> ₹{job.onboardingFee}
                               </span>

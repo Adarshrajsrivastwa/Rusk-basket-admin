@@ -223,6 +223,7 @@ import AllAdmin from "./pages/AdminManagement/AllAdmin";
 import WithdrawalRequests from "./pages/RiderManagement/WithdrawalRequests";
 import VendorWithdrawalRequests from "./pages/VendorDashboard/WithdrawalRequests";
 import AdminVendorWithdrawalRequests from "./pages/VendorManagement/VendorWithdrawalRequests";
+import ReferralCashbackSettings from "./pages/SettingsManagement/ReferralCashbackSettings";
 function AppContent() {
   const location = useLocation();
 
@@ -482,6 +483,14 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
               <Suggestions />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/referral-cashback-settings"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <ReferralCashbackSettings />
             </ProtectedRoute>
           }
         />

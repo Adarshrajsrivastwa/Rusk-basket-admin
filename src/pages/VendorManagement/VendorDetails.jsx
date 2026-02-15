@@ -1021,12 +1021,8 @@ import DashboardLayout from "../../components/DashboardLayout";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import api from "../../api/api";
 import {
-  Wallet,
   TrendingUp,
   TrendingDown,
-  ArrowUpCircle,
-  ArrowDownCircle,
-  RefreshCw,
 } from "lucide-react";
 
 const VendorDetails = () => {
@@ -1492,19 +1488,19 @@ const VendorDetails = () => {
   return (
     <DashboardLayout>
       {/* Main Grid for Three Columns */}
-      <div className="max-w-[100%] mx-auto mt-4 grid ml-6 pr-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="w-full mt-4 px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Column 1 - Vendor & Store Info */}
-        <div className="space-y-4 w-full">
+        <div className="space-y-4 w-full flex flex-col">
           {/* Vendor Info */}
           <div>
-            <div className="border border-orange-500 rounded-lg shadow p-4 bg-[#FEF0E9] min-h-[140px] relative">
+            <div className="border-2 border-[#FF7B1D] rounded-xl shadow-lg p-6 bg-gradient-to-br from-orange-50 via-orange-100 to-orange-50 min-h-[160px] relative hover:shadow-xl transition-all duration-300">
               {/* Orange Badge Icon */}
-              <div className="absolute top-2 sm:top-4 left-2 sm:left-4 w-5 sm:w-6 h-5 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center text-white z-10">
+              <div className="absolute top-4 left-4 w-8 h-8 bg-gradient-to-br from-[#FF7B1D] to-orange-600 rounded-full flex items-center justify-center text-white z-10 shadow-lg">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="currentColor"
                   viewBox="0 0 24 24"
-                  className="w-3 h-3"
+                  className="w-4 h-4"
                 >
                   <path d="M12 2L2 7v7c0 5 5 10 10 10s10-5 10-10V7l-10-5zm0 2.18l7 3.5v5.32c0 4-3.2 8-7 8s-7-4-7-8V7.68l7-3.5zM12 8l-2 4h4l-2-4zm0 6.5l-1.5 3h3L12 14.5z" />
                 </svg>
@@ -1512,9 +1508,9 @@ const VendorDetails = () => {
 
               <div className="flex flex-col sm:flex-row justify-between items-start w-full">
                 {/* Left Section */}
-                <div className="flex items-center sm:ml-12 ml-8 w-full sm:w-auto gap-3 relative z-0">
+                <div className="flex items-center sm:ml-14 ml-10 w-full sm:w-auto gap-4 relative z-0">
                   {/* Vendor Image */}
-                  <div className="w-14 h-14 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-sm flex-shrink-0 overflow-hidden">
+                  <div className="w-16 h-16 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center text-gray-600 text-sm font-bold flex-shrink-0 overflow-hidden border-4 border-white shadow-lg">
                     {storeInfo.storeImage && storeInfo.storeImage.length > 0 ? (
                       <img
                         src={storeInfo.storeImage[0].url}
@@ -1526,31 +1522,33 @@ const VendorDetails = () => {
                     )}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-black">Store ID</p>
-                    <p className="text-gray-400">
+                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Store ID</p>
+                    <p className="text-lg font-bold text-gray-900">
                       {storeInfo.storeId || vendorData.storeId || "N/A"}
                     </p>
                   </div>
                 </div>
 
                 {/* Right Section */}
-                <div className="flex flex-col items-start sm:items-end mt-3 sm:mt-0 w-full sm:w-auto">
-                  <p className="text-gray-500 font-semibold text-xs sm:text-sm">
+                <div className="flex flex-col items-start sm:items-end mt-4 sm:mt-0 w-full sm:w-auto">
+                  <p className="text-gray-600 font-semibold text-xs uppercase tracking-wide mb-1">
                     Status
                   </p>
-                  <p
-                    className={`text-lg font-bold ${vendorData.isActive ? "text-green-500" : "text-red-500"}`}
-                  >
-                    {vendorData.isActive ? "Active" : "Inactive"}
-                  </p>
+                  <div className={`px-4 py-2 rounded-lg font-bold text-sm ${
+                    vendorData.isActive 
+                      ? "bg-green-100 text-green-700 border-2 border-green-300" 
+                      : "bg-red-100 text-red-700 border-2 border-red-300"
+                  }`}>
+                    {vendorData.isActive ? "✓ Active" : "✗ Inactive"}
+                  </div>
                 </div>
               </div>
 
               {/* Performance Badge */}
               {storeInfo.performance !== undefined && (
-                <div className="mt-3 flex justify-center">
-                  <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
-                    Performance: {storeInfo.performance}%
+                <div className="mt-4 flex justify-center">
+                  <span className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+                    ⭐ Performance: {storeInfo.performance}%
                   </span>
                 </div>
               )}
@@ -1559,160 +1557,243 @@ const VendorDetails = () => {
 
           {/* Store Image */}
           <div className="mb-4">
-            <h2 className="font-semibold text-gray-700 mb-2">Store Image</h2>
-            <div className="border rounded-sm shadow p-4 bg-gray-100 text-center min-h-[150px] sm:min-h-[120px] flex items-center justify-center">
+            <h2 className="font-bold text-gray-800 mb-3 text-lg flex items-center gap-2">
+              <span className="bg-gradient-to-br from-[#FF7B1D] to-orange-600 p-2 rounded-lg">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </span>
+              Store Image
+            </h2>
+            <div className="border-2 border-gray-200 rounded-xl shadow-lg p-6 bg-gradient-to-br from-gray-50 to-white text-center min-h-[180px] sm:min-h-[200px] flex items-center justify-center hover:shadow-xl transition-all duration-300">
               {storeInfo.storeImage && storeInfo.storeImage.length > 0 ? (
                 <img
                   src={storeInfo.storeImage[0].url}
                   alt="Store"
-                  className="max-w-full max-h-full object-contain rounded"
+                  className="max-w-full max-h-full object-contain rounded-lg shadow-md"
                 />
               ) : vendorData.storeImage && vendorData.storeImage.length > 0 ? (
                 <img
                   src={vendorData.storeImage[0].url}
                   alt="Store"
-                  className="max-w-full max-h-full object-contain rounded"
+                  className="max-w-full max-h-full object-contain rounded-lg shadow-md"
                 />
               ) : (
-                <span className="text-gray-400">No image available</span>
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <span className="text-gray-500 font-medium">No image available</span>
+                </div>
               )}
             </div>
           </div>
 
           {/* Store Location */}
           <div className="mb-4">
-            <h2 className="font-semibold text-gray-700 mb-2">Store Location</h2>
-            <div className="border rounded-sm shadow p-4 bg-gray-100 text-center min-h-[200px] sm:min-h-[180px] flex items-center justify-center">
-              MAP
+            <h2 className="font-bold text-gray-800 mb-3 text-lg flex items-center gap-2">
+              <span className="bg-gradient-to-br from-blue-500 to-blue-600 p-2 rounded-lg">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </span>
+              Store Location
+            </h2>
+            <div className="border-2 border-gray-200 rounded-xl shadow-lg p-6 bg-gradient-to-br from-blue-50 to-white text-center min-h-[220px] sm:min-h-[240px] flex items-center justify-center hover:shadow-xl transition-all duration-300">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
+                  <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <p className="text-gray-600 font-semibold">Map View</p>
+                <p className="text-xs text-gray-500">Location visualization</p>
+              </div>
             </div>
           </div>
 
           {/* Store Details */}
-          <div>
-            <h2 className="font-semibold text-gray-700 mb-2">Store Details</h2>
-            <div className="border border-orange-500 rounded-lg shadow p-4 bg-[#FEF0E9] text-sm space-y-1">
-              <p>
-                <strong>Lat :</strong>{" "}
-                {storeDetails.latitude ||
-                  vendorData.storeAddress?.latitude ||
-                  "N/A"}{" "}
-                &nbsp;
-                <strong>Long :</strong>{" "}
-                {storeDetails.longitude ||
-                  vendorData.storeAddress?.longitude ||
-                  "N/A"}
-              </p>
-              <p>
-                <strong>Authorized Person :</strong>{" "}
-                {storeDetails.authorizedPerson ||
-                  vendorData.vendorName ||
-                  "N/A"}
-              </p>
-              <p>
-                <strong>Contact :</strong>{" "}
-                {storeDetails.contact || vendorData.contactNumber || "N/A"}
-                {vendorData.contactNumberVerified && (
-                  <span className="ml-1 text-green-600">✓</span>
-                )}
-              </p>
-              <p>
-                <strong>Alt Contact :</strong>{" "}
-                {storeDetails.altContact ||
-                  vendorData.altContactNumber ||
-                  "N/A"}
-              </p>
-              <p>
-                <strong>Email :</strong>{" "}
-                {storeDetails.email || vendorData.email || "N/A"}
-              </p>
-              <p>
-                <strong>DOB :</strong>{" "}
-                {storeDetails.dateOfBirth || vendorData.dateOfBirth || "N/A"}
-                {vendorData.age && ` (Age: ${vendorData.age})`}
-              </p>
-              <p>
-                <strong>Age :</strong> {vendorData.age || "N/A"}
-              </p>
-              <p>
-                <strong>Gender :</strong>{" "}
-                {storeDetails.gender ||
-                  (vendorData.gender
-                    ? vendorData.gender.charAt(0).toUpperCase() +
-                      vendorData.gender.slice(1)
-                    : "N/A")}
-              </p>
-              <p>
-                <strong>Service Radius :</strong>{" "}
-                {vendorData.serviceRadius || "N/A"} km
-              </p>
-              <p>
-                <strong>Handling Charge :</strong>{" "}
-                {vendorData.handlingChargePercentage || "N/A"}%
-              </p>
-              <p>
-                <strong>FSSAI Number :</strong>{" "}
-                {vendorData.fssaiNumber || "N/A"}
-              </p>
+          <div className="w-full">
+            <h2 className="font-bold text-gray-800 mb-3 text-lg flex items-center gap-2">
+              <span className="bg-gradient-to-br from-[#FF7B1D] to-orange-600 p-2 rounded-lg">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </span>
+              Store Details
+            </h2>
+            <div className="border-2 border-[#FF7B1D] rounded-xl shadow-lg p-6 bg-gradient-to-br from-orange-50 via-orange-100 to-orange-50 text-sm space-y-3 hover:shadow-xl transition-all duration-300 w-full">
+              <div className="grid grid-cols-1 gap-3 w-full">
+                <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-orange-200 w-full">
+                  <span className="font-semibold text-gray-700 flex-shrink-0">Latitude:</span>
+                  <span className="font-bold text-gray-900 text-right break-words ml-2">
+                    {storeDetails.latitude || vendorData.storeAddress?.latitude || "N/A"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-orange-200 w-full">
+                  <span className="font-semibold text-gray-700 flex-shrink-0">Longitude:</span>
+                  <span className="font-bold text-gray-900 text-right break-words ml-2">
+                    {storeDetails.longitude || vendorData.storeAddress?.longitude || "N/A"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-orange-200 w-full">
+                  <span className="font-semibold text-gray-700 flex-shrink-0">Authorized Person:</span>
+                  <span className="font-bold text-gray-900 text-right break-words ml-2">
+                    {storeDetails.authorizedPerson || vendorData.vendorName || "N/A"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-orange-200 w-full">
+                  <span className="font-semibold text-gray-700 flex-shrink-0">Contact:</span>
+                  <span className="font-bold text-gray-900 flex items-center gap-2 text-right ml-2">
+                    {storeDetails.contact || vendorData.contactNumber || "N/A"}
+                    {vendorData.contactNumberVerified && (
+                      <span className="text-green-600 font-bold">✓</span>
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-orange-200 w-full">
+                  <span className="font-semibold text-gray-700 flex-shrink-0">Alt Contact:</span>
+                  <span className="font-bold text-gray-900 text-right break-words ml-2">
+                    {storeDetails.altContact || vendorData.altContactNumber || "N/A"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-orange-200 w-full">
+                  <span className="font-semibold text-gray-700 flex-shrink-0">Email:</span>
+                  <span className="font-bold text-gray-900 text-xs text-right break-all ml-2">
+                    {storeDetails.email || vendorData.email || "N/A"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-orange-200 w-full">
+                  <span className="font-semibold text-gray-700 flex-shrink-0">DOB:</span>
+                  <span className="font-bold text-gray-900 text-right break-words ml-2">
+                    {storeDetails.dateOfBirth || vendorData.dateOfBirth || "N/A"}
+                    {vendorData.age && ` (${vendorData.age} yrs)`}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-orange-200 w-full">
+                  <span className="font-semibold text-gray-700 flex-shrink-0">Gender:</span>
+                  <span className="font-bold text-gray-900 text-right break-words ml-2">
+                    {storeDetails.gender ||
+                      (vendorData.gender
+                        ? vendorData.gender.charAt(0).toUpperCase() +
+                          vendorData.gender.slice(1)
+                        : "N/A")}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-orange-200 w-full">
+                  <span className="font-semibold text-gray-700 flex-shrink-0">Service Radius:</span>
+                  <span className="font-bold text-gray-900 text-right break-words ml-2">
+                    {vendorData.serviceRadius || "N/A"} km
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-orange-200 w-full">
+                  <span className="font-semibold text-gray-700 flex-shrink-0">Handling Charge:</span>
+                  <span className="font-bold text-gray-900 text-right break-words ml-2">
+                    {vendorData.handlingChargePercentage || "N/A"}%
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-orange-200 w-full">
+                  <span className="font-semibold text-gray-700 flex-shrink-0">FSSAI Number:</span>
+                  <span className="font-bold text-gray-900 text-right break-words ml-2">
+                    {vendorData.fssaiNumber || "N/A"}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Store Address */}
-          <div>
-            <h2 className="font-semibold text-gray-700 mb-2">Store Address</h2>
-            <div className="border rounded-lg shadow p-4 bg-[#9797FD] text-sm space-y-1">
-              <p>
-                <strong>Address 1 :</strong>{" "}
-                {storeAddress.addressLine1 ||
-                  vendorData.storeAddress?.line1 ||
-                  "N/A"}
-              </p>
-              <p>
-                <strong>Address 2 :</strong>{" "}
-                {storeAddress.addressLine2 ||
-                  vendorData.storeAddress?.line2 ||
-                  "N/A"}
-              </p>
-              <p>
-                <strong>City :</strong>{" "}
-                {storeAddress.city || vendorData.storeAddress?.city || "N/A"}
-              </p>
-              <p>
-                <strong>State :</strong>{" "}
-                {storeAddress.state || vendorData.storeAddress?.state || "N/A"}
-              </p>
-              <p>
-                <strong>PIN :</strong>{" "}
-                {storeAddress.pinCode ||
-                  vendorData.storeAddress?.pinCode ||
-                  "N/A"}
-              </p>
+          <div className="w-full">
+            <h2 className="font-bold text-gray-800 mb-3 text-lg flex items-center gap-2">
+              <span className="bg-gradient-to-br from-purple-500 to-purple-600 p-2 rounded-lg">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </span>
+              Store Address
+            </h2>
+            <div className="border-2 border-purple-300 rounded-xl shadow-lg p-6 bg-gradient-to-br from-purple-50 via-purple-100 to-purple-50 text-sm space-y-3 hover:shadow-xl transition-all duration-300 w-full">
+              <div className="grid grid-cols-1 gap-3 w-full">
+                <div className="p-3 bg-white/70 rounded-lg border border-purple-200 w-full">
+                  <span className="font-semibold text-gray-700 block mb-1">Address Line 1:</span>
+                  <span className="text-gray-900 font-medium break-words">
+                    {storeAddress.addressLine1 || vendorData.storeAddress?.line1 || "N/A"}
+                  </span>
+                </div>
+                <div className="p-3 bg-white/70 rounded-lg border border-purple-200 w-full">
+                  <span className="font-semibold text-gray-700 block mb-1">Address Line 2:</span>
+                  <span className="text-gray-900 font-medium break-words">
+                    {storeAddress.addressLine2 || vendorData.storeAddress?.line2 || "N/A"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-3 w-full">
+                  <div className="p-3 bg-white/70 rounded-lg border border-purple-200">
+                    <span className="font-semibold text-gray-700 block mb-1">City:</span>
+                    <span className="text-gray-900 font-medium">
+                      {storeAddress.city || vendorData.storeAddress?.city || "N/A"}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-white/70 rounded-lg border border-purple-200">
+                    <span className="font-semibold text-gray-700 block mb-1">State:</span>
+                    <span className="text-gray-900 font-medium">
+                      {storeAddress.state || vendorData.storeAddress?.state || "N/A"}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 bg-white/70 rounded-lg border border-purple-200 w-full">
+                  <span className="font-semibold text-gray-700 block mb-1">PIN Code:</span>
+                  <span className="text-gray-900 font-medium text-lg">
+                    {storeAddress.pinCode || vendorData.storeAddress?.pinCode || "N/A"}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Bank Details Section */}
           {vendorData.bankDetails && (
-            <div>
-              <h2 className="font-semibold text-gray-700 mb-2">Bank Details</h2>
-              <div className="border border-orange-500 rounded-lg shadow p-4 bg-[#FEF0E9] text-sm space-y-1">
-                <p>
-                  <strong>Bank Name :</strong>{" "}
+            <div className="w-full">
+              <h2 className="font-bold text-gray-800 mb-3 text-lg flex items-center gap-2">
+                <span className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-2 rounded-lg">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </span>
+                Bank Details
+              </h2>
+              <div className="border-2 border-indigo-300 rounded-xl shadow-lg p-6 bg-gradient-to-br from-indigo-50 via-indigo-100 to-indigo-50 text-sm space-y-3 hover:shadow-xl transition-all duration-300 w-full">
+                <div className="grid grid-cols-1 gap-3 w-full">
+                  <div className="p-3 bg-white/70 rounded-lg border border-indigo-200">
+                    <span className="font-semibold text-gray-700 block mb-1">Bank Name:</span>
+                    <span className="text-gray-900 font-bold text-base">
                   {vendorData.bankDetails.bankName || "N/A"}
-                </p>
-                <p>
-                  <strong>Account Number :</strong>{" "}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-white/70 rounded-lg border border-indigo-200">
+                    <span className="font-semibold text-gray-700 block mb-1">Account Number:</span>
+                    <span className="text-gray-900 font-bold text-base">
                   {vendorData.bankDetails.accountNumber || "N/A"}
-                </p>
-                <p>
-                  <strong>IFSC Code :</strong>{" "}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-white/70 rounded-lg border border-indigo-200">
+                    <span className="font-semibold text-gray-700 block mb-1">IFSC Code:</span>
+                    <span className="text-gray-900 font-bold text-base">
                   {vendorData.bankDetails.ifsc || "N/A"}
-                </p>
+                    </span>
+                  </div>
+                </div>
                 {vendorData.bankDetails.cancelCheque?.url && (
-                  <div className="mt-2">
-                    <p className="font-semibold mb-1">Cancel Cheque:</p>
+                  <div className="mt-4 p-4 bg-white rounded-lg border-2 border-indigo-200">
+                    <p className="font-bold text-gray-800 mb-3 text-sm">Cancel Cheque:</p>
                     <img
                       src={vendorData.bankDetails.cancelCheque.url}
                       alt="Cancel Cheque"
-                      className="max-w-full max-h-32 object-contain rounded border"
+                      className="max-w-full max-h-40 object-contain rounded-lg shadow-md"
                     />
                   </div>
                 )}
@@ -1722,216 +1803,76 @@ const VendorDetails = () => {
 
           {/* Documents Section */}
           {vendorData.documents && (
-            <div>
-              <h2 className="font-semibold text-gray-700 mb-2">Documents</h2>
-              <div className="border rounded-lg shadow p-4 bg-white text-sm space-y-3">
+            <div className="w-full">
+              <h2 className="font-bold text-gray-800 mb-3 text-lg flex items-center gap-2">
+                <span className="bg-gradient-to-br from-cyan-500 to-cyan-600 p-2 rounded-lg">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </span>
+                Documents
+              </h2>
+              <div className="border-2 border-cyan-300 rounded-xl shadow-lg p-6 bg-gradient-to-br from-cyan-50 via-white to-cyan-50 text-sm space-y-4 hover:shadow-xl transition-all duration-300 w-full">
+                <div className="grid grid-cols-1 gap-4 w-full">
                 {vendorData.documents.panCardFront?.url && (
-                  <div>
-                    <p className="font-semibold mb-1">PAN Card (Front):</p>
+                    <div className="p-4 bg-white rounded-lg border-2 border-cyan-200 hover:border-cyan-400 transition-all">
+                      <p className="font-bold text-gray-800 mb-2 text-sm">PAN Card (Front):</p>
                     <img
                       src={vendorData.documents.panCardFront.url}
                       alt="PAN Front"
-                      className="max-w-full max-h-32 object-contain rounded border"
+                        className="max-w-full max-h-40 object-contain rounded-lg shadow-md"
                     />
                   </div>
                 )}
                 {vendorData.documents.panCardBack?.url && (
-                  <div>
-                    <p className="font-semibold mb-1">PAN Card (Back):</p>
+                    <div className="p-4 bg-white rounded-lg border-2 border-cyan-200 hover:border-cyan-400 transition-all">
+                      <p className="font-bold text-gray-800 mb-2 text-sm">PAN Card (Back):</p>
                     <img
                       src={vendorData.documents.panCardBack.url}
                       alt="PAN Back"
-                      className="max-w-full max-h-32 object-contain rounded border"
+                        className="max-w-full max-h-40 object-contain rounded-lg shadow-md"
                     />
                   </div>
                 )}
                 {vendorData.documents.aadharCardFront?.url && (
-                  <div>
-                    <p className="font-semibold mb-1">Aadhar Card (Front):</p>
+                    <div className="p-4 bg-white rounded-lg border-2 border-cyan-200 hover:border-cyan-400 transition-all">
+                      <p className="font-bold text-gray-800 mb-2 text-sm">Aadhar Card (Front):</p>
                     <img
                       src={vendorData.documents.aadharCardFront.url}
                       alt="Aadhar Front"
-                      className="max-w-full max-h-32 object-contain rounded border"
+                        className="max-w-full max-h-40 object-contain rounded-lg shadow-md"
                     />
                   </div>
                 )}
                 {vendorData.documents.aadharCardBack?.url && (
-                  <div>
-                    <p className="font-semibold mb-1">Aadhar Card (Back):</p>
+                    <div className="p-4 bg-white rounded-lg border-2 border-cyan-200 hover:border-cyan-400 transition-all">
+                      <p className="font-bold text-gray-800 mb-2 text-sm">Aadhar Card (Back):</p>
                     <img
                       src={vendorData.documents.aadharCardBack.url}
                       alt="Aadhar Back"
-                      className="max-w-full max-h-32 object-contain rounded border"
+                        className="max-w-full max-h-40 object-contain rounded-lg shadow-md"
                     />
                   </div>
                 )}
                 {vendorData.documents.drivingLicense?.url && (
-                  <div>
-                    <p className="font-semibold mb-1">Driving License:</p>
+                    <div className="p-4 bg-white rounded-lg border-2 border-cyan-200 hover:border-cyan-400 transition-all">
+                      <p className="font-bold text-gray-800 mb-2 text-sm">Driving License:</p>
                     <img
                       src={vendorData.documents.drivingLicense.url}
                       alt="Driving License"
-                      className="max-w-full max-h-32 object-contain rounded border"
+                        className="max-w-full max-h-40 object-contain rounded-lg shadow-md"
                     />
                   </div>
                 )}
-              </div>
-            </div>
-          )}
-
-          {/* Permissions Section */}
-          {vendorData.permissions && (
-            <div>
-              <h2 className="font-semibold text-gray-700 mb-2">Permissions</h2>
-              <div className="border rounded-lg shadow p-4 bg-white text-sm">
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(vendorData.permissions).map(
-                    ([key, value]) => (
-                      <div
-                        key={key}
-                        className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                      >
-                        <span className="text-gray-700">
-                          {key
-                            .replace(/([A-Z])/g, " $1")
-                            .replace(/^./, (str) => str.toUpperCase())
-                            .trim()}
-                        </span>
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-semibold ${
-                            value
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {value ? "✓ Allowed" : "✗ Denied"}
-                        </span>
-                      </div>
-                    ),
-                  )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* Wallet Section */}
-          <div>
-            <h2 className="font-semibold text-gray-700 mb-2">Earning Wallet</h2>
-            <div className="border border-orange-500 rounded-lg shadow p-4 bg-gradient-to-br from-orange-50 to-orange-100">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Wallet className="w-5 h-5 text-orange-600" />
-                  <span className="text-sm font-semibold text-gray-700">
-                    Balance
-                  </span>
-                </div>
-              </div>
-              <div className="mb-4">
-                <p className="text-2xl font-bold text-orange-600">
-                  {wallet?.formattedEarningWallet ||
-                    (wallet?.earningWallet
-                      ? `₹${parseFloat(wallet.earningWallet).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                      : "₹0.00")}
-                </p>
-                <p className="text-xs text-gray-600 mt-1">
-                  Total Transactions: {wallet?.totalTransactions || 0}
-                </p>
-              </div>
-
-              {/* Recent Transactions */}
-              {recentTransactions.length > 0 && (
-                <div className="mt-4">
-                  <h3 className="text-xs font-semibold text-gray-700 mb-2">
-                    Recent Transactions
-                  </h3>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {recentTransactions.slice(0, 5).map((transaction) => (
-                      <div
-                        key={transaction.id}
-                        className="bg-white rounded p-2 border border-gray-200"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 flex-1">
-                            {transaction.type === "credit" ? (
-                              <ArrowUpCircle className="w-4 h-4 text-green-600" />
-                            ) : transaction.type === "debit" ? (
-                              <ArrowDownCircle className="w-4 h-4 text-red-600" />
-                            ) : (
-                              <RefreshCw className="w-4 h-4 text-gray-600" />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium text-gray-800 truncate">
-                                {transaction.description || "Transaction"}
-                              </p>
-                              {transaction.orderNumber && (
-                                <p className="text-xs text-gray-500">
-                                  Order: {transaction.orderNumber}
-                                </p>
-                              )}
-                              <p className="text-xs text-gray-400">
-                                {transaction.createdAt
-                                  ? new Date(
-                                      transaction.createdAt,
-                                    ).toLocaleDateString("en-GB", {
-                                      day: "2-digit",
-                                      month: "short",
-                                      year: "numeric",
-                                    })
-                                  : "N/A"}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p
-                              className={`text-sm font-bold ${
-                                transaction.type === "credit"
-                                  ? "text-green-600"
-                                  : transaction.type === "debit"
-                                    ? "text-red-600"
-                                    : "text-gray-600"
-                              }`}
-                            >
-                              {transaction.type === "credit"
-                                ? "+"
-                                : transaction.type === "debit"
-                                  ? "-"
-                                  : ""}
-                              ₹{parseFloat(transaction.amount || 0).toFixed(2)}
-                            </p>
-                            <span
-                              className={`text-xs px-1.5 py-0.5 rounded ${
-                                transaction.type === "credit"
-                                  ? "bg-green-100 text-green-700"
-                                  : transaction.type === "debit"
-                                    ? "bg-red-100 text-red-700"
-                                    : "bg-gray-100 text-gray-700"
-                              }`}
-                            >
-                              {transaction.type?.toUpperCase() || "N/A"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {recentTransactions.length > 5 && (
-                    <p className="text-xs text-gray-500 text-center mt-2">
-                      +{recentTransactions.length - 5} more transactions
-                    </p>
-                  )}
-                </div>
-              )}
-              {recentTransactions.length === 0 && (
-                <div className="text-center py-4 text-gray-500 text-sm">
-                  No transactions yet
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
         {/* Column 2 - Main Info & Charts */}
-        <div className="space-y-4">
+        <div className="space-y-4 w-full flex flex-col">
           {/* Vendor Info Card */}
           <div className="flex border-2 border-orange-300 rounded-md p-2.5 bg-[#FEF0E9] h-20 relative items-center justify-between">
             {/* Orange Badge Icon */}
@@ -1993,14 +1934,21 @@ const VendorDetails = () => {
           </div>
 
           {/* Order Overview */}
-          <div className="bg-white shadow rounded p-4 h-[490px] relative">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold">Order Overview</h3>
-              <button className="text-xs border rounded px-2 py-0 flex items-center gap-2">
+          <div className="bg-white shadow-xl border-2 border-gray-200 rounded-xl p-6 h-[520px] relative hover:shadow-2xl transition-all duration-300">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-xl text-gray-900 flex items-center gap-2">
+                <span className="bg-gradient-to-br from-blue-500 to-blue-600 p-2 rounded-lg">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </span>
+                Order Overview
+              </h3>
+              <button className="text-xs border-2 border-[#FF7B1D] rounded-lg px-3 py-1.5 bg-[#FF7B1D] text-white font-semibold hover:bg-orange-600 transition-all flex items-center gap-2">
                 📅 Today
               </button>
             </div>
-            <hr></hr>
+            <hr className="border-gray-300 mb-4"></hr>
             {/* Pie Chart */}
             <div className="mt-4">
               <ResponsiveContainer width="100%" height={240}>
@@ -2033,45 +1981,50 @@ const VendorDetails = () => {
               </p>
             </div>
 
-            <div className="mt-4 space-y-2">
+            <div className="mt-6 space-y-3">
               {chartData.map((entry, idx) => (
                 <div
                   key={idx}
-                  className="flex justify-between items-center text-sm"
+                  className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-all"
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <span
-                      className="inline-block w-3 h-3 rounded-full"
+                      className="inline-block w-4 h-4 rounded-full shadow-sm"
                       style={{ backgroundColor: entry.color }}
                     ></span>
-                    <span>{entry.name}</span>
+                    <span className="font-semibold text-gray-800">{entry.name}</span>
                   </div>
-                  <span className="font-medium">
-                    {entry.value}% ({entry.count || 0})
+                  <div className="text-right">
+                    <span className="font-bold text-gray-900 text-base">
+                      {entry.value}%
+                    </span>
+                    <span className="text-xs text-gray-600 ml-2">
+                      ({entry.count || 0})
                   </span>
+                  </div>
                 </div>
               ))}
             </div>
 
-            <div className="flex justify-between items-center border-t mt-4 pt-2">
+            <div className="flex justify-between items-center border-t-2 border-gray-200 mt-6 pt-4">
               {/* Left: Order List */}
               <div className="flex items-center gap-4">
-                <p className="text-sm font-semibold text-gray-700">
+                <p className="text-sm font-bold text-gray-800 uppercase tracking-wide">
                   Order List
                 </p>
 
                 {/* Avatars - Show order count */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   {orderList.slice(0, 3).map((order, idx) => (
                     <div
                       key={order.id}
-                      className="w-6 h-6 rounded-full border bg-gray-200 flex items-center justify-center text-xs"
+                      className="w-8 h-8 rounded-full border-2 border-white bg-gradient-to-br from-[#FF7B1D] to-orange-600 text-white flex items-center justify-center text-xs font-bold shadow-md"
                     >
                       {idx + 1}
                     </div>
                   ))}
                   {orderList.length > 3 && (
-                    <span className="text-xs bg-orange-500 text-white rounded-full px-2">
+                    <span className="text-xs bg-gradient-to-r from-[#FF7B1D] to-orange-600 text-white rounded-full px-3 py-1 font-bold shadow-md">
                       +{orderList.length - 3}
                     </span>
                   )}
@@ -2079,114 +2032,68 @@ const VendorDetails = () => {
               </div>
 
               {/* Right: View Details Button */}
-              <button className="text-orange-600 text-sm font-medium">
+              <button className="text-[#FF7B1D] text-sm font-bold hover:text-orange-600 transition-colors border-2 border-[#FF7B1D] px-4 py-1.5 rounded-lg hover:bg-[#FF7B1D] hover:text-white transition-all">
                 View Details
               </button>
             </div>
           </div>
 
           {/* Announcement */}
-          <div className="bg-white shadow rounded p-3 min-h-[375px]">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold text-gray-800">Announcement</h3>
-              <button className="text-xs bg-gray-200 hover:bg-gray-300 rounded-md text-gray-700 font-medium px-3 py-1 transition">
+          <div className="bg-white shadow-xl border-2 border-gray-200 rounded-xl p-6 min-h-[400px] hover:shadow-2xl transition-all duration-300">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-xl text-gray-900 flex items-center gap-2">
+                <span className="bg-gradient-to-br from-amber-500 to-amber-600 p-2 rounded-lg">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                  </svg>
+                </span>
+                Announcement
+              </h3>
+              <button className="text-xs border-2 border-amber-500 rounded-lg px-3 py-1.5 bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-all">
                 View All
               </button>
             </div>
 
-            <hr className="border-gray-200 mb-2" />
+            <hr className="border-gray-300 mb-4" />
 
-            <div className="flex flex-col">
-              <button className="bg-[#3B7080] text-white text-xs px-3 py-1 rounded mb-2 w-max">
-                Invitation
+            <div className="flex flex-col gap-4">
+              <button className="bg-gradient-to-r from-[#3B7080] to-teal-600 text-white text-sm px-4 py-2 rounded-lg font-bold w-max shadow-lg hover:shadow-xl transition-all">
+                📢 Invitation
               </button>
 
-              <p className="text-sm text-gray-700 mb-1 font-medium">
+              <div className="p-4 bg-gradient-to-br from-amber-50 to-white rounded-lg border-2 border-amber-200">
+                <p className="text-base text-gray-800 mb-2 font-bold">
                 We are now open new shop...
               </p>
-              <p className="text-xs text-gray-500 mb-2">
+                <p className="text-xs text-gray-600 mb-3 font-medium">
                 {vendorData.createdAt
                   ? `📅 ${formatDate(vendorData.createdAt)} | Created by: ${vendorData.createdBy?.name || "Admin"}`
                   : "📅 24 Sept 2025 | 🕒 10:30 AM"}
               </p>
-              <p className="text-sm text-gray-700">
                 {vendorData.createdBy && (
-                  <>
-                    <strong>Created By:</strong> {vendorData.createdBy.name} (
-                    {vendorData.createdBy.email})
-                    <br />
-                    <strong>Last Updated:</strong>{" "}
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-gray-700">Created By:</span>
+                      <span className="text-gray-900 font-semibold">{vendorData.createdBy.name}</span>
+                      <span className="text-gray-600 text-xs">({vendorData.createdBy.email})</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-gray-700">Last Updated:</span>
+                      <span className="text-gray-900 font-semibold">
                     {vendorData.updatedAt
                       ? formatDate(vendorData.updatedAt)
                       : "N/A"}
-                  </>
-                )}
-              </p>
+                      </span>
             </div>
-          </div>
-        </div>
-
-        {/* Column 3 - Stat Cards */}
-        <div className="space-y-4">
-          {/* Vendor Info Card */}
-          <div className="flex border-2 border-orange-300 rounded-md p-2.5 bg-[#FEF0E9] h-20 relative items-center justify-between">
-            {/* Orange Badge Icon */}
-            <div className="absolute top-2 left-2 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-white">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-                className="w-3 h-3"
-              >
-                <path d="M12 2L2 7v7c0 5 5 10 10 10s10-5 10-10V7l-10-5zm0 2.18l7 3.5v5.32c0 4-3.2 8-7 8s-7-4-7-8V7.68l7-3.5zM12 8l-2 4h4l-2-4zm0 6.5l-1.5 3h3L12 14.5z" />
-              </svg>
-            </div>
-
-            {/* Left: Vendor Info */}
-            <div className="flex items-center gap-2 ml-6">
-              {vendorData.profileImage?.url ? (
-                <img
-                  src={vendorData.profileImage.url}
-                  alt="Vendor"
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-              ) : storeInfo.storeImage && storeInfo.storeImage.length > 0 ? (
-                <img
-                  src={storeInfo.storeImage[0].url}
-                  alt="Vendor"
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-              ) : vendorData.storeImage && vendorData.storeImage.length > 0 ? (
-                <img
-                  src={vendorData.storeImage[0].url}
-                  alt="Vendor"
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs">
-                  {vendorData.vendorName?.charAt(0) || "V"}
                 </div>
               )}
-              <div>
-                <h3 className="text-sm font-semibold text-gray-800">
-                  {storeInfo.storeName || vendorData.vendorName || "N/A"}
-                </h3>
-                <p className="text-xs text-gray-600">
-                  {vendorData.storeName || "Store"}
-                </p>
               </div>
             </div>
-
-            {/* Right: Status */}
-            <div className="text-right mr-2">
-              <p className="text-xs text-gray-500 font-semibold">Status</p>
-              <p
-                className={`text-lg font-bold ${vendor.isActive ? "text-green-600" : "text-red-600"}`}
-              >
-                {vendor.isActive ? "Active" : "Inactive"}
-              </p>
             </div>
           </div>
+
+        {/* Column 3 - Stat Cards */}
+        <div className="space-y-4 w-full flex flex-col">
 
           {/* Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2300,41 +2207,41 @@ const VendorDetails = () => {
             ].map((card, idx) => (
               <div
                 key={idx}
-                className="flex flex-col justify-between bg-white p-2 rounded-lg shadow h-[80px]"
+                className="flex flex-col justify-between bg-white p-4 rounded-xl shadow-lg border-2 border-gray-200 h-[100px] hover:shadow-xl hover:border-[#FF7B1D] transition-all duration-300"
               >
                 {/* Top section */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
                     {/* Colored ball with icon inside */}
                     <div
-                      className={`w-6 h-6 flex items-center justify-center rounded-full ${card.iconColor}`}
+                      className={`w-10 h-10 flex items-center justify-center rounded-xl shadow-lg ${card.iconColor}`}
                     >
                       {card.iconType === "svgHuman" ? (
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           fill="currentColor"
                           viewBox="0 0 24 24"
-                          className="w-4 h-4 text-white"
+                          className="w-5 h-5 text-white"
                         >
                           <path d="M12 12c2.21 0 4-1.79 4-4S14.21 4 12 4 8 5.79 8 8s1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                         </svg>
                       ) : card.iconType === "lawm" ? (
-                        <span className="text-white text-xs font-bold">律</span>
+                        <span className="text-white text-sm font-bold">律</span>
                       ) : card.iconType === "redIcon" ? (
-                        <span className="text-white text-xs font-bold">輪</span>
+                        <span className="text-white text-sm font-bold">輪</span>
                       ) : null}
                     </div>
-                    <span className="text-gray-500 text-xs">{card.title}</span>
+                    <span className="text-gray-600 text-xs font-semibold uppercase tracking-wide">{card.title}</span>
                   </div>
                   <div
-                    className={`px-2 py-0.5 rounded ${card.percentageColor} text-xs`}
+                    className={`px-3 py-1 rounded-lg border-2 ${card.percentageColor} text-xs font-bold`}
                   >
                     {card.percentage}
                   </div>
                 </div>
 
                 {/* Bottom-left value */}
-                <div className="text-sm font-bold text-gray-800 flex justify-start">
+                <div className="text-xl font-bold text-gray-900 flex justify-start">
                   {card.value}
                 </div>
               </div>
@@ -2342,13 +2249,18 @@ const VendorDetails = () => {
           </div>
 
           {/* Delivery Partners */}
-          <div className="bg-white border rounded shadow-sm w-full max-w-3xl mx-auto">
+          <div className="bg-white border-2 border-gray-200 rounded-xl shadow-lg w-full hover:shadow-xl transition-all duration-300">
             {/* Header */}
-            <div className="flex justify-between items-center border-b px-4 py-2">
-              <h2 className="font-semibold text-gray-800 text-sm">
-                Delivery Partner
+            <div className="flex justify-between items-center border-b-2 border-gray-200 px-6 py-4 bg-gradient-to-r from-gray-50 to-white">
+              <h2 className="font-bold text-gray-900 text-lg flex items-center gap-2">
+                <span className="bg-gradient-to-br from-blue-500 to-blue-600 p-2 rounded-lg">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </span>
+                Delivery Partners
               </h2>
-              <button className="text-xs bg-gray-200 hover:bg-gray-300 rounded-md text-gray-700 font-medium px-3 py-1 transition">
+              <button className="text-xs border-2 border-blue-500 rounded-lg px-4 py-2 bg-blue-500 text-white font-semibold hover:bg-blue-600 transition-all">
                 View All
               </button>
             </div>
@@ -2356,7 +2268,7 @@ const VendorDetails = () => {
             {partners.length > 0 ? (
               <>
                 {/* Table Header */}
-                <div className="grid grid-cols-3 bg-gray-50 text-gray-600 text-xs font-semibold px-4 py-2 border-b">
+                <div className="grid grid-cols-3 bg-gradient-to-r from-gray-100 to-gray-50 text-gray-700 text-xs font-bold uppercase tracking-wide px-6 py-3 border-b-2 border-gray-200">
                   <span>Name</span>
                   <span className="text-center">Date</span>
                   <span className="text-right">Status</span>
@@ -2367,25 +2279,25 @@ const VendorDetails = () => {
                   {partners.map((partner) => (
                     <div
                       key={partner.id}
-                      className="grid grid-cols-3 items-center px-4 py-2 border-b last:border-0"
+                      className="grid grid-cols-3 items-center px-6 py-4 border-b-2 border-gray-100 last:border-0 hover:bg-gray-50 transition-colors"
                     >
                       {/* Left: Profile */}
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-semibold">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-sm font-bold text-white shadow-md border-2 border-white">
                           {partner.name?.charAt(0) || "R"}
                         </div>
                         <div>
-                          <p className="font-medium text-gray-800 text-sm truncate">
+                          <p className="font-bold text-gray-900 text-sm truncate">
                             {partner.name}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-600 font-medium">
                             {partner.mobileNumber}
                           </p>
                         </div>
                       </div>
 
                       {/* Center: Date */}
-                      <div className="text-center text-xs text-gray-700">
+                      <div className="text-center text-xs text-gray-700 font-semibold">
                         {partner.joinedDate
                           ? formatDate(partner.joinedDate)
                           : "N/A"}
@@ -2394,12 +2306,12 @@ const VendorDetails = () => {
                       {/* Right: Status */}
                       <div className="flex justify-end">
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold border-2 ${
                             partner.status === "Online"
-                              ? "bg-blue-100 text-blue-600"
+                              ? "bg-blue-100 text-blue-700 border-blue-300"
                               : partner.status === "Offline"
-                                ? "bg-gray-100 text-gray-600"
-                                : "bg-green-100 text-green-600"
+                                ? "bg-gray-100 text-gray-700 border-gray-300"
+                                : "bg-green-100 text-green-700 border-green-300"
                           }`}
                         >
                           {partner.status}
@@ -2418,95 +2330,6 @@ const VendorDetails = () => {
         </div>
       </div>
 
-      {/* Invoices Section */}
-      <div className="bg-white shadow rounded-md border border-blue-300 max-w-7xl w-[98%] mx-auto ml-6 mt-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-3 relative">
-          {/* Left: Heading */}
-          <h2 className="text-lg font-semibold text-gray-700">Invoices</h2>
-
-          {/* Center: Select + Button */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 flex flex-col sm:flex-row items-center gap-2 mt-2 sm:mt-0">
-            <select className="border rounded px-2 py-1 text-sm w-full sm:w-auto">
-              <option>Invoices</option>
-              <option>Payments</option>
-            </select>
-            <button className="bg-gray-200 text-sm px-3 py-1 rounded flex items-center gap-1 w-full sm:w-auto">
-              This Week
-            </button>
-          </div>
-        </div>
-
-        {vendorInvoices.length > 0 ? (
-          <>
-            {/* Table Header */}
-            <div className="grid grid-cols-3 bg-gray-50 text-gray-600 text-sm font-semibold px-2 py-2 rounded-t">
-              <span>Order Details</span>
-              <span className="text-center">Amount</span>
-              <span className="text-right">Status</span>
-            </div>
-
-            {/* Invoice List */}
-            <div>
-              {vendorInvoices.map((inv) => (
-                <div
-                  key={inv.id}
-                  className="grid grid-cols-3 items-center px-2 py-2 border-b last:border-0 hover:bg-gray-50"
-                >
-                  {/* Name */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-semibold text-xs">
-                      {inv.customerName?.charAt(0) || "U"}
-                    </div>
-                    <div className="text-sm">
-                      <p className="font-medium">{inv.orderNumber}</p>
-                      <p className="text-gray-500 text-xs">
-                        {inv.invoiceNumber} • {inv.customerName}
-                      </p>
-                      <p className="text-gray-400 text-xs">
-                        {formatDate(inv.date)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Payment */}
-                  <div className="text-center text-gray-700 font-semibold">
-                    ₹
-                    {parseFloat(inv.amount || 0).toLocaleString("en-IN", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </div>
-
-                  {/* Status */}
-                  <div className="flex justify-end">
-                    <span
-                      className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                        inv.status === "paid"
-                          ? "bg-green-100 text-green-600"
-                          : "bg-yellow-100 text-yellow-600"
-                      }`}
-                    >
-                      {inv.status.charAt(0).toUpperCase() + inv.status.slice(1)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* View All */}
-            <div className="text-center mt-3">
-              <button className="text-gray-500 text-sm hover:underline">
-                View All
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            No invoices found
-          </div>
-        )}
-      </div>
     </DashboardLayout>
   );
 };

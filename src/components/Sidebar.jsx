@@ -423,6 +423,7 @@ import {
   CreditCard,
   MessageSquare,
   Briefcase,
+  Gift,
 } from "lucide-react";
 import AddVendorModal from "./AddVendorModal";
 import AddProductPopup from "../components/AddProduct"; // ✅ Import Product Modal
@@ -650,6 +651,11 @@ const Sidebar = () => {
       name: "Suggestions",
       icon: <MessageSquare size={16} />,
       path: "/suggestions",
+    },
+    {
+      name: "Referral & Cashback",
+      icon: <Gift size={16} />,
+      path: "/admin/referral-cashback-settings",
     },
     {
       name: "Settings",

@@ -1429,8 +1429,8 @@
 
 // export default AddVendorModal;
 
-import React, { useState, useEffect } from "react";
-import { X, User, MapPin, FileText, Banknote } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { X, User, MapPin, FileText, Banknote, Search, Loader2, AlertCircle } from "lucide-react";
 import api from "../api/api";
 
 const AddVendorModal = ({ isOpen, onClose }) => {
@@ -1469,12 +1469,385 @@ const AddVendorModal = ({ isOpen, onClose }) => {
     handlingChargePercentage: "20",
   });
   const [errors, setErrors] = useState({});
+  
+  // Map states
+  const [showMap, setShowMap] = useState(false);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapError, setMapError] = useState("");
+  const [useOpenStreetMap, setUseOpenStreetMap] = useState(true); // Use OpenStreetMap by default (no API key needed)
+  const mapInstanceRef = useRef(null);
+  const markerInstanceRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
       generateStoreId();
     }
   }, [isOpen]);
+
+  // Load map (OpenStreetMap - no API key needed)
+  useEffect(() => {
+    if (useOpenStreetMap) {
+      // Load Leaflet CSS and JS for OpenStreetMap
+      const loadLeaflet = () => {
+        // Check if already loaded
+        if (window.L && document.querySelector('link[href*="leaflet"]')) {
+          setMapLoaded(true);
+          return;
+        }
+
+        // Load Leaflet CSS
+        if (!document.querySelector('link[href*="leaflet"]')) {
+          const link = document.createElement("link");
+          link.rel = "stylesheet";
+          link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+          link.integrity = "sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=";
+          link.crossOrigin = "";
+          document.head.appendChild(link);
+        }
+
+        // Load Leaflet JS
+        if (!window.L) {
+          const script = document.createElement("script");
+          script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+          script.integrity = "sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=";
+          script.crossOrigin = "";
+          script.onload = () => {
+            setMapLoaded(true);
+            setMapError("");
+          };
+          script.onerror = () => {
+            setMapError("Failed to load map library. Please check your internet connection.");
+          };
+          document.head.appendChild(script);
+        } else {
+          setMapLoaded(true);
+        }
+      };
+
+      loadLeaflet();
+    } else {
+      // Google Maps loading (if user wants to use it)
+      const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+      if (existingScript && window.google && window.google.maps) {
+        setMapLoaded(true);
+        setMapError("");
+        return;
+      }
+
+      if (window.google && window.google.maps) {
+        setMapLoaded(true);
+        setMapError("");
+        return;
+      }
+
+      const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+      
+      if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY.length < 20) {
+        setMapError("Google Maps API key is missing. Switching to OpenStreetMap (free, no API key needed).");
+        setUseOpenStreetMap(true);
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      
+      script.onload = () => {
+        setTimeout(() => {
+          if (window.google && window.google.maps) {
+            setMapLoaded(true);
+            setMapError("");
+          } else {
+            setMapError("Google Maps failed to initialize. Switching to OpenStreetMap.");
+            setUseOpenStreetMap(true);
+          }
+        }, 500);
+      };
+
+      script.onerror = () => {
+        setMapError("Failed to load Google Maps. Switching to OpenStreetMap (free alternative).");
+        setUseOpenStreetMap(true);
+      };
+
+      document.head.appendChild(script);
+    }
+  }, [useOpenStreetMap]);
+
+  // Initialize map when shown
+  useEffect(() => {
+    if (isOpen && showMap && mapLoaded) {
+      const timer = setTimeout(() => {
+        if (useOpenStreetMap && window.L) {
+          initializeOpenStreetMap();
+        } else if (!useOpenStreetMap && window.google && window.google.maps) {
+          initializeMap();
+        }
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, showMap, mapLoaded, formData.storeLat, formData.storeLong, useOpenStreetMap]);
+
+  const initializeOpenStreetMap = () => {
+    const mapContainer = document.getElementById("vendor-map-container");
+    if (!mapContainer || !window.L) {
+      console.error("Map container or Leaflet not found");
+      return;
+    }
+
+    // Don't reinitialize if map already exists
+    if (mapInstanceRef.current) {
+      if (formData.storeLat && formData.storeLong && markerInstanceRef.current) {
+        const newPos = [parseFloat(formData.storeLat), parseFloat(formData.storeLong)];
+        markerInstanceRef.current.setLatLng(newPos);
+        mapInstanceRef.current.setView(newPos, mapInstanceRef.current.getZoom());
+      }
+      return;
+    }
+
+    const center = formData.storeLat && formData.storeLong
+      ? [parseFloat(formData.storeLat), parseFloat(formData.storeLong)]
+      : [23.2599, 77.4126]; // Default: Bhopal
+
+    // Initialize map
+    const map = window.L.map(mapContainer).setView(center, 15);
+
+    // Add OpenStreetMap tiles
+    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19,
+    }).addTo(map);
+
+    mapInstanceRef.current = map;
+    let marker = null;
+
+    // Add marker if coordinates exist
+    if (formData.storeLat && formData.storeLong) {
+      marker = window.L.marker([parseFloat(formData.storeLat), parseFloat(formData.storeLong)], {
+        draggable: true,
+      }).addTo(map);
+
+      marker.on('dragend', (e) => {
+        const lat = e.target.getLatLng().lat;
+        const lng = e.target.getLatLng().lng;
+        updateLocationFromCoords(lat, lng);
+      });
+
+      markerInstanceRef.current = marker;
+    }
+
+    // Add click listener to map
+    map.on('click', (e) => {
+      const lat = e.latlng.lat;
+      const lng = e.latlng.lng;
+      updateLocationFromCoords(lat, lng);
+
+      // Update or create marker
+      if (marker) {
+        marker.setLatLng([lat, lng]);
+      } else {
+        marker = window.L.marker([lat, lng], {
+          draggable: true,
+        }).addTo(map);
+
+        marker.on('dragend', (e) => {
+          const newLat = e.target.getLatLng().lat;
+          const newLng = e.target.getLatLng().lng;
+          updateLocationFromCoords(newLat, newLng);
+        });
+
+        markerInstanceRef.current = marker;
+      }
+    });
+  };
+
+  const initializeMap = () => {
+    const mapContainer = document.getElementById("vendor-map-container");
+    if (!mapContainer) {
+      console.error("Map container not found");
+      return;
+    }
+    
+    if (!window.google || !window.google.maps) {
+      setMapError("Google Maps API is not loaded. Please check your API key.");
+      console.error("Google Maps API not available");
+      return;
+    }
+
+    // Don't reinitialize if map already exists
+    if (mapInstanceRef.current) {
+      if (formData.storeLat && formData.storeLong && markerInstanceRef.current) {
+        const newPos = { 
+          lat: parseFloat(formData.storeLat), 
+          lng: parseFloat(formData.storeLong) 
+        };
+        markerInstanceRef.current.setPosition(newPos);
+        mapInstanceRef.current.setCenter(newPos);
+      }
+      return;
+    }
+
+    const center = formData.storeLat && formData.storeLong
+      ? { lat: parseFloat(formData.storeLat), lng: parseFloat(formData.storeLong) }
+      : { lat: 23.2599, lng: 77.4126 }; // Default: Bhopal
+
+    const map = new window.google.maps.Map(mapContainer, {
+      center: center,
+      zoom: 15,
+      mapTypeControl: true,
+      streetViewControl: true,
+      fullscreenControl: true,
+    });
+
+    mapInstanceRef.current = map;
+    let marker = null;
+
+    // Add marker if coordinates exist
+    if (formData.storeLat && formData.storeLong) {
+      marker = new window.google.maps.Marker({
+        position: { lat: parseFloat(formData.storeLat), lng: parseFloat(formData.storeLong) },
+        map: map,
+        draggable: true,
+        title: "Store Location",
+        animation: window.google.maps.Animation.DROP,
+      });
+
+      marker.addListener("dragend", (e) => {
+        const lat = e.latLng.lat();
+        const lng = e.latLng.lng();
+        updateLocationFromCoords(lat, lng);
+      });
+
+      markerInstanceRef.current = marker;
+    }
+
+    // Add click listener to map
+    map.addListener("click", (e) => {
+      const lat = e.latLng.lat();
+      const lng = e.latLng.lng();
+      updateLocationFromCoords(lat, lng);
+
+      // Update or create marker
+      if (marker) {
+        marker.setPosition({ lat, lng });
+      } else {
+        marker = new window.google.maps.Marker({
+          position: { lat, lng },
+          map: map,
+          draggable: true,
+          title: "Store Location",
+          animation: window.google.maps.Animation.DROP,
+        });
+
+        marker.addListener("dragend", (e) => {
+          const newLat = e.latLng.lat();
+          const newLng = e.latLng.lng();
+          updateLocationFromCoords(newLat, newLng);
+        });
+
+        markerInstanceRef.current = marker;
+      }
+    });
+
+    // Add search box
+    const searchInput = document.getElementById("vendor-map-search-input");
+    if (searchInput) {
+      const searchBox = new window.google.maps.places.SearchBox(searchInput);
+      
+      map.addListener("bounds_changed", () => {
+        searchBox.setBounds(map.getBounds());
+      });
+
+      searchBox.addListener("places_changed", () => {
+        const places = searchBox.getPlaces();
+        if (places.length === 0) return;
+
+        const place = places[0];
+        if (!place.geometry || !place.geometry.location) return;
+
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+        updateLocationFromCoords(lat, lng);
+
+        // Update marker
+        if (marker) {
+          marker.setPosition({ lat, lng });
+        } else {
+          marker = new window.google.maps.Marker({
+            position: { lat, lng },
+            map: map,
+            draggable: true,
+            title: place.name,
+            animation: window.google.maps.Animation.DROP,
+          });
+
+          marker.addListener("dragend", (e) => {
+            const newLat = e.latLng.lat();
+            const newLng = e.latLng.lng();
+            updateLocationFromCoords(newLat, newLng);
+          });
+
+          markerInstanceRef.current = marker;
+        }
+
+        map.setCenter({ lat, lng });
+        map.setZoom(15);
+
+        // Update address fields
+        const address = place.address_components || [];
+        const addressParts = {};
+        
+        address.forEach((component) => {
+          const type = component.types[0];
+          if (type === "locality") addressParts.city = component.long_name;
+          if (type === "administrative_area_level_1") addressParts.state = component.long_name;
+          if (type === "postal_code") addressParts.pinCode = component.long_name;
+          if (type === "street_number" || type === "route") {
+            if (!addressParts.line1) addressParts.line1 = component.long_name;
+            else addressParts.line1 += " " + component.long_name;
+          }
+        });
+
+        setFormData((prev) => ({
+          ...prev,
+          city: addressParts.city || prev.city,
+          state: addressParts.state || prev.state,
+          pinCode: addressParts.pinCode || prev.pinCode,
+          storeAddress1: addressParts.line1 || place.formatted_address?.split(',')[0] || prev.storeAddress1,
+        }));
+      });
+    }
+  };
+
+  const updateLocationFromCoords = async (lat, lng) => {
+    setFormData((prev) => ({
+      ...prev,
+      storeLat: lat.toFixed(6),
+      storeLong: lng.toFixed(6),
+    }));
+
+    // Reverse geocode to get address using Nominatim (OpenStreetMap's geocoding service - free, no API key)
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+      );
+      const data = await response.json();
+      
+      if (data && data.address) {
+        const addr = data.address;
+        setFormData((prev) => ({
+          ...prev,
+          city: addr.city || addr.town || addr.village || prev.city,
+          state: addr.state || prev.state,
+          pinCode: addr.postcode || prev.pinCode,
+          storeAddress1: addr.road || addr.house_number || data.display_name?.split(',')[0] || prev.storeAddress1,
+        }));
+      }
+    } catch (error) {
+      console.log("Geocoding failed, coordinates saved:", error);
+      // Coordinates are still saved even if geocoding fails
+    }
+  };
 
   useEffect(() => {
     if (formData.dob) {
@@ -1501,19 +1874,40 @@ const AddVendorModal = ({ isOpen, onClose }) => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setFormData((prev) => ({
-            ...prev,
-            storeLat: position.coords.latitude.toFixed(4),
-            storeLong: position.coords.longitude.toFixed(4),
-          }));
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          updateLocationFromCoords(lat, lng);
+          
+          // Update map if initialized
+          if (mapInstanceRef.current && markerInstanceRef.current) {
+            const newPos = { lat, lng };
+            markerInstanceRef.current.setPosition(newPos);
+            mapInstanceRef.current.setCenter(newPos);
+          } else if (mapInstanceRef.current) {
+            mapInstanceRef.current.setCenter({ lat, lng });
+            const marker = new window.google.maps.Marker({
+              position: { lat, lng },
+              map: mapInstanceRef.current,
+              draggable: true,
+              title: "Current Location",
+              animation: window.google.maps.Animation.DROP,
+            });
+            marker.addListener("dragend", (e) => {
+              const newLat = e.latLng.lat();
+              const newLng = e.latLng.lng();
+              updateLocationFromCoords(newLat, newLng);
+            });
+            markerInstanceRef.current = marker;
+          }
+          
           alert("Location fetched successfully!");
         },
         () => {
-          alert("Unable to fetch location. Please enter manually.");
+          alert("Unable to fetch location. Please use map to select.");
         },
       );
     } else {
-      alert("Geolocation is not supported by this browser.");
+      alert("Geolocation is not supported by this browser. Please use map.");
     }
   };
 
@@ -2483,13 +2877,162 @@ const AddVendorModal = ({ isOpen, onClose }) => {
               </div>
 
               <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm text-gray-700 font-bold">
+                    Select Location on Map
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowMap(!showMap)}
+                    className="px-4 py-2 bg-[#FF7B1D] hover:bg-orange-600 text-white rounded-lg transition-all font-semibold text-sm flex items-center gap-2"
+                  >
+                    <MapPin size={16} />
+                    {showMap ? "Hide Map" : "Show Map"}
+                  </button>
+                </div>
+                
                 <button
                   onClick={getCurrentLocation}
-                  className="w-full md:w-auto px-6 py-2 bg-[#FF7B1D] text-white font-semibold rounded hover:bg-orange-600 transition"
+                  className="w-full md:w-auto px-6 py-2 bg-[#FF7B1D] text-white font-semibold rounded hover:bg-orange-600 transition flex items-center gap-2"
                 >
-                  📍 Get Current Location
+                  <MapPin size={18} />
+                  Get Current Location
                 </button>
               </div>
+
+              {/* Map Section */}
+              {showMap && (
+                <div className="mb-6 border-2 border-gray-300 rounded-xl overflow-hidden shadow-lg">
+                  <div className="bg-gradient-to-r from-[#FF7B1D] to-orange-600 p-4 border-b border-gray-200">
+                    <div className="flex items-center gap-3 mb-3">
+                      <MapPin className="text-white" size={20} />
+                      <p className="text-white font-semibold">
+                        Interactive Map - Click to Select Store Location
+                      </p>
+                    </div>
+                    {formData.storeLat && formData.storeLong && (
+                      <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+                        <div className="grid grid-cols-2 gap-3 text-xs text-white mb-2">
+                          <div>
+                            <span className="font-semibold">Latitude:</span>{" "}
+                            <span className="font-bold">{formData.storeLat}</span>
+                          </div>
+                          <div>
+                            <span className="font-semibold">Longitude:</span>{" "}
+                            <span className="font-bold">{formData.storeLong}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Search Box */}
+                  <div className="bg-gray-50 p-4 border-b border-gray-200">
+                    <div className="flex gap-2">
+                      <div className="flex-1 relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                        <input
+                          type="text"
+                          id="vendor-map-search-input"
+                          placeholder="Search for address, place, or landmark..."
+                          className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF7B1D] focus:border-[#FF7B1D] transition-all text-sm"
+                          onKeyPress={async (e) => {
+                            if (e.key === 'Enter' && useOpenStreetMap && window.L) {
+                              const query = e.target.value;
+                              if (query) {
+                                try {
+                                  const response = await fetch(
+                                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`
+                                  );
+                                  const data = await response.json();
+                                  if (data && data.length > 0) {
+                                    const lat = parseFloat(data[0].lat);
+                                    const lng = parseFloat(data[0].lon);
+                                    updateLocationFromCoords(lat, lng);
+                                    if (mapInstanceRef.current) {
+                                      mapInstanceRef.current.setView([lat, lng], 15);
+                                      if (markerInstanceRef.current) {
+                                        markerInstanceRef.current.setLatLng([lat, lng]);
+                                      } else {
+                                        const marker = window.L.marker([lat, lng], { draggable: true }).addTo(mapInstanceRef.current);
+                                        marker.on('dragend', (e) => {
+                                          const newLat = e.target.getLatLng().lat;
+                                          const newLng = e.target.getLatLng().lng;
+                                          updateLocationFromCoords(newLat, newLng);
+                                        });
+                                        markerInstanceRef.current = marker;
+                                      }
+                                    }
+                                  }
+                                } catch (error) {
+                                  console.error("Search failed:", error);
+                                }
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                    {useOpenStreetMap && (
+                      <p className="text-xs text-gray-500 mt-2">
+                        💡 Using OpenStreetMap (Free, No API Key Required)
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Map Container */}
+                  <div className="relative" style={{ height: "400px" }}>
+                    {mapError ? (
+                      <div className="flex items-center justify-center h-full bg-gray-100">
+                        <div className="text-center p-6 max-w-md">
+                          <AlertCircle className="text-red-500 mx-auto mb-3" size={48} />
+                          <p className="text-red-600 font-semibold mb-2">Map Loading Error</p>
+                          <p className="text-gray-600 text-sm mb-4">{mapError}</p>
+                          <button
+                            onClick={() => {
+                              setMapError("");
+                              setMapLoaded(false);
+                              // Reload the script
+                              const script = document.querySelector('script[src*="maps.googleapis.com"]');
+                              if (script) script.remove();
+                              window.google = null;
+                              window.initGoogleMap = null;
+                              // Trigger reload
+                              window.location.reload();
+                            }}
+                            className="px-4 py-2 bg-[#FF7B1D] text-white rounded-lg hover:bg-orange-600 transition"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      </div>
+                    ) : !mapLoaded ? (
+                      <div className="flex items-center justify-center h-full bg-gray-100">
+                        <div className="text-center">
+                          <Loader2 className="animate-spin text-[#FF7B1D] mx-auto mb-3" size={32} />
+                          <p className="text-gray-600 font-medium">Loading map...</p>
+                          <p className="text-gray-500 text-xs mt-2">Please wait while we load Google Maps</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div id="vendor-map-container" style={{ width: "100%", height: "100%" }}></div>
+                    )}
+
+                    {/* Instructions Overlay */}
+                    <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm p-3 rounded-lg shadow-lg border-2 border-[#FF7B1D] max-w-xs">
+                      <p className="text-xs font-semibold text-gray-800 mb-1">
+                        📍 How to use:
+                      </p>
+                      <ul className="text-xs text-gray-600 space-y-1">
+                        <li>• Click on map to select location</li>
+                        <li>• Drag marker to adjust position</li>
+                        <li>• Search for address above</li>
+                        <li>• Coordinates update automatically</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <h3 className="text-md font-bold text-gray-700 mb-4 flex items-center gap-2">
                 <FileText className="w-5 h-5 text-[#FF7B1D]" />

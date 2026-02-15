@@ -152,6 +152,7 @@ const InvoiceViewPage = () => {
             totalGst:
               apiInvoice.pricing?.totalGst || apiInvoice.pricing?.tax || 0,
             handlingCharges: apiInvoice.pricing?.handlingCharge || 0,
+            deliveryCharge: apiInvoice.pricing?.deliveryCharge || apiInvoice.deliveryCharge || apiInvoice.order?.deliveryCharge || 0,
             discount: apiInvoice.pricing?.discount || 0,
             cashback: apiInvoice.pricing?.totalCashback || 0,
             total: apiInvoice.amount || apiInvoice.pricing?.totalAmount || 0,
@@ -773,6 +774,16 @@ const InvoiceViewPage = () => {
                           </span>
                           <span className="text-black font-bold">
                             ₹{invoice.handlingCharges.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      {invoice.deliveryCharge > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-black font-semibold">
+                            Delivery Charge:
+                          </span>
+                          <span className="text-black font-bold">
+                            ₹{invoice.deliveryCharge.toLocaleString()}
                           </span>
                         </div>
                       )}

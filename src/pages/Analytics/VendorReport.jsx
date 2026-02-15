@@ -4,7 +4,7 @@ import {
   Users,
   Package,
   BarChart3,
-  DollarSign,
+  IndianRupee,
   Calendar,
   Download,
   Loader2,
@@ -277,7 +277,7 @@ const VendorReport = () => {
                   {dashboardData?.revenue?.totalOrders || 0} orders
                 </p>
               </div>
-              <DollarSign className="w-12 h-12 text-[#FF7B1D]" />
+              <IndianRupee className="w-12 h-12 text-[#FF7B1D]" />
             </div>
           </div>
 
