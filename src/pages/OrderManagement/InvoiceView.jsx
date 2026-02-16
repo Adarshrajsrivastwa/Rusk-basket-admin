@@ -152,10 +152,9 @@ const InvoiceViewPage = () => {
             totalGst:
               apiInvoice.pricing?.totalGst || apiInvoice.pricing?.tax || 0,
             handlingCharges: apiInvoice.pricing?.handlingCharge || 0,
-            deliveryCharge: apiInvoice.pricing?.deliveryCharge || apiInvoice.deliveryCharge || apiInvoice.order?.deliveryCharge || 0,
+            deliveryCharge: apiInvoice.pricing?.deliveryCharges || apiInvoice.pricing?.deliveryCharge || apiInvoice.order?.deliveryCharge || 0,
             discount: apiInvoice.pricing?.discount || 0,
-            cashback: apiInvoice.pricing?.totalCashback || 0,
-            total: apiInvoice.amount || apiInvoice.pricing?.totalAmount || 0,
+            total: apiInvoice.pricing?.totalAmount || apiInvoice.amount || 0,
 
             // Notes and terms
             notes:
@@ -792,14 +791,6 @@ const InvoiceViewPage = () => {
                           <span className="font-semibold">Discount:</span>
                           <span className="font-bold">
                             -₹{invoice.discount.toLocaleString()}
-                          </span>
-                        </div>
-                      )}
-                      {invoice.cashback > 0 && (
-                        <div className="flex justify-between text-sm text-green-600">
-                          <span className="font-semibold">Cashback:</span>
-                          <span className="font-bold">
-                            ₹{invoice.cashback.toLocaleString()}
                           </span>
                         </div>
                       )}

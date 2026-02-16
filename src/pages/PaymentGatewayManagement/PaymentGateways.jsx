@@ -110,18 +110,16 @@ const PaymentGatewayManagement = () => {
         phonepaySaltIndex: "1",
         phonepayAppId: "",
       };
-    } else if (gateway.name === "shopify") {
+    } else if (gateway.name === "cashfree") {
       defaultCredentials = {
-        shopifyStoreUrl: "",
-        shopifyApiKey: "",
-        shopifyApiSecret: "",
-        shopifyAccessToken: "",
+        cashfreeAppId: "",
+        cashfreeSecretKey: "",
+        cashfreeApiVersion: "2023-08-01",
       };
       defaultTestCredentials = {
-        shopifyStoreUrl: "",
-        shopifyApiKey: "",
-        shopifyApiSecret: "",
-        shopifyAccessToken: "",
+        cashfreeAppId: "",
+        cashfreeSecretKey: "",
+        cashfreeApiVersion: "2023-08-01",
       };
     }
 
@@ -174,9 +172,9 @@ const PaymentGatewayManagement = () => {
     }
 
     if (
-      !["shopify", "razorpay", "phonepay"].includes(formData.name.toLowerCase())
+      !["cashfree", "razorpay", "phonepay"].includes(formData.name.toLowerCase())
     ) {
-      alert("Gateway name must be one of: shopify, razorpay, phonepay");
+      alert("Gateway name must be one of: cashfree, razorpay, phonepay");
       return;
     }
 
@@ -284,13 +282,12 @@ const PaymentGatewayManagement = () => {
         alert("Please enter Merchant ID and Salt Key");
         return;
       }
-    } else if (formData.name === "shopify") {
+    } else if (formData.name === "cashfree") {
       if (
-        !credentialsToTest?.shopifyStoreUrl ||
-        !credentialsToTest?.shopifyApiKey ||
-        !credentialsToTest?.shopifyAccessToken
+        !credentialsToTest?.cashfreeAppId ||
+        !credentialsToTest?.cashfreeSecretKey
       ) {
-        alert("Please enter Store URL, API Key, and Access Token");
+        alert("Please enter App ID and Secret Key");
         return;
       }
     }
@@ -500,7 +497,7 @@ const PaymentGatewayManagement = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Gateway Name * (shopify, razorpay, or phonepay)
+                    Gateway Name * (cashfree, razorpay, or phonepay)
                   </label>
                   <select
                     value={formData.name}
@@ -532,18 +529,16 @@ const PaymentGatewayManagement = () => {
                           phonepaySaltIndex: "1",
                           phonepayAppId: "",
                         };
-                      } else if (gatewayName === "shopify") {
+                      } else if (gatewayName === "cashfree") {
                         defaultCredentials = {
-                          shopifyStoreUrl: "",
-                          shopifyApiKey: "",
-                          shopifyApiSecret: "",
-                          shopifyAccessToken: "",
+                          cashfreeAppId: "",
+                          cashfreeSecretKey: "",
+                          cashfreeApiVersion: "2023-08-01",
                         };
                         defaultTestCredentials = {
-                          shopifyStoreUrl: "",
-                          shopifyApiKey: "",
-                          shopifyApiSecret: "",
-                          shopifyAccessToken: "",
+                          cashfreeAppId: "",
+                          cashfreeSecretKey: "",
+                          cashfreeApiVersion: "2023-08-01",
                         };
                       }
 
@@ -584,7 +579,7 @@ const PaymentGatewayManagement = () => {
                     disabled={submitting || editingGateway}
                   >
                     <option value="">Select Gateway</option>
-                    <option value="shopify">Shopify</option>
+                    <option value="cashfree">Cashfree</option>
                     <option value="razorpay">Razorpay</option>
                     <option value="phonepay">PhonePe</option>
                   </select>
@@ -872,22 +867,22 @@ const PaymentGatewayManagement = () => {
                             </div>
                           </>
                         )}
-                        {formData.name === "shopify" && (
+                        {formData.name === "cashfree" && (
                           <>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Store URL *
+                                App ID *
                               </label>
                               <input
                                 type="text"
-                                placeholder="https://your-store.myshopify.com"
+                                placeholder="YOUR_PRODUCTION_APP_ID"
                                 value={
-                                  formData.credentials?.shopifyStoreUrl || ""
+                                  formData.credentials?.cashfreeAppId || ""
                                 }
                                 onChange={(e) =>
                                   updateCredentials(
                                     "credentials",
-                                    "shopifyStoreUrl",
+                                    "cashfreeAppId",
                                     e.target.value,
                                   )
                                 }
@@ -897,44 +892,23 @@ const PaymentGatewayManagement = () => {
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">
-                                API Key *
-                              </label>
-                              <input
-                                type="text"
-                                placeholder="Enter API Key"
-                                value={
-                                  formData.credentials?.shopifyApiKey || ""
-                                }
-                                onChange={(e) =>
-                                  updateCredentials(
-                                    "credentials",
-                                    "shopifyApiKey",
-                                    e.target.value,
-                                  )
-                                }
-                                className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7B1D]"
-                                disabled={submitting}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                API Secret *
+                                Secret Key *
                               </label>
                               <div className="relative">
                                 <input
                                   type={
-                                    showCredentials["live_api_secret"]
+                                    showCredentials["live_secret_key"]
                                       ? "text"
                                       : "password"
                                   }
-                                  placeholder="Enter API Secret"
+                                  placeholder="YOUR_PRODUCTION_SECRET_KEY"
                                   value={
-                                    formData.credentials?.shopifyApiSecret || ""
+                                    formData.credentials?.cashfreeSecretKey || ""
                                   }
                                   onChange={(e) =>
                                     updateCredentials(
                                       "credentials",
-                                      "shopifyApiSecret",
+                                      "cashfreeSecretKey",
                                       e.target.value,
                                     )
                                   }
@@ -946,13 +920,13 @@ const PaymentGatewayManagement = () => {
                                   onClick={() =>
                                     setShowCredentials({
                                       ...showCredentials,
-                                      live_api_secret:
-                                        !showCredentials["live_api_secret"],
+                                      live_secret_key:
+                                        !showCredentials["live_secret_key"],
                                     })
                                   }
                                   className="absolute right-2 top-2.5 text-gray-500 hover:text-gray-700"
                                 >
-                                  {showCredentials["live_api_secret"] ? (
+                                  {showCredentials["live_secret_key"] ? (
                                     <EyeOff size={18} />
                                   ) : (
                                     <Eye size={18} />
@@ -962,48 +936,25 @@ const PaymentGatewayManagement = () => {
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Access Token *
+                                API Version
                               </label>
-                              <div className="relative">
-                                <input
-                                  type={
-                                    showCredentials["live_access_token"]
-                                      ? "text"
-                                      : "password"
-                                  }
-                                  placeholder="Enter Access Token"
-                                  value={
-                                    formData.credentials?.shopifyAccessToken ||
-                                    ""
-                                  }
-                                  onChange={(e) =>
-                                    updateCredentials(
-                                      "credentials",
-                                      "shopifyAccessToken",
-                                      e.target.value,
-                                    )
-                                  }
-                                  className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7B1D] pr-10"
-                                  disabled={submitting}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setShowCredentials({
-                                      ...showCredentials,
-                                      live_access_token:
-                                        !showCredentials["live_access_token"],
-                                    })
-                                  }
-                                  className="absolute right-2 top-2.5 text-gray-500 hover:text-gray-700"
-                                >
-                                  {showCredentials["live_access_token"] ? (
-                                    <EyeOff size={18} />
-                                  ) : (
-                                    <Eye size={18} />
-                                  )}
-                                </button>
-                              </div>
+                              <input
+                                type="text"
+                                placeholder="2023-08-01"
+                                value={
+                                  formData.credentials?.cashfreeApiVersion ||
+                                  "2023-08-01"
+                                }
+                                onChange={(e) =>
+                                  updateCredentials(
+                                    "credentials",
+                                    "cashfreeApiVersion",
+                                    e.target.value,
+                                  )
+                                }
+                                className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7B1D]"
+                                disabled={submitting}
+                              />
                             </div>
                           </>
                         )}
@@ -1238,23 +1189,22 @@ const PaymentGatewayManagement = () => {
                             </div>
                           </>
                         )}
-                        {formData.name === "shopify" && (
+                        {formData.name === "cashfree" && (
                           <>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Store URL *
+                                App ID *
                               </label>
                               <input
                                 type="text"
-                                placeholder="https://your-store.myshopify.com"
+                                placeholder="YOUR_TEST_APP_ID"
                                 value={
-                                  formData.testCredentials?.shopifyStoreUrl ||
-                                  ""
+                                  formData.testCredentials?.cashfreeAppId || ""
                                 }
                                 onChange={(e) =>
                                   updateCredentials(
                                     "testCredentials",
-                                    "shopifyStoreUrl",
+                                    "cashfreeAppId",
                                     e.target.value,
                                   )
                                 }
@@ -1264,45 +1214,24 @@ const PaymentGatewayManagement = () => {
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">
-                                API Key *
-                              </label>
-                              <input
-                                type="text"
-                                placeholder="Enter Test API Key"
-                                value={
-                                  formData.testCredentials?.shopifyApiKey || ""
-                                }
-                                onChange={(e) =>
-                                  updateCredentials(
-                                    "testCredentials",
-                                    "shopifyApiKey",
-                                    e.target.value,
-                                  )
-                                }
-                                className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7B1D]"
-                                disabled={submitting}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                API Secret *
+                                Secret Key *
                               </label>
                               <div className="relative">
                                 <input
                                   type={
-                                    showCredentials["test_api_secret"]
+                                    showCredentials["test_secret_key"]
                                       ? "text"
                                       : "password"
                                   }
-                                  placeholder="Enter Test API Secret"
+                                  placeholder="YOUR_TEST_SECRET_KEY"
                                   value={
                                     formData.testCredentials
-                                      ?.shopifyApiSecret || ""
+                                      ?.cashfreeSecretKey || ""
                                   }
                                   onChange={(e) =>
                                     updateCredentials(
                                       "testCredentials",
-                                      "shopifyApiSecret",
+                                      "cashfreeSecretKey",
                                       e.target.value,
                                     )
                                   }
@@ -1314,13 +1243,13 @@ const PaymentGatewayManagement = () => {
                                   onClick={() =>
                                     setShowCredentials({
                                       ...showCredentials,
-                                      test_api_secret:
-                                        !showCredentials["test_api_secret"],
+                                      test_secret_key:
+                                        !showCredentials["test_secret_key"],
                                     })
                                   }
                                   className="absolute right-2 top-2.5 text-gray-500 hover:text-gray-700"
                                 >
-                                  {showCredentials["test_api_secret"] ? (
+                                  {showCredentials["test_secret_key"] ? (
                                     <EyeOff size={18} />
                                   ) : (
                                     <Eye size={18} />
@@ -1330,48 +1259,25 @@ const PaymentGatewayManagement = () => {
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Access Token *
+                                API Version
                               </label>
-                              <div className="relative">
-                                <input
-                                  type={
-                                    showCredentials["test_access_token"]
-                                      ? "text"
-                                      : "password"
-                                  }
-                                  placeholder="Enter Test Access Token"
-                                  value={
-                                    formData.testCredentials
-                                      ?.shopifyAccessToken || ""
-                                  }
-                                  onChange={(e) =>
-                                    updateCredentials(
-                                      "testCredentials",
-                                      "shopifyAccessToken",
-                                      e.target.value,
-                                    )
-                                  }
-                                  className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7B1D] pr-10"
-                                  disabled={submitting}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setShowCredentials({
-                                      ...showCredentials,
-                                      test_access_token:
-                                        !showCredentials["test_access_token"],
-                                    })
-                                  }
-                                  className="absolute right-2 top-2.5 text-gray-500 hover:text-gray-700"
-                                >
-                                  {showCredentials["test_access_token"] ? (
-                                    <EyeOff size={18} />
-                                  ) : (
-                                    <Eye size={18} />
-                                  )}
-                                </button>
-                              </div>
+                              <input
+                                type="text"
+                                placeholder="2023-08-01"
+                                value={
+                                  formData.testCredentials
+                                    ?.cashfreeApiVersion || "2023-08-01"
+                                }
+                                onChange={(e) =>
+                                  updateCredentials(
+                                    "testCredentials",
+                                    "cashfreeApiVersion",
+                                    e.target.value,
+                                  )
+                                }
+                                className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7B1D]"
+                                disabled={submitting}
+                              />
                             </div>
                           </>
                         )}
