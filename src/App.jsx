@@ -469,7 +469,14 @@ function AppContent() {
           }
         />
 
-        <Route path="/settings/profile" element={<AdminProfile />} />
+        <Route
+          path="/settings/profile"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminProfile />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/payment-gateways"
           element={

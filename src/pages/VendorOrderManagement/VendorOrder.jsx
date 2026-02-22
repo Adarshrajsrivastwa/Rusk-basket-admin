@@ -15,6 +15,7 @@ const AllOrder = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const itemsPerPage = 8;
 
   const [orders, setOrders] = useState([]);
@@ -184,8 +185,44 @@ const AllOrder = () => {
     return "text-gray-600 font-semibold";
   };
 
-  // Use all orders (no filtering)
-  const filteredOrders = orders;
+  // Filter orders based on search query
+  const getFilteredOrders = () => {
+    if (!searchQuery.trim()) {
+      return orders;
+    }
+
+    const searchLower = searchQuery.toLowerCase().trim();
+    return orders.filter((order) => {
+      // Search in order ID
+      const orderId = order.id?.toLowerCase() || "";
+      // Search in user name/contact
+      const userName = order.user?.toLowerCase() || "";
+      // Search in vendor name
+      const vendorName = order.vendor?.toLowerCase() || "";
+      // Search in payment method
+      const payment = order.payment?.toLowerCase() || "";
+      // Search in status
+      const status = order.status?.toLowerCase() || "";
+      // Search in product names (from items)
+      const productNames = order.items
+        ?.map((item) => item.product?.name?.toLowerCase() || "")
+        .join(" ") || "";
+      // Search in cart value
+      const cartValue = order.cartValue?.toString() || "";
+
+      return (
+        orderId.includes(searchLower) ||
+        userName.includes(searchLower) ||
+        vendorName.includes(searchLower) ||
+        payment.includes(searchLower) ||
+        status.includes(searchLower) ||
+        productNames.includes(searchLower) ||
+        cartValue.includes(searchLower)
+      );
+    });
+  };
+
+  const filteredOrders = getFilteredOrders();
 
   // Pagination (using all orders for display)
   const indexOfLast = currentPage * itemsPerPage;
@@ -250,8 +287,22 @@ const AllOrder = () => {
               type="text"
               placeholder="Search Order by Order Id, Products, User name, Tag"
               className="flex-1 px-4 text-sm focus:outline-none h-full"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  setCurrentPage(1);
+                }
+              }}
             />
-            <button className="bg-[#FF7B1D] hover:bg-orange-600 text-white px-4 sm:px-6 h-full text-sm">
+            <button 
+              onClick={() => setCurrentPage(1)}
+              className="bg-[#FF7B1D] hover:bg-orange-600 text-white px-4 sm:px-6 h-full text-sm transition-colors"
+            >
               Search
             </button>
           </div>

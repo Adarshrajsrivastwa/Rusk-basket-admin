@@ -507,7 +507,6 @@ import {
   CheckCircle,
   XCircle,
   Search,
-  Filter,
   Calendar,
   User,
   AlertCircle,
@@ -535,7 +534,6 @@ const WithdrawalRequests = () => {
 
   // Filters
   const [statusFilter, setStatusFilter] = useState("all");
-  const [riderIdFilter, setRiderIdFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch withdrawal requests
@@ -547,9 +545,6 @@ const WithdrawalRequests = () => {
       const params = {};
       if (statusFilter !== "all") {
         params.status = statusFilter;
-      }
-      if (riderIdFilter) {
-        params.riderId = riderIdFilter;
       }
 
       const response = await api.get("/api/admin/riders/withdrawal-requests", {
@@ -603,7 +598,7 @@ const WithdrawalRequests = () => {
   // Fetch requests on mount and when filters change
   useEffect(() => {
     fetchRequests();
-  }, [statusFilter, riderIdFilter]);
+  }, [statusFilter]);
 
   // Handle approve request
   const handleApprove = async (requestId) => {
@@ -888,18 +883,6 @@ const WithdrawalRequests = () => {
                 : status.charAt(0).toUpperCase() + status.slice(1)}
             </button>
           ))}
-        </div>
-
-        {/* Rider ID Filter */}
-        <div className="flex items-center gap-2">
-          <Filter size={18} className="text-gray-600" />
-          <input
-            type="text"
-            placeholder="Filter by Rider ID"
-            value={riderIdFilter}
-            onChange={(e) => setRiderIdFilter(e.target.value)}
-            className="px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-          />
         </div>
 
         {/* Search */}

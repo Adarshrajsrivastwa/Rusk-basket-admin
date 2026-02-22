@@ -805,12 +805,11 @@ import { BASE_URL } from "../../api/api";
 const API_BASE_URL = `${BASE_URL}/api`;
 
 const AllProduct = () => {
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState("in_review");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedVendor, setSelectedVendor] = useState("All Vendors");
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
@@ -1292,12 +1291,7 @@ const AllProduct = () => {
     return true;
   });
 
-  const filteredByVendor =
-    selectedVendor === "All Vendors"
-      ? filteredByTab
-      : filteredByTab.filter((p) => p.vendor === selectedVendor);
-
-  const searchedProducts = filteredByVendor.filter((product) =>
+  const searchedProducts = filteredByTab.filter((product) =>
     [product.productId, product.vendor, product.category, product.name]
       .join(" ")
       .toLowerCase()
@@ -1339,9 +1333,6 @@ const AllProduct = () => {
     </tbody>
   );
 
-  // Get unique vendors for dropdown
-  const uniqueVendors = [...new Set(products.map((p) => p.vendor))];
-
   return (
     <DashboardLayout>
       {/* Hidden Canvas for Barcode Generation */}
@@ -1356,7 +1347,6 @@ const AllProduct = () => {
           {/* Tabs */}
           <div className="flex gap-2 items-center overflow-x-auto pb-2 lg:pb-0">
             {[
-              { key: "all", label: "All" },
               { key: "in_review", label: "In Review" },
               { key: "approved", label: "Approved" },
               { key: "rejected", label: "Rejected" },
@@ -1378,25 +1368,6 @@ const AllProduct = () => {
             ))}
           </div>
 
-          {/* Vendor Filter */}
-          <div className="flex items-center w-full sm:w-auto">
-            <select
-              value={selectedVendor}
-              onChange={(e) => {
-                setSelectedVendor(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="border border-black rounded text-xs sm:text-sm px-2 sm:px-3 h-[36px] text-gray-800 focus:outline-none w-full sm:w-auto"
-            >
-              <option>All Vendors</option>
-              {uniqueVendors.map((vendor) => (
-                <option key={vendor} value={vendor}>
-                  {vendor}
-                </option>
-              ))}
-            </select>
-          </div>
-
           {/* Search */}
           <div className="flex items-center border border-black rounded overflow-hidden h-[36px] w-full lg:max-w-[400px]">
             <input
@@ -1404,9 +1375,21 @@ const AllProduct = () => {
               placeholder="Search Product by ID, Name, Vendor, or Category..."
               className="flex-1 px-2 sm:px-4 text-xs sm:text-sm text-gray-800 focus:outline-none h-full"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  setCurrentPage(1);
+                }
+              }}
             />
-            <button className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-xs sm:text-sm px-3 sm:px-6 h-full">
+            <button 
+              onClick={() => setCurrentPage(1)}
+              className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-xs sm:text-sm px-3 sm:px-6 h-full transition-colors"
+            >
               Search
             </button>
           </div>

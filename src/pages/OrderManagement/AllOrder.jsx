@@ -146,6 +146,8 @@ const AllOrder = () => {
             payment: order.paymentStatus || "pending",
             status: formatStatus(order.status),
             rawStatus: order.status, // Keep original status for filtering
+            // Keep all original order data for comprehensive search
+            originalOrder: order,
           };
 
           console.log("Transformed Order:", JSON.stringify(transformed, null, 2));
@@ -233,6 +235,86 @@ const AllOrder = () => {
     fetchOrders();
   };
 
+  // Client-side search filtering - searches through all order fields
+  const getFilteredOrders = () => {
+    if (!searchQuery.trim()) {
+      return orders;
+    }
+
+    const searchLower = searchQuery.toLowerCase();
+    
+    // Helper function to safely convert values to searchable strings
+    const toSearchableString = (value) => {
+      if (value === null || value === undefined) return "";
+      if (typeof value === "number") return value.toString();
+      if (typeof value === "boolean") return value.toString();
+      if (Array.isArray(value)) return value.join(" ");
+      if (typeof value === "object") {
+        // For objects, try to extract meaningful string values
+        try {
+          return JSON.stringify(value);
+        } catch {
+          return String(value);
+        }
+      }
+      return String(value);
+    };
+
+    return orders.filter((order) => {
+      // Search through all order fields
+      const searchableFields = [
+        // IDs
+        toSearchableString(order.orderId),
+        toSearchableString(order.id),
+        toSearchableString(order._id),
+        // Date
+        toSearchableString(order.date),
+        // Vendor
+        toSearchableString(order.vendor),
+        // User
+        toSearchableString(order.user),
+        // Cart Value
+        toSearchableString(order.cartValue),
+        // Payment
+        toSearchableString(order.payment),
+        // Status
+        toSearchableString(order.status),
+        toSearchableString(order.rawStatus),
+        // Original order data (if available)
+        order.originalOrder ? [
+          toSearchableString(order.originalOrder.orderNumber),
+          toSearchableString(order.originalOrder.orderId),
+          toSearchableString(order.originalOrder.userName),
+          toSearchableString(order.originalOrder.username),
+          toSearchableString(order.originalOrder.user?.userName),
+          toSearchableString(order.originalOrder.user?.name),
+          toSearchableString(order.originalOrder.user?.contactNumber),
+          toSearchableString(order.originalOrder.user?.phone),
+          toSearchableString(order.originalOrder.user?.email),
+          toSearchableString(order.originalOrder.vendor?.vendorName),
+          toSearchableString(order.originalOrder.vendor?.storeName),
+          toSearchableString(order.originalOrder.vendor?.name),
+          toSearchableString(order.originalOrder.paymentMethod),
+          toSearchableString(order.originalOrder.payment?.method),
+          toSearchableString(order.originalOrder.payment?.status),
+          // Items/products
+          order.originalOrder.items ? order.originalOrder.items.map(item => 
+            toSearchableString(item.productName) + " " + 
+            toSearchableString(item.name) + " " +
+            toSearchableString(item.sku)
+          ).join(" ") : "",
+        ].filter(Boolean).join(" ") : "",
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchableFields.includes(searchLower);
+    });
+  };
+
+  const filteredOrders = getFilteredOrders();
+
   // Skeleton Loader
   const TableSkeleton = () => (
     <tbody>
@@ -314,10 +396,13 @@ const AllOrder = () => {
           <div className="flex items-center border border-black rounded overflow-hidden h-[36px] w-full sm:w-[400px]">
             <input
               type="text"
-              placeholder="Search Order by Order Id, Products, Tag"
+              placeholder="Search by Order ID, User, Vendor, Status, Payment, Amount..."
               className="flex-1 px-4 text-sm focus:outline-none h-full"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
               onKeyPress={(e) => e.key === "Enter" && handleSearch()}
             />
             <button
@@ -327,12 +412,6 @@ const AllOrder = () => {
               Search
             </button>
           </div>
-        </div>
-
-        <div className="mt-3 sm:mt-0">
-          <button className="bg-black hover:bg-gray-800 text-white w-44 sm:w-44 px-6 py-2 rounded-sm text-sm whitespace-nowrap">
-            Calendar
-          </button>
         </div>
       </div>
 
@@ -354,11 +433,11 @@ const AllOrder = () => {
 
           {loading ? (
             <TableSkeleton />
-          ) : orders.length === 0 ? (
+          ) : filteredOrders.length === 0 ? (
             <EmptyState />
           ) : (
             <tbody>
-              {orders.map((order, idx) => {
+              {filteredOrders.map((order, idx) => {
                 const isHighlighted = order.id === highlightOrderId;
                 return (
                   <tr
@@ -406,7 +485,7 @@ const AllOrder = () => {
       </div>
 
       {/* Pagination */}
-      {!loading && orders.length > 0 && totalPages > 1 && (
+      {!loading && filteredOrders.length > 0 && totalPages > 1 && (
         <div className="flex flex-col sm:flex-row justify-between sm:justify-end items-center gap-4 sm:gap-6 mt-6 max-w-[98%] mx-auto mb-6 px-4 sm:px-0">
           <button
             onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
@@ -465,11 +544,19 @@ const AllOrder = () => {
       )}
 
       {/* Summary Info */}
-      {!loading && orders.length > 0 && (
+      {!loading && filteredOrders.length > 0 && (
         <div className="text-center text-sm text-gray-600 mt-2 mb-4">
-          Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-          {Math.min(currentPage * itemsPerPage, totalOrders)} of {totalOrders}{" "}
-          orders
+          {searchQuery.trim() ? (
+            <span>
+              Showing {filteredOrders.length} result{filteredOrders.length !== 1 ? "s" : ""} for "{searchQuery}"
+            </span>
+          ) : (
+            <span>
+              Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+              {Math.min(currentPage * itemsPerPage, totalOrders)} of {totalOrders}{" "}
+              orders
+            </span>
+          )}
         </div>
       )}
     </DashboardLayout>

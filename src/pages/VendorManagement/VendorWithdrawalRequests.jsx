@@ -575,7 +575,6 @@ import {
   CheckCircle,
   XCircle,
   Search,
-  Filter,
   Calendar,
   User,
   AlertCircle,
@@ -594,7 +593,6 @@ const AdminVendorWithdrawalRequests = () => {
 
   // Filters
   const [statusFilter, setStatusFilter] = useState("all");
-  const [vendorIdFilter, setVendorIdFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch withdrawal requests
@@ -606,9 +604,6 @@ const AdminVendorWithdrawalRequests = () => {
       const params = {};
       if (statusFilter !== "all") {
         params.status = statusFilter;
-      }
-      if (vendorIdFilter) {
-        params.vendorId = vendorIdFilter;
       }
 
       console.log("========================================");
@@ -682,7 +677,7 @@ const AdminVendorWithdrawalRequests = () => {
   // Fetch requests on mount and when filters change
   useEffect(() => {
     fetchRequests();
-  }, [statusFilter, vendorIdFilter]);
+  }, [statusFilter]);
 
   // Handle approve request
   const handleApprove = async (requestId) => {
@@ -938,18 +933,6 @@ const AdminVendorWithdrawalRequests = () => {
                 : status.charAt(0).toUpperCase() + status.slice(1)}
             </button>
           ))}
-        </div>
-
-        {/* Vendor ID Filter */}
-        <div className="flex items-center gap-2">
-          <Filter size={18} className="text-gray-600" />
-          <input
-            type="text"
-            placeholder="Filter by Vendor ID"
-            value={vendorIdFilter}
-            onChange={(e) => setVendorIdFilter(e.target.value)}
-            className="px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-          />
         </div>
 
         {/* Search */}

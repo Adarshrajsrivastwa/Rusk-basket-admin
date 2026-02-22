@@ -420,8 +420,6 @@ import {
   FiBell,
   FiUser,
   FiLogOut,
-  FiSearch,
-  FiX,
   FiPackage,
   FiShoppingCart,
   FiTruck,
@@ -438,10 +436,6 @@ import api, { BASE_URL } from "../api/api";
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userRole, setUserRole] = useState(null);
   const [vendorProfile, setVendorProfile] = useState(null);
@@ -449,8 +443,6 @@ const Header = () => {
   const [loadingProfile, setLoadingProfile] = useState(false);
 
   const dropdownRef = useRef(null);
-  const searchRef = useRef(null);
-  const searchInputRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -817,151 +809,6 @@ const Header = () => {
     return [];
   }, [userRole]);
 
-  // Perform search with both API and static pages
-  const performSearch = useCallback(
-    async (query) => {
-      if (!query || query.trim().length < 2) {
-        setSearchResults([]);
-        return;
-      }
-
-      setIsSearching(true);
-      const lowerQuery = query.toLowerCase().trim();
-
-      try {
-        // Get static page matches
-        const pages = getSearchablePages();
-        const pageMatches = pages
-          .filter(
-            (page) =>
-              page.title.toLowerCase().includes(lowerQuery) ||
-              page.category.toLowerCase().includes(lowerQuery) ||
-              page.path.toLowerCase().includes(lowerQuery),
-          )
-          .map((page) => ({
-            ...page,
-            type: "page",
-            subtitle: page.category,
-          }));
-
-        // Try to fetch API results
-        let apiResults = [];
-        try {
-          let endpoint = "";
-
-          if (userRole === "vendor") {
-            endpoint = `/api/vendor/search?q=${encodeURIComponent(query)}`;
-          } else if (userRole === "admin") {
-            endpoint = `/api/admin/search?q=${encodeURIComponent(query)}`;
-          }
-
-          if (endpoint) {
-            const response = await api.get(endpoint);
-            if (response.data && response.data.success) {
-              apiResults = response.data.results || [];
-            }
-          }
-        } catch (error) {
-          console.error("API search error:", error);
-          // Continue with page matches even if API fails
-        }
-
-        // Combine and prioritize results: API results first, then page matches
-        const combinedResults = [
-          ...apiResults.slice(0, 5), // Top 5 API results
-          ...pageMatches.slice(0, 10), // Top 10 page matches
-        ].slice(0, 15); // Limit total to 15 results
-
-        setSearchResults(combinedResults);
-      } catch (error) {
-        console.error("Search error:", error);
-        setSearchResults([]);
-      } finally {
-        setIsSearching(false);
-      }
-    },
-    [userRole, getSearchablePages],
-  );
-
-  // Debounced search
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      if (searchQuery) {
-        performSearch(searchQuery);
-      } else {
-        setSearchResults([]);
-      }
-    }, 300);
-
-    return () => clearTimeout(debounceTimer);
-  }, [searchQuery, performSearch]);
-
-  // Handle search result click
-  const handleResultClick = (result) => {
-    setSearchQuery("");
-    setSearchResults([]);
-    setIsSearchOpen(false);
-
-    // Navigate based on result type
-    if (result.type === "page") {
-      navigate(result.path);
-    } else if (result.type === "product") {
-      if (userRole === "vendor") {
-        navigate(`/vendor/products/${result.id}`);
-      } else {
-        navigate(`/products/${result.id}`);
-      }
-    } else if (result.type === "order") {
-      if (userRole === "vendor") {
-        navigate(`/vendor/orders`); // Vendor orders page
-      } else {
-        navigate(`/order/${result.id}`);
-      }
-    } else if (result.type === "vendor") {
-      navigate(`/vendor/${result.id}`);
-    } else if (result.type === "rider") {
-      navigate(`/Rider`);
-    } else if (result.type === "category") {
-      navigate(`/category/view/${result.id}`);
-    } else if (result.type === "coupon") {
-      navigate(`/coupons/${result.id}`);
-    } else if (result.url || result.path) {
-      navigate(result.url || result.path);
-    }
-  };
-
-  // Keyboard shortcut for search (Ctrl + /)
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "/") {
-        e.preventDefault();
-        setIsSearchOpen(true);
-        setTimeout(() => {
-          searchInputRef.current?.focus();
-        }, 100);
-      }
-
-      if (e.key === "Escape" && isSearchOpen) {
-        setIsSearchOpen(false);
-        setSearchQuery("");
-        setSearchResults([]);
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isSearchOpen]);
-
-  // Close search when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (searchRef.current && !searchRef.current.contains(event.target)) {
-        setIsSearchOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   // Fetch unread notification count
   const fetchUnreadCount = async () => {
@@ -1098,158 +945,33 @@ const Header = () => {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName())}&background=FF7B1D&color=fff&size=128`;
   };
 
-  // Get icon for result type
-  const getResultIcon = (result) => {
-    if (result.icon) return result.icon;
-
-    switch (result.type) {
-      case "page":
-        return <FiFileText className="text-gray-500" />;
-      case "product":
-        return <FiPackage className="text-blue-500" />;
-      case "order":
-        return <FiShoppingCart className="text-green-500" />;
-      case "vendor":
-        return <FiUsers className="text-purple-500" />;
-      case "rider":
-        return <FiTruck className="text-orange-500" />;
-      case "category":
-        return <FiGrid className="text-indigo-500" />;
-      case "coupon":
-        return <FiTag className="text-red-500" />;
-      default:
-        return <FiSearch className="text-gray-500" />;
-    }
-  };
-
-  // Render search result item
-  const renderSearchResult = (result, index) => {
-    return (
-      <button
-        key={index}
-        onClick={() => handleResultClick(result)}
-        className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 border-b last:border-b-0 group"
-      >
-        <div className="text-lg flex-shrink-0">{getResultIcon(result)}</div>
-        {result.image && (
-          <img
-            src={result.image}
-            alt={result.title}
-            className="w-10 h-10 rounded object-cover flex-shrink-0"
-          />
-        )}
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 truncate group-hover:text-orange-600">
-            {result.title}
-          </p>
-          {result.subtitle && (
-            <p className="text-xs text-gray-500 truncate">{result.subtitle}</p>
-          )}
-        </div>
-        {result.badge && (
-          <span className="text-xs px-2 py-1 bg-orange-100 text-orange-600 rounded-full flex-shrink-0">
-            {result.badge}
-          </span>
-        )}
-      </button>
-    );
-  };
 
   return (
-    <header className="fixed top-0 left-0 right-0 sm:left-64 h-[56px] flex items-center px-4 sm:px-6 lg:px-8 shadow-md z-50 bg-[#343d46]">
-      {/* Sidebar toggle - Mobile */}
-      <button className="text-white text-2xl mr-3 sm:hidden">
-        <FiMenu />
-      </button>
+    <header className="fixed top-0 left-0 right-0 sm:left-64 h-[64px] flex items-center justify-between px-4 sm:px-6 lg:px-8 shadow-lg z-50 bg-gradient-to-r from-[#343d46] to-[#2a3239] border-b border-gray-700">
+      {/* Left Section - Logo/Branding */}
+      <div className="flex items-center gap-4">
+        {/* Sidebar toggle - Mobile */}
+        <button className="text-white text-2xl hover:text-orange-400 transition-colors sm:hidden">
+          <FiMenu />
+        </button>
 
-      {/* Search Bar */}
-      <div
-        className="flex-1 max-w-[180px] sm:max-w-[300px] md:max-w-md relative mr-2"
-        ref={searchRef}
-      >
-        <div className="relative">
-          <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10" />
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Search in RushBasket..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => setIsSearchOpen(true)}
-            className="w-full h-9 pl-10 pr-20 rounded bg-gray-800 text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                setSearchResults([]);
-              }}
-              className="absolute right-12 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 z-10"
-            >
-              <FiX />
-            </button>
-          )}
-          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs bg-[#2c323a] px-1 rounded hidden sm:block">
-            CTRL + /
-          </span>
+        {/* Brand/Title */}
+        <div className="hidden sm:block">
+          <h1 className="text-lg font-bold text-white">RushBasket Admin</h1>
         </div>
-
-        {/* Search Results Dropdown */}
-        {isSearchOpen && (searchQuery || searchResults.length > 0) && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-2xl overflow-hidden max-h-96 overflow-y-auto z-50 border border-gray-200">
-            {isSearching ? (
-              <div className="px-4 py-8 text-center">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                <p className="mt-2 text-sm text-gray-500">Searching...</p>
-              </div>
-            ) : searchResults.length > 0 ? (
-              <div>
-                <div className="px-4 py-2 bg-gray-50 border-b sticky top-0">
-                  <p className="text-xs font-medium text-gray-500">
-                    {searchResults.length} result
-                    {searchResults.length !== 1 ? "s" : ""} found
-                  </p>
-                </div>
-                {searchResults.map((result, index) =>
-                  renderSearchResult(result, index),
-                )}
-              </div>
-            ) : searchQuery.length > 0 ? (
-              <div className="px-4 py-8 text-center">
-                <FiSearch className="mx-auto text-3xl text-gray-300 mb-2" />
-                <p className="text-sm text-gray-500">
-                  No results found for "{searchQuery}"
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Try different keywords
-                </p>
-              </div>
-            ) : (
-              <div className="px-4 py-8 text-center">
-                <FiSearch className="mx-auto text-3xl text-gray-300 mb-2" />
-                <p className="text-sm text-gray-500">
-                  Start typing to search...
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Search for pages, products, orders & more
-                </p>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
-      {/* Right Icons - Notification and Profile */}
-      <div className="flex items-center gap-2 sm:gap-4 ml-auto">
+      {/* Right Section - Notification and Profile */}
+      <div className="flex items-center gap-3 sm:gap-4">
         {/* Notification Button */}
         <button
           onClick={() => navigate(getNotificationRoute())}
-          className="relative text-white text-lg p-2 hover:bg-[#414b57] rounded transition-all"
+          className="relative text-white text-xl p-2.5 hover:bg-[#414b57] rounded-lg transition-all hover:scale-105"
           title="Notifications"
         >
           <FiBell />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1 font-semibold animate-pulse">
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs min-w-[20px] h-[20px] rounded-full flex items-center justify-center px-1.5 font-bold animate-pulse shadow-lg">
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}
@@ -1263,70 +985,125 @@ const Header = () => {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="focus:outline-none flex items-center gap-2"
-            title="Profile"
+            className="focus:outline-none flex items-center gap-3 hover:bg-[#414b57] rounded-lg px-2 py-1.5 transition-all"
+            title="Profile Menu"
           >
-            <img
-              src={getUserPhoto()}
-              alt={getUserName()}
-              className="w-8 h-8 rounded-full border-2 border-gray-600 cursor-pointer object-cover hover:border-orange-500 transition-all"
-              onError={(e) => {
-                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName())}&background=FF7B1D&color=fff&size=128`;
-              }}
-            />
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-[#343d46] rounded-full" />
+            <div className="relative">
+              <img
+                src={getUserPhoto()}
+                alt={getUserName()}
+                className="w-10 h-10 rounded-full border-2 border-gray-500 cursor-pointer object-cover hover:border-orange-400 transition-all shadow-md"
+                onError={(e) => {
+                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName())}&background=FF7B1D&color=fff&size=128`;
+                }}
+              />
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#343d46] rounded-full shadow-sm" />
+            </div>
+            <div className="hidden md:block text-left">
+              <p className="text-sm font-semibold text-white leading-tight">
+                {loadingProfile ? "Loading..." : getUserName()}
+              </p>
+              <p className="text-xs text-gray-400 leading-tight">
+                {userRole === "admin" ? "Administrator" : "Vendor"}
+              </p>
+            </div>
           </button>
 
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg overflow-hidden z-50">
-              <div className="px-4 py-3 border-b bg-gradient-to-r from-orange-50 to-white">
+            <div className="absolute right-0 mt-3 w-64 bg-white rounded-xl shadow-2xl overflow-hidden z-50 border border-gray-200">
+              {/* User Info Section */}
+              <div className="px-5 py-4 border-b bg-gradient-to-r from-orange-50 to-white">
                 <div className="flex items-center gap-3">
                   <img
                     src={getUserPhoto()}
                     alt={getUserName()}
-                    className="w-12 h-12 rounded-full border-2 border-orange-200 object-cover"
+                    className="w-14 h-14 rounded-full border-3 border-orange-200 object-cover shadow-md"
                     onError={(e) => {
                       e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName())}&background=FF7B1D&color=fff&size=128`;
                     }}
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">
+                    <p className="text-sm font-bold text-gray-800 truncate">
                       {loadingProfile ? "Loading..." : getUserName()}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">
+                    <p className="text-xs text-gray-500 truncate mt-0.5">
                       {getUserEmail()}
+                    </p>
+                    <p className="text-xs text-orange-600 font-medium mt-1">
+                      {userRole === "admin" ? "Administrator" : "Vendor"}
                     </p>
                   </div>
                 </div>
               </div>
 
+              {/* Menu Items */}
               <div className="py-2">
                 <button
                   onClick={() => {
                     if (userRole === "vendor") {
                       navigate("/vendor/settings/profile");
                     } else {
-                      navigate("/profile");
+                      navigate("/settings/profile");
                     }
                     setIsDropdownOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-sm flex items-center gap-3 hover:bg-gray-100 text-gray-700 transition-colors"
+                  className="w-full px-5 py-3 text-sm flex items-center gap-3 hover:bg-orange-50 text-gray-700 transition-colors font-medium"
                 >
-                  <FiUser className="text-orange-500" /> Profile
+                  <FiUser className="text-orange-500 text-lg" /> 
+                  <span>Profile Settings</span>
                 </button>
               </div>
 
-              <button
-                onClick={() => {
-                  localStorage.clear();
-                  sessionStorage.clear();
-                  navigate("/", { replace: true });
-                  setIsDropdownOpen(false);
-                }}
-                className="w-full px-4 py-2 text-sm flex items-center gap-3 hover:bg-gray-100 border-t text-red-600 transition-colors"
-              >
-                <FiLogOut /> Logout
-              </button>
+              {/* Logout Button */}
+              <div className="border-t border-gray-200">
+                <button
+                  onClick={async () => {
+                    try {
+                      // Call logout API if token exists
+                      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+                      if (token) {
+                        const headers = {
+                          "Content-Type": "application/json",
+                        };
+                        if (token) {
+                          headers["Authorization"] = `Bearer ${token}`;
+                        }
+
+                        try {
+                          if (userRole === "admin") {
+                            await fetch(`${BASE_URL}/api/auth/admin/logout`, {
+                              method: "POST",
+                              credentials: "include",
+                              headers: headers,
+                            });
+                          } else if (userRole === "vendor") {
+                            await fetch(`${BASE_URL}/api/vendor/logout`, {
+                              method: "POST",
+                              credentials: "include",
+                              headers: headers,
+                            });
+                          }
+                        } catch (apiError) {
+                          console.error("Logout API error:", apiError);
+                          // Continue with logout even if API fails
+                        }
+                      }
+                    } catch (error) {
+                      console.error("Logout error:", error);
+                    } finally {
+                      // Clear storage and navigate
+                      localStorage.clear();
+                      sessionStorage.clear();
+                      navigate("/", { replace: true });
+                      setIsDropdownOpen(false);
+                    }
+                  }}
+                  className="w-full px-5 py-3 text-sm flex items-center gap-3 hover:bg-red-50 text-red-600 transition-colors font-semibold"
+                >
+                  <FiLogOut className="text-lg" /> 
+                  <span>Logout</span>
+                </button>
+              </div>
             </div>
           )}
         </div>

@@ -512,17 +512,63 @@ const RiderJobManagement = () => {
     }
   };
 
-  // Handle search
+  // Handle search - now supports multiple fields
   const handleSearch = () => {
     setCurrentPage(1);
-    fetchJobs(searchCity);
+    // If search is empty, fetch all jobs
+    if (!searchCity.trim()) {
+      fetchJobs("");
+    } else {
+      // For now, still use city filter, but we'll add client-side filtering below
+      fetchJobs(searchCity);
+    }
   };
+
+  // Client-side filtering for better search experience
+  const getFilteredJobs = () => {
+    if (!searchCity.trim()) {
+      return jobs;
+    }
+
+    const searchLower = searchCity.toLowerCase().trim();
+    return jobs.filter((job) => {
+      // Search in job title
+      const jobTitle = job.jobTitle?.toLowerCase() || "";
+      // Search in city
+      const city = job.location?.city?.toLowerCase() || "";
+      // Search in state
+      const state = job.location?.state?.toLowerCase() || "";
+      // Search in vendor name
+      const vendorName = job.vendor?.storeName?.toLowerCase() || "";
+      // Search in posted by name
+      const postedByName = job.postedBy?.vendorName?.toLowerCase() || job.postedBy?.name?.toLowerCase() || "";
+      // Search in address
+      const addressLine1 = job.location?.line1?.toLowerCase() || "";
+      const addressLine2 = job.location?.line2?.toLowerCase() || "";
+      // Search in pin code
+      const pinCode = job.location?.pinCode?.toString() || "";
+
+      return (
+        jobTitle.includes(searchLower) ||
+        city.includes(searchLower) ||
+        state.includes(searchLower) ||
+        vendorName.includes(searchLower) ||
+        postedByName.includes(searchLower) ||
+        addressLine1.includes(searchLower) ||
+        addressLine2.includes(searchLower) ||
+        pinCode.includes(searchLower)
+      );
+    });
+  };
+
+  // Get filtered jobs
+  const filteredJobs = getFilteredJobs();
 
   // Pagination
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
-  const currentJobs = jobs.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(jobs.length / itemsPerPage);
+  const currentJobs = filteredJobs.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(filteredJobs.length / itemsPerPage);
 
   return (
     <DashboardLayout>
@@ -556,10 +602,18 @@ const RiderJobManagement = () => {
                 </div>
                 <input
                   type="text"
-                  placeholder="Search by city (e.g., Bhopal)"
+                  placeholder="Search by Job Title, City, Vendor, Address..."
                   value={searchCity}
-                  onChange={(e) => setSearchCity(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  onChange={(e) => {
+                    setSearchCity(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleSearch();
+                    }
+                  }}
                   className="flex-1 px-4 py-3 text-gray-700 placeholder-gray-400 rounded-xl focus:outline-none"
                 />
                 <button
@@ -580,7 +634,7 @@ const RiderJobManagement = () => {
                 <p className="text-gray-600">Loading job posts...</p>
               </div>
             </div>
-          ) : jobs.length === 0 ? (
+          ) : filteredJobs.length === 0 ? (
             <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-16 text-center">
               <div className="bg-gray-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Briefcase className="text-gray-400" size={48} />

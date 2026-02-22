@@ -237,17 +237,73 @@ const PendingProduct = () => {
         });
 
   const searchedProducts = filteredByVendor.filter((product) => {
-    const searchableText = [
-      product._id,
-      getVendorName(product),
-      product.category?.name,
-      product.productName,
+    if (!searchQuery.trim()) {
+      return true; // Show all products if search is empty
+    }
+
+    const searchLower = searchQuery.toLowerCase();
+    
+    // Helper function to safely convert values to searchable strings
+    const toSearchableString = (value) => {
+      if (value === null || value === undefined) return "";
+      if (typeof value === "number") return value.toString();
+      if (typeof value === "boolean") return value.toString();
+      if (Array.isArray(value)) return value.join(" ");
+      if (typeof value === "object") return JSON.stringify(value);
+      return String(value);
+    };
+    
+    // Search through all product fields
+    const searchableFields = [
+      // IDs
+      toSearchableString(product.productNumber),
+      toSearchableString(product.productId),
+      toSearchableString(product._id),
+      toSearchableString(product.productno),
+      // Names
+      toSearchableString(product.productName),
+      toSearchableString(product.name),
+      // Vendor
+      toSearchableString(getVendorName(product)),
+      toSearchableString(product.vendor?.vendorName),
+      toSearchableString(product.vendor),
+      // Categories
+      toSearchableString(product.category?.name),
+      toSearchableString(product.category),
+      toSearchableString(product.subCategory?.name),
+      toSearchableString(product.subCategory),
+      // Description
+      toSearchableString(product.description),
+      // SKU
+      toSearchableString(product.sku),
+      toSearchableString(product.skuHsn),
+      // Status
+      toSearchableString(product.status),
+      toSearchableString(product.approvalStatus),
+      // Price (convert to string for searching)
+      toSearchableString(product.salePrice),
+      toSearchableString(product.regularPrice),
+      toSearchableString(product.actualPrice),
+      // Inventory
+      toSearchableString(product.inventory),
+      toSearchableString(product.currentInventory),
+      toSearchableString(product.initialInventory),
+      // Cashback
+      toSearchableString(product.cashback),
+      // Tags (handle both string and array)
+      toSearchableString(product.tags),
+      // Date
+      toSearchableString(product.date),
+      toSearchableString(product.createdAt),
+      // Additional fields that might exist
+      toSearchableString(product.productType),
+      toSearchableString(product.discountPercentage),
     ]
       .filter(Boolean)
       .join(" ")
       .toLowerCase();
 
-    return searchableText.includes(searchQuery.toLowerCase());
+    return searchableFields.includes(searchLower);
   });
 
   const EmptyState = () => (
@@ -299,7 +355,7 @@ const PendingProduct = () => {
           <div className="flex items-center border border-black rounded overflow-hidden h-[36px] w-full max-w-[100%] lg:max-w-[400px]">
             <input
               type="text"
-              placeholder="Search Product by ID, Name, Vendor, or Category..."
+              placeholder="Search by ID, Name, Vendor, Category, SKU, Price, Status..."
               className="flex-1 px-4 text-sm text-gray-800 focus:outline-none h-full"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

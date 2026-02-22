@@ -28,8 +28,10 @@ const AdminVendorSupport = () => {
   const itemsPerPage = 8;
 
   const [tickets, setTickets] = useState([]);
+  const [allTickets, setAllTickets] = useState([]); // Store all tickets for client-side filtering
   const [totalTickets, setTotalTickets] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [useClientSideSearch, setUseClientSideSearch] = useState(false);
   const searchQueryRef = useRef(searchQuery);
 
   // Update ref when searchQuery changes
@@ -38,21 +40,26 @@ const AdminVendorSupport = () => {
   }, [searchQuery]);
 
   // Fetch tickets
-  const fetchTickets = useCallback(async () => {
+  const fetchTickets = useCallback(async (pageOverride = null, searchOverride = null) => {
     setLoading(true);
     setError("");
     try {
       const statusFilter = activeTab !== "all" ? activeTab : undefined;
+      const pageToUse = pageOverride !== null ? pageOverride : currentPage;
+      const searchToUse = searchOverride !== null ? searchOverride : searchQueryRef.current;
+      
       const params = new URLSearchParams({
-        page: currentPage.toString(),
+        page: pageToUse.toString(),
         limit: itemsPerPage.toString(),
         createdByModel: "Vendor", // Filter by Vendor
       });
       if (statusFilter) {
         params.append("status", statusFilter);
       }
-      if (searchQueryRef.current) {
-        params.append("search", searchQueryRef.current);
+      if (searchToUse && searchToUse.trim()) {
+        // Send search as a plain string - backend should handle parsing
+        const cleanSearch = searchToUse.trim();
+        params.append("search", cleanSearch);
       }
 
       const response = await api.get(`/api/admin/tickets?${params.toString()}`);
@@ -60,10 +67,16 @@ const AdminVendorSupport = () => {
         const ticketsData = response.data.data?.tickets || [];
         const paginationData = response.data.data?.pagination || {};
 
+        // Store all tickets for client-side filtering if needed
+        if (!searchToUse || !searchToUse.trim()) {
+          setAllTickets(ticketsData);
+        }
+
         setTickets(ticketsData);
         setTotalTickets(paginationData.total || 0);
         setTotalPages(paginationData.totalPages || paginationData.pages || 1);
         setError(""); // Clear any previous errors
+        setUseClientSideSearch(false); // Reset client-side search flag
       } else {
         const errorMsg =
           response.data?.message ||
@@ -76,11 +89,52 @@ const AdminVendorSupport = () => {
       }
     } catch (err) {
       console.error("Error fetching tickets:", err);
-      const errorMsg =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
+      
+      // Check for MongoDB query construction errors
+      const errorResponse = err.response?.data;
+      let errorMsg = 
+        errorResponse?.message ||
+        errorResponse?.error ||
         err.message ||
         "Failed to load tickets. Please try again.";
+      
+      // If it's a MongoDB cast error related to $or, use client-side filtering as fallback
+      if (errorMsg.includes("Cast to Array failed") && errorMsg.includes("$or")) {
+        console.warn("Backend MongoDB query error detected. Falling back to client-side search.");
+        
+        // If we have tickets loaded and search query exists, use client-side filtering
+        if (allTickets.length > 0 && searchToUse && searchToUse.trim()) {
+          setUseClientSideSearch(true);
+          setError(""); // Clear error since we're using fallback
+          return; // Will use client-side filtering below
+        } else {
+          // Try to fetch without search first to get all tickets
+          try {
+            const fallbackParams = new URLSearchParams({
+              page: "1",
+              limit: "1000", // Get more tickets for client-side filtering
+              createdByModel: "Vendor",
+            });
+            if (statusFilter) {
+              fallbackParams.append("status", statusFilter);
+            }
+            
+            const fallbackResponse = await api.get(`/api/admin/tickets?${fallbackParams.toString()}`);
+            if (fallbackResponse.data && fallbackResponse.data.success) {
+              const allTicketsData = fallbackResponse.data.data?.tickets || [];
+              setAllTickets(allTicketsData);
+              setUseClientSideSearch(true);
+              setError(""); // Clear error
+              return; // Will use client-side filtering below
+            }
+          } catch (fallbackErr) {
+            console.error("Fallback fetch also failed:", fallbackErr);
+          }
+        }
+        
+        errorMsg = "Search functionality temporarily unavailable. Please try again or contact support.";
+      }
+      
       setError(errorMsg);
       setTickets([]);
       setTotalTickets(0);
@@ -88,11 +142,53 @@ const AdminVendorSupport = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, currentPage]);
+  }, [activeTab, currentPage, itemsPerPage, allTickets]);
 
   useEffect(() => {
-    fetchTickets();
-  }, [fetchTickets]);
+    // Only fetch from backend if client-side search is not active
+    if (!useClientSideSearch) {
+      fetchTickets();
+    }
+  }, [fetchTickets, useClientSideSearch]);
+
+  // Client-side filtering when backend search fails
+  useEffect(() => {
+    if (useClientSideSearch && allTickets.length > 0) {
+      setLoading(true);
+      const searchLower = searchQuery.toLowerCase().trim();
+      
+      // If search is empty, disable client-side search and fetch from backend
+      if (!searchLower) {
+        setUseClientSideSearch(false);
+        return;
+      }
+      
+      const filtered = allTickets.filter((ticket) => {
+        return (
+          ticket.ticketNumber?.toLowerCase().includes(searchLower) ||
+          ticket.complaint?.toLowerCase().includes(searchLower) ||
+          ticket.vendor?.vendorName?.toLowerCase().includes(searchLower) ||
+          ticket.vendor?.storeName?.toLowerCase().includes(searchLower) ||
+          ticket.category?.toLowerCase().includes(searchLower)
+        );
+      });
+
+      // Apply status filter
+      const statusFiltered = activeTab !== "all" 
+        ? filtered.filter(t => t.status === activeTab)
+        : filtered;
+
+      // Paginate
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedTickets = statusFiltered.slice(startIndex, endIndex);
+
+      setTickets(paginatedTickets);
+      setTotalTickets(statusFiltered.length);
+      setTotalPages(Math.ceil(statusFiltered.length / itemsPerPage));
+      setLoading(false);
+    }
+  }, [useClientSideSearch, allTickets, searchQuery, activeTab, currentPage, itemsPerPage]);
 
   // Fetch single ticket details
   const fetchTicketDetails = async (ticketId) => {
@@ -183,7 +279,9 @@ const AdminVendorSupport = () => {
   // Search handler
   const handleSearch = () => {
     setCurrentPage(1);
-    fetchTickets();
+    setUseClientSideSearch(false); // Reset client-side search
+    // Fetch with page 1 and current search query
+    fetchTickets(1, searchQuery);
   };
 
   const stats = {
@@ -316,6 +414,8 @@ const AdminVendorSupport = () => {
                     onClick={() => {
                       setActiveTab("all");
                       setCurrentPage(1);
+                      setUseClientSideSearch(false); // Reset client-side search
+                      // fetchTickets will be called by useEffect when activeTab/currentPage changes
                     }}
                     className={`px-4 py-2 rounded font-medium transition-colors ${
                       activeTab === "all"
@@ -329,6 +429,7 @@ const AdminVendorSupport = () => {
                     onClick={() => {
                       setActiveTab("active");
                       setCurrentPage(1);
+                      setUseClientSideSearch(false); // Reset client-side search
                     }}
                     className={`px-4 py-2 rounded font-medium transition-colors ${
                       activeTab === "active"
@@ -342,6 +443,7 @@ const AdminVendorSupport = () => {
                     onClick={() => {
                       setActiveTab("pending");
                       setCurrentPage(1);
+                      setUseClientSideSearch(false); // Reset client-side search
                     }}
                     className={`px-4 py-2 rounded font-medium transition-colors ${
                       activeTab === "pending"
@@ -355,6 +457,7 @@ const AdminVendorSupport = () => {
                     onClick={() => {
                       setActiveTab("resolved");
                       setCurrentPage(1);
+                      setUseClientSideSearch(false); // Reset client-side search
                     }}
                     className={`px-4 py-2 rounded font-medium transition-colors ${
                       activeTab === "resolved"
@@ -368,6 +471,7 @@ const AdminVendorSupport = () => {
                     onClick={() => {
                       setActiveTab("closed");
                       setCurrentPage(1);
+                      setUseClientSideSearch(false); // Reset client-side search
                     }}
                     className={`px-4 py-2 rounded font-medium transition-colors ${
                       activeTab === "closed"
@@ -392,9 +496,17 @@ const AdminVendorSupport = () => {
                     type="text"
                     placeholder="Search by Ticket Number or Complaint..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      // If search is cleared, reset and fetch from backend
+                      if (!e.target.value.trim()) {
+                        setUseClientSideSearch(false);
+                        setCurrentPage(1);
+                      }
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
+                        e.preventDefault();
                         handleSearch();
                       }
                     }}
