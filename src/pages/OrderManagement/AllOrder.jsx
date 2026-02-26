@@ -11,7 +11,6 @@ const AllOrder = () => {
   const location = useLocation();
   const highlightRef = useRef(null);
 
-  // Read the active tab and orderId from query params
   const queryParams = new URLSearchParams(location.search);
   const tabFromQuery = queryParams.get("tab") || "all";
   const highlightOrderId = queryParams.get("orderId");
@@ -25,19 +24,14 @@ const AllOrder = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const itemsPerPage = 10;
 
-  // Utility function to get auth token
-  const getAuthToken = () => {
-    return localStorage.getItem("token") || localStorage.getItem("authToken");
-  };
+  const getAuthToken = () =>
+    localStorage.getItem("token") || localStorage.getItem("authToken");
 
-  // Fetch orders from API
   const fetchOrders = async () => {
     setLoading(true);
     try {
       const token = getAuthToken();
-
       if (!token) {
-        console.error("No auth token found");
         alert("Please login to view orders");
         setLoading(false);
         return;
@@ -47,131 +41,54 @@ const AllOrder = () => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       };
-
-      // Build query parameters
       const params = new URLSearchParams();
       params.append("page", currentPage);
       params.append("limit", itemsPerPage);
-
-      // Add status filter based on active tab
-      if (activeTab !== "all") {
-        params.append("status", activeTab);
-      }
-
-      // Add search query if exists
-      if (searchQuery.trim()) {
-        params.append("search", searchQuery.trim());
-      }
-
-      console.log("========================================");
-      console.log("📦 FETCHING ORDERS:");
-      console.log("API Endpoint:", `${API_BASE_URL}/admin/orders`);
-      console.log("Query Params:", params.toString());
-      console.log("Full URL:", `${API_BASE_URL}/admin/orders?${params.toString()}`);
-      console.log("Active Tab:", activeTab);
-      console.log("Current Page:", currentPage);
-      console.log("Items Per Page:", itemsPerPage);
-      console.log("Search Query:", searchQuery);
-      console.log("========================================");
+      if (activeTab !== "all") params.append("status", activeTab);
+      if (searchQuery.trim()) params.append("search", searchQuery.trim());
 
       const response = await fetch(
         `${API_BASE_URL}/admin/orders?${params.toString()}`,
         {
           method: "GET",
-          headers: headers,
+          headers,
           credentials: "include",
         },
       );
 
-      console.log("========================================");
-      console.log("📡 API RESPONSE:");
-      console.log("Response Status:", response.status);
-      console.log("Response OK:", response.ok);
-      console.log("Response Headers:", response.headers);
-      console.log("========================================");
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Fetch error response:", errorText);
+      if (!response.ok)
         throw new Error(`Failed to fetch orders: ${response.status}`);
-      }
-
       const result = await response.json();
 
-      console.log("========================================");
-      console.log("📡 API RESPONSE:");
-      console.log("Response Status:", response.status);
-      console.log("Response OK:", response.ok);
-      console.log("========================================");
-      console.log("📦 PARSED RESPONSE DATA:");
-      console.log("Full Response (JSON):", JSON.stringify(result, null, 2));
-      console.log("----------------------------------------");
-      console.log("Result.success:", result.success);
-      console.log("Result.count:", result.count);
-      console.log("Result.orders:", result.orders);
-      console.log("Result.orders length:", result.orders?.length || 0);
-      console.log("Result.pagination:", result.pagination);
-      console.log("========================================");
-
       if (result.success && result.orders && Array.isArray(result.orders)) {
-        console.log("========================================");
-        console.log("✅ API SUCCESS - Processing Orders:");
-        console.log("Number of orders fetched:", result.orders.length);
-        console.log("========================================");
-
-        // Transform API data to match component structure
-        const transformedOrders = result.orders.map((order, index) => {
-          console.log(`\n--- 📌 Order ${index + 1} ---`);
-          console.log("Raw Order Data (JSON):", JSON.stringify(order, null, 2));
-          console.log("Order._id:", order._id);
-          console.log("Order.orderId:", order.orderId);
-          console.log("Order.orderNumber:", order.orderNumber);
-          console.log("Order.date:", order.date);
-          console.log("Order.vendor:", order.vendor);
-          console.log("Order.userName:", order.userName);
-          console.log("Order.username:", order.username);
-          console.log("Order.user:", order.user);
-          console.log("Order.cartValue:", order.cartValue);
-          console.log("Order.paymentStatus:", order.paymentStatus);
-          console.log("Order.status:", order.status);
-
-          const transformed = {
-            id: order._id || order.orderId,
-            _id: order._id || order.orderId, // Keep MongoDB _id for invoice navigation
-            orderId: order.orderNumber || order.orderId || order._id,
-            date: order.date || "N/A",
-            vendor: order.vendor || "Unknown Vendor",
-            user: order.userName || order.username || order.user?.userName || order.user?.contactNumber || "",
-            cartValue: order.cartValue || 0,
-            payment: order.paymentStatus || "pending",
-            status: formatStatus(order.status),
-            rawStatus: order.status, // Keep original status for filtering
-            // Keep all original order data for comprehensive search
-            originalOrder: order,
-          };
-
-          console.log("Transformed Order:", JSON.stringify(transformed, null, 2));
-          return transformed;
-        });
-
-        console.log("========================================");
-        console.log("🔄 TRANSFORMED ORDERS SUMMARY:");
-        console.log("Total Transformed Orders:", transformedOrders.length);
-        console.log("Transformed Orders (Full JSON):", JSON.stringify(transformedOrders, null, 2));
-        console.log("========================================");
-        
+        const transformedOrders = result.orders.map((order) => ({
+          id: order._id || order.orderId,
+          _id: order._id || order.orderId,
+          orderId: order.orderNumber || order.orderId || order._id,
+          date: order.date || "N/A",
+          vendor: order.vendor || "Unknown Vendor",
+          user:
+            order.userName ||
+            order.username ||
+            order.user?.userName ||
+            order.user?.contactNumber ||
+            "",
+          cartValue: order.cartValue || 0,
+          payment: order.paymentStatus || "pending",
+          status: formatStatus(order.status),
+          rawStatus: order.status,
+          originalOrder: order,
+        }));
         setOrders(transformedOrders);
         setTotalOrders(result.pagination?.total || result.count || 0);
         setTotalPages(result.pagination?.pages || 1);
       } else {
-        console.error("Invalid API response format:", result);
         setOrders([]);
         setTotalOrders(0);
         setTotalPages(1);
       }
     } catch (error) {
       console.error("Error fetching orders:", error);
-      console.error("Error details:", error.message);
       alert("Failed to load orders. Please check console for details.");
       setOrders([]);
       setTotalOrders(0);
@@ -181,10 +98,8 @@ const AllOrder = () => {
     }
   };
 
-  // Format status for display
   const formatStatus = (status) => {
     if (!status) return "Pending";
-
     const statusMap = {
       pending: "New Order",
       ready: "Ready",
@@ -193,28 +108,26 @@ const AllOrder = () => {
       cancelled: "Cancel",
       cancel: "Cancel",
     };
-
     return statusMap[status.toLowerCase()] || status;
   };
 
-  // Fetch orders when component mounts or dependencies change
   useEffect(() => {
     fetchOrders();
   }, [currentPage, activeTab]);
 
-  // Scroll to highlighted order after loading
   useEffect(() => {
     if (!loading && highlightOrderId && highlightRef.current) {
-      setTimeout(() => {
-        highlightRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-      }, 100);
+      setTimeout(
+        () =>
+          highlightRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          }),
+        100,
+      );
     }
   }, [loading, highlightOrderId]);
 
-  // Update active tab if query param changes
   useEffect(() => {
     setActiveTab(tabFromQuery);
     setCurrentPage(1);
@@ -229,93 +142,65 @@ const AllOrder = () => {
     Pending: "text-gray-600 font-semibold",
   };
 
-  // Handle search
   const handleSearch = () => {
     setCurrentPage(1);
     fetchOrders();
   };
 
-  // Client-side search filtering - searches through all order fields
   const getFilteredOrders = () => {
-    if (!searchQuery.trim()) {
-      return orders;
-    }
-
+    if (!searchQuery.trim()) return orders;
     const searchLower = searchQuery.toLowerCase();
-    
-    // Helper function to safely convert values to searchable strings
-    const toSearchableString = (value) => {
-      if (value === null || value === undefined) return "";
-      if (typeof value === "number") return value.toString();
-      if (typeof value === "boolean") return value.toString();
-      if (Array.isArray(value)) return value.join(" ");
-      if (typeof value === "object") {
-        // For objects, try to extract meaningful string values
+    const toStr = (v) => {
+      if (v == null) return "";
+      if (Array.isArray(v)) return v.join(" ");
+      if (typeof v === "object") {
         try {
-          return JSON.stringify(value);
+          return JSON.stringify(v);
         } catch {
-          return String(value);
+          return String(v);
         }
       }
-      return String(value);
+      return String(v);
     };
-
     return orders.filter((order) => {
-      // Search through all order fields
-      const searchableFields = [
-        // IDs
-        toSearchableString(order.orderId),
-        toSearchableString(order.id),
-        toSearchableString(order._id),
-        // Date
-        toSearchableString(order.date),
-        // Vendor
-        toSearchableString(order.vendor),
-        // User
-        toSearchableString(order.user),
-        // Cart Value
-        toSearchableString(order.cartValue),
-        // Payment
-        toSearchableString(order.payment),
-        // Status
-        toSearchableString(order.status),
-        toSearchableString(order.rawStatus),
-        // Original order data (if available)
-        order.originalOrder ? [
-          toSearchableString(order.originalOrder.orderNumber),
-          toSearchableString(order.originalOrder.orderId),
-          toSearchableString(order.originalOrder.userName),
-          toSearchableString(order.originalOrder.username),
-          toSearchableString(order.originalOrder.user?.userName),
-          toSearchableString(order.originalOrder.user?.name),
-          toSearchableString(order.originalOrder.user?.contactNumber),
-          toSearchableString(order.originalOrder.user?.phone),
-          toSearchableString(order.originalOrder.user?.email),
-          toSearchableString(order.originalOrder.vendor?.vendorName),
-          toSearchableString(order.originalOrder.vendor?.storeName),
-          toSearchableString(order.originalOrder.vendor?.name),
-          toSearchableString(order.originalOrder.paymentMethod),
-          toSearchableString(order.originalOrder.payment?.method),
-          toSearchableString(order.originalOrder.payment?.status),
-          // Items/products
-          order.originalOrder.items ? order.originalOrder.items.map(item => 
-            toSearchableString(item.productName) + " " + 
-            toSearchableString(item.name) + " " +
-            toSearchableString(item.sku)
-          ).join(" ") : "",
-        ].filter(Boolean).join(" ") : "",
+      const haystack = [
+        order.orderId,
+        order.id,
+        order._id,
+        order.date,
+        order.vendor,
+        order.user,
+        order.cartValue,
+        order.payment,
+        order.status,
+        order.rawStatus,
+        order.originalOrder
+          ? [
+              toStr(order.originalOrder.orderNumber),
+              toStr(order.originalOrder.userName),
+              toStr(order.originalOrder.user?.userName),
+              toStr(order.originalOrder.user?.name),
+              toStr(order.originalOrder.user?.contactNumber),
+              toStr(order.originalOrder.user?.email),
+              toStr(order.originalOrder.vendor?.vendorName),
+              toStr(order.originalOrder.paymentMethod),
+              order.originalOrder.items
+                ? order.originalOrder.items
+                    .map((i) => toStr(i.productName) + " " + toStr(i.sku))
+                    .join(" ")
+                : "",
+            ].join(" ")
+          : "",
       ]
-        .filter(Boolean)
+        .map(toStr)
         .join(" ")
         .toLowerCase();
-
-      return searchableFields.includes(searchLower);
+      return haystack.includes(searchLower);
     });
   };
 
   const filteredOrders = getFilteredOrders();
 
-  // Skeleton Loader
   const TableSkeleton = () => (
     <tbody>
       {Array.from({ length: itemsPerPage }).map((_, idx) => (
@@ -333,7 +218,6 @@ const AllOrder = () => {
     </tbody>
   );
 
-  // Empty State
   const EmptyState = () => (
     <tbody>
       <tr>
@@ -347,27 +231,21 @@ const AllOrder = () => {
     </tbody>
   );
 
-  // Handle tab click manually
   const handleTabClick = (tabKey) => {
     setActiveTab(tabKey);
     setCurrentPage(1);
     navigate(`/orders/all?tab=${tabKey}`);
   };
-
-  // Handle download invoice - navigate to invoice page
-  const handleDownloadInvoice = (orderId) => {
-    console.log("Opening invoice for order:", orderId);
-    // Navigate to invoice view page with orderId
+  const handleDownloadInvoice = (orderId) =>
     navigate(`/invoice/view/${orderId}`, {
-      state: { orderId: orderId },
+      state: { orderId },
       replace: false,
     });
-  };
 
   return (
     <DashboardLayout>
-      {/* Tabs + Search + Calendar */}
-      <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-2 w-full pl-4 max-w-[99%] mx-auto mt-0 mb-2">
+      {/* Tabs + Search */}
+      <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-2 w-full pl-4 max-w-[99%] mx-auto mt-2 mb-2">
         <div className="flex gap-4 overflow-x-auto pb-2 lg:pb-0">
           {[
             { key: "all", label: "All" },
@@ -392,7 +270,6 @@ const AllOrder = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-          {/* Search Bar */}
           <div className="flex items-center border border-black rounded overflow-hidden h-[36px] w-full sm:w-[400px]">
             <input
               type="text"
@@ -415,7 +292,7 @@ const AllOrder = () => {
         </div>
       </div>
 
-      {/* Orders Table */}
+      {/* Table */}
       <div className="bg-white rounded-sm shadow-sm overflow-x-auto pl-4 max-w-[99%] mx-auto">
         <table className="w-full text-sm border-collapse min-w-[700px]">
           <thead>
@@ -443,9 +320,7 @@ const AllOrder = () => {
                   <tr
                     key={order.id}
                     ref={isHighlighted ? highlightRef : null}
-                    className={`shadow-sm rounded-sm hover:bg-gray-50 transition border-b-4 border-gray-200 ${
-                      isHighlighted ? "bg-yellow-100 animate-pulse" : "bg-white"
-                    }`}
+                    className={`shadow-sm rounded-sm hover:bg-gray-50 transition border-b-4 border-gray-200 ${isHighlighted ? "bg-yellow-100 animate-pulse" : "bg-white"}`}
                   >
                     <td className="p-3">
                       {(currentPage - 1) * itemsPerPage + idx + 1}
@@ -461,7 +336,9 @@ const AllOrder = () => {
                     <td className="p-3">
                       <div className="flex gap-2 justify-end">
                         <button
-                          onClick={() => handleDownloadInvoice(order._id || order.id)}
+                          onClick={() =>
+                            handleDownloadInvoice(order._id || order.id)
+                          }
                           className="text-orange-600 hover:text-blue-700"
                           title="View Invoice"
                         >
@@ -484,13 +361,13 @@ const AllOrder = () => {
         </table>
       </div>
 
-      {/* Pagination */}
-      {!loading && filteredOrders.length > 0 && totalPages > 1 && (
+      {/* ✅ Pagination — always visible when orders exist, same style as CreateCategory */}
+      {!loading && filteredOrders.length > 0 && (
         <div className="flex flex-col sm:flex-row justify-between sm:justify-end items-center gap-4 sm:gap-6 mt-6 max-w-[98%] mx-auto mb-6 px-4 sm:px-0">
           <button
             onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            className="bg-[#FF7B1D] hover:bg-orange-600 text-white px-6 sm:px-10 py-2 sm:py-3 text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
             disabled={currentPage === 1}
+            className="bg-[#FF7B1D] hover:bg-orange-600 text-white px-6 sm:px-10 py-2 sm:py-3 text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
           >
             Back
           </button>
@@ -520,11 +397,7 @@ const AllOrder = () => {
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`px-2 sm:px-3 py-1 ${
-                      currentPage === page
-                        ? "text-orange-600 font-semibold"
-                        : ""
-                    }`}
+                    className={`px-2 sm:px-3 py-1 ${currentPage === page ? "text-orange-600 font-semibold" : ""}`}
                   >
                     {page}
                   </button>
@@ -535,8 +408,8 @@ const AllOrder = () => {
 
           <button
             onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-            className="bg-[#247606] hover:bg-green-700 text-white px-6 sm:px-10 py-2 sm:py-3 text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
             disabled={currentPage === totalPages}
+            className="bg-[#247606] hover:bg-green-700 text-white px-6 sm:px-10 py-2 sm:py-3 text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
           >
             Next
           </button>
@@ -548,13 +421,14 @@ const AllOrder = () => {
         <div className="text-center text-sm text-gray-600 mt-2 mb-4">
           {searchQuery.trim() ? (
             <span>
-              Showing {filteredOrders.length} result{filteredOrders.length !== 1 ? "s" : ""} for "{searchQuery}"
+              Showing {filteredOrders.length} result
+              {filteredOrders.length !== 1 ? "s" : ""} for "{searchQuery}"
             </span>
           ) : (
             <span>
               Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-              {Math.min(currentPage * itemsPerPage, totalOrders)} of {totalOrders}{" "}
-              orders
+              {Math.min(currentPage * itemsPerPage, totalOrders)} of{" "}
+              {totalOrders} orders
             </span>
           )}
         </div>

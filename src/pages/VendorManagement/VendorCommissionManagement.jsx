@@ -47,7 +47,7 @@ const VendorCommissionManagement = () => {
             pages: result.data.pagination?.pages || 1,
             page: result.data.pagination?.page || page,
             limit: result.data.pagination?.limit || limit,
-          }
+          },
         );
       } else {
         console.error("Failed to fetch vendors:", result.message);
@@ -72,8 +72,10 @@ const VendorCommissionManagement = () => {
     if (vendor.commissionType || vendor.commission) {
       setCommissionData({
         type: vendor.commissionType || vendor.commission?.type || "percentage",
-        percentage: vendor.commissionPercentage || vendor.commission?.percentage || 10,
-        fixedAmount: vendor.commissionFixedAmount || vendor.commission?.fixedAmount || 0,
+        percentage:
+          vendor.commissionPercentage || vendor.commission?.percentage || 10,
+        fixedAmount:
+          vendor.commissionFixedAmount || vendor.commission?.fixedAmount || 0,
         subscriptionAmount: vendor.commission?.subscriptionAmount || 0,
         subscriptionPeriod: vendor.commission?.subscriptionPeriod || "monthly",
       });
@@ -107,13 +109,15 @@ const VendorCommissionManagement = () => {
         payload.percentage = parseFloat(commissionData.percentage);
         payload.fixedAmount = parseFloat(commissionData.fixedAmount);
       } else if (commissionData.type === "subscription") {
-        payload.subscriptionAmount = parseFloat(commissionData.subscriptionAmount);
+        payload.subscriptionAmount = parseFloat(
+          commissionData.subscriptionAmount,
+        );
         payload.subscriptionPeriod = commissionData.subscriptionPeriod;
       }
 
       // Try multiple endpoint paths
       let response;
-      let endpointUsed = '';
+      let endpointUsed = "";
       let error = null;
 
       // Try endpoint 1: /api/admin/vendors/{id}/commission
@@ -125,7 +129,7 @@ const VendorCommissionManagement = () => {
       } catch (firstError) {
         console.log("❌ Endpoint 1 FAILED");
         error = firstError;
-        
+
         // Try endpoint 2: /api/vendor/{id}/commission (fallback)
         if (firstError.response?.status === 404) {
           try {
@@ -157,19 +161,20 @@ const VendorCommissionManagement = () => {
       }
     } catch (error) {
       console.error("Error updating commission:", error);
-      
+
       // More informative error message
       if (error.response?.status === 404) {
         alert(
           "Commission endpoint not found. Please ensure the backend API endpoint is implemented:\n" +
-          `PUT /api/vendor/${selectedVendor._id}/commission\n\n` +
-          "Error: " + (error.response?.data?.message || "Endpoint not found")
+            `PUT /api/vendor/${selectedVendor._id}/commission\n\n` +
+            "Error: " +
+            (error.response?.data?.message || "Endpoint not found"),
         );
       } else {
         alert(
           error.response?.data?.message ||
-          error.message ||
-          "Error updating commission. Please try again."
+            error.message ||
+            "Error updating commission. Please try again.",
         );
       }
     } finally {
@@ -180,7 +185,7 @@ const VendorCommissionManagement = () => {
   // Format commission display
   const formatCommission = (vendor) => {
     if (!vendor.commissionType && !vendor.commission) return "Not Set";
-    
+
     const commType = vendor.commissionType || vendor.commission?.type;
     const comm = vendor.commission || {};
 
@@ -246,7 +251,7 @@ const VendorCommissionManagement = () => {
   return (
     <DashboardLayout>
       {/* Top Bar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-0 mb-2">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-2 mb-2">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
           <h1 className="text-2xl font-bold text-gray-800">
             Vendor Commission Management
@@ -373,7 +378,7 @@ const VendorCommissionManagement = () => {
                   >
                     {page}
                   </button>
-                )
+                ),
               );
             })()}
           </div>
@@ -397,7 +402,8 @@ const VendorCommissionManagement = () => {
             <div className="flex items-center justify-between p-6 border-b">
               <div>
                 <h2 className="text-xl font-bold text-gray-800">
-                  Set Commission - {selectedVendor.vendorName || selectedVendor.storeName}
+                  Set Commission -{" "}
+                  {selectedVendor.vendorName || selectedVendor.storeName}
                 </h2>
                 <p className="text-sm text-gray-600 mt-1">
                   Store ID: {selectedVendor.storeId || "N/A"}
@@ -438,7 +444,10 @@ const VendorCommissionManagement = () => {
                 <select
                   value={commissionData.type}
                   onChange={(e) =>
-                    setCommissionData({ ...commissionData, type: e.target.value })
+                    setCommissionData({
+                      ...commissionData,
+                      type: e.target.value,
+                    })
                   }
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF7B1D]"
                 >

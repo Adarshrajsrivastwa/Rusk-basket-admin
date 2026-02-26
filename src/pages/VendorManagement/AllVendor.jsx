@@ -543,7 +543,7 @@ const AllVendor = () => {
   return (
     <DashboardLayout>
       {/* Top Bar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-0 mb-2">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-2 mb-2">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
           {/* Tabs */}
           <div className="flex gap-4 items-center overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0">

@@ -13,11 +13,8 @@ import {
   DocumentTextIcon,
   GlobeAltIcon,
   ShieldCheckIcon,
-  UsersIcon,
-  ChartBarIcon,
   ClockIcon,
   PencilIcon,
-  KeyIcon,
   XMarkIcon,
   CheckIcon,
 } from "@heroicons/react/24/outline";
@@ -89,11 +86,6 @@ const AdminProfile = () => {
             latitude: result.data.officeAddress?.latitude || "",
             longitude: result.data.officeAddress?.longitude || "",
 
-            // Key metrics (flattened from nested object)
-            yearsInBusiness: result.data.keyMetrics?.yearsInBusiness || "",
-            totalEmployees: result.data.keyMetrics?.totalEmployees || "",
-            activeClients: result.data.keyMetrics?.activeClients || "",
-            totalLeads: result.data.keyMetrics?.totalLeads || "",
           };
 
           setEditFormData(flatFormData);
@@ -127,25 +119,25 @@ const AdminProfile = () => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (!file.type.startsWith("image/")) {
-        alert("Please upload a valid image file");
-        return;
-      }
-      
       // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert("Image size should be less than 5MB");
+        alert("File size should be less than 5MB");
         return;
       }
 
       setProfileImage(file);
       
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+      // Create preview (for images only)
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setProfileImagePreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // For non-image files, clear preview
+        setProfileImagePreview(null);
+      }
     }
   };
 
@@ -198,18 +190,6 @@ const AdminProfile = () => {
         }
         if (editFormData.longitude) {
           formData.append("longitude", Number(editFormData.longitude));
-        }
-        if (editFormData.yearsInBusiness) {
-          formData.append("yearsInBusiness", Number(editFormData.yearsInBusiness));
-        }
-        if (editFormData.totalEmployees) {
-          formData.append("totalEmployees", Number(editFormData.totalEmployees));
-        }
-        if (editFormData.activeClients) {
-          formData.append("activeClients", Number(editFormData.activeClients));
-        }
-        if (editFormData.totalLeads) {
-          formData.append("totalLeads", Number(editFormData.totalLeads));
         }
         
         // Add profile image - API only accepts "profileImage" field name
@@ -265,10 +245,6 @@ const AdminProfile = () => {
             country: result.data.officeAddress?.country || "India",
             latitude: result.data.officeAddress?.latitude || "",
             longitude: result.data.officeAddress?.longitude || "",
-            yearsInBusiness: result.data.keyMetrics?.yearsInBusiness || "",
-            totalEmployees: result.data.keyMetrics?.totalEmployees || "",
-            activeClients: result.data.keyMetrics?.activeClients || "",
-            totalLeads: result.data.keyMetrics?.totalLeads || "",
           };
 
           setEditFormData(flatFormData);
@@ -314,18 +290,6 @@ const AdminProfile = () => {
         longitude: editFormData.longitude
           ? Number(editFormData.longitude)
           : undefined,
-        yearsInBusiness: editFormData.yearsInBusiness
-          ? Number(editFormData.yearsInBusiness)
-          : undefined,
-        totalEmployees: editFormData.totalEmployees
-          ? Number(editFormData.totalEmployees)
-          : undefined,
-        activeClients: editFormData.activeClients
-          ? Number(editFormData.activeClients)
-          : undefined,
-        totalLeads: editFormData.totalLeads
-          ? Number(editFormData.totalLeads)
-          : undefined,
       };
 
       // Remove undefined values
@@ -367,10 +331,6 @@ const AdminProfile = () => {
           country: result.data.officeAddress?.country || "India",
           latitude: result.data.officeAddress?.latitude || "",
           longitude: result.data.officeAddress?.longitude || "",
-          yearsInBusiness: result.data.keyMetrics?.yearsInBusiness || "",
-          totalEmployees: result.data.keyMetrics?.totalEmployees || "",
-          activeClients: result.data.keyMetrics?.activeClients || "",
-          totalLeads: result.data.keyMetrics?.totalLeads || "",
         };
 
         setEditFormData(flatFormData);
@@ -442,10 +402,6 @@ const AdminProfile = () => {
       country: profileData.officeAddress?.country || "India",
       latitude: profileData.officeAddress?.latitude || "",
       longitude: profileData.officeAddress?.longitude || "",
-      yearsInBusiness: profileData.keyMetrics?.yearsInBusiness || "",
-      totalEmployees: profileData.keyMetrics?.totalEmployees || "",
-      activeClients: profileData.keyMetrics?.activeClients || "",
-      totalLeads: profileData.keyMetrics?.totalLeads || "",
     };
 
     setEditFormData(flatFormData);
@@ -526,7 +482,7 @@ const AdminProfile = () => {
     );
   }
 
-  const { officeAddress, verificationStatus = {}, keyMetrics = {} } = profileData;
+  const { officeAddress, verificationStatus = {} } = profileData;
 
   return (
     <DashboardLayout>
@@ -589,7 +545,6 @@ const AdminProfile = () => {
                 <input
                   type="file"
                   id="profile-image-upload"
-                  accept="image/*"
                   onChange={handleImageChange}
                   className="hidden"
                   disabled={!isEditing}
@@ -650,10 +605,6 @@ const AdminProfile = () => {
                     <PencilIcon className="w-5 h-5" />
                     Edit Profile
                   </button>
-                  <button className="flex items-center gap-2 bg-orange-700 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-orange-800 transition-colors shadow-md">
-                    <KeyIcon className="w-5 h-5" />
-                    Change Password
-                  </button>
                 </>
               ) : (
                 <>
@@ -686,49 +637,6 @@ const AdminProfile = () => {
               )}
             </div>
           </div>
-        </div>
-
-        {/* Key Metrics Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <MetricCard
-            icon={UsersIcon}
-            title="Active Clients"
-            value={keyMetrics.activeClients}
-            color="bg-blue-500"
-            trend="+12%"
-            isEditing={isEditing}
-            fieldValue={editFormData.activeClients}
-            onChange={(value) => handleInputChange("activeClients", value)}
-          />
-          <MetricCard
-            icon={BriefcaseIcon}
-            title="Total Employees"
-            value={keyMetrics.totalEmployees}
-            color="bg-green-500"
-            trend="+5%"
-            isEditing={isEditing}
-            fieldValue={editFormData.totalEmployees}
-            onChange={(value) => handleInputChange("totalEmployees", value)}
-          />
-          <MetricCard
-            icon={ChartBarIcon}
-            title="Total Leads"
-            value={keyMetrics.totalLeads}
-            color="bg-purple-500"
-            trend="+18%"
-            isEditing={isEditing}
-            fieldValue={editFormData.totalLeads}
-            onChange={(value) => handleInputChange("totalLeads", value)}
-          />
-          <MetricCard
-            icon={CalendarIcon}
-            title="Years in Business"
-            value={keyMetrics.yearsInBusiness}
-            color="bg-orange-500"
-            isEditing={isEditing}
-            fieldValue={editFormData.yearsInBusiness}
-            onChange={(value) => handleInputChange("yearsInBusiness", value)}
-          />
         </div>
 
         {/* Main Content Grid */}
@@ -1052,42 +960,6 @@ const AdminProfile = () => {
     </DashboardLayout>
   );
 };
-
-// Component: Metric Card
-const MetricCard = ({
-  icon: Icon,
-  title,
-  value,
-  color,
-  trend,
-  isEditing,
-  fieldValue,
-  onChange,
-}) => (
-  <div className="bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition-all duration-200 border border-gray-100">
-    <div className="flex items-center justify-between mb-3">
-      <div className={`${color} p-3 rounded-lg shadow-md`}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-      {trend && !isEditing && (
-        <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
-          {trend}
-        </span>
-      )}
-    </div>
-    <p className="text-sm text-gray-600 mb-1">{title}</p>
-    {isEditing ? (
-      <input
-        type="number"
-        value={fieldValue || ""}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full text-2xl font-bold text-gray-800 bg-gray-50 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
-      />
-    ) : (
-      <p className="text-3xl font-bold text-gray-800">{value}</p>
-    )}
-  </div>
-);
 
 // Component: Info Section
 const InfoSection = ({ title, icon: Icon, children }) => (

@@ -806,58 +806,73 @@ const AllProduct = () => {
   const navigate = useNavigate();
   const itemsPerPage = 10;
 
-  // Hidden canvas for barcode generation
   const canvasRef = useRef(null);
-  
-  // QR Code modal state
+
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [selectedProductForQR, setSelectedProductForQR] = useState(null);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState(null);
 
-  // 🟢 Fetch products from API
+  const extractId = (id) => {
+    if (!id) return "";
+    if (typeof id === "string") {
+      if (/^[0-9a-fA-F]{24}$/.test(id)) return id;
+    }
+    if (typeof id === "object" && id !== null) {
+      if (id.$oid && /^[0-9a-fA-F]{24}$/.test(id.$oid)) return id.$oid;
+      if (typeof id.toHexString === "function") {
+        try {
+          const h = id.toHexString();
+          if (/^[0-9a-fA-F]{24}$/.test(h)) return h;
+        } catch (_) {}
+      }
+      for (const key of ["_id", "id"]) {
+        if (id[key] && /^[0-9a-fA-F]{24}$/.test(String(id[key])))
+          return String(id[key]);
+      }
+      try {
+        const m = JSON.stringify(id).match(/"([0-9a-fA-F]{24})"/);
+        if (m) return m[1];
+      } catch (_) {}
+    }
+    return "";
+  };
+
   const fetchProducts = async (page = 1) => {
     setLoading(true);
     try {
       const response = await api.get("/api/admin/products", {
-        params: {
-          page: page,
-          limit: itemsPerPage,
-        },
+        params: { page, limit: itemsPerPage },
       });
 
       if (response.data.success) {
-        // Handle new response structure: { success, count, pagination, data }
         const responseData = response.data;
-        
-        // Transform products according to new API structure
-        const transformedProducts = (responseData.data || []).map((product) => ({
-          ...product,
-          // Map productId from API response
-          productId: product.productId || product._id,
-          // Map productno to productNumber for backward compatibility
-          productNumber: product.productno || product.productNumber || product.productId || product._id,
-          // Use date from API (already in DD/MM/YYYY format)
-          date: product.date || "N/A",
-          // Map vendor (should be string from API)
-          vendor: product.vendor || "No Vendor",
-          // Map category (should be string from API)
-          category: product.category || "N/A",
-          // Map subCategory (should be string from API)
-          subCategory: product.subCategory || "N/A",
-          // Map salePrice
-          salePrice: product.salePrice || 0,
-          // Map status (pending | approved | rejected)
-          status: product.status || "pending",
-        }));
-        
+
+        const transformedProducts = (responseData.data || []).map(
+          (product) => ({
+            ...product,
+            productId: product.productId || product._id,
+            productNumber:
+              product.productno ||
+              product.productNumber ||
+              product.productId ||
+              product._id,
+            date: product.date || "N/A",
+            vendor: product.vendor || "No Vendor",
+            category: product.category || "N/A",
+            subCategory: product.subCategory || "N/A",
+            salePrice: product.salePrice || 0,
+            status: product.status || "pending",
+          }),
+        );
+
         setProducts(transformedProducts);
-        
-        // Set pagination from response
+
         if (responseData.pagination) {
-          setTotalProducts(responseData.pagination.total || responseData.count || 0);
+          setTotalProducts(
+            responseData.pagination.total || responseData.count || 0,
+          );
           setTotalPages(responseData.pagination.pages || 1);
         } else {
-          // Fallback if pagination not in expected format
           setTotalProducts(responseData.count || 0);
           setTotalPages(1);
         }
@@ -879,12 +894,8 @@ const AllProduct = () => {
     fetchProducts(currentPage);
   }, [currentPage]);
 
-  // 🟢 Handle successful product addition
-  const handleProductAdded = (newProduct) => {
-    fetchProducts(currentPage);
-  };
+  const handleProductAdded = () => fetchProducts(currentPage);
 
-  // 🟢 Download Barcode Function
   const handleDownloadBarcode = (productId) => {
     const canvas = canvasRef.current;
     JsBarcode(canvas, productId, {
@@ -894,33 +905,25 @@ const AllProduct = () => {
       lineColor: "#000000",
       background: "#ffffff",
     });
-
     const link = document.createElement("a");
     link.download = `${productId}-barcode.png`;
     link.href = canvas.toDataURL("image/png");
     link.click();
   };
 
-  // 🟢 Generate QR Code Function
   const handleGenerateQR = async (product) => {
     try {
-      const productId = product.productNumber || product.productId || product._id;
-      
+      const productId =
+        product.productNumber || product.productId || product._id;
       if (!productId) {
         alert("Product ID not found!");
         return;
       }
-
-      // Generate QR code with product ID
       const qrDataUrl = await QRCode.toDataURL(productId, {
         width: 300,
         margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        }
+        color: { dark: "#000000", light: "#FFFFFF" },
       });
-
       setSelectedProductForQR(product);
       setQrCodeDataUrl(qrDataUrl);
       setQrModalOpen(true);
@@ -930,18 +933,18 @@ const AllProduct = () => {
     }
   };
 
-  // 🟢 Download QR Code Function
   const handleDownloadQR = () => {
     if (!qrCodeDataUrl) return;
-
     const link = document.createElement("a");
-    const productId = selectedProductForQR?.productNumber || selectedProductForQR?.productId || selectedProductForQR?._id;
+    const productId =
+      selectedProductForQR?.productNumber ||
+      selectedProductForQR?.productId ||
+      selectedProductForQR?._id;
     link.download = `${productId}-qr-code.png`;
     link.href = qrCodeDataUrl;
     link.click();
   };
 
-  // 🟢 Handle Delete Product
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       try {
@@ -957,82 +960,82 @@ const AllProduct = () => {
     }
   };
 
-  // 🟢 Handle Edit Product
   const handleEdit = async (productId) => {
     try {
-      // Find product from current list
-      let product = products.find(
-        (p) => p._id === productId || p.id === productId,
-      );
-
-      if (!product) {
-        // If product not in current list, fetch it from API
-        const response = await api.get(`/api/admin/products/${productId}`);
-        if (response.data.success) {
-          product = response.data.data;
-        } else {
-          // Try general product endpoint as fallback
-          try {
-            const fallbackResponse = await api.get(`/api/product/${productId}`);
-            if (fallbackResponse.data.success) {
-              product = fallbackResponse.data.data;
-            }
-          } catch (fallbackError) {
-            console.error("Fallback endpoint also failed:", fallbackError);
-          }
+      let rawProduct = null;
+      try {
+        const res = await api.get(`/api/admin/products/${productId}`);
+        rawProduct =
+          res.data?.data?.data || res.data?.data || res.data?.product || null;
+        if (Array.isArray(rawProduct)) rawProduct = rawProduct[0];
+      } catch (fetchErr) {
+        console.warn("Admin endpoint failed, trying fallback:", fetchErr);
+        try {
+          const fallback = await api.get(`/api/product/${productId}`);
+          rawProduct = fallback.data?.data || fallback.data?.product || null;
+        } catch (fallbackErr) {
+          console.error("Both endpoints failed:", fallbackErr);
         }
       }
 
-      if (product) {
-        // Normalize product data for edit modal
-        const normalizedProduct = {
-          ...product,
-          id: product._id || product.id,
-          productId: product._id || product.id || product.productId,
-          productNumber:
-            product.productNumber || product.productno || product._id,
-          name: product.productName || product.name,
-          productName: product.productName || product.name,
-          sku: product.skuHsn || product.sku,
-          skuHsn: product.skuHsn || product.sku,
-          // Ensure category and subCategory are properly formatted
-          category:
-            product.category?._id ||
-            product.category?.$oid ||
-            product.category ||
-            null,
-          subCategory:
-            product.subCategory?._id ||
-            product.subCategory?.$oid ||
-            product.subCategory ||
-            null,
-        };
-
-        setEditingProduct(normalizedProduct);
-        setIsEditMode(true);
-        setIsModalOpen(true);
-      } else {
-        alert("Product not found");
+      if (!rawProduct) {
+        rawProduct = products.find(
+          (p) => p._id === productId || p.id === productId,
+        );
       }
+      if (!rawProduct) {
+        alert("Product not found");
+        return;
+      }
+
+      const categoryId =
+        extractId(rawProduct.category?._id) ||
+        extractId(rawProduct.category) ||
+        "";
+      const subCategoryId =
+        extractId(rawProduct.subCategory?._id) ||
+        extractId(rawProduct.subCategory) ||
+        "";
+
+      const normalizedProduct = {
+        ...rawProduct,
+        _id: rawProduct._id || rawProduct.id || productId,
+        id: rawProduct._id || rawProduct.id || productId,
+        productId: rawProduct._id || rawProduct.id || productId,
+        name: rawProduct.productName || rawProduct.name || "",
+        productName: rawProduct.productName || rawProduct.name || "",
+        sku: rawProduct.skuHsn || rawProduct.sku || "",
+        skuHsn: rawProduct.skuHsn || rawProduct.sku || "",
+        category: categoryId,
+        subCategory: subCategoryId,
+        actualPrice: rawProduct.actualPrice ?? 0,
+        regularPrice: rawProduct.regularPrice ?? 0,
+        salePrice: rawProduct.salePrice ?? 0,
+        cashback: rawProduct.cashback ?? 0,
+        tax: rawProduct.tax ?? 0,
+        inventory: rawProduct.inventory ?? 0,
+        productType: rawProduct.productType || null,
+        images: Array.isArray(rawProduct.images) ? rawProduct.images : [],
+        tags: Array.isArray(rawProduct.tags) ? rawProduct.tags : [],
+      };
+
+      setEditingProduct(normalizedProduct);
+      setIsEditMode(true);
+      setIsModalOpen(true);
     } catch (error) {
-      console.error("Error fetching product for edit:", error);
+      console.error("Error in handleEdit:", error);
       alert("Failed to load product for editing");
     }
   };
 
-  // 🟢 Handle Product Updated
   const handleProductUpdated = () => {
     setIsModalOpen(false);
     setIsEditMode(false);
     setEditingProduct(null);
-    // Refresh products list
     fetchProducts(currentPage);
   };
 
-  // 🟢 Handle View Product
-  const handleView = (id) => {
-    navigate(`/products/${id}`);
-  };
+  const handleView = (id) => navigate(`/products/${id}`);
 
   const statusColors = {
     approved: "text-green-600 font-semibold",
@@ -1040,27 +1043,18 @@ const AllProduct = () => {
     rejected: "text-red-600 font-semibold",
   };
 
-  // Format status label
   const getStatusLabel = (status) => {
     if (!status) return "pending";
-    const statusLower = status.toLowerCase();
-    if (statusLower === "pending") return "pending";
-    if (statusLower === "approved") return "approved";
-    if (statusLower === "rejected") return "rejected";
+    const s = status.toLowerCase();
+    if (s === "pending") return "pending";
+    if (s === "approved") return "approved";
+    if (s === "rejected") return "rejected";
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
-  // Format price
-  const formatPrice = (price) => {
-    return `₹${price?.toLocaleString("en-IN") || 0}`;
-  };
+  const formatPrice = (price) => `₹${price?.toLocaleString("en-IN") || 0}`;
+  const getVendorName = (product) => product.vendor || "No Vendor";
 
-  // Get vendor name safely
-  const getVendorName = (product) => {
-    return product.vendor || "No Vendor";
-  };
-
-  // Filtering logic - use status field from API
   const filteredByTab = products.filter((p) => {
     const status = (p.status || "").toLowerCase();
     if (activeTab === "approved") return status === "approved";
@@ -1075,69 +1069,42 @@ const AllProduct = () => {
       : filteredByTab.filter((p) => getVendorName(p) === selectedVendor);
 
   const searchedProducts = filteredByVendor.filter((product) => {
-    if (!searchQuery.trim()) {
-      return true; // Show all products if search is empty
-    }
-
+    if (!searchQuery.trim()) return true;
     const searchLower = searchQuery.toLowerCase();
-    
-    // Helper function to safely convert values to searchable strings
-    const toSearchableString = (value) => {
-      if (value === null || value === undefined) return "";
-      if (typeof value === "number") return value.toString();
-      if (typeof value === "boolean") return value.toString();
-      if (Array.isArray(value)) return value.join(" ");
-      if (typeof value === "object") return JSON.stringify(value);
-      return String(value);
+    const toStr = (v) => {
+      if (v == null) return "";
+      if (Array.isArray(v)) return v.join(" ");
+      if (typeof v === "object") return JSON.stringify(v);
+      return String(v);
     };
-    
-    // Search through all product fields
-    const searchableFields = [
-      // IDs
-      toSearchableString(product.productNumber),
-      toSearchableString(product.productId),
-      toSearchableString(product._id),
-      toSearchableString(product.productno),
-      // Names
-      toSearchableString(product.productName),
-      toSearchableString(product.name),
-      // Vendor
-      toSearchableString(getVendorName(product)),
-      // Categories
-      toSearchableString(product.category),
-      toSearchableString(product.subCategory),
-      // Description
-      toSearchableString(product.description),
-      // SKU
-      toSearchableString(product.sku),
-      toSearchableString(product.skuHsn),
-      // Status
-      toSearchableString(product.status),
-      toSearchableString(getStatusLabel(product.status)),
-      // Price (convert to string for searching)
-      toSearchableString(product.salePrice),
-      toSearchableString(product.regularPrice),
-      toSearchableString(product.actualPrice),
-      // Inventory
-      toSearchableString(product.inventory),
-      toSearchableString(product.currentInventory),
-      toSearchableString(product.initialInventory),
-      // Cashback
-      toSearchableString(product.cashback),
-      // Tags (handle both string and array)
-      toSearchableString(product.tags),
-      // Date
-      toSearchableString(product.date),
-      toSearchableString(product.createdAt),
-      // Additional fields that might exist
-      toSearchableString(product.productType),
-      toSearchableString(product.discountPercentage),
+    const haystack = [
+      product.productNumber,
+      product.productId,
+      product._id,
+      product.productno,
+      product.productName,
+      product.name,
+      getVendorName(product),
+      product.category,
+      product.subCategory,
+      product.description,
+      product.sku,
+      product.skuHsn,
+      product.status,
+      getStatusLabel(product.status),
+      product.salePrice,
+      product.regularPrice,
+      product.actualPrice,
+      product.inventory,
+      product.cashback,
+      product.tags,
+      product.date,
+      product.createdAt,
     ]
-      .filter(Boolean)
+      .map(toStr)
       .join(" ")
       .toLowerCase();
-
-    return searchableFields.includes(searchLower);
+    return haystack.includes(searchLower);
   });
 
   const TableSkeleton = () => (
@@ -1170,7 +1137,6 @@ const AllProduct = () => {
     </tbody>
   );
 
-  // Get unique vendors - handle null vendors
   const uniqueVendors = [
     ...new Set(
       products
@@ -1181,11 +1147,10 @@ const AllProduct = () => {
 
   return (
     <DashboardLayout>
-      {/* Hidden Canvas for Barcode Generation */}
       <canvas ref={canvasRef} className="hidden" />
 
       {/* Header Section */}
-      <div className="flex flex-col lg:flex-row lg:items-center ml-8 lg:justify-between gap-4 max-w-[99%] mx-auto mt-0 mb-2">
+      <div className="flex flex-col lg:flex-row lg:items-center ml-8 lg:justify-between gap-4 max-w-[99%] mx-auto mt-2 mb-2">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
           {/* Tabs */}
           <div className="flex gap-2 items-center overflow-x-auto pb-2 lg:pb-0">
@@ -1246,18 +1211,10 @@ const AllProduct = () => {
           </div>
         </div>
 
-        {/* Add Product Button */}
-        <div className="w-full md:w-auto flex justify-start md:justify-end mt-2 md:mt-0">
-          {/* <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-black text-white w-52 sm:w-60 px-4 sm:px-10 py-2.5 rounded-sm shadow hover:bg-orange-600 text-xs sm:text-sm flex items-center justify-center whitespace-nowrap"
-          >
-            + Add Product
-          </button> */}
-        </div>
+        <div className="w-full md:w-auto flex justify-start md:justify-end mt-2 md:mt-0" />
       </div>
 
-      {/* Table Section */}
+      {/* Table */}
       <div className="bg-white rounded-sm ml-8 shadow-sm overflow-x-auto max-w-[99%] mx-auto">
         <table className="w-full text-sm">
           <thead>
@@ -1310,29 +1267,15 @@ const AllProduct = () => {
                   </td>
                   <td className="p-3">
                     <span
-                      className={`${statusColors[product.status] || "text-gray-600"}`}
+                      className={
+                        statusColors[product.status] || "text-gray-600"
+                      }
                     >
                       {getStatusLabel(product.status)}
                     </span>
                   </td>
                   <td className="p-3 text-right">
                     <div className="flex justify-end gap-3 text-orange-600">
-                      {/* 🟢 Download Barcode Button */}
-                      {/* <button
-                        onClick={() =>
-                          handleDownloadBarcode(
-                            product.productNumber ||
-                              product.productId ||
-                              product._id,
-                          )
-                        }
-                        className="hover:text-blue-700"
-                        title="Download barcode"
-                      >
-                        <Download className="w-4 h-4" />
-                      </button> */}
-
-                      {/* 🟢 Edit Button */}
                       <button
                         onClick={() => handleEdit(product._id)}
                         className="hover:text-blue-700 mr-2"
@@ -1340,17 +1283,6 @@ const AllProduct = () => {
                       >
                         <Edit className="w-4 h-4" />
                       </button>
-
-                      {/* 🟢 Delete Button */}
-                      {/* <button
-                        onClick={() => handleDelete(product._id)}
-                        className="hover:text-red-700"
-                        title="Delete product"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button> */}
-
-                      {/* 🟢 View Button */}
                       <button
                         onClick={() => handleView(product._id)}
                         className="hover:text-green-700 mr-2"
@@ -1358,8 +1290,6 @@ const AllProduct = () => {
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-
-                      {/* 🟢 Generate QR Code Button */}
                       <button
                         onClick={() => handleGenerateQR(product)}
                         className="hover:text-purple-700"
@@ -1381,7 +1311,9 @@ const AllProduct = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-800">Product QR Code</h2>
+              <h2 className="text-xl font-bold text-gray-800">
+                Product QR Code
+              </h2>
               <button
                 onClick={() => {
                   setQrModalOpen(false);
@@ -1390,14 +1322,22 @@ const AllProduct = () => {
                 }}
                 className="text-gray-500 hover:text-gray-700"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
-            
             <div className="flex flex-col items-center justify-center space-y-4">
-              {/* QR Code Image */}
               {qrCodeDataUrl && (
                 <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
                   <img
@@ -1407,37 +1347,32 @@ const AllProduct = () => {
                   />
                 </div>
               )}
-              
-              {/* Product ID below QR Code */}
               <div className="text-center">
                 <p className="text-sm text-gray-600 mb-1">Product ID</p>
                 <p className="text-lg font-bold text-gray-800 font-mono">
-                  {selectedProductForQR.productNumber || 
-                   selectedProductForQR.productId || 
-                   selectedProductForQR._id}
+                  {selectedProductForQR.productNumber ||
+                    selectedProductForQR.productId ||
+                    selectedProductForQR._id}
                 </p>
               </div>
-
-              {/* Download Button */}
               <button
                 onClick={handleDownloadQR}
                 className="w-full bg-[#FF7B1D] text-white py-2 px-4 rounded-md hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
               >
-                <Download className="w-4 h-4" />
-                Download QR Code
+                <Download className="w-4 h-4" /> Download QR Code
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Pagination */}
-      {!loading && totalPages > 1 && (
+      {/* ✅ Pagination — always visible when products exist, same style as CreateCategory */}
+      {!loading && searchedProducts.length > 0 && (
         <div className="flex justify-end pl-8 items-center gap-6 mt-8 max-w-[95%] mx-auto mb-6">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             disabled={currentPage === 1}
+            className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Back
           </button>
@@ -1467,11 +1402,7 @@ const AllProduct = () => {
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`px-1 hover:text-orange-500 transition-colors ${
-                      currentPage === page
-                        ? "text-orange-600 font-semibold"
-                        : ""
-                    }`}
+                    className={`px-1 hover:text-orange-500 transition-colors ${currentPage === page ? "text-orange-600 font-semibold" : ""}`}
                   >
                     {page}
                   </button>
@@ -1484,8 +1415,8 @@ const AllProduct = () => {
             onClick={() =>
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }
-            className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             disabled={currentPage === totalPages}
+            className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Next
           </button>

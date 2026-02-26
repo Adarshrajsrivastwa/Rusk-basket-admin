@@ -434,6 +434,89 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import api, { BASE_URL } from "../api/api";
 
+// ─── Digital Clock Component ───────────────────────────────────────────────────
+const DigitalClock = () => {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const pad = (n) => String(n).padStart(2, "0");
+
+  const hours24 = time.getHours();
+  const hours12 = hours24 % 12 || 12;
+  const minutes = pad(time.getMinutes());
+  const seconds = pad(time.getSeconds());
+  const ampm = hours24 >= 12 ? "PM" : "AM";
+
+  const dateStr = time.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+
+  return (
+    <div className="flex flex-col items-center justify-center  border border-gray-700 rounded-lg px-4 py-1.5 shadow-inner select-none">
+      {/* Time row */}
+      <div className="flex items-end gap-1 leading-none">
+        <span
+          className="text-white font-mono font-bold"
+          style={{ fontSize: "1.1rem", letterSpacing: "0.1em" }}
+        >
+          {pad(hours12)}
+        </span>
+        <span
+          className="text-white font-mono font-bold pb-px"
+          style={{
+            fontSize: "1.05rem",
+            animation: "blink 1s step-start infinite",
+          }}
+        >
+          :
+        </span>
+        <span
+          className="text-white font-mono font-bold"
+          style={{ fontSize: "1.1rem", letterSpacing: "0.1em" }}
+        >
+          {minutes}
+        </span>
+        <span
+          className="text-white font-mono font-bold pb-px"
+          style={{
+            fontSize: "1.05rem",
+            animation: "blink 1s step-start infinite",
+          }}
+        >
+          :
+        </span>
+        <span
+          className="text-gray-300 font-mono font-semibold"
+          style={{ fontSize: "1.1rem", letterSpacing: "0.1em" }}
+        >
+          {seconds}
+        </span>
+        <span className="text-white font-mono font-bold text-xs ml-1 pb-0.5">
+          {ampm}
+        </span>
+      </div>
+      {/* Date row */}
+      <p className="text-gray-300 text-xs font-medium tracking-wide mt-0.5">
+        {dateStr}
+      </p>
+
+      <style>{`
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50%       { opacity: 0.15; }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+// ─── Header Component ──────────────────────────────────────────────────────────
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -801,14 +884,10 @@ const Header = () => {
       },
     ];
 
-    if (userRole === "admin") {
-      return adminPages;
-    } else if (userRole === "vendor") {
-      return vendorPages;
-    }
+    if (userRole === "admin") return adminPages;
+    else if (userRole === "vendor") return vendorPages;
     return [];
   }, [userRole]);
-
 
   // Fetch unread notification count
   const fetchUnreadCount = async () => {
@@ -867,12 +946,8 @@ const Header = () => {
 
   // Get notification route based on user role
   const getNotificationRoute = () => {
-    if (userRole === "vendor") {
-      return "/vendor/notifications";
-    }
-    if (userRole === "admin") {
-      return "/topbar-notifications";
-    }
+    if (userRole === "vendor") return "/vendor/notifications";
+    if (userRole === "admin") return "/topbar-notifications";
     return "/topbar-notifications";
   };
 
@@ -910,19 +985,15 @@ const Header = () => {
             vendorProfile.profileImage[0].url || vendorProfile.profileImage[0]
           );
         }
-        if (typeof vendorProfile.profileImage === "string") {
+        if (typeof vendorProfile.profileImage === "string")
           return vendorProfile.profileImage;
-        }
-        if (vendorProfile.profileImage.url) {
+        if (vendorProfile.profileImage.url)
           return vendorProfile.profileImage.url;
-        }
       }
-      if (vendorProfile.profilePhoto && vendorProfile.profilePhoto.url) {
+      if (vendorProfile.profilePhoto && vendorProfile.profilePhoto.url)
         return vendorProfile.profilePhoto.url;
-      }
-      if (vendorProfile.storeImage && vendorProfile.storeImage.length > 0) {
+      if (vendorProfile.storeImage && vendorProfile.storeImage.length > 0)
         return vendorProfile.storeImage[0].url;
-      }
     }
     if (userRole === "admin" && adminProfile) {
       if (adminProfile.profileImage) {
@@ -934,31 +1005,25 @@ const Header = () => {
             adminProfile.profileImage[0].url || adminProfile.profileImage[0]
           );
         }
-        if (typeof adminProfile.profileImage === "string") {
+        if (typeof adminProfile.profileImage === "string")
           return adminProfile.profileImage;
-        }
-        if (adminProfile.profileImage.url) {
-          return adminProfile.profileImage.url;
-        }
+        if (adminProfile.profileImage.url) return adminProfile.profileImage.url;
       }
     }
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName())}&background=FF7B1D&color=fff&size=128`;
   };
 
-
   return (
     <header className="fixed top-0 left-0 right-0 sm:left-64 h-[64px] flex items-center justify-between px-4 sm:px-6 lg:px-8 shadow-lg z-50 bg-gradient-to-r from-[#343d46] to-[#2a3239] border-b border-gray-700">
-      {/* Left Section - Logo/Branding */}
+      {/* Left Section - Mobile toggle + Digital Clock */}
       <div className="flex items-center gap-4">
-        {/* Sidebar toggle - Mobile */}
+        {/* Sidebar toggle - Mobile only */}
         <button className="text-white text-2xl hover:text-orange-400 transition-colors sm:hidden">
-          <FiMenu />
+          {/* <FiMenu /> */}
         </button>
 
-        {/* Brand/Title */}
-        <div className="hidden sm:block">
-          <h1 className="text-lg font-bold text-white">RushBasket Admin</h1>
-        </div>
+        {/* Digital Clock */}
+        <DigitalClock />
       </div>
 
       {/* Right Section - Notification and Profile */}
@@ -1049,7 +1114,7 @@ const Header = () => {
                   }}
                   className="w-full px-5 py-3 text-sm flex items-center gap-3 hover:bg-orange-50 text-gray-700 transition-colors font-medium"
                 >
-                  <FiUser className="text-orange-500 text-lg" /> 
+                  <FiUser className="text-orange-500 text-lg" />
                   <span>Profile Settings</span>
                 </button>
               </div>
@@ -1059,15 +1124,12 @@ const Header = () => {
                 <button
                   onClick={async () => {
                     try {
-                      // Call logout API if token exists
-                      const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+                      const token =
+                        localStorage.getItem("token") ||
+                        localStorage.getItem("authToken");
                       if (token) {
-                        const headers = {
-                          "Content-Type": "application/json",
-                        };
-                        if (token) {
-                          headers["Authorization"] = `Bearer ${token}`;
-                        }
+                        const headers = { "Content-Type": "application/json" };
+                        if (token) headers["Authorization"] = `Bearer ${token}`;
 
                         try {
                           if (userRole === "admin") {
@@ -1100,7 +1162,7 @@ const Header = () => {
                   }}
                   className="w-full px-5 py-3 text-sm flex items-center gap-3 hover:bg-red-50 text-red-600 transition-colors font-semibold"
                 >
-                  <FiLogOut className="text-lg" /> 
+                  <FiLogOut className="text-lg" />
                   <span>Logout</span>
                 </button>
               </div>

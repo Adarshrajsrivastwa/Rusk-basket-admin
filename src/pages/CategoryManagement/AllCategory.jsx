@@ -11,7 +11,6 @@
 // } from "lucide-react";
 // import { useNavigate } from "react-router-dom";
 
-
 // const AllCategory = () => {
 //   const [activeTab, setActiveTab] = useState("all");
 //   const [currentPage, setCurrentPage] = useState(1);
@@ -554,40 +553,12 @@ const AllCategory = () => {
   const getAuthHeaders = () => {
     const token =
       localStorage.getItem("token") || localStorage.getItem("authToken");
-    const headers = {
-      "Content-Type": "application/json",
-    };
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
     return headers;
   };
 
-  // Fetch all categories
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  // Listen for subcategory creation/deletion events
-  useEffect(() => {
-    const handleSubCategoryChange = () => {
-      console.log("SubCategory changed - refreshing categories...");
-      fetchCategories();
-      // Refresh expanded subcategories
-      expandedCategories.forEach((categoryId) => {
-        fetchSubCategories(categoryId, true);
-      });
-    };
-
-    window.addEventListener("subcategoryCreated", handleSubCategoryChange);
-    window.addEventListener("subcategoryDeleted", handleSubCategoryChange);
-
-    return () => {
-      window.removeEventListener("subcategoryCreated", handleSubCategoryChange);
-      window.removeEventListener("subcategoryDeleted", handleSubCategoryChange);
-    };
-  }, [expandedCategories]);
-
+  // ✅ Fetch + transform categories the same way as CreateCategory
   const fetchCategories = async () => {
     try {
       setLoading(true);
@@ -600,16 +571,29 @@ const AllCategory = () => {
       const result = await response.json();
 
       if (!response.ok) {
-        if (response.status === 401) {
-          setError("Unauthorized. Please login again.");
-        } else {
-          setError(result.message || "Failed to fetch categories");
-        }
+        setError(
+          response.status === 401
+            ? "Unauthorized. Please login again."
+            : result.message || "Failed to fetch categories",
+        );
         return;
       }
 
       if (result.success) {
-        setCategories(result.data);
+        // Transform to match AddCategoryModal expected format — same as CreateCategory
+        const transformed = result.data.map((cat) => ({
+          id: cat._id,
+          _id: cat._id,
+          category: cat.name || "Unknown",
+          name: cat.name || "Unknown",
+          image: cat.image?.url || null,
+          products: cat.productCount || 0,
+          subCategoryCount: cat.subCategoryCount || 0,
+          status: cat.isActive ? "Active" : "Inactive",
+          isActive: cat.isActive,
+          rawData: cat,
+        }));
+        setCategories(transformed);
       } else {
         setError("Failed to fetch categories");
       }
@@ -620,22 +604,35 @@ const AllCategory = () => {
     }
   };
 
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  // Listen for subcategory creation/deletion events
+  useEffect(() => {
+    const handleSubCategoryChange = () => {
+      fetchCategories();
+      expandedCategories.forEach((categoryId) => {
+        fetchSubCategories(categoryId, true);
+      });
+    };
+    window.addEventListener("subcategoryCreated", handleSubCategoryChange);
+    window.addEventListener("subcategoryDeleted", handleSubCategoryChange);
+    return () => {
+      window.removeEventListener("subcategoryCreated", handleSubCategoryChange);
+      window.removeEventListener("subcategoryDeleted", handleSubCategoryChange);
+    };
+  }, [expandedCategories]);
+
   // Fetch subcategories for a specific category
   const fetchSubCategories = async (categoryId, forceRefresh = false) => {
-    if (subCategories[categoryId] && !forceRefresh) {
-      // Already fetched, just toggle
-      return;
-    }
+    if (subCategories[categoryId] && !forceRefresh) return;
 
     try {
       setLoadingSubCategories((prev) => ({ ...prev, [categoryId]: true }));
       const response = await fetch(
         `${API_BASE_URL}/subcategory/by-category/${categoryId}`,
-        {
-          method: "GET",
-          credentials: "include",
-          headers: getAuthHeaders(),
-        }
+        { method: "GET", credentials: "include", headers: getAuthHeaders() },
       );
       const result = await response.json();
 
@@ -643,7 +640,6 @@ const AllCategory = () => {
         console.error("Failed to fetch subcategories:", result.message);
         return;
       }
-
       if (result.success) {
         setSubCategories((prev) => ({
           ...prev,
@@ -658,59 +654,26 @@ const AllCategory = () => {
   };
 
   const statusColors = {
-    true: "text-green-600 font-semibold",
-    false: "text-gray-600 font-semibold",
+    Active: "text-green-600 font-semibold",
+    Inactive: "text-gray-600 font-semibold",
   };
 
   const toggleCategory = async (categoryId) => {
     const isExpanding = !expandedCategories.has(categoryId);
-
     setExpandedCategories((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(categoryId)) {
-        newSet.delete(categoryId);
-      } else {
-        newSet.add(categoryId);
-      }
+      newSet.has(categoryId)
+        ? newSet.delete(categoryId)
+        : newSet.add(categoryId);
       return newSet;
     });
-
-    // Fetch subcategories if expanding and not already loaded
-    if (isExpanding) {
-      await fetchSubCategories(categoryId);
-    }
+    if (isExpanding) await fetchSubCategories(categoryId);
   };
 
-  // Category handlers
-  const handleEditCategory = async (cat) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/category/${cat._id}`, {
-        method: "GET",
-        credentials: "include",
-        headers: getAuthHeaders(),
-      });
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch category details");
-      }
-
-      if (result.success) {
-        // Transform to match AddCategoryModal expected format
-        const categoryData = {
-          id: result.data._id,
-          category: result.data.name,
-          image: result.data.image?.url || null,
-          status: result.data.isActive ? "Active" : "Inactive",
-          rawData: result.data,
-        };
-        setEditingCategory(categoryData);
-        setIsEditCategoryModalOpen(true);
-      }
-    } catch (err) {
-      console.error("Error fetching category details:", err);
-      alert("Failed to load category details. Please try again.");
-    }
+  // ✅ Edit category — direct, synchronous, no extra API call (same as CreateCategory)
+  const handleEditCategory = (cat) => {
+    setEditingCategory(cat);
+    setIsEditCategoryModalOpen(true);
   };
 
   const handleDeleteCategory = async (id) => {
@@ -723,17 +686,12 @@ const AllCategory = () => {
         });
         const result = await response.json();
 
-        if (!response.ok) {
+        if (!response.ok || !result.success) {
           alert(result.message || "Failed to delete category");
           return;
         }
-
-        if (result.success) {
-          alert("Category deleted successfully!");
-          fetchCategories();
-        } else {
-          alert(result.message || "Failed to delete category");
-        }
+        alert("Category deleted successfully!");
+        fetchCategories();
       } catch (err) {
         alert("Error deleting category: " + err.message);
       }
@@ -746,34 +704,16 @@ const AllCategory = () => {
     setEditingCategory(null);
   };
 
-  // SubCategory handlers
-  const handleEditSubCategory = async (sub) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/subcategory/${sub._id}`, {
-        method: "GET",
-        credentials: "include",
-        headers: getAuthHeaders(),
-      });
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch sub-category details");
-      }
-
-      if (result.success) {
-        setEditingSubCategory(result.data);
-        setIsEditSubCategoryModalOpen(true);
-      }
-    } catch (err) {
-      console.error("Error fetching sub-category details:", err);
-      alert("Failed to load sub-category details. Please try again.");
-    }
+  // ✅ Edit subcategory — direct, synchronous (same pattern)
+  const handleEditSubCategory = (sub) => {
+    setEditingSubCategory(sub);
+    setIsEditSubCategoryModalOpen(true);
   };
 
   const handleDeleteSubCategory = async (subId, subName) => {
     if (
       window.confirm(
-        `Are you sure you want to delete subcategory "${subName}"?`
+        `Are you sure you want to delete subcategory "${subName}"?`,
       )
     ) {
       try {
@@ -784,33 +724,20 @@ const AllCategory = () => {
         });
         const result = await response.json();
 
-        if (!response.ok) {
+        if (!response.ok || !result.success) {
           alert(result.message || "Failed to delete subcategory");
           return;
         }
-
-        if (result.success) {
-          alert("Subcategory deleted successfully!");
-
-          // Refresh categories to update counts
-          fetchCategories();
-
-          // Clear the subcategories cache for affected category
-          setSubCategories((prev) => {
-            const updated = { ...prev };
-            Object.keys(updated).forEach((catId) => {
-              updated[catId] = updated[catId].filter(
-                (sub) => sub._id !== subId
-              );
-            });
-            return updated;
+        alert("Subcategory deleted successfully!");
+        fetchCategories();
+        setSubCategories((prev) => {
+          const updated = { ...prev };
+          Object.keys(updated).forEach((catId) => {
+            updated[catId] = updated[catId].filter((sub) => sub._id !== subId);
           });
-
-          // Trigger event to refresh other pages
-          window.dispatchEvent(new CustomEvent("subcategoryDeleted"));
-        } else {
-          alert(result.message || "Failed to delete subcategory");
-        }
+          return updated;
+        });
+        window.dispatchEvent(new CustomEvent("subcategoryDeleted"));
       } catch (err) {
         alert("Error deleting subcategory: " + err.message);
       }
@@ -819,31 +746,26 @@ const AllCategory = () => {
 
   const handleSubCategorySuccess = () => {
     fetchCategories();
-
-    // Refresh expanded subcategories
-    expandedCategories.forEach((categoryId) => {
-      fetchSubCategories(categoryId, true);
-    });
-
+    expandedCategories.forEach((categoryId) =>
+      fetchSubCategories(categoryId, true),
+    );
     setIsEditSubCategoryModalOpen(false);
     setEditingSubCategory(null);
-
-    // Trigger event to refresh other pages
     window.dispatchEvent(new CustomEvent("subcategoryCreated"));
   };
 
   // Filter + Search
   const filteredCategories = categories
     .filter((cat) => {
-      if (activeTab === "active") return cat.isActive === true;
-      if (activeTab === "inactive") return cat.isActive === false;
+      if (activeTab === "active") return cat.status === "Active";
+      if (activeTab === "inactive") return cat.status === "Inactive";
       return true;
     })
     .filter((cat) =>
-      [cat.name, cat._id, cat.description]
+      [cat.category, cat.id, cat.rawData?.description]
         .join(" ")
         .toLowerCase()
-        .includes(searchQuery.toLowerCase())
+        .includes(searchQuery.toLowerCase()),
     );
 
   // Pagination
@@ -912,7 +834,7 @@ const AllCategory = () => {
   return (
     <DashboardLayout>
       {/* Top Bar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-0 mb-2">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-2 mb-2">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
           {/* Tabs */}
           <div className="flex gap-4 items-center overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0">
@@ -972,18 +894,18 @@ const AllCategory = () => {
           ) : (
             <tbody>
               {currentCategories.map((cat, idx) => (
-                <React.Fragment key={cat._id}>
+                <React.Fragment key={cat.id}>
                   {/* Main Category Row */}
                   <tr className="bg-white shadow-sm hover:bg-gray-50 transition border-b-2 border-gray-200">
                     <td className="p-3 text-center">
                       <button
-                        onClick={() => toggleCategory(cat._id)}
+                        onClick={() => toggleCategory(cat.id)}
                         className="text-orange-600 hover:text-orange-800"
                         title="Expand/Collapse Subcategories"
                       >
-                        {loadingSubCategories[cat._id] ? (
+                        {loadingSubCategories[cat.id] ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : expandedCategories.has(cat._id) ? (
+                        ) : expandedCategories.has(cat.id) ? (
                           <ChevronUp className="w-4 h-4" />
                         ) : (
                           <ChevronDown className="w-4 h-4" />
@@ -994,30 +916,29 @@ const AllCategory = () => {
                       {indexOfFirst + idx + 1}
                     </td>
                     <td className="p-3 text-center">
-                      {cat.image?.url ? (
+                      {cat.image ? (
                         <img
-                          src={cat.image.url}
-                          alt={cat.name}
+                          src={cat.image}
+                          alt={cat.category}
                           className="h-8 w-8 rounded-full object-cover mx-auto"
+                          onError={(e) => {
+                            e.target.style.display = "none";
+                          }}
                         />
                       ) : (
                         <div className="h-8 w-8 rounded-full bg-gray-200 mx-auto flex items-center justify-center text-xs font-semibold text-gray-500">
-                          {cat.name.charAt(0).toUpperCase()}
+                          {cat.category.charAt(0).toUpperCase()}
                         </div>
                       )}
                     </td>
                     <td className="p-3 text-center font-semibold">
-                      {cat.name}
+                      {cat.category}
                     </td>
-                    <td className="p-3 text-center">
-                      {cat.subCategoryCount || 0}
-                    </td>
+                    <td className="p-3 text-center">{cat.subCategoryCount}</td>
                     <td
-                      className={`p-3 text-center ${
-                        statusColors[cat.isActive]
-                      }`}
+                      className={`p-3 text-center ${statusColors[cat.status]}`}
                     >
-                      {cat.isActive ? "Active" : "Inactive"}
+                      {cat.status}
                     </td>
                     <td className="p-3 text-right">
                       <div className="flex justify-end gap-2">
@@ -1029,14 +950,14 @@ const AllCategory = () => {
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDeleteCategory(cat._id)}
+                          onClick={() => handleDeleteCategory(cat.id)}
                           className="text-orange-600 hover:text-red-600"
                           title="Delete Category"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => navigate(`/category/view/${cat._id}`)}
+                          onClick={() => navigate(`/category/view/${cat.id}`)}
                           className="text-orange-600 hover:text-green-700"
                           title="View Category Details"
                         >
@@ -1047,9 +968,9 @@ const AllCategory = () => {
                   </tr>
 
                   {/* Subcategories Rows (Expandable) */}
-                  {expandedCategories.has(cat._id) &&
-                    subCategories[cat._id] &&
-                    subCategories[cat._id].map((sub, subIdx) => (
+                  {expandedCategories.has(cat.id) &&
+                    subCategories[cat.id] &&
+                    subCategories[cat.id].map((sub, subIdx) => (
                       <tr
                         key={sub._id}
                         className="bg-blue-50 hover:bg-blue-100 transition border-b border-gray-100"
@@ -1076,9 +997,7 @@ const AllCategory = () => {
                         </td>
                         <td className="p-3 text-center text-sm">-</td>
                         <td
-                          className={`p-3 text-center text-sm ${
-                            statusColors[sub.isActive]
-                          }`}
+                          className={`p-3 text-center text-sm ${sub.isActive ? "text-green-600 font-semibold" : "text-gray-600 font-semibold"}`}
                         >
                           {sub.isActive ? "Active" : "Inactive"}
                         </td>
@@ -1156,15 +1075,11 @@ const AllCategory = () => {
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`px-1 ${
-                      currentPage === page
-                        ? "text-orange-600 font-semibold"
-                        : ""
-                    }`}
+                    className={`px-1 ${currentPage === page ? "text-orange-600 font-semibold" : ""}`}
                   >
                     {page}
                   </button>
-                )
+                ),
               );
             })()}
           </div>
@@ -1182,7 +1097,9 @@ const AllCategory = () => {
       )}
 
       {/* Modals */}
+      {/* ✅ key prop forces full remount each time a different category is edited */}
       <AddCategoryModal
+        key={editingCategory?.id || "cat-edit"}
         isOpen={isEditCategoryModalOpen}
         onClose={() => {
           setIsEditCategoryModalOpen(false);
@@ -1193,6 +1110,7 @@ const AllCategory = () => {
         categoryData={editingCategory}
       />
       <AddSubCategoryModal
+        key={editingSubCategory?._id || "subcat-edit"}
         isOpen={isEditSubCategoryModalOpen}
         onClose={() => {
           setIsEditSubCategoryModalOpen(false);

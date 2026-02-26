@@ -44,6 +44,7 @@ const getNotificationIcon = (type) => {
     product_rejected: FiAlertCircle,
     invoice_generated: FiCreditCard,
     payment_received: FiCreditCard,
+    ticket_created: FiAlertCircle,
     general: FiInfo,
   };
   return iconMap[type] || FiInfo;
@@ -60,6 +61,7 @@ const getIconColor = (type) => {
     product_rejected: "text-red-400",
     invoice_generated: "text-purple-400",
     payment_received: "text-green-400",
+    ticket_created: "text-orange-400",
     general: "text-orange-400",
   };
   return colorMap[type] || "text-orange-400";
@@ -321,6 +323,8 @@ const Notifications = () => {
           : `/api/admin/notifications/${notificationId}/read`;
 
       await api.put(endpoint);
+      
+      // Update local state immediately
       setNotifications((prev) =>
         prev.map((n) =>
           n._id === notificationId
@@ -328,7 +332,12 @@ const Notifications = () => {
             : n,
         ),
       );
+      
+      // Update unread count immediately
       setUnreadCount((prev) => Math.max(0, prev - 1));
+      
+      // Refresh unread count from server to ensure accuracy
+      await fetchUnreadCount();
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
@@ -408,10 +417,10 @@ const Notifications = () => {
   };
 
   // Handle notification click
-  const handleNotificationClick = (notification) => {
+  const handleNotificationClick = async (notification) => {
     setSelectedNotification(notification);
     if (!notification.isRead) {
-      markAsRead(notification._id);
+      await markAsRead(notification._id);
     }
   };
 
@@ -614,6 +623,78 @@ const Notifications = () => {
                     Details
                   </h3>
                   <div className="space-y-2">
+                    {/* Ticket-specific data */}
+                    {selectedNotification.type === "ticket_created" && (
+                      <>
+                        {selectedNotification.data.ticketNumber && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 text-sm">
+                              Ticket Number:
+                            </span>
+                            <span className="text-white font-semibold">
+                              {selectedNotification.data.ticketNumber}
+                            </span>
+                          </div>
+                        )}
+                        {selectedNotification.data.category && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 text-sm">
+                              Category:
+                            </span>
+                            <span className="text-white font-semibold capitalize">
+                              {selectedNotification.data.category.replace(/_/g, " ")}
+                            </span>
+                          </div>
+                        )}
+                        {selectedNotification.data.status && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 text-sm">
+                              Status:
+                            </span>
+                            <span className={`font-semibold capitalize ${
+                              selectedNotification.data.status === "active" 
+                                ? "text-orange-400" 
+                                : selectedNotification.data.status === "resolved"
+                                ? "text-green-400"
+                                : "text-gray-400"
+                            }`}>
+                              {selectedNotification.data.status}
+                            </span>
+                          </div>
+                        )}
+                        {selectedNotification.data.vendorName && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 text-sm">
+                              Vendor:
+                            </span>
+                            <span className="text-white font-semibold">
+                              {selectedNotification.data.vendorName}
+                            </span>
+                          </div>
+                        )}
+                        {selectedNotification.data.complaint && (
+                          <div className="flex flex-col gap-1 pt-2 border-t border-orange-500/20">
+                            <span className="text-gray-400 text-sm">
+                              Complaint:
+                            </span>
+                            <span className="text-white text-sm">
+                              {selectedNotification.data.complaint}
+                            </span>
+                          </div>
+                        )}
+                        {selectedNotification.data.orderId && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 text-sm">
+                              Order ID:
+                            </span>
+                            <span className="text-white font-semibold">
+                              {selectedNotification.data.orderId}
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {/* Order-specific data */}
                     {selectedNotification.data.orderNumber && (
                       <div className="flex justify-between items-center">
                         <span className="text-gray-400 text-sm">

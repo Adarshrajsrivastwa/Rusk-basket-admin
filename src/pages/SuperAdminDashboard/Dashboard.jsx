@@ -25,7 +25,13 @@ import {
 } from "lucide-react";
 
 const AdminDashboard = () => {
+  // ✅ Show skeleton for exactly 1 second, then reveal content
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 300);
+    return () => clearTimeout(timer);
+  }, []);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [error, setError] = useState(null);
@@ -73,8 +79,6 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        setLoading(true);
-
         // Get token from localStorage
         const token =
           localStorage.getItem("token") || localStorage.getItem("authToken");
@@ -138,9 +142,8 @@ const AdminDashboard = () => {
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
         setError(err.message);
-      } finally {
-        setLoading(false);
       }
+      // ✅ No setLoading(false) needed — loading is always false
     };
 
     fetchDashboardData();
@@ -219,10 +222,10 @@ const AdminDashboard = () => {
     };
   }, [dashboardData]);
 
-  // Transform recent orders from API - memoized for performance
+  // ✅ Recent orders limited to 10
   const recentOrders = useMemo(() => {
     return (
-      dashboardData?.recentOrders.map((order) => ({
+      dashboardData?.recentOrders.slice(0, 10).map((order) => ({
         id: order.orderId,
         customer: order.customer,
         amount: order.amount,
@@ -232,10 +235,10 @@ const AdminDashboard = () => {
     );
   }, [dashboardData?.recentOrders]);
 
-  // Transform top vendors from API - memoized for performance
+  // ✅ Top vendors limited to 10
   const topVendors = useMemo(() => {
     return (
-      dashboardData?.topVendors.map((vendor) => ({
+      dashboardData?.topVendors.slice(0, 10).map((vendor) => ({
         id: vendor.vendorId,
         name: vendor.vendorName || vendor.storeName,
         sales: 0, // Not provided in API
@@ -245,6 +248,28 @@ const AdminDashboard = () => {
       })) || []
     );
   }, [dashboardData?.topVendors]);
+
+  // Error State
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="bg-red-50 border border-red-200 rounded-sm p-0 ml-6 max-w-md">
+            <h3 className="text-red-800 font-semibold mb-2">
+              Error Loading Dashboard
+            </h3>
+            <p className="text-red-600 text-sm">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   // Skeleton Loader
   const SkeletonLoader = () => (
@@ -270,38 +295,16 @@ const AdminDashboard = () => {
     </div>
   );
 
-  // Error State
-  if (error && !loading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
-            <h3 className="text-red-800 font-semibold mb-2">
-              Error Loading Dashboard
-            </h3>
-            <p className="text-red-600 text-sm">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-4 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
   return (
     <DashboardLayout>
       <div className="pl-0 sm:pl-6 min-h-screen">
-        <div className="max-w-[100%] mx-auto mt-4 px-4">
+        <div className="max-w-[100%] mx-auto mt-2 px-0">
           {loading ? (
             <SkeletonLoader />
           ) : (
             <>
               {/* Welcome Section */}
-              <div className="mt-6 mb-8 bg-gradient-to-r from-[#FF7B1D] to-orange-600 rounded-xl shadow-lg p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="mt-2 mb-8 bg-gradient-to-r from-[#FF7B1D] to-orange-600 rounded-sm shadow-lg p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
                   <div className="relative">
                     <img
@@ -381,21 +384,21 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex items-center gap-1 text-green-600 text-sm font-bold">
                       <ArrowUp size={16} />
-                      {stats?.orders.growth}%
+                      {stats?.orders.growth ?? 0}%
                     </div>
                   </div>
                   <h3 className="text-gray-500 text-sm font-medium mb-2 uppercase tracking-wide">
                     Total Orders
                   </h3>
                   <p className="text-3xl font-bold text-gray-900 mb-3">
-                    {stats?.orders.total.toLocaleString()}
+                    {stats?.orders.total.toLocaleString() ?? "—"}
                   </p>
                   <div className="flex gap-4 text-xs">
                     <span className="text-blue-600 font-semibold">
-                      New: {stats?.orders.new}
+                      New: {stats?.orders.new ?? 0}
                     </span>
                     <span className="text-orange-600 font-semibold">
-                      Pending: {stats?.orders.pending}
+                      Pending: {stats?.orders.pending ?? 0}
                     </span>
                   </div>
                 </div>
@@ -408,21 +411,21 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex items-center gap-1 text-green-600 text-sm font-bold">
                       <ArrowUp size={16} />
-                      {stats?.vendors.growth}%
+                      {stats?.vendors.growth ?? 0}%
                     </div>
                   </div>
                   <h3 className="text-gray-500 text-sm font-medium mb-2 uppercase tracking-wide">
                     Total Vendors
                   </h3>
                   <p className="text-3xl font-bold text-gray-900 mb-3">
-                    {stats?.vendors.total}
+                    {stats?.vendors.total ?? "—"}
                   </p>
                   <div className="flex gap-4 text-xs">
                     <span className="text-green-600 font-semibold">
-                      Active: {stats?.vendors.active}
+                      Active: {stats?.vendors.active ?? 0}
                     </span>
                     <span className="text-gray-600 font-semibold">
-                      New: {stats?.vendors.newThisMonth}
+                      New: {stats?.vendors.newThisMonth ?? 0}
                     </span>
                   </div>
                 </div>
@@ -435,21 +438,21 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex items-center gap-1 text-green-600 text-sm font-bold">
                       <ArrowUp size={16} />
-                      {stats?.riders.growth}%
+                      {stats?.riders.growth ?? 0}%
                     </div>
                   </div>
                   <h3 className="text-gray-500 text-sm font-medium mb-2 uppercase tracking-wide">
                     Total Riders
                   </h3>
                   <p className="text-3xl font-bold text-gray-900 mb-3">
-                    {stats?.riders.total}
+                    {stats?.riders.total ?? "—"}
                   </p>
                   <div className="flex gap-4 text-xs">
                     <span className="text-green-600 font-semibold">
-                      Online: {stats?.riders.active}
+                      Online: {stats?.riders.active ?? 0}
                     </span>
                     <span className="text-orange-600 font-semibold">
-                      Delivering: {stats?.riders.onDelivery}
+                      Delivering: {stats?.riders.onDelivery ?? 0}
                     </span>
                   </div>
                 </div>
@@ -462,21 +465,21 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex items-center gap-1 text-green-600 text-sm font-bold">
                       <ArrowUp size={16} />
-                      {stats?.users.growth}%
+                      {stats?.users.growth ?? 0}%
                     </div>
                   </div>
                   <h3 className="text-gray-500 text-sm font-medium mb-2 uppercase tracking-wide">
                     Total Users
                   </h3>
                   <p className="text-3xl font-bold text-gray-900 mb-3">
-                    {stats?.users.total.toLocaleString()}
+                    {stats?.users.total.toLocaleString() ?? "—"}
                   </p>
                   <div className="flex gap-4 text-xs">
                     <span className="text-green-600 font-semibold">
-                      Active: {stats?.users.active.toLocaleString()}
+                      Active: {stats?.users.active.toLocaleString() ?? 0}
                     </span>
                     <span className="text-blue-600 font-semibold">
-                      New: {stats?.users.newThisMonth}
+                      New: {stats?.users.newThisMonth ?? 0}
                     </span>
                   </div>
                 </div>
@@ -491,32 +494,34 @@ const AdminDashboard = () => {
                       <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 p-2.5 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
                         <Briefcase className="text-white" size={20} />
                       </div>
-                      <h3 className="text-gray-700 font-bold">
-                        Rider Jobs
-                      </h3>
+                      <h3 className="text-gray-700 font-bold">Rider Jobs</h3>
                     </div>
                     <div className="flex items-center gap-1 text-green-600 text-xs font-bold">
                       <ArrowUp size={14} />
-                      {stats?.riderJobPosts.growth}%
+                      {stats?.riderJobPosts.growth ?? 0}%
                     </div>
                   </div>
                   <div className="space-y-2.5 text-sm">
                     <div className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600 font-medium">Total Posts:</span>
+                      <span className="text-gray-600 font-medium">
+                        Total Posts:
+                      </span>
                       <span className="font-bold text-gray-900">
-                        {stats?.riderJobPosts.total.toLocaleString()}
+                        {stats?.riderJobPosts.total.toLocaleString() ?? "—"}
                       </span>
                     </div>
                     <div className="flex justify-between items-center p-2 bg-green-50 rounded-lg">
                       <span className="text-gray-600 font-medium">Active:</span>
                       <span className="font-bold text-green-600">
-                        {stats?.riderJobPosts.active.toLocaleString()}
+                        {stats?.riderJobPosts.active.toLocaleString() ?? "—"}
                       </span>
                     </div>
                     <div className="flex justify-between items-center p-2 bg-blue-50 rounded-lg">
-                      <span className="text-gray-600 font-medium">New This Month:</span>
+                      <span className="text-gray-600 font-medium">
+                        New This Month:
+                      </span>
                       <span className="font-bold text-blue-600">
-                        {stats?.riderJobPosts.newThisMonth}
+                        {stats?.riderJobPosts.newThisMonth ?? "—"}
                       </span>
                     </div>
                   </div>
@@ -532,27 +537,35 @@ const AdminDashboard = () => {
                   </div>
                   <div className="space-y-2.5 text-sm">
                     <div className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600 font-medium">Total Products:</span>
+                      <span className="text-gray-600 font-medium">
+                        Total Products:
+                      </span>
                       <span className="font-bold text-gray-900">
-                        {stats?.inventory.totalProducts.toLocaleString()}
+                        {stats?.inventory.totalProducts.toLocaleString() ?? "—"}
                       </span>
                     </div>
                     <div className="flex justify-between items-center p-2 bg-green-50 rounded-lg">
-                      <span className="text-gray-600 font-medium">In Stock:</span>
+                      <span className="text-gray-600 font-medium">
+                        In Stock:
+                      </span>
                       <span className="font-bold text-green-600">
-                        {stats?.inventory.inStock.toLocaleString()}
+                        {stats?.inventory.inStock.toLocaleString() ?? "—"}
                       </span>
                     </div>
                     <div className="flex justify-between items-center p-2 bg-orange-50 rounded-lg">
-                      <span className="text-gray-600 font-medium">Low Stock:</span>
+                      <span className="text-gray-600 font-medium">
+                        Low Stock:
+                      </span>
                       <span className="font-bold text-orange-600">
-                        {stats?.inventory.lowStock}
+                        {stats?.inventory.lowStock ?? "—"}
                       </span>
                     </div>
                     <div className="flex justify-between items-center p-2 bg-red-50 rounded-lg">
-                      <span className="text-gray-600 font-medium">Out of Stock:</span>
+                      <span className="text-gray-600 font-medium">
+                        Out of Stock:
+                      </span>
                       <span className="font-bold text-red-600">
-                        {stats?.inventory.outOfStock}
+                        {stats?.inventory.outOfStock ?? "—"}
                       </span>
                     </div>
                   </div>
@@ -569,33 +582,37 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex items-center gap-1 text-green-600 text-xs font-bold">
                       <ArrowUp size={14} />
-                      {stats?.revenue.growth}%
+                      {stats?.revenue.growth ?? 0}%
                     </div>
                   </div>
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
                       <span className="text-gray-600 font-medium">Today:</span>
                       <span className="font-bold text-gray-900">
-                        ₹{stats?.revenue.today.toLocaleString()}
+                        ₹{stats?.revenue.today.toLocaleString() ?? "—"}
                       </span>
                     </div>
                     <div className="flex justify-between items-center p-2 bg-blue-50 rounded-lg">
-                      <span className="text-gray-600 font-medium">This Week:</span>
+                      <span className="text-gray-600 font-medium">
+                        This Week:
+                      </span>
                       <span className="font-bold text-blue-600">
-                        ₹{stats?.revenue.thisWeek.toLocaleString()}
+                        ₹{stats?.revenue.thisWeek.toLocaleString() ?? "—"}
                       </span>
                     </div>
                     <div className="flex justify-between items-center p-2 bg-green-50 rounded-lg">
-                      <span className="text-gray-600 font-medium">This Month:</span>
+                      <span className="text-gray-600 font-medium">
+                        This Month:
+                      </span>
                       <span className="font-bold text-green-600">
-                        ₹{stats?.revenue.thisMonth.toLocaleString()}
+                        ₹{stats?.revenue.thisMonth.toLocaleString() ?? "—"}
                       </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Notifications Card */}
-                <div 
+                <div
                   className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl shadow-md border-2 border-yellow-200 p-5 hover:shadow-xl hover:border-[#FF7B1D] transition-all duration-300 cursor-pointer"
                   onClick={() => navigate("/topbar-notifications")}
                 >
@@ -609,9 +626,7 @@ const AdminDashboard = () => {
                       )}
                     </div>
                     <div>
-                      <h3 className="text-gray-800 font-bold">
-                        Notifications
-                      </h3>
+                      <h3 className="text-gray-800 font-bold">Notifications</h3>
                       <p className="text-xs text-gray-600">Stay updated</p>
                     </div>
                   </div>
@@ -636,56 +651,20 @@ const AdminDashboard = () => {
                     </button>
                   </div>
                 </div>
-
-                {/* Tickets Card */}
-                <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-5 hover:shadow-xl hover:border-pink-500 transition-all duration-300 group">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="bg-gradient-to-br from-pink-500 to-pink-600 p-2.5 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
-                      <Headphones className="text-white" size={20} />
-                    </div>
-                    <h3 className="text-gray-700 font-bold">
-                      Support Tickets
-                    </h3>
-                  </div>
-                  <div className="space-y-2.5 text-sm">
-                    <div className="flex justify-between items-center p-2 bg-blue-50 rounded-lg">
-                      <span className="text-gray-600 font-medium">Open:</span>
-                      <span className="bg-blue-500 text-white px-3 py-1 rounded-full font-bold text-xs">
-                        {stats?.tickets.open}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center p-2 bg-orange-50 rounded-lg">
-                      <span className="text-gray-600 font-medium">In Progress:</span>
-                      <span className="bg-orange-500 text-white px-3 py-1 rounded-full font-bold text-xs">
-                        {stats?.tickets.inProgress}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center p-2 bg-red-50 rounded-lg">
-                      <span className="text-gray-600 font-medium">Escalated:</span>
-                      <span className="bg-red-500 text-white px-3 py-1 rounded-full font-bold text-xs">
-                        {stats?.tickets.escalated}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center p-2 bg-green-50 rounded-lg">
-                      <span className="text-gray-600 font-medium">Resolved:</span>
-                      <span className="bg-green-500 text-white px-3 py-1 rounded-full font-bold text-xs">
-                        {stats?.tickets.resolved}
-                      </span>
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {/* Recent Activity Section */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                {/* Recent Orders */}
+                {/* Recent Orders — max 10 */}
                 <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-6 hover:shadow-lg transition-shadow">
                   <div className="flex items-center justify-between mb-6">
                     <div>
                       <h3 className="text-xl font-bold text-gray-900 mb-1">
                         Recent Orders
                       </h3>
-                      <p className="text-sm text-gray-500">Latest customer orders</p>
+                      <p className="text-sm text-gray-500">
+                        Latest 10 customer orders
+                      </p>
                     </div>
                     <button
                       onClick={() => navigate("/orders/all")}
@@ -716,7 +695,10 @@ const AdminDashboard = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                           {recentOrders.map((order) => (
-                            <tr key={order.id} className="hover:bg-orange-50 transition-colors">
+                            <tr
+                              key={order.id}
+                              className="hover:bg-orange-50 transition-colors"
+                            >
                               <td className="px-4 py-4 text-sm font-bold text-[#FF7B1D]">
                                 {order.id}
                               </td>
@@ -749,19 +731,23 @@ const AdminDashboard = () => {
                   ) : (
                     <div className="text-center py-12">
                       <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500 font-medium">No recent orders</p>
+                      <p className="text-gray-500 font-medium">
+                        No recent orders
+                      </p>
                     </div>
                   )}
                 </div>
 
-                {/* Top Vendors */}
+                {/* Top Vendors — max 10 */}
                 <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-6 hover:shadow-lg transition-shadow">
                   <div className="flex items-center justify-between mb-6">
                     <div>
                       <h3 className="text-xl font-bold text-gray-900 mb-1">
                         Top Vendors
                       </h3>
-                      <p className="text-sm text-gray-500">Best performing vendors</p>
+                      <p className="text-sm text-gray-500">
+                        Top 10 performing vendors
+                      </p>
                     </div>
                     <button
                       onClick={() => navigate("/vendor/all")}
@@ -800,7 +786,9 @@ const AdminDashboard = () => {
                             )}
                             {vendor.rating > 0 && (
                               <div className="flex items-center gap-1 justify-end">
-                                <span className="text-yellow-500 text-sm">★</span>
+                                <span className="text-yellow-500 text-sm">
+                                  ★
+                                </span>
                                 <span className="text-xs font-bold text-gray-700">
                                   {vendor.rating}
                                 </span>
@@ -813,12 +801,13 @@ const AdminDashboard = () => {
                   ) : (
                     <div className="text-center py-12">
                       <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500 font-medium">No vendors data available</p>
+                      <p className="text-gray-500 font-medium">
+                        No vendors data available
+                      </p>
                     </div>
                   )}
                 </div>
               </div>
-
             </>
           )}
         </div>

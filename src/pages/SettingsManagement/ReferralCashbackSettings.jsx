@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
-import { Loader2, Save, ToggleLeft, ToggleRight, Users, Gift } from "lucide-react";
+import {
+  Loader2,
+  Save,
+  ToggleLeft,
+  ToggleRight,
+  Users,
+  Gift,
+} from "lucide-react";
 import api from "../../api/api";
 
 const ReferralCashbackSettings = () => {
@@ -40,7 +47,10 @@ const ReferralCashbackSettings = () => {
           userRefereeAmount: response.data.data.userRefereeAmount || 0,
           riderReferrerAmount: response.data.data.riderReferrerAmount || 0,
           riderRefereeAmount: response.data.data.riderRefereeAmount || 0,
-          isActive: response.data.data.isActive !== undefined ? response.data.data.isActive : true,
+          isActive:
+            response.data.data.isActive !== undefined
+              ? response.data.data.isActive
+              : true,
         });
       }
     } catch (error) {
@@ -57,11 +67,17 @@ const ReferralCashbackSettings = () => {
         setCashbackSettings({
           cashbackPercentage: response.data.data.cashbackPercentage || 0,
           minimumOrderAmount: response.data.data.minimumOrderAmount || 0,
-          maximumCashbackPerOrder: response.data.data.maximumCashbackPerOrder || 0,
+          maximumCashbackPerOrder:
+            response.data.data.maximumCashbackPerOrder || 0,
           minimumCashbackToUse: response.data.data.minimumCashbackToUse || 0,
-          maxCashbackUsagePercentage: response.data.data.maxCashbackUsagePercentage || 0,
-          maxCashbackUsageAmount: response.data.data.maxCashbackUsageAmount || 0,
-          isActive: response.data.data.isActive !== undefined ? response.data.data.isActive : true,
+          maxCashbackUsagePercentage:
+            response.data.data.maxCashbackUsagePercentage || 0,
+          maxCashbackUsageAmount:
+            response.data.data.maxCashbackUsageAmount || 0,
+          isActive:
+            response.data.data.isActive !== undefined
+              ? response.data.data.isActive
+              : true,
         });
       }
     } catch (error) {
@@ -100,17 +116,22 @@ const ReferralCashbackSettings = () => {
         return;
       }
 
-      const response = await api.put("/api/admin/referral-settings", referralSettings);
+      const response = await api.put(
+        "/api/admin/referral-settings",
+        referralSettings,
+      );
       if (response.data.success) {
         setSuccessMessage("Referral settings updated successfully");
         setTimeout(() => setSuccessMessage(""), 3000);
       } else {
-        setErrorMessage(response.data.message || "Failed to update referral settings");
+        setErrorMessage(
+          response.data.message || "Failed to update referral settings",
+        );
       }
     } catch (error) {
       console.error("Error updating referral settings:", error);
       setErrorMessage(
-        error.response?.data?.message || "Failed to update referral settings"
+        error.response?.data?.message || "Failed to update referral settings",
       );
     } finally {
       setSaving(false);
@@ -138,7 +159,9 @@ const ReferralCashbackSettings = () => {
         cashbackSettings.maxCashbackUsagePercentage < 0 ||
         cashbackSettings.maxCashbackUsagePercentage > 100
       ) {
-        setErrorMessage("Max cashback usage percentage must be between 0 and 100");
+        setErrorMessage(
+          "Max cashback usage percentage must be between 0 and 100",
+        );
         setSaving(false);
         return;
       }
@@ -154,17 +177,22 @@ const ReferralCashbackSettings = () => {
         return;
       }
 
-      const response = await api.put("/api/admin/cashback-settings", cashbackSettings);
+      const response = await api.put(
+        "/api/admin/cashback-settings",
+        cashbackSettings,
+      );
       if (response.data.success) {
         setSuccessMessage("Cashback settings updated successfully");
         setTimeout(() => setSuccessMessage(""), 3000);
       } else {
-        setErrorMessage(response.data.message || "Failed to update cashback settings");
+        setErrorMessage(
+          response.data.message || "Failed to update cashback settings",
+        );
       }
     } catch (error) {
       console.error("Error updating cashback settings:", error);
       setErrorMessage(
-        error.response?.data?.message || "Failed to update cashback settings"
+        error.response?.data?.message || "Failed to update cashback settings",
       );
     } finally {
       setSaving(false);
@@ -191,7 +219,10 @@ const ReferralCashbackSettings = () => {
       <DashboardLayout>
         <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
           <div className="text-center">
-            <Loader2 className="animate-spin text-[#F26422] mx-auto mb-4" size={40} />
+            <Loader2
+              className="animate-spin text-[#F26422] mx-auto mb-4"
+              size={40}
+            />
             <p className="text-gray-600">Loading settings...</p>
           </div>
         </div>
@@ -201,17 +232,9 @@ const ReferralCashbackSettings = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-gray-0 p-0 ml-6">
         <div className="max-w-5xl mx-auto">
           {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              Settings Management
-            </h1>
-            <p className="text-gray-600">
-              Manage referral and cashback program settings
-            </p>
-          </div>
 
           {/* Success/Error Messages */}
           {successMessage && (
@@ -226,7 +249,7 @@ const ReferralCashbackSettings = () => {
           )}
 
           {/* Tabs */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 mt-8">
             <div className="flex border-b border-gray-200">
               <button
                 onClick={() => {
@@ -286,7 +309,10 @@ const ReferralCashbackSettings = () => {
                       step="0.01"
                       value={referralSettings.userReferrerAmount}
                       onChange={(e) =>
-                        handleReferralChange("userReferrerAmount", e.target.value)
+                        handleReferralChange(
+                          "userReferrerAmount",
+                          e.target.value,
+                        )
                       }
                       className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
                       placeholder="Enter amount"
@@ -307,7 +333,10 @@ const ReferralCashbackSettings = () => {
                       step="0.01"
                       value={referralSettings.userRefereeAmount}
                       onChange={(e) =>
-                        handleReferralChange("userRefereeAmount", e.target.value)
+                        handleReferralChange(
+                          "userRefereeAmount",
+                          e.target.value,
+                        )
                       }
                       className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
                       placeholder="Enter amount"
@@ -328,7 +357,10 @@ const ReferralCashbackSettings = () => {
                       step="0.01"
                       value={referralSettings.riderReferrerAmount}
                       onChange={(e) =>
-                        handleReferralChange("riderReferrerAmount", e.target.value)
+                        handleReferralChange(
+                          "riderReferrerAmount",
+                          e.target.value,
+                        )
                       }
                       className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
                       placeholder="Enter amount"
@@ -349,7 +381,10 @@ const ReferralCashbackSettings = () => {
                       step="0.01"
                       value={referralSettings.riderRefereeAmount}
                       onChange={(e) =>
-                        handleReferralChange("riderRefereeAmount", e.target.value)
+                        handleReferralChange(
+                          "riderRefereeAmount",
+                          e.target.value,
+                        )
                       }
                       className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
                       placeholder="Enter amount"
@@ -368,7 +403,10 @@ const ReferralCashbackSettings = () => {
                     </div>
                     <button
                       onClick={() =>
-                        handleReferralChange("isActive", !referralSettings.isActive)
+                        handleReferralChange(
+                          "isActive",
+                          !referralSettings.isActive,
+                        )
                       }
                       className="flex items-center gap-2"
                     >
@@ -436,7 +474,10 @@ const ReferralCashbackSettings = () => {
                       step="0.01"
                       value={cashbackSettings.cashbackPercentage}
                       onChange={(e) =>
-                        handleCashbackChange("cashbackPercentage", e.target.value)
+                        handleCashbackChange(
+                          "cashbackPercentage",
+                          e.target.value,
+                        )
                       }
                       className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
                       placeholder="Enter percentage (0-100)"
@@ -457,7 +498,10 @@ const ReferralCashbackSettings = () => {
                       step="0.01"
                       value={cashbackSettings.minimumOrderAmount}
                       onChange={(e) =>
-                        handleCashbackChange("minimumOrderAmount", e.target.value)
+                        handleCashbackChange(
+                          "minimumOrderAmount",
+                          e.target.value,
+                        )
                       }
                       className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
                       placeholder="Enter minimum order amount"
@@ -469,7 +513,8 @@ const ReferralCashbackSettings = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Maximum Cashback Per Order (₹)
                       <span className="text-gray-500 ml-1">
-                        - Maximum cashback that can be earned per order (0 = no limit)
+                        - Maximum cashback that can be earned per order (0 = no
+                        limit)
                       </span>
                     </label>
                     <input
@@ -478,7 +523,10 @@ const ReferralCashbackSettings = () => {
                       step="0.01"
                       value={cashbackSettings.maximumCashbackPerOrder}
                       onChange={(e) =>
-                        handleCashbackChange("maximumCashbackPerOrder", e.target.value)
+                        handleCashbackChange(
+                          "maximumCashbackPerOrder",
+                          e.target.value,
+                        )
                       }
                       className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
                       placeholder="Enter maximum cashback (0 for no limit)"
@@ -499,7 +547,10 @@ const ReferralCashbackSettings = () => {
                       step="0.01"
                       value={cashbackSettings.minimumCashbackToUse}
                       onChange={(e) =>
-                        handleCashbackChange("minimumCashbackToUse", e.target.value)
+                        handleCashbackChange(
+                          "minimumCashbackToUse",
+                          e.target.value,
+                        )
                       }
                       className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
                       placeholder="Enter minimum cashback to use"
@@ -511,7 +562,8 @@ const ReferralCashbackSettings = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Max Cashback Usage Percentage (%)
                       <span className="text-gray-500 ml-1">
-                        - Maximum percentage of order amount that can be paid using cashback (0-100)
+                        - Maximum percentage of order amount that can be paid
+                        using cashback (0-100)
                       </span>
                     </label>
                     <input
@@ -521,7 +573,10 @@ const ReferralCashbackSettings = () => {
                       step="0.01"
                       value={cashbackSettings.maxCashbackUsagePercentage}
                       onChange={(e) =>
-                        handleCashbackChange("maxCashbackUsagePercentage", e.target.value)
+                        handleCashbackChange(
+                          "maxCashbackUsagePercentage",
+                          e.target.value,
+                        )
                       }
                       className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
                       placeholder="Enter percentage (0-100)"
@@ -533,7 +588,8 @@ const ReferralCashbackSettings = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Max Cashback Usage Amount (₹)
                       <span className="text-gray-500 ml-1">
-                        - Maximum cashback amount that can be used per order (0 = no limit)
+                        - Maximum cashback amount that can be used per order (0
+                        = no limit)
                       </span>
                     </label>
                     <input
@@ -542,7 +598,10 @@ const ReferralCashbackSettings = () => {
                       step="0.01"
                       value={cashbackSettings.maxCashbackUsageAmount}
                       onChange={(e) =>
-                        handleCashbackChange("maxCashbackUsageAmount", e.target.value)
+                        handleCashbackChange(
+                          "maxCashbackUsageAmount",
+                          e.target.value,
+                        )
                       }
                       className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
                       placeholder="Enter maximum usage amount (0 for no limit)"
@@ -561,7 +620,10 @@ const ReferralCashbackSettings = () => {
                     </div>
                     <button
                       onClick={() =>
-                        handleCashbackChange("isActive", !cashbackSettings.isActive)
+                        handleCashbackChange(
+                          "isActive",
+                          !cashbackSettings.isActive,
+                        )
                       }
                       className="flex items-center gap-2"
                     >

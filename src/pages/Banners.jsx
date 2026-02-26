@@ -3,7 +3,6 @@ import DashboardLayout from "../components/DashboardLayout";
 import { Plus, Pencil, Trash2, X, Loader2 } from "lucide-react";
 import { BASE_URL } from "../api/api";
 
-// ⚠️ CORRECTED API URLs - Updated to match your backend endpoints
 const API_URL = `${BASE_URL}/api/banner`;
 
 const BannerManagement = () => {
@@ -12,6 +11,8 @@ const BannerManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const [formData, setFormData] = useState({
     name: "",
@@ -19,14 +20,11 @@ const BannerManagement = () => {
     imagePreview: null,
   });
 
-  // Helper function to get authorization headers
   const getAuthHeaders = () => {
     const token =
       localStorage.getItem("token") || localStorage.getItem("authToken");
     const headers = {};
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
+    if (token) headers["Authorization"] = `Bearer ${token}`;
     return headers;
   };
 
@@ -40,13 +38,8 @@ const BannerManagement = () => {
         headers: getAuthHeaders(),
       });
       const result = await res.json();
-
-      console.log("API Response:", result);
-
       if (result.success) {
-        // Handle the nested data structure from API
         setBanners(result.data || []);
-        console.log("Banners loaded:", result.data);
       } else {
         alert("Failed to load banners");
       }
@@ -65,22 +58,16 @@ const BannerManagement = () => {
   // ================= OPEN ADD =================
   const handleAddClick = () => {
     setEditingBanner(null);
-    setFormData({
-      name: "",
-      image: null,
-      imagePreview: null,
-    });
+    setFormData({ name: "", image: null, imagePreview: null });
     setIsModalOpen(true);
   };
 
   // ================= OPEN EDIT =================
   const handleEditClick = (banner) => {
-    console.log("Editing banner:", banner);
     setEditingBanner(banner);
     setFormData({
       name: banner.name,
       image: null,
-      // Use the full Cloudinary URL from image.url
       imagePreview: banner.image?.url || banner.image,
     });
     setIsModalOpen(true);
@@ -93,7 +80,6 @@ const BannerManagement = () => {
       alert("Please upload a valid image");
       return;
     }
-
     const reader = new FileReader();
     reader.onloadend = () => {
       setFormData((prev) => ({
@@ -111,7 +97,6 @@ const BannerManagement = () => {
       alert("Banner name is required");
       return;
     }
-
     if (!editingBanner && !formData.image) {
       alert("Please select an image");
       return;
@@ -119,47 +104,34 @@ const BannerManagement = () => {
 
     const data = new FormData();
     data.append("name", formData.name);
-    if (formData.image) {
-      data.append("image", formData.image);
-    }
+    if (formData.image) data.append("image", formData.image);
 
     setSubmitting(true);
     try {
-      let res;
       const headers = getAuthHeaders();
-
-      if (editingBanner) {
-        // PUT request for updating
-        res = await fetch(`${API_URL}/${editingBanner._id}`, {
-          method: "PUT",
-          credentials: "include",
-          headers: headers,
-          body: data,
-        });
-      } else {
-        // POST request for creating
-        res = await fetch(`${API_URL}/create`, {
-          method: "POST",
-          credentials: "include",
-          headers: headers,
-          body: data,
-        });
-      }
+      const res = editingBanner
+        ? await fetch(`${API_URL}/${editingBanner._id}`, {
+            method: "PUT",
+            credentials: "include",
+            headers,
+            body: data,
+          })
+        : await fetch(`${API_URL}/create`, {
+            method: "POST",
+            credentials: "include",
+            headers,
+            body: data,
+          });
 
       const result = await res.json();
-
-      if (!res.ok || !result.success) {
+      if (!res.ok || !result.success)
         throw new Error(result.message || "Failed to save banner");
-      }
 
       setIsModalOpen(false);
       loadBanners();
       alert(result.message || "Banner saved successfully");
     } catch (error) {
-      console.error("Error saving banner:", error);
-      alert(
-        error.message || "Failed to save banner. Check if backend is running.",
-      );
+      alert(error.message || "Failed to save banner.");
     } finally {
       setSubmitting(false);
     }
@@ -168,32 +140,26 @@ const BannerManagement = () => {
   // ================= DELETE =================
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this banner?")) return;
-
     try {
       const res = await fetch(`${API_URL}/${id}`, {
         method: "DELETE",
         credentials: "include",
         headers: getAuthHeaders(),
       });
-
       const result = await res.json();
-
-      if (!res.ok || !result.success) {
+      if (!res.ok || !result.success)
         throw new Error(result.message || "Failed to delete banner");
-      }
-
       loadBanners();
       alert(result.message || "Banner deleted successfully");
     } catch (error) {
-      console.error("Error deleting banner:", error);
-      alert(error.message || "Delete failed. Check if backend is running.");
+      alert(error.message || "Delete failed.");
     }
   };
 
   // ================= UI =================
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-0 p-0 ml-6">
+      <div className="min-h-screen bg-gray-0 p-0 mt-2 ml-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
@@ -215,59 +181,121 @@ const BannerManagement = () => {
             </div>
           )}
 
-          {/* Grid */}
-          {!loading && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {banners.map((banner) => (
-                <div
-                  key={banner._id}
-                  className="bg-white shadow-lg border rounded-lg overflow-hidden hover:shadow-xl transition-shadow"
-                >
-                  <div className="relative h-48 bg-gray-200">
-                    <img
-                      // Use the full Cloudinary URL from image.url
-                      src={banner.image?.url || banner.image}
-                      alt={banner.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        console.error("❌ Image failed to load");
-                        console.error("Image object:", banner.image);
-                        console.error("Full URL attempted:", e.target.src);
-                        e.target.src =
-                          "https://placehold.co/400x200/orange/white?text=Image+Not+Found";
-                      }}
-                      onLoad={(e) =>
-                        console.log("✅ Image loaded:", e.target.src)
-                      }
-                    />
+          {/* ✅ Banner Grid — paginated, 10 per page */}
+          {!loading &&
+            (() => {
+              const indexOfLast = currentPage * itemsPerPage;
+              const indexOfFirst = indexOfLast - itemsPerPage;
+              const currentBanners = banners.slice(indexOfFirst, indexOfLast);
+              const totalPages = Math.ceil(banners.length / itemsPerPage);
+
+              return (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {currentBanners.map((banner) => (
+                      <div
+                        key={banner._id}
+                        className="bg-white shadow-lg border rounded-lg overflow-hidden hover:shadow-xl transition-shadow"
+                      >
+                        <div className="relative h-48 bg-white flex items-center justify-center">
+                          <img
+                            src={banner.image?.url || banner.image}
+                            alt={banner.name}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              e.target.src =
+                                "https://placehold.co/400x200/orange/white?text=Image+Not+Found";
+                            }}
+                          />
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-semibold text-lg mb-1 text-gray-800">
+                            {banner.name}
+                          </h3>
+                          <p className="text-xs text-gray-500 mb-3">
+                            Created:{" "}
+                            {new Date(banner.createdAt).toLocaleDateString()}
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleDelete(banner._id)}
+                              className="flex-1 bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
+                            >
+                              <Trash2 size={16} /> Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
-                  <div className="p-4">
-                    <h3 className="font-semibold text-lg mb-3 text-gray-800">
-                      {banner.name}
-                    </h3>
-                    <p className="text-xs text-gray-500 mb-3">
-                      Created: {new Date(banner.createdAt).toLocaleDateString()}
-                    </p>
-                    <div className="flex gap-2">
-                      {/* <button
-                        onClick={() => handleEditClick(banner)}
-                        className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
-                      >
-                        <Pencil size={16} /> Edit
-                      </button> */}
+                  {/* Pagination — always visible like CreateCategory */}
+                  {banners.length > 0 && (
+                    <div className="flex justify-end items-center gap-6 mt-8">
                       <button
-                        onClick={() => handleDelete(banner._id)}
-                        className="flex-1 bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.max(prev - 1, 1))
+                        }
+                        disabled={currentPage === 1}
+                        className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Trash2 size={16} /> Delete
+                        Back
+                      </button>
+
+                      <div className="flex items-center gap-2 text-sm text-black font-medium">
+                        {(() => {
+                          const pages = [];
+                          const visiblePages = new Set([
+                            1,
+                            2,
+                            totalPages - 1,
+                            totalPages,
+                            currentPage - 1,
+                            currentPage,
+                            currentPage + 1,
+                          ]);
+                          for (let i = 1; i <= totalPages; i++) {
+                            if (visiblePages.has(i)) pages.push(i);
+                            else if (pages[pages.length - 1] !== "...")
+                              pages.push("...");
+                          }
+                          return pages.map((page, idx) =>
+                            page === "..." ? (
+                              <span
+                                key={idx}
+                                className="px-1 text-black select-none"
+                              >
+                                ...
+                              </span>
+                            ) : (
+                              <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                className={`px-1 ${currentPage === page ? "text-orange-600 font-semibold" : ""}`}
+                              >
+                                {page}
+                              </button>
+                            ),
+                          );
+                        })()}
+                      </div>
+
+                      <button
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(prev + 1, totalPages),
+                          )
+                        }
+                        disabled={currentPage === totalPages}
+                        className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
                       </button>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                  )}
+                </>
+              );
+            })()}
 
           {!loading && banners.length === 0 && (
             <div className="text-center py-20">
@@ -333,16 +361,19 @@ const BannerManagement = () => {
                   />
                 </div>
 
+                {/* ✅ Modal preview also shows full image */}
                 {formData.imagePreview && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Preview
                     </label>
-                    <img
-                      src={formData.imagePreview}
-                      className="h-48 w-full object-cover border border-gray-300 rounded-lg"
-                      alt="Preview"
-                    />
+                    <div className="w-full bg-gray-100 rounded-lg flex items-center justify-center">
+                      <img
+                        src={formData.imagePreview}
+                        className="w-full h-auto object-contain rounded-lg border border-gray-300"
+                        alt="Preview"
+                      />
+                    </div>
                   </div>
                 )}
 

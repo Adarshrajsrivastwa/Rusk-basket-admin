@@ -972,7 +972,7 @@
 //     </div>
 //   );
 // }
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Upload, X } from "lucide-react";
 import api from "../api/api";
 
@@ -999,9 +999,9 @@ export default function AddProductPopup({
     productTypeValue: "",
     productTypeUnit: "",
     tags: [],
-    images: [], // New images to upload
-    existingImages: [], // Existing images from backend (for edit mode)
-    vendorId: "", // For admin to select vendor
+    images: [],
+    existingImages: [],
+    vendorId: "",
   });
 
   const [tagInput, setTagInput] = useState("");
@@ -1013,12 +1013,15 @@ export default function AddProductPopup({
   const [error, setError] = useState("");
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [subCategoriesLoading, setSubCategoriesLoading] = useState(false);
-  
-  // Get user role
+
+  // FIX: This ref prevents the category→subCategory and productType→unit
+  // side-effect useEffects from firing during edit initialization, which
+  // was causing those fields to get wiped right after being set.
+  const isInitializingRef = useRef(false);
+
   const userRole = localStorage.getItem("userRole") || "";
   const isAdmin = userRole === "admin";
 
-  // Product type options
   const productTypeOptions = [
     { value: "", label: "Select Type" },
     { value: "weight", label: "Weight" },
@@ -1027,7 +1030,6 @@ export default function AddProductPopup({
     { value: "piece", label: "Piece" },
   ];
 
-  // Product type unit options based on selected type
   const getUnitOptions = () => {
     switch (formData.productType) {
       case "weight":
@@ -1060,15 +1062,38 @@ export default function AddProductPopup({
     }
   };
 
-  // Fetch vendors for admin
+  // ─── Helper: extract a valid 24-char hex ObjectId from any format ──────────
+  const extractId = (id) => {
+    if (!id) return "";
+    if (typeof id === "string") {
+      if (/^[0-9a-fA-F]{24}$/.test(id)) return id;
+    }
+    if (typeof id === "object" && id !== null) {
+      if (id.$oid && /^[0-9a-fA-F]{24}$/.test(id.$oid)) return id.$oid;
+      if (typeof id.toHexString === "function") {
+        try {
+          const h = id.toHexString();
+          if (/^[0-9a-fA-F]{24}$/.test(h)) return h;
+        } catch (_) {}
+      }
+      for (const key of ["_id", "id", "str"]) {
+        if (id[key] && /^[0-9a-fA-F]{24}$/.test(String(id[key])))
+          return String(id[key]);
+      }
+      try {
+        const m = JSON.stringify(id).match(/"([0-9a-fA-F]{24})"/);
+        if (m) return m[1];
+      } catch (_) {}
+    }
+    return "";
+  };
+
   const fetchVendors = async () => {
     if (!isAdmin) return;
     setVendorsLoading(true);
     try {
       const response = await api.get("/api/vendor");
-      if (response.data.success) {
-        setVendors(response.data.data || []);
-      }
+      if (response.data.success) setVendors(response.data.data || []);
     } catch (err) {
       console.error("Error fetching vendors:", err);
     } finally {
@@ -1076,212 +1101,144 @@ export default function AddProductPopup({
     }
   };
 
+  // ─── Main initialization effect ────────────────────────────────────────────
   useEffect(() => {
-    if (isOpen) {
-      fetchCategories();
-      if (isAdmin && !isEditMode) {
-        fetchVendors();
-      }
+    if (!isOpen) return;
 
-      // If editing, populate form with existing data
-      if (isEditMode && editingProduct) {
-        // Extract category and subcategory IDs
-        let categoryId = "";
-        let subCategoryId = "";
+    fetchCategories();
+    if (isAdmin && !isEditMode) fetchVendors();
 
-        // Handle category - with proper normalization for $oid format
-        if (editingProduct.category) {
-          if (typeof editingProduct.category === "object" && editingProduct.category !== null) {
-            // Try multiple ways to extract the ID (including $oid format)
-            categoryId = editingProduct.category.$oid || 
-                        editingProduct.category._id || 
-                        editingProduct.category.id || "";
-            
-            // If still not found, try JSON extraction
-            if (!categoryId || categoryId === '[object Object]') {
-              try {
-                const jsonStr = JSON.stringify(editingProduct.category);
-                const hexMatch = jsonStr.match(/"([0-9a-fA-F]{24})"/);
-                if (hexMatch) {
-                  categoryId = hexMatch[1];
-                }
-              } catch (e) {
-                console.error('Error extracting category ID from object:', e);
-              }
-            }
-          } else {
-            categoryId = String(editingProduct.category);
-            // If it's "[object Object]" string, try to find it from the product data
-            if (categoryId === '[object Object]') {
-              categoryId = '';
-            }
-          }
-        }
+    if (isEditMode && editingProduct) {
+      // Block side-effect useEffects while we initialize
+      isInitializingRef.current = true;
 
-        // Handle subcategory - with proper normalization
-        if (editingProduct.subCategory) {
-          if (typeof editingProduct.subCategory === "object" && editingProduct.subCategory !== null) {
-            // Try multiple ways to extract the ID
-            subCategoryId = editingProduct.subCategory.$oid || 
-                           editingProduct.subCategory._id || 
-                           editingProduct.subCategory.id ||
-                           (editingProduct.subCategory.toString && typeof editingProduct.subCategory.toString === 'function' 
-                             ? editingProduct.subCategory.toString() 
-                             : '');
-            
-            // If toString returns "[object Object]", try other methods
-            if (subCategoryId === '[object Object]' || !subCategoryId) {
-              if (editingProduct.subCategory.toHexString && typeof editingProduct.subCategory.toHexString === 'function') {
-                subCategoryId = editingProduct.subCategory.toHexString();
-              } else {
-                // Try JSON extraction
-                try {
-                  const jsonStr = JSON.stringify(editingProduct.subCategory);
-                  const hexMatch = jsonStr.match(/"([0-9a-fA-F]{24})"/);
-                  if (hexMatch) {
-                    subCategoryId = hexMatch[1];
-                  }
-                } catch (e) {
-                  console.error('Error extracting subCategory ID from object:', e);
-                }
-              }
-            }
-          } else {
-            subCategoryId = String(editingProduct.subCategory);
-            // If it's "[object Object]" string, try to find it from the product data
-            if (subCategoryId === '[object Object]') {
-              subCategoryId = '';
-            }
-          }
-        }
+      const categoryId = extractId(editingProduct.category);
+      const subCategoryId = extractId(editingProduct.subCategory);
 
-        // Ensure both IDs are strings and valid
-        categoryId = typeof categoryId === 'string' ? categoryId : String(categoryId || '');
-        subCategoryId = typeof subCategoryId === 'string' ? subCategoryId : String(subCategoryId || '');
-
-        const newFormData = {
-          productName: editingProduct.name || editingProduct.productName || "",
-          description: editingProduct.description || "",
-          skuHsn: editingProduct.sku || editingProduct.skuHsn || "N/A",
-          inventory: editingProduct.inventory !== undefined && editingProduct.inventory !== null 
-            ? editingProduct.inventory.toString() 
+      const newFormData = {
+        productName: editingProduct.name || editingProduct.productName || "",
+        description: editingProduct.description || "",
+        skuHsn: editingProduct.sku || editingProduct.skuHsn || "N/A",
+        inventory:
+          editingProduct.inventory != null
+            ? String(editingProduct.inventory)
             : "0",
-          category: categoryId,
-          subCategory: subCategoryId,
-          actualPrice: editingProduct.actualPrice !== undefined && editingProduct.actualPrice !== null
-            ? editingProduct.actualPrice.toString()
+        category: categoryId,
+        subCategory: subCategoryId,
+        actualPrice:
+          editingProduct.actualPrice != null
+            ? String(editingProduct.actualPrice)
             : "0",
-          regularPrice: editingProduct.regularPrice !== undefined && editingProduct.regularPrice !== null
-            ? editingProduct.regularPrice.toString()
+        regularPrice:
+          editingProduct.regularPrice != null
+            ? String(editingProduct.regularPrice)
             : "0",
-          salePrice: editingProduct.salePrice !== undefined && editingProduct.salePrice !== null
-            ? editingProduct.salePrice.toString()
+        salePrice:
+          editingProduct.salePrice != null
+            ? String(editingProduct.salePrice)
             : "0",
-          cashback: editingProduct.cashback !== undefined && editingProduct.cashback !== null
-            ? editingProduct.cashback.toString()
+        cashback:
+          editingProduct.cashback != null
+            ? String(editingProduct.cashback)
             : "0",
-          tax: editingProduct.tax !== undefined && editingProduct.tax !== null
-            ? editingProduct.tax.toString()
-            : "0",
-          productType: editingProduct.productType?.type || "",
-          productTypeValue: editingProduct.productType?.value !== undefined && editingProduct.productType?.value !== null
-            ? editingProduct.productType.value.toString()
+        tax: editingProduct.tax != null ? String(editingProduct.tax) : "0",
+        // Set all three productType fields together so the unit is never wiped
+        productType: editingProduct.productType?.type || "",
+        productTypeValue:
+          editingProduct.productType?.value != null
+            ? String(editingProduct.productType.value)
             : "",
-          productTypeUnit: editingProduct.productType?.unit || "",
-          tags: Array.isArray(editingProduct.tags) ? editingProduct.tags : [],
-          images: [], // New images to upload
-          existingImages: Array.isArray(editingProduct.images)
-            ? editingProduct.images
-            : [], // Existing images from backend
-        };
-        
-        // Set form data IMMEDIATELY
-        setFormData(newFormData);
-        
-        // Then fetch subcategories in the background (this will update the dropdown options)
-        if (categoryId && /^[0-9a-fA-F]{24}$/.test(categoryId)) {
-          fetchSubCategories(categoryId).then((loadedSubCategories) => {
-            // Don't update formData here, just update the subCategories list
-            // The subCategory value is already set in newFormData
-          }).catch((err) => {
-            console.error("Error fetching subcategories in edit mode:", err);
+        productTypeUnit: editingProduct.productType?.unit || "",
+        tags: Array.isArray(editingProduct.tags) ? editingProduct.tags : [],
+        images: [],
+        existingImages: Array.isArray(editingProduct.images)
+          ? editingProduct.images
+          : [],
+        vendorId: "",
+      };
+
+      setFormData(newFormData);
+      setTagInput("");
+
+      // Load subcategories for the category, then restore the selected subCategory
+      // and lift the init flag — done inside the promise so timing is correct.
+      if (categoryId && /^[0-9a-fA-F]{24}$/.test(categoryId)) {
+        fetchSubCategories(categoryId)
+          .then(() => {
+            // Restore subCategory in case the category useEffect already cleared it
+            setFormData((prev) => ({ ...prev, subCategory: subCategoryId }));
+          })
+          .catch(() => {})
+          .finally(() => {
+            isInitializingRef.current = false;
           });
-        }
       } else {
-        // Reset form for add mode
-        setFormData({
-          productName: "",
-          description: "",
-          skuHsn: "",
-          inventory: "",
-          category: "",
-          subCategory: "",
-          actualPrice: "",
-          regularPrice: "",
-          salePrice: "",
-          cashback: "",
-          tax: "",
-          productType: "",
-          productTypeValue: "",
-          productTypeUnit: "",
-          tags: [],
-          images: [],
-          existingImages: [],
-          vendorId: "",
-        });
-        setTagInput("");
+        isInitializingRef.current = false;
       }
+    } else {
+      isInitializingRef.current = false;
+      setFormData({
+        productName: "",
+        description: "",
+        skuHsn: "",
+        inventory: "",
+        category: "",
+        subCategory: "",
+        actualPrice: "",
+        regularPrice: "",
+        salePrice: "",
+        cashback: "",
+        tax: "",
+        productType: "",
+        productTypeValue: "",
+        productTypeUnit: "",
+        tags: [],
+        images: [],
+        existingImages: [],
+        vendorId: "",
+      });
+      setTagInput("");
     }
   }, [isOpen, isEditMode, editingProduct]);
 
+  // ─── Category → SubCategory side effect ────────────────────────────────────
+  // Guarded: skipped during edit initialization so it can't wipe subCategory.
   useEffect(() => {
-    // Don't clear subCategory if we're in edit mode and subCategory is already set
-    const isEditModeWithSubCategory = isEditMode && formData.subCategory;
-    
-    if (formData.category) {
-      // Convert category to string if needed
-      const categoryIdStr = typeof formData.category === 'string' 
-        ? formData.category 
-        : (formData.category?.$oid || formData.category?.toString?.() || formData.category?._id || String(formData.category || ''));
-      
-      // Only fetch if it's a valid MongoDB ObjectId
-      if (categoryIdStr && /^[0-9a-fA-F]{24}$/.test(categoryIdStr)) {
-        const currentSubCategory = formData.subCategory; // Preserve current subCategory
-        fetchSubCategories(categoryIdStr).then(() => {
-          // If in edit mode and we had a subCategory, restore it (don't clear it)
-          if (isEditModeWithSubCategory && currentSubCategory && /^[0-9a-fA-F]{24}$/.test(currentSubCategory)) {
-            setFormData((prev) => ({ ...prev, subCategory: currentSubCategory }));
-          }
-        });
-      } else {
-        console.warn("Invalid category ID, not fetching subcategories:", categoryIdStr);
-        setSubCategories([]);
-        // Only clear subCategory if NOT in edit mode
-        if (!isEditMode) {
-          setFormData((prev) => ({ ...prev, subCategory: "" }));
-        }
-      }
-    } else {
+    if (isInitializingRef.current) return;
+
+    if (!formData.category) {
       setSubCategories([]);
-      // Only clear subCategory if NOT in edit mode
-      if (!isEditMode) {
-        setFormData((prev) => ({ ...prev, subCategory: "" }));
-      }
+      setFormData((prev) => ({ ...prev, subCategory: "" }));
+      return;
     }
+
+    const categoryIdStr = extractId(formData.category) || formData.category;
+    if (!/^[0-9a-fA-F]{24}$/.test(categoryIdStr)) {
+      setSubCategories([]);
+      setFormData((prev) => ({ ...prev, subCategory: "" }));
+      return;
+    }
+
+    // Real user selection: clear subCategory and reload subcategories
+    setFormData((prev) => ({ ...prev, subCategory: "" }));
+    fetchSubCategories(categoryIdStr);
   }, [formData.category]);
 
-  // Reset product type unit when product type changes
+  // ─── ProductType → Unit side effect ────────────────────────────────────────
+  // Guarded: during edit init productType is set together with productTypeUnit,
+  // so we must NOT clear the unit here.
   useEffect(() => {
+    if (isInitializingRef.current) return;
     if (formData.productType) {
       setFormData((prev) => ({ ...prev, productTypeUnit: "" }));
     }
   }, [formData.productType]);
 
+  // ─── Data fetchers ──────────────────────────────────────────────────────────
   const fetchCategories = async () => {
     setCategoriesLoading(true);
     try {
       const response = await api.get("/api/category");
-
       if (response.data.success) {
         setCategories(response.data.data);
       } else {
@@ -1298,133 +1255,33 @@ export default function AddProductPopup({
   const fetchSubCategories = async (categoryId) => {
     setSubCategoriesLoading(true);
     try {
-      // Convert categoryId to string if it's an object
-      let categoryIdStr = '';
-      if (typeof categoryId === 'string') {
-        categoryIdStr = categoryId;
-      } else if (typeof categoryId === 'object' && categoryId !== null) {
-        categoryIdStr = categoryId.$oid || categoryId.toString?.() || categoryId._id || categoryId.id || String(categoryId);
-      } else {
-        categoryIdStr = String(categoryId);
-      }
-      
-      // Validate categoryId is a valid MongoDB ObjectId
+      const categoryIdStr =
+        typeof categoryId === "string" ? categoryId : extractId(categoryId);
+
       if (!categoryIdStr || !/^[0-9a-fA-F]{24}$/.test(categoryIdStr)) {
-        console.error("Invalid categoryId for fetching subcategories:", categoryIdStr);
         setSubCategories([]);
-        setSubCategoriesLoading(false);
-        return Promise.resolve([]);
+        return [];
       }
-      
+
       const response = await api.get(
         `/api/subcategory/by-category/${categoryIdStr}`,
       );
 
       if (response.data.success) {
-        const subCategoriesList = response.data.data || [];
-        
-        // Normalize subcategory IDs to strings - STRICT conversion
-        const normalizedSubCategories = subCategoriesList
-          .map((subCat, idx) => {
-            let subCatId = '';
-            
-            if (subCat._id) {
-              if (typeof subCat._id === 'string') {
-                // If it's already "[object Object]", skip this category
-                if (subCat._id === '[object Object]') {
-                  console.warn(`SubCategory ${idx} has "[object Object]" as _id string, skipping`);
-                  return null;
-                }
-                subCatId = subCat._id;
-              } else if (typeof subCat._id === 'object' && subCat._id !== null) {
-                // Try multiple methods to extract the ID
-                // Method 1: BSON format ($oid)
-                if (subCat._id.$oid) {
-                  subCatId = subCat._id.$oid;
-                }
-                // Method 2: toHexString (MongoDB ObjectId method)
-                else if (subCat._id.toHexString && typeof subCat._id.toHexString === 'function') {
-                  try {
-                    subCatId = subCat._id.toHexString();
-                  } catch (e) {
-                    console.warn(`  → toHexString failed:`, e);
-                  }
-                }
-                // Method 3: toString
-                else if (subCat._id.toString && typeof subCat._id.toString === 'function') {
-                  try {
-                    const idStr = subCat._id.toString();
-                    if (idStr !== '[object Object]' && /^[0-9a-fA-F]{24}$/.test(idStr)) {
-                      subCatId = idStr;
-                    }
-                  } catch (e) {
-                    console.warn(`  → toString failed:`, e);
-                  }
-                }
-                // Method 4: valueOf
-                else if (subCat._id.valueOf && typeof subCat._id.valueOf === 'function') {
-                  try {
-                    const value = subCat._id.valueOf();
-                    if (typeof value === 'string' && /^[0-9a-fA-F]{24}$/.test(value)) {
-                      subCatId = value;
-                    }
-                  } catch (e) {
-                    console.warn(`  → valueOf failed:`, e);
-                  }
-                }
-                // Method 5: Direct properties
-                if (!subCatId) {
-                  subCatId = subCat._id._id || subCat._id.id || subCat._id.str || '';
-                }
-                // Method 6: JSON extraction (last resort)
-                if (!subCatId || !/^[0-9a-fA-F]{24}$/.test(subCatId)) {
-                  try {
-                    const jsonStr = JSON.stringify(subCat._id);
-                    // Try multiple patterns
-                    const patterns = [
-                      /"([0-9a-fA-F]{24})"/,  // Standard hex string
-                      /"oid"\s*:\s*"([0-9a-fA-F]{24})"/,  // BSON format
-                      /"id"\s*:\s*"([0-9a-fA-F]{24})"/,   // id field
-                    ];
-                    for (const pattern of patterns) {
-                      const match = jsonStr.match(pattern);
-                      if (match && match[1]) {
-                        subCatId = match[1];
-                        break;
-                      }
-                    }
-                  } catch (e) {
-                    console.error('  → JSON extraction failed:', e);
-                  }
-                }
-              } else {
-                subCatId = String(subCat._id);
-              }
-            } else if (subCat.id) {
-              subCatId = typeof subCat.id === 'string' ? subCat.id : String(subCat.id);
-            }
-            
-            // Validate the ID is a proper MongoDB ObjectId
-            if (!subCatId || subCatId === '[object Object]' || !/^[0-9a-fA-F]{24}$/.test(subCatId)) {
-              console.warn(`SubCategory ${idx} has invalid ID, skipping:`, {
-                name: subCat.name,
-                _id: subCat._id,
-                extractedId: subCatId,
-                _idType: typeof subCat._id
-              });
-              return null;
-            }
-            
+        const normalized = (response.data.data || [])
+          .map((subCat) => {
+            const id = extractId(subCat._id || subCat.id);
+            if (!id) return null;
             return {
               ...subCat,
-              _id: subCatId, // Ensure it's always a string
-              name: subCat.name || subCat.subCategoryName || 'Unnamed'
+              _id: id,
+              name: subCat.name || subCat.subCategoryName || "Unnamed",
             };
           })
-          .filter(Boolean); // Remove null entries
-        
-        setSubCategories(normalizedSubCategories);
-        return normalizedSubCategories; // Return for promise chain
+          .filter(Boolean);
+
+        setSubCategories(normalized);
+        return normalized;
       } else {
         throw new Error(
           response.data.message || "Failed to load subcategories",
@@ -1433,64 +1290,23 @@ export default function AddProductPopup({
     } catch (err) {
       console.error("Error fetching subcategories:", err);
       setError("Failed to load subcategories");
-      return []; // Return empty array on error
+      return [];
     } finally {
       setSubCategoriesLoading(false);
     }
   };
 
+  // ─── Form handlers ──────────────────────────────────────────────────────────
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
-    // Convert category and subCategory IDs to strings if they're objects
     let processedValue = value;
-    if ((name === 'category' || name === 'subCategory') && value) {
-      // If value is already "[object Object]" string, we need to find the actual ID
-      if (value === '[object Object]' || String(value) === '[object Object]') {
-        console.warn(`${name} value is "[object Object]" string, trying to find actual ID from subCategories/categories`);
-        
-        // Try to find the actual ID from the subCategories/categories array
-        if (name === 'subCategory' && subCategories.length > 0) {
-          // If we have subCategories, try to get the selected one
-          // This shouldn't happen if dropdown is working correctly, but handle it anyway
-          const selectedSubCat = subCategories.find(sub => {
-            const subId = typeof sub._id === 'string' ? sub._id : (sub._id?.toString?.() || sub._id?.$oid || '');
-            return subId && subId !== '[object Object]';
-          });
-          if (selectedSubCat) {
-            processedValue = typeof selectedSubCat._id === 'string' ? selectedSubCat._id : (selectedSubCat._id?.toString?.() || selectedSubCat._id?.$oid || '');
-          } else {
-            processedValue = '';
-            console.error('Could not find valid subCategory ID');
-          }
-        } else if (name === 'category' && categories.length > 0) {
-          // Similar for category
-          const selectedCat = categories.find(cat => {
-            const catId = typeof cat._id === 'string' ? cat._id : (cat._id?.toString?.() || cat._id?.$oid || '');
-            return catId && catId !== '[object Object]';
-          });
-          if (selectedCat) {
-            processedValue = typeof selectedCat._id === 'string' ? selectedCat._id : (selectedCat._id?.toString?.() || selectedCat._id?.$oid || '');
-          } else {
-            processedValue = '';
-            console.error('Could not find valid category ID');
-          }
-        } else {
-          processedValue = '';
-        }
-      }
-      // Ensure value is a string, not an object
-      else if (typeof value === 'object' && value !== null) {
-        processedValue = value.$oid || value.toString?.() || value._id || value.id || String(value);
-      } else {
-        processedValue = String(value);
-        // Double check it's not "[object Object]"
-        if (processedValue === '[object Object]') {
-          processedValue = '';
-        }
-      }
+
+    if ((name === "category" || name === "subCategory") && value) {
+      processedValue = /^[0-9a-fA-F]{24}$/.test(value)
+        ? value
+        : extractId(value) || "";
     }
-    
+
     setFormData((prev) => ({ ...prev, [name]: processedValue }));
     if (error) setError("");
   };
@@ -1502,15 +1318,10 @@ export default function AddProductPopup({
 
     if (files.length > 0) {
       const filesToAdd = files.slice(0, remainingSlots);
-      
-      setFormData((prev) => {
-        const newImages = [...prev.images, ...filesToAdd];
-        return {
-          ...prev,
-          images: newImages,
-        };
-      });
-
+      setFormData((prev) => ({
+        ...prev,
+        images: [...prev.images, ...filesToAdd],
+      }));
       if (files.length > remainingSlots) {
         alert(
           `Only ${remainingSlots} more image(s) can be added. Maximum is 6 images.`,
@@ -1533,10 +1344,7 @@ export default function AddProductPopup({
     }));
   };
 
-  // Tag handling functions
-  const handleTagInputChange = (e) => {
-    setTagInput(e.target.value);
-  };
+  const handleTagInputChange = (e) => setTagInput(e.target.value);
 
   const handleTagInputKeyDown = (e) => {
     if (e.key === "Enter" && tagInput.trim()) {
@@ -1547,10 +1355,7 @@ export default function AddProductPopup({
 
   const addTag = (tag) => {
     if (tag && !formData.tags.includes(tag)) {
-      setFormData((prev) => ({
-        ...prev,
-        tags: [...prev.tags, tag],
-      }));
+      setFormData((prev) => ({ ...prev, tags: [...prev.tags, tag] }));
       setTagInput("");
     }
   };
@@ -1566,7 +1371,6 @@ export default function AddProductPopup({
     setLoading(true);
     setError("");
 
-    // Validation
     if (
       !formData.productName ||
       !formData.description ||
@@ -1581,32 +1385,31 @@ export default function AddProductPopup({
       !formData.productTypeValue ||
       !formData.productTypeUnit
     ) {
-      setError("Please fill in all required fields including product type, value, and unit");
+      setError(
+        "Please fill in all required fields including product type, value, and unit",
+      );
       setLoading(false);
       return;
     }
 
-    // Admin must select a vendor when adding product
     if (isAdmin && !isEditMode && !formData.vendorId) {
       setError("Please select a vendor");
       setLoading(false);
       return;
     }
 
-    // Image validation - check total images (existing + new)
-    const totalImages = formData.images.length + formData.existingImages.length;
-    
-    // For add mode, we need at least one new image
-    // For edit mode, we can have existing images OR new images
     if (isEditMode) {
-      // In edit mode, we need either new images OR existing images
-      if (formData.images.length === 0 && formData.existingImages.length === 0) {
-        setError("Please upload at least one product image or keep existing images");
+      if (
+        formData.images.length === 0 &&
+        formData.existingImages.length === 0
+      ) {
+        setError(
+          "Please upload at least one product image or keep existing images",
+        );
         setLoading(false);
         return;
       }
     } else {
-      // In add mode, we need at least one new image
       if (formData.images.length === 0) {
         setError("Please upload at least one product image");
         setLoading(false);
@@ -1617,107 +1420,42 @@ export default function AddProductPopup({
     try {
       const formDataToSend = new FormData();
 
-      // Helper function to convert ID to string (handles ObjectId objects)
-      const convertIdToString = (id) => {
-        if (!id) return '';
-        
-        // If it's already "[object Object]" string, try to find the actual ID from subCategories
-        if (typeof id === 'string' && id === '[object Object]') {
-          console.warn('ID is "[object Object]" string, trying to find actual ID from subCategories array');
-          // Try to get the currently selected subCategory from the dropdown
-          // This is a fallback - the real fix should be in the dropdown value
-          if (subCategories.length > 0 && formData.subCategory === '[object Object]') {
-            // Find the first valid subCategory ID
-            for (const sub of subCategories) {
-              let subId = '';
-              if (sub._id) {
-                if (typeof sub._id === 'string' && sub._id !== '[object Object]') {
-                  subId = sub._id;
-                } else if (typeof sub._id === 'object' && sub._id !== null) {
-                  subId = sub._id.$oid || sub._id.toString?.() || sub._id.toHexString?.() || sub._id._id || sub._id.id || '';
-                }
-              }
-              if (subId && subId !== '[object Object]' && /^[0-9a-fA-F]{24}$/.test(subId)) {
-                return subId;
-              }
-            }
-          }
-          return '';
-        }
-        
-        if (typeof id === 'string') {
-          return id;
-        }
-        
-        if (typeof id === 'object' && id !== null) {
-          // Handle MongoDB ObjectId object
-          if (id.$oid) return id.$oid;
-          if (id.toString && typeof id.toString === 'function') {
-            const idStr = id.toString();
-            if (idStr !== '[object Object]') return idStr;
-          }
-          if (id.toHexString && typeof id.toHexString === 'function') {
-            return id.toHexString();
-          }
-          // Try to extract from object
-          const extracted = id._id || id.id;
-          if (extracted) {
-            return typeof extracted === 'string' ? extracted : String(extracted);
-          }
-          // Last resort - try JSON to extract hex
-          try {
-            const jsonStr = JSON.stringify(id);
-            const hexMatch = jsonStr.match(/"([0-9a-fA-F]{24})"/);
-            if (hexMatch) return hexMatch[1];
-          } catch (e) {
-            console.error('Error extracting ID from object:', e);
-          }
-          return '';
-        }
-        return String(id);
-      };
+      const categoryId = extractId(formData.category) || formData.category;
+      const subCategoryId =
+        extractId(formData.subCategory) || formData.subCategory;
 
-      // Convert category and subCategory IDs to strings BEFORE validation
-      const categoryId = convertIdToString(formData.category);
-      const subCategoryId = convertIdToString(formData.subCategory);
-      
-      // Validate IDs are valid MongoDB ObjectIds
       if (!categoryId || !/^[0-9a-fA-F]{24}$/.test(categoryId)) {
         setError("Please select a valid category");
         setLoading(false);
         return;
       }
-      
+
       if (!subCategoryId || !/^[0-9a-fA-F]{24}$/.test(subCategoryId)) {
         setError("Please select a valid sub-category");
         setLoading(false);
         return;
       }
 
-      // Append all form fields
       formDataToSend.append("productName", formData.productName);
       formDataToSend.append("description", formData.description || "");
       formDataToSend.append("skuHsn", formData.skuHsn || "");
       formDataToSend.append("inventory", formData.inventory || "0");
-      
-      // Append category and subCategory as strings
       formDataToSend.append("category", categoryId);
       formDataToSend.append("subCategory", subCategoryId);
-      
       formDataToSend.append("actualPrice", formData.actualPrice);
       formDataToSend.append("regularPrice", formData.regularPrice);
       formDataToSend.append("salePrice", formData.salePrice);
-      
-      // Cashback must be >= 0, if empty or negative, use 0
-      const cashbackValue = formData.cashback ? parseFloat(formData.cashback) : 0;
+
+      const cashbackValue = formData.cashback
+        ? parseFloat(formData.cashback)
+        : 0;
       if (cashbackValue < 0) {
         setError("Cashback must be >= 0");
         setLoading(false);
         return;
       }
-      formDataToSend.append("cashback", cashbackValue >= 0 ? cashbackValue.toString() : "0");
-      
-      // Tax must be >= 0 and <= 100
+      formDataToSend.append("cashback", cashbackValue.toString());
+
       const taxValue = formData.tax ? parseFloat(formData.tax) : 0;
       if (taxValue < 0 || taxValue > 100) {
         setError("Tax must be between 0 and 100");
@@ -1725,40 +1463,26 @@ export default function AddProductPopup({
         return;
       }
       formDataToSend.append("tax", taxValue.toString());
-      
-      // Add vendorId if admin is adding product
+
       if (isAdmin && !isEditMode && formData.vendorId) {
         formDataToSend.append("vendorId", formData.vendorId);
       }
 
-      // ProductType structure: {type, value, unit}
-      if (formData.productType) {
+      if (formData.productType)
         formDataToSend.append("productType", formData.productType);
-      }
-      if (formData.productTypeValue) {
+      if (formData.productTypeValue)
         formDataToSend.append("productTypeValue", formData.productTypeValue);
-      }
-      if (formData.productTypeUnit) {
+      if (formData.productTypeUnit)
         formDataToSend.append("productTypeUnit", formData.productTypeUnit);
-      }
 
-      // Tags - send as comma-separated string (backend expects string, not array)
       if (formData.tags.length > 0) {
-        const tagsString = formData.tags.join(",");
-        formDataToSend.append("tags", tagsString);
+        formDataToSend.append("tags", formData.tags.join(","));
       }
 
-      // Append NEW images - CRITICAL: Backend expects req.files.images array
-      if (formData.images.length > 0) {
-        formData.images.forEach((image, idx) => {
-          // Ensure it's a File object
-          if (image instanceof File) {
-            formDataToSend.append("images", image);
-          }
-        });
-      }
+      formData.images.forEach((image) => {
+        if (image instanceof File) formDataToSend.append("images", image);
+      });
 
-      // In edit mode, send existing images to keep (only for update, not for create)
       if (isEditMode && formData.existingImages.length > 0) {
         formDataToSend.append(
           "existingImages",
@@ -1766,67 +1490,45 @@ export default function AddProductPopup({
         );
       }
 
-      // Determine API endpoint and method based on mode
-      // Handle $oid format for product ID
-      let productId = editingProduct?.id || editingProduct?._id || editingProduct?.productId;
-      if (productId && typeof productId === 'object') {
-        productId = productId.$oid || productId._id || productId.id || productId.toString();
+      let productId =
+        editingProduct?.id || editingProduct?._id || editingProduct?.productId;
+      if (productId && typeof productId === "object") {
+        productId = extractId(productId) || productId.toString();
       }
       productId = productId?.toString() || productId;
-      
-      // Use admin endpoint for admin users, vendor endpoint for vendors
+
       const apiEndpoint = isEditMode
-        ? (isAdmin ? `/api/admin/products/${productId}` : `/api/product/update/${productId}`)
+        ? isAdmin
+          ? `/api/admin/products/${productId}`
+          : `/api/product/update/${productId}`
         : `/api/product/add`;
 
-      // Make the API request
-      // IMPORTANT: For FormData, we must NOT set Content-Type header
-      // Browser will automatically set it with boundary for multipart/form-data
-      const config = {
-        headers: {
-          'Content-Type': undefined, // Let browser set it automatically for FormData
-        },
-      };
-      
-      let response;
-      if (isEditMode) {
-        response = await api.put(apiEndpoint, formDataToSend, config);
-      } else {
-        response = await api.post(apiEndpoint, formDataToSend, config);
-      }
+      const config = { headers: { "Content-Type": undefined } };
 
-      // Parse response
+      const response = isEditMode
+        ? await api.put(apiEndpoint, formDataToSend, config)
+        : await api.post(apiEndpoint, formDataToSend, config);
+
       const result = response.data;
 
-      // Handle different error status codes
-      if (response.status === 401) {
+      if (response.status === 401)
         throw new Error("Session expired. Please log in again.");
-      } else if (response.status === 403) {
-        throw new Error(
-          "Access denied. You may not have permission to perform this action.",
-        );
-      } else if (response.status === 400) {
+      if (response.status === 403)
+        throw new Error("Access denied. You may not have permission.");
+      if (response.status === 400)
         throw new Error(
           result.message || "Invalid product data. Please check all fields.",
         );
-      }
-
-      if (!result.success) {
+      if (!result.success)
         throw new Error(
           result.message ||
             `Failed to ${isEditMode ? "update" : "add"} product`,
         );
-      }
 
-      // Success
       alert(`Product ${isEditMode ? "updated" : "added"} successfully!`);
 
-      // Call onSuccess callback to refresh product list BEFORE closing
-      if (onSuccess) {
-        onSuccess(result.data);
-      }
+      if (onSuccess) onSuccess(result.data);
 
-      // Reset form
       setFormData({
         productName: "",
         description: "",
@@ -1849,10 +1551,7 @@ export default function AddProductPopup({
       });
       setTagInput("");
 
-      // Close popup after a brief delay to ensure state updates
-      setTimeout(() => {
-        onClose();
-      }, 300);
+      setTimeout(() => onClose(), 300);
     } catch (err) {
       console.error(
         `Error ${isEditMode ? "updating" : "submitting"} product:`,
@@ -1896,7 +1595,7 @@ export default function AddProductPopup({
 
         <div className="overflow-y-auto px-5 py-4">
           <div className="space-y-4 text-[13px]">
-            {/* Product Name and Description with Image Upload */}
+            {/* Product Name, Description, Image Upload */}
             <div className="grid grid-cols-1 lg:grid-cols-[2.2fr,1fr] gap-4">
               <div className="flex flex-col space-y-3">
                 <div>
@@ -1934,7 +1633,6 @@ export default function AddProductPopup({
                 </label>
                 <div className="border border-orange-400 rounded-sm h-[250px] sm:h-[280px] lg:h-[330px] overflow-y-auto p-2">
                   <div className="grid grid-cols-2 gap-2">
-                    {/* Display existing images (from backend) */}
                     {formData.existingImages.map((img, index) => (
                       <div
                         key={`existing-${index}`}
@@ -1957,8 +1655,6 @@ export default function AddProductPopup({
                         </span>
                       </div>
                     ))}
-
-                    {/* Display new images (to be uploaded) */}
                     {formData.images.map((img, index) => (
                       <div
                         key={`new-${index}`}
@@ -1981,8 +1677,6 @@ export default function AddProductPopup({
                         </span>
                       </div>
                     ))}
-
-                    {/* Upload button */}
                     {totalImages < 6 && (
                       <label className="border border-dashed border-orange-400 rounded-sm h-[100px] flex items-center justify-center cursor-pointer hover:border-orange-600">
                         <Upload size={30} className="text-orange-500" />
@@ -2020,7 +1714,10 @@ export default function AddProductPopup({
                     ) : (
                       vendors.map((vendor) => (
                         <option key={vendor._id} value={vendor._id}>
-                          {vendor.vendorName || vendor.storeName || vendor.contactNumber} - {vendor.storeName || "Store"}
+                          {vendor.vendorName ||
+                            vendor.storeName ||
+                            vendor.contactNumber}{" "}
+                          - {vendor.storeName || "Store"}
                         </option>
                       ))
                     )}
@@ -2029,27 +1726,27 @@ export default function AddProductPopup({
               </div>
             )}
 
-            {/* SKU, Inventory, Category, Sub-Category */}
+            {/* HSN, Stock, Category, Sub-Category */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block font-semibold mb-1">SKU/HSN *</label>
+                <label className="block font-semibold mb-1">HSN *</label>
                 <input
                   type="text"
                   name="skuHsn"
                   value={formData.skuHsn}
                   onChange={handleChange}
-                  placeholder="Enter Product HSN/SKU Code"
+                  placeholder="Enter Product HSN Code"
                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
                 />
               </div>
               <div>
-                <label className="block font-semibold mb-1">Inventory *</label>
+                <label className="block font-semibold mb-1">Stock *</label>
                 <input
                   type="number"
                   name="inventory"
                   value={formData.inventory}
                   onChange={handleChange}
-                  placeholder="Enter Inventory"
+                  placeholder="Enter Stock"
                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
                 />
               </div>
@@ -2098,33 +1795,11 @@ export default function AddProductPopup({
                       ? "Loading..."
                       : "Select Sub-Category"}
                   </option>
-                  {subCategories.map((sub, idx) => {
-                    // Ensure _id is a string - multiple fallbacks
-                    let subId = '';
-                    if (sub._id) {
-                      if (typeof sub._id === 'string') {
-                        subId = sub._id;
-                      } else if (typeof sub._id === 'object' && sub._id !== null) {
-                        subId = sub._id.$oid || sub._id.toString?.() || sub._id.toHexString?.() || sub._id._id || sub._id.id || '';
-                      } else {
-                        subId = String(sub._id);
-                      }
-                    } else if (sub.id) {
-                      subId = typeof sub.id === 'string' ? sub.id : String(sub.id);
-                    }
-                    
-                    // Final check - if it's still "[object Object]" or invalid, skip this option
-                    if (!subId || subId === '[object Object]' || !/^[0-9a-fA-F]{24}$/.test(subId)) {
-                      console.warn(`Skipping invalid subCategory option ${idx}:`, { sub, subId, _idType: typeof sub._id });
-                      return null;
-                    }
-                    
-                    return (
-                      <option key={subId} value={subId}>
-                        {sub.name || sub.subCategoryName || `SubCategory ${idx + 1}`}
-                      </option>
-                    );
-                  }).filter(Boolean)}
+                  {subCategories.map((sub) => (
+                    <option key={sub._id} value={sub._id}>
+                      {sub.name}
+                    </option>
+                  ))}
                 </select>
                 {subCategoriesLoading && (
                   <p className="text-xs text-gray-500 mt-1">
@@ -2134,7 +1809,7 @@ export default function AddProductPopup({
               </div>
             </div>
 
-            {/* Pricing Fields with Tax */}
+            {/* Pricing Fields */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
                 <label className="block font-semibold mb-1">
@@ -2197,7 +1872,7 @@ export default function AddProductPopup({
               </div>
             </div>
 
-            {/* Product Type Fields - Dropdowns */}
+            {/* Product Type Fields */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block font-semibold mb-1">Product Type</label>
@@ -2247,7 +1922,7 @@ export default function AddProductPopup({
               </div>
             </div>
 
-            {/* Tags Field - Pill Style */}
+            {/* Tags */}
             <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block font-semibold mb-1 flex items-center gap-2">
@@ -2257,7 +1932,6 @@ export default function AddProductPopup({
                   </span>
                 </label>
                 <div className="border border-orange-400 rounded-sm p-2 min-h-[80px] focus-within:ring-2 focus-within:ring-orange-300">
-                  {/* Tag Pills */}
                   <div className="flex flex-wrap gap-2 mb-2">
                     {formData.tags.map((tag, index) => (
                       <span
@@ -2275,7 +1949,6 @@ export default function AddProductPopup({
                       </span>
                     ))}
                   </div>
-                  {/* Tag Input */}
                   <input
                     type="text"
                     value={tagInput}

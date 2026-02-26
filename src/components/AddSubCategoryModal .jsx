@@ -596,7 +596,40 @@ import React, { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { BASE_URL } from "../api/api";
 
-const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
+// ─── Helper: extract a valid 24-char hex ObjectId from any format ──────────
+const extractId = (id) => {
+  if (!id) return "";
+  if (typeof id === "string") {
+    if (/^[0-9a-fA-F]{24}$/.test(id)) return id;
+  }
+  if (typeof id === "object" && id !== null) {
+    if (id.$oid && /^[0-9a-fA-F]{24}$/.test(id.$oid)) return id.$oid;
+    if (typeof id.toHexString === "function") {
+      try {
+        const h = id.toHexString();
+        if (/^[0-9a-fA-F]{24}$/.test(h)) return h;
+      } catch (_) {}
+    }
+    for (const key of ["_id", "id"]) {
+      if (id[key] && /^[0-9a-fA-F]{24}$/.test(String(id[key])))
+        return String(id[key]);
+    }
+    try {
+      const m = JSON.stringify(id).match(/"([0-9a-fA-F]{24})"/);
+      if (m) return m[1];
+    } catch (_) {}
+  }
+  return "";
+};
+
+const AddSubCategoryModal = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  // ── Edit mode props ──────────────────────────────────────────────────────
+  isEdit = false,
+  subCategoryData = null,
+}) => {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const animationDuration = 300;
@@ -605,13 +638,14 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
   const [categoryId, setCategoryId] = useState("");
   const [subCategoryName, setSubCategoryName] = useState("");
   const [subCategoryDesc, setSubCategoryDesc] = useState("");
-  const [subCategoryImage, setSubCategoryImage] = useState(null);
+  const [subCategoryImage, setSubCategoryImage] = useState(null); // new File
   const [imagePreview, setImagePreview] = useState(null);
+  const [existingImageUrl, setExistingImageUrl] = useState(""); // URL from backend
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(false);
 
-  // Fetch categories from API
+  // ─── Fetch categories ────────────────────────────────────────────────────
   useEffect(() => {
     if (isOpen) {
       fetchCategories();
@@ -621,155 +655,96 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
   const fetchCategories = async () => {
     setLoadingCategories(true);
     try {
-      // Get token from localStorage
       const token =
         localStorage.getItem("token") || localStorage.getItem("authToken");
-
       const headers = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
+      if (token) headers["Authorization"] = `Bearer ${token}`;
 
       const response = await fetch(`${BASE_URL}/api/category`, {
         method: "GET",
         credentials: "include",
-        headers: headers,
+        headers,
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch categories");
-      }
+      if (!response.ok) throw new Error("Failed to fetch categories");
 
       const data = await response.json();
-      console.log("=== CATEGORIES API RESPONSE ===");
-      console.log("Full response:", JSON.stringify(data, null, 2));
-      
-      // Try multiple possible response structures
+
       let categoriesList = [];
-      if (Array.isArray(data)) {
-        categoriesList = data;
-      } else if (data.data && Array.isArray(data.data)) {
+      if (Array.isArray(data)) categoriesList = data;
+      else if (data.data && Array.isArray(data.data))
         categoriesList = data.data;
-      } else if (data.categories && Array.isArray(data.categories)) {
+      else if (data.categories && Array.isArray(data.categories))
         categoriesList = data.categories;
-      }
-      
-      console.log("Extracted categories list:", categoriesList);
-      console.log("Number of categories:", categoriesList.length);
-      
-      if (categoriesList.length === 0) {
-        console.error("No categories found in response!");
-        alert("No categories found. Please create a category first.");
-        setCategories([]);
-        return;
-      }
-      
-      // Normalize categories - convert _id to string and ensure name exists
-      const normalizedCategories = categoriesList.map((cat, index) => {
-        // Handle MongoDB ObjectId object - it might be an object with $oid or just an object
-        let catId = '';
-        
-        if (cat._id) {
-          // If _id is already a string
-          if (typeof cat._id === 'string') {
-            catId = cat._id;
-          }
-          // If _id is an object
-          else if (typeof cat._id === 'object' && cat._id !== null) {
-            // Try BSON format first ($oid)
-            if (cat._id.$oid) {
-              catId = cat._id.$oid;
-            }
-            // Try toString method
-            else if (typeof cat._id.toString === 'function') {
-              try {
-                catId = cat._id.toString();
-                // If toString returns "[object Object]", it's not a proper ObjectId
-                if (catId === '[object Object]') {
-                  // Try accessing common ObjectId properties
-                  catId = cat._id._id || cat._id.id || cat._id.str || cat._id.value;
-                  // If still not found, try to get the hex string from ObjectId
-                  if (!catId && cat._id.toHexString) {
-                    catId = cat._id.toHexString();
-                  }
-                  // Last resort - try JSON and extract
-                  if (!catId || catId === '[object Object]') {
-                    const jsonStr = JSON.stringify(cat._id);
-                    // Try to extract hex string from JSON
-                    const hexMatch = jsonStr.match(/"([0-9a-fA-F]{24})"/);
-                    if (hexMatch) {
-                      catId = hexMatch[1];
-                    } else {
-                      // Use index as fallback
-                      catId = String(index);
-                    }
-                  }
-                }
-              } catch (e) {
-                console.error('Error converting _id:', e);
-                catId = String(index);
-              }
-            }
-            // Try accessing properties directly
-            else {
-              catId = cat._id._id || cat._id.id || cat._id.str || cat._id.value || String(index);
-            }
-          }
-          // Fallback
-          else {
-            catId = String(cat._id);
-          }
-        } else if (cat.id) {
-          if (typeof cat.id === 'string') {
-            catId = cat.id;
-          } else if (typeof cat.id === 'object' && cat.id !== null) {
-            catId = cat.id.$oid || cat.id.toString?.() || cat.id._id || cat.id.id || String(index);
-          } else {
-            catId = String(cat.id);
-          }
-        } else {
-          catId = String(index);
-        }
-        
-        // Ensure catId is a valid string (not "[object Object]")
-        if (catId === '[object Object]' || !catId || catId === 'undefined' || catId === 'null') {
-          console.warn(`Invalid category ID for ${cat.name}, using index:`, catId);
-          catId = String(index);
-        }
-        
-        const catName = cat.name || cat.categoryName || cat.category || `Category ${index + 1}`;
-        
-        console.log(`Category ${index + 1}:`, {
-          name: catName,
-          id: catId,
-          idType: typeof catId,
-          _idRaw: cat._id,
-          _idType: typeof cat._id,
-          _idIsObject: typeof cat._id === 'object',
-          _idKeys: typeof cat._id === 'object' && cat._id !== null ? Object.keys(cat._id) : 'N/A',
-          _idStringified: typeof cat._id === 'object' ? JSON.stringify(cat._id) : 'N/A',
-          _idValueOf: typeof cat._id === 'object' && cat._id !== null && typeof cat._id.valueOf === 'function' ? cat._id.valueOf() : 'N/A'
-        });
-        
-        return {
-          ...cat,
-          _id: catId,
-          name: catName
-        };
+
+      const normalized = categoriesList.map((cat, index) => {
+        const id = extractId(cat._id || cat.id) || String(index);
+        const name =
+          cat.name ||
+          cat.categoryName ||
+          cat.category ||
+          `Category ${index + 1}`;
+        return { ...cat, _id: id, name };
       });
-      
-      console.log("Normalized categories:", normalizedCategories);
-      console.log("Setting categories state with", normalizedCategories.length, "items");
-      
-      setCategories(normalizedCategories);
+
+      setCategories(normalized);
+      return normalized; // return so we can use it in populateForm
     } catch (err) {
       console.error("Error fetching categories:", err);
       alert("Failed to load categories. Please try again.");
+      return [];
     } finally {
       setLoadingCategories(false);
     }
   };
 
+  // ─── Populate form when editing ─────────────────────────────────────────
+  // Runs whenever the modal opens OR the subCategoryData changes.
+  useEffect(() => {
+    if (isOpen && isEdit && subCategoryData) {
+      populateForm(subCategoryData);
+    }
+    if (isOpen && !isEdit) {
+      resetForm();
+    }
+  }, [isOpen, isEdit, subCategoryData]);
+
+  const populateForm = async (data) => {
+    // Name
+    setSubCategoryName(data.name || data.subCategoryName || "");
+
+    // Description
+    setSubCategoryDesc(data.description || data.subCategoryDesc || "");
+
+    // Existing image — keep the URL so we can display it
+    const imgUrl = data.image?.url || data.image || "";
+    setExistingImageUrl(imgUrl);
+    setImagePreview(imgUrl || null);
+    setSubCategoryImage(null); // no new file yet
+
+    // Category ID — the API may return a populated category object or just an ID
+    let catId = "";
+    if (data.category) {
+      if (typeof data.category === "object") {
+        catId = extractId(data.category._id || data.category) || "";
+      } else {
+        catId = extractId(data.category) || data.category;
+      }
+    }
+
+    // If categories haven't loaded yet, wait for them first
+    if (categories.length === 0) {
+      const loaded = await fetchCategories();
+      // After load, verify catId exists in the list
+      const found = loaded.find((c) => c._id === catId);
+      setCategoryId(found ? catId : "");
+    } else {
+      const found = categories.find((c) => c._id === catId);
+      setCategoryId(found ? catId : "");
+    }
+  };
+
+  // ─── Animation mount/unmount ─────────────────────────────────────────────
   useEffect(() => {
     if (isOpen) {
       if (closeTimerRef.current) {
@@ -785,7 +760,6 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
         closeTimerRef.current = null;
       }, animationDuration);
     }
-
     return () => {
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     };
@@ -795,7 +769,6 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
     setVisible(false);
     closeTimerRef.current = setTimeout(() => {
       if (onClose) onClose();
-      // Reset form on close
       resetForm();
       closeTimerRef.current = null;
     }, animationDuration);
@@ -807,49 +780,43 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
     setSubCategoryDesc("");
     setSubCategoryImage(null);
     setImagePreview(null);
+    setExistingImageUrl("");
   };
 
-  // Handle image upload
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        alert("Please upload an image file.");
-        return;
-      }
+    if (!file) return;
 
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert("Image size should be less than 5MB");
-        return;
-      }
-
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-      setSubCategoryImage(file);
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file.");
+      return;
     }
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size should be less than 5MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result);
+    reader.readAsDataURL(file);
+    setSubCategoryImage(file);
+    setExistingImageUrl(""); // new file replaces the existing one
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Basic validation
     if (!categoryId) {
       alert("Please select a category");
       return;
     }
-
     if (!subCategoryName.trim()) {
       alert("Please enter sub-category name");
       return;
     }
 
-    if (!subCategoryImage) {
+    // Image required only when adding; on edit the existing image can be kept
+    if (!isEdit && !subCategoryImage) {
       alert("Please upload an image");
       return;
     }
@@ -857,89 +824,80 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
     setLoading(true);
 
     try {
-      // Validate categoryId is a valid MongoDB ObjectId format (24 hex characters)
-      console.log("Submitting with categoryId:", categoryId, "Type:", typeof categoryId);
-      
-      // Convert to string if it's not already
       const categoryIdStr = String(categoryId).trim();
-      
       if (!/^[0-9a-fA-F]{24}$/.test(categoryIdStr)) {
-        console.error("Invalid categoryId format:", categoryIdStr);
-        alert("Please select a valid category. The selected category ID is not in the correct format.");
+        alert("Please select a valid category.");
         setLoading(false);
         return;
       }
 
-      // Prepare FormData according to API requirements
       const formData = new FormData();
       formData.append("name", subCategoryName.trim());
       formData.append("description", subCategoryDesc.trim() || "");
-      formData.append("category", categoryIdStr); // Send category ID as string
-      formData.append("image", subCategoryImage); // Send file directly
+      formData.append("category", categoryIdStr);
 
-      console.log("Sending form data with:", {
-        name: subCategoryName.trim(),
-        description: subCategoryDesc.trim(),
-        category: categoryIdStr,
-        categoryIdLength: categoryIdStr?.length,
-        image: subCategoryImage?.name,
-        imageSize: subCategoryImage?.size,
-      });
-
-      // Get token from localStorage
-      const token =
-        localStorage.getItem("token") || localStorage.getItem("authToken");
-
-      const headers = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
+      if (subCategoryImage) {
+        // User picked a new image
+        formData.append("image", subCategoryImage);
+      } else if (isEdit && existingImageUrl) {
+        // Keep existing image — send the URL so backend knows to keep it
+        formData.append("existingImage", existingImageUrl);
       }
 
-      // Send POST request with FormData
-      const response = await fetch(
-        `${BASE_URL}/api/subcategory/create`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: headers,
-          body: formData, // Don't set Content-Type header - browser will set it with boundary
-        }
-      );
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
+      const headers = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      // ── Decide endpoint + method ─────────────────────────────────────────
+      let url, method;
+      if (isEdit && subCategoryData) {
+        const subCatId =
+          extractId(subCategoryData._id || subCategoryData.id) ||
+          subCategoryData._id ||
+          subCategoryData.id;
+        url = `${BASE_URL}/api/subcategory/${subCatId}`;
+        method = "PUT";
+      } else {
+        url = `${BASE_URL}/api/subcategory/create`;
+        method = "POST";
+      }
+
+      const response = await fetch(url, {
+        method,
+        credentials: "include",
+        headers, // NO Content-Type — browser sets multipart boundary
+        body: formData,
+      });
 
       const result = await response.json();
 
-      console.log("Response status:", response.status);
-      console.log("Response data:", result);
-
       if (!response.ok || !result.success) {
-        // Handle validation errors from express-validator
-        if (result.errors && Array.isArray(result.errors) && result.errors.length > 0) {
-          const errorMessages = result.errors.map(err => err.msg || err.message).join('\n');
-          console.error("Validation errors:", result.errors);
-          throw new Error(errorMessages || "Validation failed. Please check your input.");
+        if (result.errors?.length) {
+          throw new Error(
+            result.errors.map((e) => e.msg || e.message).join("\n"),
+          );
         }
-        // Handle other error formats
-        const errorMsg = result.message || result.error || "Failed to create sub-category";
-        console.error("API Error:", errorMsg, result);
-        throw new Error(errorMsg);
+        throw new Error(
+          result.message ||
+            result.error ||
+            `Failed to ${isEdit ? "update" : "create"} sub-category`,
+        );
       }
 
-      console.log("✅ Sub Category Created:", result);
-      alert("Sub-category created successfully!");
-
-      // Call success callback with the created data
-      if (onSuccess) {
-        onSuccess(result.data);
-      }
-
-      // Reset form and close
+      alert(`Sub-category ${isEdit ? "updated" : "created"} successfully!`);
+      if (onSuccess) onSuccess(result.data);
       resetForm();
       handleClose();
     } catch (err) {
-      console.error("Error creating sub-category:", err);
-      // Display error message in alert
-      const errorMessage = err.message || "Failed to create sub-category. Please try again.";
-      alert(errorMessage);
+      console.error(
+        `Error ${isEdit ? "updating" : "creating"} sub-category:`,
+        err,
+      );
+      alert(
+        err.message ||
+          `Failed to ${isEdit ? "update" : "create"} sub-category. Please try again.`,
+      );
     } finally {
       setLoading(false);
     }
@@ -949,7 +907,7 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Overlay (white 50% transparent) */}
+      {/* Overlay */}
       <div
         className={`absolute inset-0 bg-white transition-opacity duration-300 ${
           visible ? "opacity-50" : "opacity-0"
@@ -959,15 +917,14 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
 
       {/* Modal */}
       <div
-        className={`relative bg-white rounded-sm shadow-2xl w-[580px] h-auto p-4 transform transition-all duration-300 ease-out
-        ${
+        className={`relative bg-white rounded-sm shadow-2xl w-[580px] h-auto p-4 transform transition-all duration-300 ease-out ${
           visible
             ? "opacity-100 scale-100 translate-y-0"
             : "opacity-0 scale-95 translate-y-5"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close Button */}
+        {/* Close */}
         <button
           onClick={handleClose}
           className="absolute top-3 right-3 text-orange-500 hover:text-orange-600"
@@ -978,12 +935,11 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
 
         {/* Title */}
         <h2 className="text-md font-semibold mb-2 text-black pb-1 inline-block border-b-4 border-orange-400">
-          Add Sub Category
+          {isEdit ? "Edit Sub Category" : "Add Sub Category"}
         </h2>
 
-        {/* Form */}
         <div className="space-y-1.5">
-          {/* Select Category Dropdown */}
+          {/* Category Dropdown */}
           <div>
             <label className="block text-sm font-medium mb-0.5">
               Select Category <span className="text-red-500">*</span>
@@ -991,13 +947,7 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
             <select
               className="w-full border border-orange-400 rounded-sm px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500 bg-white disabled:bg-gray-100"
               value={categoryId}
-              onChange={(e) => {
-                const selectedValue = e.target.value;
-                const selectedCategory = categories.find(cat => cat._id === selectedValue);
-                console.log("Category selected - Value:", selectedValue, "Category:", selectedCategory);
-                console.log("Is valid ObjectId:", /^[0-9a-fA-F]{24}$/.test(selectedValue));
-                setCategoryId(selectedValue);
-              }}
+              onChange={(e) => setCategoryId(e.target.value)}
               required
               disabled={loadingCategories || loading}
             >
@@ -1006,44 +956,16 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
                   ? "Loading categories..."
                   : "-- Choose Category --"}
               </option>
-              {loadingCategories ? (
-                <option value="" disabled>Loading categories...</option>
-              ) : categories.length === 0 ? (
-                <option value="" disabled>No categories available</option>
-              ) : (
-                categories.map((cat, index) => {
-                  // Get the already normalized _id (should be string now)
-                  let catId = cat._id || String(index);
-                  const catName = cat.name || cat.categoryName || `Category ${index + 1}`;
-                  
-                  // Final safety check - ensure it's a string and not "[object Object]"
-                  if (typeof catId === 'object' && catId !== null) {
-                    catId = catId.$oid || catId.toString?.() || catId._id || catId.id || String(index);
-                  }
-                  
-                  // If it's still "[object Object]", use index
-                  if (String(catId) === '[object Object]' || !catId) {
-                    console.warn(`Invalid ID for category ${catName}, using index`);
-                    catId = String(index);
-                  }
-                  
-                  // Ensure it's a string
-                  const finalId = String(catId);
-                  
-                  console.log(`Rendering option ${index + 1}:`, { 
-                    name: catName, 
-                    id: finalId,
-                    idType: typeof finalId,
-                    isValid: /^[0-9a-fA-F]{24}$/.test(finalId) || finalId === String(index)
-                  });
-                  
-                  return (
-                    <option key={finalId || index} value={finalId}>
-                      {catName}
-                    </option>
-                  );
-                })
+              {!loadingCategories && categories.length === 0 && (
+                <option value="" disabled>
+                  No categories available
+                </option>
               )}
+              {categories.map((cat) => (
+                <option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -1064,7 +986,7 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
             />
           </div>
 
-          {/* Sub Category Description */}
+          {/* Description */}
           <div>
             <label className="block text-sm font-medium mb-0.5">
               Sub Category Description
@@ -1076,14 +998,19 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
               onChange={(e) => setSubCategoryDesc(e.target.value)}
               disabled={loading}
               maxLength={500}
-            ></textarea>
+            />
           </div>
 
-          {/* Sub Category Image */}
+          {/* Image Upload */}
           <div>
             <label className="block text-sm font-medium mb-0.5">
               Sub Category Image (100px × 100px){" "}
-              <span className="text-red-500">*</span>
+              {!isEdit && <span className="text-red-500">*</span>}
+              {isEdit && (
+                <span className="text-gray-400 font-normal text-xs ml-1">
+                  (leave blank to keep current)
+                </span>
+              )}
             </label>
             <div className="flex items-start gap-3">
               <input
@@ -1100,17 +1027,32 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
                     alt="Preview"
                     className="w-[100px] h-[100px] object-cover"
                   />
+                  {/* Only allow removing if there's a new file or it's add mode */}
                   <button
                     type="button"
                     onClick={() => {
                       setImagePreview(null);
                       setSubCategoryImage(null);
+                      // In edit mode, revert to existing URL
+                      if (isEdit && existingImageUrl) {
+                        setImagePreview(existingImageUrl);
+                      }
                     }}
                     className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600"
                     disabled={loading}
                   >
                     <X className="w-3 h-3" />
                   </button>
+                  {/* Badge to indicate new vs existing */}
+                  {subCategoryImage ? (
+                    <span className="absolute bottom-1 left-1 bg-green-500 text-white text-[10px] px-1 rounded">
+                      New
+                    </span>
+                  ) : (
+                    <span className="absolute bottom-1 left-1 bg-blue-500 text-white text-[10px] px-1 rounded">
+                      Current
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -1119,7 +1061,7 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
             </p>
           </div>
 
-          {/* Submit Button */}
+          {/* Submit */}
           <div className="flex justify-end mt-1 pt-2">
             <button
               type="button"
@@ -1127,7 +1069,13 @@ const AddSubCategoryModal = ({ isOpen, onClose, onSuccess }) => {
               disabled={loading}
               className="bg-orange-500 text-white px-5 py-1.5 text-sm font-medium hover:bg-orange-600 transition disabled:bg-gray-400 disabled:cursor-not-allowed min-w-[100px]"
             >
-              {loading ? "Submitting..." : "Submit"}
+              {loading
+                ? isEdit
+                  ? "Updating..."
+                  : "Submitting..."
+                : isEdit
+                  ? "Update"
+                  : "Submit"}
             </button>
           </div>
         </div>

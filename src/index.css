@@ -9,7 +9,7 @@ body {
 
 /* Custom orange big scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 12px;
+  width: 7px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -18,7 +18,7 @@ body {
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background-color: #d0cdcc; /* orange */
-  border-radius: 6px;
+  border-radius: 4px;
   border: 2px solid #f3f4f6;
 }
 

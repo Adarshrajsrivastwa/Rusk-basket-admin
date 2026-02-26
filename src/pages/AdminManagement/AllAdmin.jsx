@@ -60,19 +60,22 @@ const AllAdmin = () => {
       }
     } catch (error) {
       console.error("Error fetching admins:", error);
-      
+
       // Check if it's a 404 error
       if (error.response?.status === 404) {
         // Show info message instead of error - user can still add admins
-        console.warn("GET endpoint for listing admins not found. Backend needs to implement: GET /api/admin/list");
+        console.warn(
+          "GET endpoint for listing admins not found. Backend needs to implement: GET /api/admin/list",
+        );
         setEndpointNotFound(true);
         setAdmins([]);
         setError(null); // Clear error so it doesn't show red banner
       } else {
         setEndpointNotFound(false);
-        const errorMessage = error.response?.data?.message || 
-                            error.message || 
-                            "Error fetching admins. Please check your connection and try again.";
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          "Error fetching admins. Please check your connection and try again.";
         setError(errorMessage);
         setAdmins([]);
       }
@@ -147,7 +150,6 @@ const AllAdmin = () => {
     }
   };
 
-
   // Reset form
   const resetForm = () => {
     setFormData({
@@ -163,7 +165,6 @@ const AllAdmin = () => {
     setIsModalOpen(false);
     resetForm();
   };
-
 
   const statusColors = {
     true: "text-green-600 font-semibold", // isActive: true
@@ -226,7 +227,7 @@ const AllAdmin = () => {
     <DashboardLayout>
       {/* Success/Error Messages */}
       {success && (
-        <div className="mb-4 mx-4 bg-green-50 border-l-4 border-green-500 text-green-700 px-6 py-4 rounded-xl flex items-center gap-3 shadow-md">
+        <div className="mb-4 mx-4 bg-green-50 border-l-4 mt-2 border-green-500 text-green-700 px-6 py-4 rounded-xl flex items-center gap-3 shadow-md">
           <Check size={24} />
           <span className="font-medium">{success}</span>
         </div>
@@ -235,13 +236,19 @@ const AllAdmin = () => {
         <div className="mb-4 mx-4 bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800 px-6 py-4 rounded-xl flex items-start gap-3 shadow-md">
           <AlertCircle size={24} className="mt-0.5 flex-shrink-0" />
           <div>
-            <p className="font-semibold mb-1">⚠️ Admin List Endpoint Not Found</p>
+            <p className="font-semibold mb-1">
+              ⚠️ Admin List Endpoint Not Found
+            </p>
             <p className="text-sm">
-              The GET endpoint for listing admins is not available on the backend. 
-              Please create: <code className="bg-yellow-100 px-1 rounded">GET /api/admin/list</code>
+              The GET endpoint for listing admins is not available on the
+              backend. Please create:{" "}
+              <code className="bg-yellow-100 px-1 rounded">
+                GET /api/admin/list
+              </code>
             </p>
             <p className="text-sm mt-1 font-medium">
-              ✅ You can still add new admins using the "Add Admin" button above.
+              ✅ You can still add new admins using the "Add Admin" button
+              above.
             </p>
           </div>
         </div>
@@ -254,7 +261,7 @@ const AllAdmin = () => {
       )}
 
       {/* Top Bar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-0 mb-2">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-2 mb-2">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
           {/* Tabs */}
           <div className="flex gap-4 items-center overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0">
@@ -300,8 +307,7 @@ const AllAdmin = () => {
             onClick={() => setIsModalOpen(true)}
             className="bg-black text-white w-52 sm:w-60 px-4 sm:px-5 py-2 rounded-sm shadow hover:bg-orange-600 text-xs sm:text-sm flex items-center justify-center whitespace-nowrap transition-colors gap-2"
           >
-            <UserPlus size={18} />
-            + Add Admin
+            <UserPlus size={18} />+ Add Admin
           </button>
         </div>
       </div>
@@ -491,7 +497,6 @@ const AllAdmin = () => {
           </div>
         </div>
       )}
-
     </DashboardLayout>
   );
 };

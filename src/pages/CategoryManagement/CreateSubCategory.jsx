@@ -500,7 +500,7 @@ const CreateSubCategory = () => {
     return () => {
       window.removeEventListener(
         "subcategoryCreated",
-        handleSubCategoryCreated
+        handleSubCategoryCreated,
       );
     };
   }, []);
@@ -523,14 +523,11 @@ const CreateSubCategory = () => {
           headers["Authorization"] = `Bearer ${token}`;
         }
 
-        const response = await fetch(
-          `${BASE_URL}/api/subcategory/${id}`,
-          {
-            method: "DELETE",
-            credentials: "include",
-            headers: headers,
-          }
-        );
+        const response = await fetch(`${BASE_URL}/api/subcategory/${id}`, {
+          method: "DELETE",
+          credentials: "include",
+          headers: headers,
+        });
 
         const result = await response.json();
 
@@ -568,14 +565,11 @@ const CreateSubCategory = () => {
       }
 
       // Fetch the full subcategory details
-      const response = await fetch(
-        `${BASE_URL}/api/subcategory/${item.id}`,
-        {
-          method: "GET",
-          credentials: "include",
-          headers: headers,
-        }
-      );
+      const response = await fetch(`${BASE_URL}/api/subcategory/${item.id}`, {
+        method: "GET",
+        credentials: "include",
+        headers: headers,
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch sub-category details");
@@ -613,7 +607,7 @@ const CreateSubCategory = () => {
       [cat.subCategory, cat.category, cat.id, cat.products]
         .join(" ")
         .toLowerCase()
-        .includes(searchQuery.toLowerCase())
+        .includes(searchQuery.toLowerCase()),
     );
 
   // Pagination
@@ -621,7 +615,7 @@ const CreateSubCategory = () => {
   const indexOfFirst = indexOfLast - itemsPerPage;
   const currentSubCategories = filteredSubCategories.slice(
     indexOfFirst,
-    indexOfLast
+    indexOfLast,
   );
   const totalPages = Math.ceil(filteredSubCategories.length / itemsPerPage);
 
@@ -666,7 +660,7 @@ const CreateSubCategory = () => {
   return (
     <DashboardLayout>
       {/* Top Bar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-0 mb-2">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-2 mb-2">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
           {/* Tabs */}
           <div className="flex gap-4 items-center overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0">
@@ -835,7 +829,7 @@ const CreateSubCategory = () => {
                   >
                     {page}
                   </button>
-                )
+                ),
               );
             })()}
           </div>

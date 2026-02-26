@@ -1126,7 +1126,13 @@ export const AddExtraItemModal = ({
       const result = await response.json();
 
       if (result.success && result.data && Array.isArray(result.data)) {
-        const transformedProducts = result.data.map((product) => ({
+        // Filter only approved products
+        const approvedProducts = result.data.filter((product) => {
+          const approvalStatus = product.approvalStatus?.toLowerCase() || "";
+          return approvalStatus === "approved";
+        });
+
+        const transformedProducts = approvedProducts.map((product) => ({
           _id: product._id,
           productId: product._id,
           id: product._id,
@@ -1136,6 +1142,7 @@ export const AddExtraItemModal = ({
           price: product.salePrice || product.regularPrice || 0,
           thumbnail: product.thumbnail?.url || product.images?.[0]?.url || null,
           inventory: product.inventory || 0,
+          approvalStatus: product.approvalStatus || "pending",
         }));
 
         setProducts(transformedProducts);
@@ -1174,24 +1181,11 @@ export const AddExtraItemModal = ({
     }
   });
 
-  // Handle product selection
-  const handleProductSelect = (productId) => {
-    setSelectedProducts((prev) => {
-      const newSelected = { ...prev };
-      if (newSelected[productId]) {
-        delete newSelected[productId];
-      } else {
-        newSelected[productId] = 1; // Default quantity 1
-      }
-      return newSelected;
-    });
-  };
-
-  // Handle quantity change
+  // Handle quantity change - default quantity is 0
   const handleQuantityChange = (productId, quantity, e) => {
     e?.stopPropagation();
-    const qty = parseInt(quantity) || 1;
-    if (qty < 1) return;
+    const qty = parseInt(quantity) || 0;
+    if (qty < 0) return;
 
     setSelectedProducts((prev) => ({
       ...prev,
@@ -1199,11 +1193,37 @@ export const AddExtraItemModal = ({
     }));
   };
 
-  // Handle submit - call API with all selected items
+  // Handle increment quantity
+  const handleIncrement = (productId, e) => {
+    e?.stopPropagation();
+    setSelectedProducts((prev) => ({
+      ...prev,
+      [productId]: (prev[productId] || 0) + 1,
+    }));
+  };
+
+  // Handle decrement quantity
+  const handleDecrement = (productId, e) => {
+    e?.stopPropagation();
+    setSelectedProducts((prev) => {
+      const currentQty = prev[productId] || 0;
+      if (currentQty <= 0) return prev;
+      return {
+        ...prev,
+        [productId]: currentQty - 1,
+      };
+    });
+  };
+
+  // Handle submit - call API with all items that have quantity > 0
   const handleSubmit = async () => {
-    const selectedItems = Object.keys(selectedProducts);
-    if (selectedItems.length === 0) {
-      alert("⚠️ Please select at least one product!");
+    // Filter items with quantity > 0
+    const itemsToAdd = Object.keys(selectedProducts).filter(
+      (productId) => selectedProducts[productId] > 0
+    );
+
+    if (itemsToAdd.length === 0) {
+      alert("⚠️ Please add at least one product with quantity greater than 0!");
       return;
     }
 
@@ -1244,16 +1264,50 @@ export const AddExtraItemModal = ({
       const orderResult = await orderResponse.json();
       const mongoOrderId = orderResult.data?._id || orderId;
 
-      const items = selectedItems.map((productId) => ({
-        productId: productId,
-        quantity: selectedProducts[productId],
-      }));
+      if (!mongoOrderId) {
+        throw new Error("Order ID not found. Please refresh the page and try again.");
+      }
+
+      // Create items array with only productId and quantity (no sku)
+      // Ensure quantity is a number, not a string
+      const items = itemsToAdd
+        .map((productId) => {
+          const quantity = Number(selectedProducts[productId]);
+          
+          // Validate productId
+          if (!productId || typeof productId !== 'string' || productId.length < 10) {
+            console.error("Invalid productId:", productId);
+            return null;
+          }
+          
+          // Validate quantity (must be > 0)
+          if (isNaN(quantity) || quantity <= 0) {
+            console.error("Invalid quantity for productId:", productId, "quantity:", quantity);
+            return null;
+          }
+          
+          return {
+            productId: productId,
+            quantity: quantity,
+          };
+        })
+        .filter(item => item !== null); // Remove any invalid items
+
+      if (items.length === 0) {
+        throw new Error("No valid items to add. Please check product selection.");
+      }
 
       const requestBody = {
         items: items,
       };
 
+      // Log the request body to verify format
+      console.log("📤 API Request Body:", JSON.stringify(requestBody, null, 2));
+
       const apiUrl = `${BASE_URL}/api/checkout/vendor/order/${mongoOrderId}/items`;
+
+      console.log("📡 API URL:", apiUrl);
+      console.log("📤 Request Body:", JSON.stringify(requestBody, null, 2));
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -1265,18 +1319,29 @@ export const AddExtraItemModal = ({
         body: JSON.stringify(requestBody),
       });
 
+      console.log("📥 Response Status:", response.status);
+      console.log("📥 Response OK:", response.ok);
+
       const result = await response.json();
+      console.log("📥 Response Data:", JSON.stringify(result, null, 2));
 
       if (!response.ok || !result.success) {
-        throw new Error(result.message || `Failed to add items: ${response.status}`);
+        const errorMessage = result.message || result.error || `Failed to add items: ${response.status}`;
+        console.error("❌ API Error Details:", {
+          status: response.status,
+          statusText: response.statusText,
+          result: result,
+          message: errorMessage,
+        });
+        throw new Error(errorMessage);
       }
 
       alert(
-        `✅ Items Added Successfully!\n\n${selectedItems.length} product(s) added to the order.`,
+        `✅ Items Added Successfully!\n\n${itemsToAdd.length} product(s) added to the order.`,
       );
 
       // Call onAddItem callback for each item (for local state update)
-      selectedItems.forEach((productId) => {
+      itemsToAdd.forEach((productId) => {
         const product = products.find((p) => p.productId === productId);
         if (product) {
           onAddItem(product, selectedProducts[productId]);
@@ -1398,15 +1463,14 @@ export const AddExtraItemModal = ({
               </div>
             ) : (
               filteredProducts.map((product) => {
-                const isSelected = !!selectedProducts[product.productId];
-                const quantity = selectedProducts[product.productId] || 1;
+                const quantity = selectedProducts[product.productId] || 0;
+                const hasQuantity = quantity > 0;
 
                 return (
                   <div
                     key={product.productId}
-                    onClick={() => handleProductSelect(product.productId)}
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                      isSelected
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      hasQuantity
                         ? "border-purple-500 bg-purple-50 shadow-lg"
                         : "border-gray-200 hover:border-purple-300 hover:shadow-md"
                     }`}
@@ -1431,8 +1495,10 @@ export const AddExtraItemModal = ({
                           <h4 className="text-lg font-bold text-gray-900 truncate">
                             {product.name}
                           </h4>
-                          {isSelected && (
-                            <CheckCircle className="text-purple-600 flex-shrink-0" size={24} />
+                          {hasQuantity && (
+                            <span className="px-2 py-1 bg-purple-600 text-white text-xs font-bold rounded">
+                              Qty: {quantity}
+                            </span>
                           )}
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-sm">
@@ -1454,54 +1520,40 @@ export const AddExtraItemModal = ({
                           </div>
                         </div>
 
-                        {/* Quantity Input (only if selected) */}
-                        {isSelected && (
-                          <div className="mt-3 flex items-center gap-2">
-                            <label className="text-sm font-semibold text-purple-900">
-                              Quantity:
-                            </label>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={(e) =>
-                                  handleQuantityChange(
-                                    product.productId,
-                                    quantity - 1,
-                                    e,
-                                  )
-                                }
-                                className="w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded flex items-center justify-center font-bold transition-all"
-                              >
-                                −
-                              </button>
-                              <input
-                                type="number"
-                                min="1"
-                                value={quantity}
-                                onChange={(e) =>
-                                  handleQuantityChange(
-                                    product.productId,
-                                    e.target.value,
-                                    e,
-                                  )
-                                }
-                                onClick={(e) => e.stopPropagation()}
-                                className="w-16 px-2 py-1 border-2 border-purple-300 rounded text-center text-sm font-semibold focus:border-purple-500 focus:outline-none"
-                              />
-                              <button
-                                onClick={(e) =>
-                                  handleQuantityChange(
-                                    product.productId,
-                                    quantity + 1,
-                                    e,
-                                  )
-                                }
-                                className="w-8 h-8 bg-green-500 hover:bg-green-600 text-white rounded flex items-center justify-center font-bold transition-all"
-                              >
-                                +
-                              </button>
-                            </div>
+                        {/* Quantity Input - Always visible for all products */}
+                        <div className="mt-3 flex items-center gap-2">
+                          <label className="text-sm font-semibold text-purple-900">
+                            Quantity:
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => handleDecrement(product.productId, e)}
+                              disabled={quantity <= 0}
+                              className="w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded flex items-center justify-center font-bold transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            >
+                              −
+                            </button>
+                            <input
+                              type="number"
+                              min="0"
+                              value={quantity}
+                              onChange={(e) =>
+                                handleQuantityChange(
+                                  product.productId,
+                                  e.target.value,
+                                  e,
+                                )
+                              }
+                              className="w-16 px-2 py-1 border-2 border-purple-300 rounded text-center text-sm font-semibold focus:border-purple-500 focus:outline-none"
+                            />
+                            <button
+                              onClick={(e) => handleIncrement(product.productId, e)}
+                              className="w-8 h-8 bg-green-500 hover:bg-green-600 text-white rounded flex items-center justify-center font-bold transition-all"
+                            >
+                              +
+                            </button>
                           </div>
-                        )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1511,34 +1563,43 @@ export const AddExtraItemModal = ({
           </div>
         )}
 
-        {Object.keys(selectedProducts).length > 0 && (
+        {Object.keys(selectedProducts).filter(
+          (productId) => selectedProducts[productId] > 0
+        ).length > 0 && (
           <div className="bg-purple-50 border-2 border-purple-500 p-4 rounded-lg mb-4">
             <h4 className="font-bold text-purple-900 mb-2">
-              Selected Items: {Object.keys(selectedProducts).length}
+              Items to Add:{" "}
+              {
+                Object.keys(selectedProducts).filter(
+                  (productId) => selectedProducts[productId] > 0
+                ).length
+              }
             </h4>
             <div className="space-y-2 text-sm">
-              {Object.keys(selectedProducts).map((productId) => {
-                const product = products.find((p) => p.productId === productId);
-                return product ? (
-                  <div
-                    key={productId}
-                    className="flex items-center justify-between text-gray-700"
-                  >
-                    <span>
-                      {product.name} (Qty: {selectedProducts[productId]})
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleProductSelect(productId);
-                      }}
-                      className="text-red-600 hover:text-red-700 font-bold"
+              {Object.keys(selectedProducts)
+                .filter((productId) => selectedProducts[productId] > 0)
+                .map((productId) => {
+                  const product = products.find((p) => p.productId === productId);
+                  return product ? (
+                    <div
+                      key={productId}
+                      className="flex items-center justify-between text-gray-700"
                     >
-                      Remove
-                    </button>
-                  </div>
-                ) : null;
-              })}
+                      <span>
+                        {product.name} (Qty: {selectedProducts[productId]})
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleQuantityChange(productId, 0, e);
+                        }}
+                        className="text-red-600 hover:text-red-700 font-bold"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : null;
+                })}
             </div>
           </div>
         )}
@@ -1553,9 +1614,15 @@ export const AddExtraItemModal = ({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={Object.keys(selectedProducts).length === 0 || submitting}
+            disabled={
+              Object.keys(selectedProducts).filter(
+                (productId) => selectedProducts[productId] > 0
+              ).length === 0 || submitting
+            }
             className={`flex-1 ${
-              Object.keys(selectedProducts).length === 0 || submitting
+              Object.keys(selectedProducts).filter(
+                (productId) => selectedProducts[productId] > 0
+              ).length === 0 || submitting
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-purple-600 hover:bg-purple-700"
             } text-white px-4 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2`}
@@ -1568,7 +1635,13 @@ export const AddExtraItemModal = ({
             ) : (
               <>
                 <Plus size={20} />
-                Submit ({Object.keys(selectedProducts).length})
+                Add Items (
+                {
+                  Object.keys(selectedProducts).filter(
+                    (productId) => selectedProducts[productId] > 0
+                  ).length
+                }
+                )
               </>
             )}
           </button>

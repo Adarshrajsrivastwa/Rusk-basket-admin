@@ -1654,6 +1654,15 @@ const BagQRScan = () => {
   // Calculate distance and time using lat/long
   useEffect(() => {
     if (isDeliveryAmountModalOpen && orderData) {
+      console.log("========================================");
+      console.log("📍 CALCULATING DISTANCE AND TIME");
+      console.log("========================================");
+      console.log("Order Data:", orderData);
+      
+      // Set initial loading state
+      setDistance("Calculating...");
+      setExpectedTime("Calculating...");
+      
       try {
         // Get vendor/store latitude and longitude
         let vendorLat = null;
@@ -1663,6 +1672,12 @@ const BagQRScan = () => {
           const storeAddr = orderData.items[0].vendor.storeAddress;
           vendorLat = parseFloat(storeAddr.latitude || storeAddr.lat);
           vendorLng = parseFloat(storeAddr.longitude || storeAddr.lng || storeAddr.lon);
+          console.log("Vendor coordinates:", { vendorLat, vendorLng });
+        } else if (orderData.vendor?.storeAddress) {
+          const storeAddr = orderData.vendor.storeAddress;
+          vendorLat = parseFloat(storeAddr.latitude || storeAddr.lat);
+          vendorLng = parseFloat(storeAddr.longitude || storeAddr.lng || storeAddr.lon);
+          console.log("Vendor coordinates (alt path):", { vendorLat, vendorLng });
         }
         
         // Get shipping address latitude and longitude
@@ -1672,12 +1687,25 @@ const BagQRScan = () => {
         if (orderData.shippingAddress) {
           shippingLat = parseFloat(orderData.shippingAddress.latitude || orderData.shippingAddress.lat);
           shippingLng = parseFloat(orderData.shippingAddress.longitude || orderData.shippingAddress.lng || orderData.shippingAddress.lon);
+          console.log("Shipping coordinates:", { shippingLat, shippingLng });
+        } else if (orderData.deliveryAddress) {
+          shippingLat = parseFloat(orderData.deliveryAddress.latitude || orderData.deliveryAddress.lat);
+          shippingLng = parseFloat(orderData.deliveryAddress.longitude || orderData.deliveryAddress.lng || orderData.deliveryAddress.lon);
+          console.log("Delivery coordinates (alt path):", { shippingLat, shippingLng });
         }
 
         // Check if we have valid coordinates
-        if (!vendorLat || !vendorLng || !shippingLat || !shippingLng || 
-            isNaN(vendorLat) || isNaN(vendorLng) || isNaN(shippingLat) || isNaN(shippingLng)) {
-          console.error("Latitude/Longitude not available or invalid in order data");
+        const hasValidVendorCoords = vendorLat && vendorLng && !isNaN(vendorLat) && !isNaN(vendorLng);
+        const hasValidShippingCoords = shippingLat && shippingLng && !isNaN(shippingLat) && !isNaN(shippingLng);
+        
+        if (!hasValidVendorCoords || !hasValidShippingCoords) {
+          const missingParts = [];
+          if (!hasValidVendorCoords) missingParts.push("vendor coordinates");
+          if (!hasValidShippingCoords) missingParts.push("shipping coordinates");
+          
+          console.error(`❌ Latitude/Longitude not available or invalid: Missing ${missingParts.join(" and ")}`);
+          console.error("Vendor:", { vendorLat, vendorLng });
+          console.error("Shipping:", { shippingLat, shippingLng });
           setDistance("N/A");
           setExpectedTime("N/A");
           return;
@@ -1690,16 +1718,21 @@ const BagQRScan = () => {
           shippingLat,
           shippingLng
         );
+        console.log("Calculated distance (km):", distanceInKm);
 
         // Format and set distance
         const formattedDistance = formatDistance(distanceInKm);
         setDistance(formattedDistance);
+        console.log("Formatted distance:", formattedDistance);
 
         // Calculate and set estimated time
         const estimatedTime = calculateEstimatedTime(distanceInKm);
         setExpectedTime(estimatedTime);
+        console.log("Estimated time:", estimatedTime);
+        console.log("✅ Distance and time calculated successfully");
+        console.log("========================================");
       } catch (error) {
-        console.error("Error calculating distance and time:", error);
+        console.error("❌ Error calculating distance and time:", error);
         setDistance("N/A");
         setExpectedTime("N/A");
       }

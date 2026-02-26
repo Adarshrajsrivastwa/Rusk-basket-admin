@@ -23,29 +23,22 @@ const PendingProduct = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [processingId, setProcessingId] = useState(null);
 
-  // Modal states (same as AllProduct)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
   const navigate = useNavigate();
   const itemsPerPage = 10;
-
   const canvasRef = useRef(null);
 
-  // Fetch Pending Products
   const fetchPendingProducts = async (page = 1) => {
     setLoading(true);
     try {
       const response = await api.get(`/api/product/pending`, {
-        params: {
-          page: page,
-          limit: itemsPerPage,
-        },
+        params: { page, limit: itemsPerPage },
       });
 
       if (response.data.success) {
-        // Transform products to include productNumber
         const transformedProducts = response.data.data.map((product) => ({
           ...product,
           productId: product.productNumber || product._id,
@@ -70,95 +63,69 @@ const PendingProduct = () => {
     }
   };
 
-  // Fetch products on component mount and page change
   useEffect(() => {
     fetchPendingProducts(currentPage);
   }, [currentPage]);
 
-  // Approve Product Function
   const handleApprove = async (productId) => {
-    if (!window.confirm("Are you sure you want to approve this product?")) {
+    if (!window.confirm("Are you sure you want to approve this product?"))
       return;
-    }
-
     setProcessingId(productId);
-
     try {
       const response = await api.put(`/api/product/approve/${productId}`, {});
-
       if (response.data.success) {
         alert("Product approved successfully!");
-        // Refresh the product list
         fetchPendingProducts(currentPage);
       }
     } catch (error) {
       console.error("Error approving product:", error);
-      if (error.response?.status === 401) {
-        alert("Unauthorized. Please login again.");
-      } else {
-        alert(
-          error.response?.data?.message ||
-            "Failed to approve product. Please try again.",
-        );
-      }
+      alert(
+        error.response?.data?.message ||
+          "Failed to approve product. Please try again.",
+      );
     } finally {
       setProcessingId(null);
     }
   };
 
-  // Reject Product Function
   const handleReject = async (productId) => {
     const reason = prompt("Please provide a reason for rejection (optional):");
-
-    if (reason === null) return; // User cancelled
-
+    if (reason === null) return;
     setProcessingId(productId);
-
     try {
       const response = await api.put(`/api/product/reject/${productId}`, {
         rejectionReason: reason || "No reason provided",
       });
-
       if (response.data.success) {
         alert("Product rejected successfully!");
-        // Refresh the product list
         fetchPendingProducts(currentPage);
       }
     } catch (error) {
       console.error("Error rejecting product:", error);
-      if (error.response?.status === 401) {
-        alert("Unauthorized. Please login again.");
-      } else {
-        alert(
-          error.response?.data?.message ||
-            "Failed to reject product. Please try again.",
-        );
-      }
+      alert(
+        error.response?.data?.message ||
+          "Failed to reject product. Please try again.",
+      );
     } finally {
       setProcessingId(null);
     }
   };
 
-  // 🟢 Handle Edit Product (same as AllProduct)
   const handleEdit = async (productId) => {
     try {
-      // Find product from current list
       let product = products.find(
         (p) => p._id === productId || p.id === productId,
       );
 
       if (!product) {
-        // If product not in current list, fetch it from API
         const response = await api.get(`/api/admin/products/${productId}`);
         if (response.data.success) {
           product = response.data.data;
         } else {
-          // Try general product endpoint as fallback
           try {
             const fallbackResponse = await api.get(`/api/product/${productId}`);
-            if (fallbackResponse.data.success) {
+            if (fallbackResponse.data.success)
               product = fallbackResponse.data.data;
-            }
           } catch (fallbackError) {
             console.error("Fallback endpoint also failed:", fallbackError);
           }
@@ -166,7 +133,6 @@ const PendingProduct = () => {
       }
 
       if (product) {
-        // Normalize product data for edit modal
         const normalizedProduct = {
           ...product,
           id: product._id || product.id,
@@ -177,7 +143,6 @@ const PendingProduct = () => {
           productName: product.productName || product.name,
           sku: product.skuHsn || product.sku,
           skuHsn: product.skuHsn || product.sku,
-          // Ensure category and subCategory are properly formatted
           category:
             product.category?._id ||
             product.category?.$oid ||
@@ -189,7 +154,6 @@ const PendingProduct = () => {
             product.subCategory ||
             null,
         };
-
         setEditingProduct(normalizedProduct);
         setIsEditMode(true);
         setIsModalOpen(true);
@@ -202,124 +166,68 @@ const PendingProduct = () => {
     }
   };
 
-  // 🟢 Handle Product Updated (same as AllProduct)
   const handleProductUpdated = () => {
     setIsModalOpen(false);
     setIsEditMode(false);
     setEditingProduct(null);
-    // Refresh products list
     fetchPendingProducts(currentPage);
   };
 
-  // Format date
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-IN");
-  };
+  const formatDate = (dateString) =>
+    new Date(dateString).toLocaleDateString("en-IN");
+  const formatPrice = (price) => `₹${price.toLocaleString("en-IN")}`;
+  const getVendorName = (product) =>
+    product.vendor?.vendorName || product.vendor || "No Vendor";
 
-  // Format price
-  const formatPrice = (price) => {
-    return `₹${price.toLocaleString("en-IN")}`;
-  };
-
-  // Get vendor name safely
-  const getVendorName = (product) => {
-    return product.vendor?.vendorName || product.vendor || "No Vendor";
-  };
-
-  // Filtering logic - Fixed to handle null vendors
   const filteredByVendor =
     selectedVendor === "All Vendors"
       ? products
-      : products.filter((p) => {
-          const vendorName = getVendorName(p);
-          return vendorName === selectedVendor;
-        });
+      : products.filter((p) => getVendorName(p) === selectedVendor);
 
   const searchedProducts = filteredByVendor.filter((product) => {
-    if (!searchQuery.trim()) {
-      return true; // Show all products if search is empty
-    }
-
+    if (!searchQuery.trim()) return true;
     const searchLower = searchQuery.toLowerCase();
-    
-    // Helper function to safely convert values to searchable strings
-    const toSearchableString = (value) => {
-      if (value === null || value === undefined) return "";
-      if (typeof value === "number") return value.toString();
-      if (typeof value === "boolean") return value.toString();
-      if (Array.isArray(value)) return value.join(" ");
-      if (typeof value === "object") return JSON.stringify(value);
-      return String(value);
+    const toStr = (v) => {
+      if (v == null) return "";
+      if (Array.isArray(v)) return v.join(" ");
+      if (typeof v === "object") return JSON.stringify(v);
+      return String(v);
     };
-    
-    // Search through all product fields
-    const searchableFields = [
-      // IDs
-      toSearchableString(product.productNumber),
-      toSearchableString(product.productId),
-      toSearchableString(product._id),
-      toSearchableString(product.productno),
-      // Names
-      toSearchableString(product.productName),
-      toSearchableString(product.name),
-      // Vendor
-      toSearchableString(getVendorName(product)),
-      toSearchableString(product.vendor?.vendorName),
-      toSearchableString(product.vendor),
-      // Categories
-      toSearchableString(product.category?.name),
-      toSearchableString(product.category),
-      toSearchableString(product.subCategory?.name),
-      toSearchableString(product.subCategory),
-      // Description
-      toSearchableString(product.description),
-      // SKU
-      toSearchableString(product.sku),
-      toSearchableString(product.skuHsn),
-      // Status
-      toSearchableString(product.status),
-      toSearchableString(product.approvalStatus),
-      // Price (convert to string for searching)
-      toSearchableString(product.salePrice),
-      toSearchableString(product.regularPrice),
-      toSearchableString(product.actualPrice),
-      // Inventory
-      toSearchableString(product.inventory),
-      toSearchableString(product.currentInventory),
-      toSearchableString(product.initialInventory),
-      // Cashback
-      toSearchableString(product.cashback),
-      // Tags (handle both string and array)
-      toSearchableString(product.tags),
-      // Date
-      toSearchableString(product.date),
-      toSearchableString(product.createdAt),
-      // Additional fields that might exist
-      toSearchableString(product.productType),
-      toSearchableString(product.discountPercentage),
+    const haystack = [
+      product.productNumber,
+      product.productId,
+      product._id,
+      product.productno,
+      product.productName,
+      product.name,
+      getVendorName(product),
+      product.vendor?.vendorName,
+      product.vendor,
+      product.category?.name,
+      product.category,
+      product.subCategory?.name,
+      product.subCategory,
+      product.description,
+      product.sku,
+      product.skuHsn,
+      product.status,
+      product.approvalStatus,
+      product.salePrice,
+      product.regularPrice,
+      product.actualPrice,
+      product.inventory,
+      product.cashback,
+      product.tags,
+      product.date,
+      product.createdAt,
+      product.productType,
     ]
-      .filter(Boolean)
+      .map(toStr)
       .join(" ")
       .toLowerCase();
-
-    return searchableFields.includes(searchLower);
+    return haystack.includes(searchLower);
   });
 
-  const EmptyState = () => (
-    <tbody>
-      <tr>
-        <td
-          colSpan="9"
-          className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
-        >
-          No pending products found.
-        </td>
-      </tr>
-    </tbody>
-  );
-
-  // Get unique vendors - handle null vendors
   const uniqueVendors = [
     ...new Set(
       products
@@ -328,11 +236,25 @@ const PendingProduct = () => {
     ),
   ];
 
+  const EmptyState = () => (
+    <tbody>
+      <tr>
+        <td
+          colSpan="10"
+          className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
+        >
+          No pending products found.
+        </td>
+      </tr>
+    </tbody>
+  );
+
   return (
     <DashboardLayout>
       <canvas ref={canvasRef} className="hidden" />
 
-      <div className="flex flex-col lg:flex-row lg:items-center ml-8 lg:justify-between gap-4 max-w-[99%] mx-auto mt-0 mb-2">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center ml-8 lg:justify-between gap-4 max-w-[99%] mx-auto mt-2 mb-2">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
           <div className="flex items-center">
             <select
@@ -371,6 +293,7 @@ const PendingProduct = () => {
         </div>
       </div>
 
+      {/* Table */}
       <div className="bg-white rounded-sm ml-8 shadow-sm overflow-x-auto max-w-[99%] mx-auto">
         <table className="w-full text-sm">
           <thead>
@@ -461,7 +384,6 @@ const PendingProduct = () => {
                   </td>
                   <td className="p-3">
                     <div className="flex justify-center gap-3">
-                      {/* View Button */}
                       <button
                         onClick={() => navigate(`/products/${product._id}`)}
                         className="text-blue-600 hover:text-blue-700 transition-colors"
@@ -469,8 +391,6 @@ const PendingProduct = () => {
                       >
                         <Eye className="w-5 h-5" />
                       </button>
-
-                      {/* 🟢 Edit Button - Now opens modal instead of navigating */}
                       <button
                         onClick={() => handleEdit(product._id)}
                         className="text-orange-600 hover:text-orange-700 transition-colors"
@@ -478,8 +398,6 @@ const PendingProduct = () => {
                       >
                         <Edit className="w-5 h-5" />
                       </button>
-
-                      {/* Approve Button */}
                       <button
                         onClick={() => handleApprove(product._id)}
                         disabled={processingId === product._id}
@@ -492,8 +410,6 @@ const PendingProduct = () => {
                           <CheckCircle className="w-5 h-5" />
                         )}
                       </button>
-
-                      {/* Reject Button */}
                       <button
                         onClick={() => handleReject(product._id)}
                         disabled={processingId === product._id}
@@ -515,12 +431,13 @@ const PendingProduct = () => {
         </table>
       </div>
 
-      {!loading && totalPages > 1 && (
+      {/* ✅ Pagination — always visible when products exist, same style as CreateCategory */}
+      {!loading && searchedProducts.length > 0 && (
         <div className="flex justify-end pl-8 items-center gap-6 mt-8 max-w-[95%] mx-auto mb-6">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             disabled={currentPage === 1}
+            className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Back
           </button>
@@ -550,11 +467,7 @@ const PendingProduct = () => {
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`px-1 hover:text-orange-500 transition-colors ${
-                      currentPage === page
-                        ? "text-orange-600 font-semibold"
-                        : ""
-                    }`}
+                    className={`px-1 hover:text-orange-500 transition-colors ${currentPage === page ? "text-orange-600 font-semibold" : ""}`}
                   >
                     {page}
                   </button>
@@ -567,15 +480,14 @@ const PendingProduct = () => {
             onClick={() =>
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }
-            className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             disabled={currentPage === totalPages}
+            className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Next
           </button>
         </div>
       )}
 
-      {/* 🟢 Add Product Modal - Same as AllProduct */}
       <AddProductModal
         isOpen={isModalOpen}
         onClose={() => {

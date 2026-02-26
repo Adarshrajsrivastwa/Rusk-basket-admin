@@ -1209,10 +1209,10 @@ const RiderManagement = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen ml-6 p-0">
+      <div className="min-h-screen mt-2 ml-6 p-0">
         <div className="max-w-7xl mx-auto">
           {/* Header Section */}
-          <div className="bg-white rounded-sm shadow-lg p-8 mb-6 border-l-4 border-[#FF7B1D]">
+          <div className="bg-white rounded-sm shadow-lg p-2 mb-6 border-l-4 border-[#FF7B1D]">
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-4xl font-bold text-gray-900 mb-2">

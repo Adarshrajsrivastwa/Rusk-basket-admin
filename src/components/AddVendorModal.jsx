@@ -1430,7 +1430,16 @@
 // export default AddVendorModal;
 
 import React, { useState, useEffect, useRef } from "react";
-import { X, User, MapPin, FileText, Banknote, Search, Loader2, AlertCircle } from "lucide-react";
+import {
+  X,
+  User,
+  MapPin,
+  FileText,
+  Banknote,
+  Search,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 import api from "../api/api";
 
 const AddVendorModal = ({ isOpen, onClose }) => {
@@ -1469,7 +1478,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
     handlingChargePercentage: "20",
   });
   const [errors, setErrors] = useState({});
-  
+
   // Map states
   const [showMap, setShowMap] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -1500,7 +1509,8 @@ const AddVendorModal = ({ isOpen, onClose }) => {
           const link = document.createElement("link");
           link.rel = "stylesheet";
           link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-          link.integrity = "sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=";
+          link.integrity =
+            "sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=";
           link.crossOrigin = "";
           document.head.appendChild(link);
         }
@@ -1509,14 +1519,17 @@ const AddVendorModal = ({ isOpen, onClose }) => {
         if (!window.L) {
           const script = document.createElement("script");
           script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-          script.integrity = "sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=";
+          script.integrity =
+            "sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=";
           script.crossOrigin = "";
           script.onload = () => {
             setMapLoaded(true);
             setMapError("");
           };
           script.onerror = () => {
-            setMapError("Failed to load map library. Please check your internet connection.");
+            setMapError(
+              "Failed to load map library. Please check your internet connection.",
+            );
           };
           document.head.appendChild(script);
         } else {
@@ -1527,7 +1540,9 @@ const AddVendorModal = ({ isOpen, onClose }) => {
       loadLeaflet();
     } else {
       // Google Maps loading (if user wants to use it)
-      const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+      const existingScript = document.querySelector(
+        'script[src*="maps.googleapis.com"]',
+      );
       if (existingScript && window.google && window.google.maps) {
         setMapLoaded(true);
         setMapError("");
@@ -1540,10 +1555,13 @@ const AddVendorModal = ({ isOpen, onClose }) => {
         return;
       }
 
-      const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-      
+      const GOOGLE_MAPS_API_KEY =
+        import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+
       if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY.length < 20) {
-        setMapError("Google Maps API key is missing. Switching to OpenStreetMap (free, no API key needed).");
+        setMapError(
+          "Google Maps API key is missing. Switching to OpenStreetMap (free, no API key needed).",
+        );
         setUseOpenStreetMap(true);
         return;
       }
@@ -1552,21 +1570,25 @@ const AddVendorModal = ({ isOpen, onClose }) => {
       script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
       script.async = true;
       script.defer = true;
-      
+
       script.onload = () => {
         setTimeout(() => {
           if (window.google && window.google.maps) {
             setMapLoaded(true);
             setMapError("");
           } else {
-            setMapError("Google Maps failed to initialize. Switching to OpenStreetMap.");
+            setMapError(
+              "Google Maps failed to initialize. Switching to OpenStreetMap.",
+            );
             setUseOpenStreetMap(true);
           }
         }, 500);
       };
 
       script.onerror = () => {
-        setMapError("Failed to load Google Maps. Switching to OpenStreetMap (free alternative).");
+        setMapError(
+          "Failed to load Google Maps. Switching to OpenStreetMap (free alternative).",
+        );
         setUseOpenStreetMap(true);
       };
 
@@ -1586,7 +1608,14 @@ const AddVendorModal = ({ isOpen, onClose }) => {
       }, 200);
       return () => clearTimeout(timer);
     }
-  }, [isOpen, showMap, mapLoaded, formData.storeLat, formData.storeLong, useOpenStreetMap]);
+  }, [
+    isOpen,
+    showMap,
+    mapLoaded,
+    formData.storeLat,
+    formData.storeLong,
+    useOpenStreetMap,
+  ]);
 
   const initializeOpenStreetMap = () => {
     const mapContainer = document.getElementById("vendor-map-container");
@@ -1597,24 +1626,35 @@ const AddVendorModal = ({ isOpen, onClose }) => {
 
     // Don't reinitialize if map already exists
     if (mapInstanceRef.current) {
-      if (formData.storeLat && formData.storeLong && markerInstanceRef.current) {
-        const newPos = [parseFloat(formData.storeLat), parseFloat(formData.storeLong)];
+      if (
+        formData.storeLat &&
+        formData.storeLong &&
+        markerInstanceRef.current
+      ) {
+        const newPos = [
+          parseFloat(formData.storeLat),
+          parseFloat(formData.storeLong),
+        ];
         markerInstanceRef.current.setLatLng(newPos);
-        mapInstanceRef.current.setView(newPos, mapInstanceRef.current.getZoom());
+        mapInstanceRef.current.setView(
+          newPos,
+          mapInstanceRef.current.getZoom(),
+        );
       }
       return;
     }
 
-    const center = formData.storeLat && formData.storeLong
-      ? [parseFloat(formData.storeLat), parseFloat(formData.storeLong)]
-      : [23.2599, 77.4126]; // Default: Bhopal
+    const center =
+      formData.storeLat && formData.storeLong
+        ? [parseFloat(formData.storeLat), parseFloat(formData.storeLong)]
+        : [23.2599, 77.4126]; // Default: Bhopal
 
     // Initialize map
     const map = window.L.map(mapContainer).setView(center, 15);
 
     // Add OpenStreetMap tiles
-    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
+    window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap contributors",
       maxZoom: 19,
     }).addTo(map);
 
@@ -1623,11 +1663,14 @@ const AddVendorModal = ({ isOpen, onClose }) => {
 
     // Add marker if coordinates exist
     if (formData.storeLat && formData.storeLong) {
-      marker = window.L.marker([parseFloat(formData.storeLat), parseFloat(formData.storeLong)], {
-        draggable: true,
-      }).addTo(map);
+      marker = window.L.marker(
+        [parseFloat(formData.storeLat), parseFloat(formData.storeLong)],
+        {
+          draggable: true,
+        },
+      ).addTo(map);
 
-      marker.on('dragend', (e) => {
+      marker.on("dragend", (e) => {
         const lat = e.target.getLatLng().lat;
         const lng = e.target.getLatLng().lng;
         updateLocationFromCoords(lat, lng);
@@ -1637,7 +1680,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
     }
 
     // Add click listener to map
-    map.on('click', (e) => {
+    map.on("click", (e) => {
       const lat = e.latlng.lat;
       const lng = e.latlng.lng;
       updateLocationFromCoords(lat, lng);
@@ -1650,7 +1693,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
           draggable: true,
         }).addTo(map);
 
-        marker.on('dragend', (e) => {
+        marker.on("dragend", (e) => {
           const newLat = e.target.getLatLng().lat;
           const newLng = e.target.getLatLng().lng;
           updateLocationFromCoords(newLat, newLng);
@@ -1667,7 +1710,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
       console.error("Map container not found");
       return;
     }
-    
+
     if (!window.google || !window.google.maps) {
       setMapError("Google Maps API is not loaded. Please check your API key.");
       console.error("Google Maps API not available");
@@ -1676,10 +1719,14 @@ const AddVendorModal = ({ isOpen, onClose }) => {
 
     // Don't reinitialize if map already exists
     if (mapInstanceRef.current) {
-      if (formData.storeLat && formData.storeLong && markerInstanceRef.current) {
-        const newPos = { 
-          lat: parseFloat(formData.storeLat), 
-          lng: parseFloat(formData.storeLong) 
+      if (
+        formData.storeLat &&
+        formData.storeLong &&
+        markerInstanceRef.current
+      ) {
+        const newPos = {
+          lat: parseFloat(formData.storeLat),
+          lng: parseFloat(formData.storeLong),
         };
         markerInstanceRef.current.setPosition(newPos);
         mapInstanceRef.current.setCenter(newPos);
@@ -1687,9 +1734,13 @@ const AddVendorModal = ({ isOpen, onClose }) => {
       return;
     }
 
-    const center = formData.storeLat && formData.storeLong
-      ? { lat: parseFloat(formData.storeLat), lng: parseFloat(formData.storeLong) }
-      : { lat: 23.2599, lng: 77.4126 }; // Default: Bhopal
+    const center =
+      formData.storeLat && formData.storeLong
+        ? {
+            lat: parseFloat(formData.storeLat),
+            lng: parseFloat(formData.storeLong),
+          }
+        : { lat: 23.2599, lng: 77.4126 }; // Default: Bhopal
 
     const map = new window.google.maps.Map(mapContainer, {
       center: center,
@@ -1705,7 +1756,10 @@ const AddVendorModal = ({ isOpen, onClose }) => {
     // Add marker if coordinates exist
     if (formData.storeLat && formData.storeLong) {
       marker = new window.google.maps.Marker({
-        position: { lat: parseFloat(formData.storeLat), lng: parseFloat(formData.storeLong) },
+        position: {
+          lat: parseFloat(formData.storeLat),
+          lng: parseFloat(formData.storeLong),
+        },
         map: map,
         draggable: true,
         title: "Store Location",
@@ -1753,7 +1807,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
     const searchInput = document.getElementById("vendor-map-search-input");
     if (searchInput) {
       const searchBox = new window.google.maps.places.SearchBox(searchInput);
-      
+
       map.addListener("bounds_changed", () => {
         searchBox.setBounds(map.getBounds());
       });
@@ -1796,12 +1850,14 @@ const AddVendorModal = ({ isOpen, onClose }) => {
         // Update address fields
         const address = place.address_components || [];
         const addressParts = {};
-        
+
         address.forEach((component) => {
           const type = component.types[0];
           if (type === "locality") addressParts.city = component.long_name;
-          if (type === "administrative_area_level_1") addressParts.state = component.long_name;
-          if (type === "postal_code") addressParts.pinCode = component.long_name;
+          if (type === "administrative_area_level_1")
+            addressParts.state = component.long_name;
+          if (type === "postal_code")
+            addressParts.pinCode = component.long_name;
           if (type === "street_number" || type === "route") {
             if (!addressParts.line1) addressParts.line1 = component.long_name;
             else addressParts.line1 += " " + component.long_name;
@@ -1813,7 +1869,10 @@ const AddVendorModal = ({ isOpen, onClose }) => {
           city: addressParts.city || prev.city,
           state: addressParts.state || prev.state,
           pinCode: addressParts.pinCode || prev.pinCode,
-          storeAddress1: addressParts.line1 || place.formatted_address?.split(',')[0] || prev.storeAddress1,
+          storeAddress1:
+            addressParts.line1 ||
+            place.formatted_address?.split(",")[0] ||
+            prev.storeAddress1,
         }));
       });
     }
@@ -1829,10 +1888,10 @@ const AddVendorModal = ({ isOpen, onClose }) => {
     // Reverse geocode to get address using Nominatim (OpenStreetMap's geocoding service - free, no API key)
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
       );
       const data = await response.json();
-      
+
       if (data && data.address) {
         const addr = data.address;
         setFormData((prev) => ({
@@ -1840,7 +1899,11 @@ const AddVendorModal = ({ isOpen, onClose }) => {
           city: addr.city || addr.town || addr.village || prev.city,
           state: addr.state || prev.state,
           pinCode: addr.postcode || prev.pinCode,
-          storeAddress1: addr.road || addr.house_number || data.display_name?.split(',')[0] || prev.storeAddress1,
+          storeAddress1:
+            addr.road ||
+            addr.house_number ||
+            data.display_name?.split(",")[0] ||
+            prev.storeAddress1,
         }));
       }
     } catch (error) {
@@ -1877,7 +1940,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
           updateLocationFromCoords(lat, lng);
-          
+
           // Update map if initialized
           if (mapInstanceRef.current && markerInstanceRef.current) {
             const newPos = { lat, lng };
@@ -1899,7 +1962,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
             });
             markerInstanceRef.current = marker;
           }
-          
+
           alert("Location fetched successfully!");
         },
         () => {
@@ -2438,7 +2501,9 @@ const AddVendorModal = ({ isOpen, onClose }) => {
       }
     } catch (error) {
       if (error.response?.status === 404) {
-        setError("Verification endpoint not found. Please contact administrator.");
+        setError(
+          "Verification endpoint not found. Please contact administrator.",
+        );
       } else {
         setError(
           error.response?.data?.message || `Network error: ${error.message}`,
@@ -2890,7 +2955,7 @@ const AddVendorModal = ({ isOpen, onClose }) => {
                     {showMap ? "Hide Map" : "Show Map"}
                   </button>
                 </div>
-                
+
                 <button
                   onClick={getCurrentLocation}
                   className="w-full md:w-auto px-6 py-2 bg-[#FF7B1D] text-white font-semibold rounded hover:bg-orange-600 transition flex items-center gap-2"
@@ -2915,11 +2980,15 @@ const AddVendorModal = ({ isOpen, onClose }) => {
                         <div className="grid grid-cols-2 gap-3 text-xs text-white mb-2">
                           <div>
                             <span className="font-semibold">Latitude:</span>{" "}
-                            <span className="font-bold">{formData.storeLat}</span>
+                            <span className="font-bold">
+                              {formData.storeLat}
+                            </span>
                           </div>
                           <div>
                             <span className="font-semibold">Longitude:</span>{" "}
-                            <span className="font-bold">{formData.storeLong}</span>
+                            <span className="font-bold">
+                              {formData.storeLong}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -2930,19 +2999,26 @@ const AddVendorModal = ({ isOpen, onClose }) => {
                   <div className="bg-gray-50 p-4 border-b border-gray-200">
                     <div className="flex gap-2">
                       <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                        <Search
+                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                          size={18}
+                        />
                         <input
                           type="text"
                           id="vendor-map-search-input"
                           placeholder="Search for address, place, or landmark..."
                           className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF7B1D] focus:border-[#FF7B1D] transition-all text-sm"
                           onKeyPress={async (e) => {
-                            if (e.key === 'Enter' && useOpenStreetMap && window.L) {
+                            if (
+                              e.key === "Enter" &&
+                              useOpenStreetMap &&
+                              window.L
+                            ) {
                               const query = e.target.value;
                               if (query) {
                                 try {
                                   const response = await fetch(
-                                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`
+                                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
                                   );
                                   const data = await response.json();
                                   if (data && data.length > 0) {
@@ -2950,15 +3026,29 @@ const AddVendorModal = ({ isOpen, onClose }) => {
                                     const lng = parseFloat(data[0].lon);
                                     updateLocationFromCoords(lat, lng);
                                     if (mapInstanceRef.current) {
-                                      mapInstanceRef.current.setView([lat, lng], 15);
+                                      mapInstanceRef.current.setView(
+                                        [lat, lng],
+                                        15,
+                                      );
                                       if (markerInstanceRef.current) {
-                                        markerInstanceRef.current.setLatLng([lat, lng]);
+                                        markerInstanceRef.current.setLatLng([
+                                          lat,
+                                          lng,
+                                        ]);
                                       } else {
-                                        const marker = window.L.marker([lat, lng], { draggable: true }).addTo(mapInstanceRef.current);
-                                        marker.on('dragend', (e) => {
-                                          const newLat = e.target.getLatLng().lat;
-                                          const newLng = e.target.getLatLng().lng;
-                                          updateLocationFromCoords(newLat, newLng);
+                                        const marker = window.L.marker(
+                                          [lat, lng],
+                                          { draggable: true },
+                                        ).addTo(mapInstanceRef.current);
+                                        marker.on("dragend", (e) => {
+                                          const newLat =
+                                            e.target.getLatLng().lat;
+                                          const newLng =
+                                            e.target.getLatLng().lng;
+                                          updateLocationFromCoords(
+                                            newLat,
+                                            newLng,
+                                          );
                                         });
                                         markerInstanceRef.current = marker;
                                       }
@@ -2985,15 +3075,24 @@ const AddVendorModal = ({ isOpen, onClose }) => {
                     {mapError ? (
                       <div className="flex items-center justify-center h-full bg-gray-100">
                         <div className="text-center p-6 max-w-md">
-                          <AlertCircle className="text-red-500 mx-auto mb-3" size={48} />
-                          <p className="text-red-600 font-semibold mb-2">Map Loading Error</p>
-                          <p className="text-gray-600 text-sm mb-4">{mapError}</p>
+                          <AlertCircle
+                            className="text-red-500 mx-auto mb-3"
+                            size={48}
+                          />
+                          <p className="text-red-600 font-semibold mb-2">
+                            Map Loading Error
+                          </p>
+                          <p className="text-gray-600 text-sm mb-4">
+                            {mapError}
+                          </p>
                           <button
                             onClick={() => {
                               setMapError("");
                               setMapLoaded(false);
                               // Reload the script
-                              const script = document.querySelector('script[src*="maps.googleapis.com"]');
+                              const script = document.querySelector(
+                                'script[src*="maps.googleapis.com"]',
+                              );
                               if (script) script.remove();
                               window.google = null;
                               window.initGoogleMap = null;
@@ -3009,13 +3108,23 @@ const AddVendorModal = ({ isOpen, onClose }) => {
                     ) : !mapLoaded ? (
                       <div className="flex items-center justify-center h-full bg-gray-100">
                         <div className="text-center">
-                          <Loader2 className="animate-spin text-[#FF7B1D] mx-auto mb-3" size={32} />
-                          <p className="text-gray-600 font-medium">Loading map...</p>
-                          <p className="text-gray-500 text-xs mt-2">Please wait while we load Google Maps</p>
+                          <Loader2
+                            className="animate-spin text-[#FF7B1D] mx-auto mb-3"
+                            size={32}
+                          />
+                          <p className="text-gray-600 font-medium">
+                            Loading map...
+                          </p>
+                          <p className="text-gray-500 text-xs mt-2">
+                            Please wait while we load Google Maps
+                          </p>
                         </div>
                       </div>
                     ) : (
-                      <div id="vendor-map-container" style={{ width: "100%", height: "100%" }}></div>
+                      <div
+                        id="vendor-map-container"
+                        style={{ width: "100%", height: "100%" }}
+                      ></div>
                     )}
 
                     {/* Instructions Overlay */}

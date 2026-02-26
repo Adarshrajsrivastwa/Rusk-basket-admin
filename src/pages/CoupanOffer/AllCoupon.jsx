@@ -22,35 +22,23 @@ const AllOffer = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewingOffer, setViewingOffer] = useState(null);
 
-  // Fetch offers from API
   const fetchOffers = async () => {
     setLoading(true);
     try {
-      // Get token from localStorage
       const token =
         localStorage.getItem("token") || localStorage.getItem("authToken");
-
       const headers = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
+      if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      // Build query parameters
       let url = `${API_URL}?page=${currentPage}&limit=${itemsPerPage}`;
-
-      // Add status filter based on active tab
-      if (activeTab === "active") {
-        url += "&status=active";
-      } else if (activeTab === "inactive") {
-        url += "&status=inactive";
-      }
+      if (activeTab === "active") url += "&status=active";
+      else if (activeTab === "inactive") url += "&status=inactive";
 
       const response = await fetch(url, {
         method: "GET",
         credentials: "include",
-        headers: headers,
+        headers,
       });
-
       const data = await response.json();
 
       if (data.success) {
@@ -58,7 +46,6 @@ const AllOffer = () => {
         setTotalPages(data.pagination?.pages || 1);
         setTotalCount(data.count || 0);
       } else {
-        console.error("Failed to fetch offers:", data.message);
         setOffers([]);
       }
     } catch (error) {
@@ -69,86 +56,59 @@ const AllOffer = () => {
     }
   };
 
-  // Fetch offers when page, tab, or filters change
   useEffect(() => {
     fetchOffers();
   }, [currentPage, activeTab]);
 
-  // Filter offers by search query (client-side)
   const filteredOffers = offers.filter((offer) =>
     [offer.offerId, offer.couponName, offer.code, offer.offerType]
       .join(" ")
       .toLowerCase()
-      .includes(searchQuery.toLowerCase())
+      .includes(searchQuery.toLowerCase()),
   );
 
-  // Delete offer
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this offer?")) {
-      return;
-    }
-
+    if (!window.confirm("Are you sure you want to delete this offer?")) return;
     try {
       const token =
         localStorage.getItem("token") || localStorage.getItem("authToken");
-
       const headers = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
+      if (token) headers["Authorization"] = `Bearer ${token}`;
       const response = await fetch(`${API_URL}/${id}`, {
         method: "DELETE",
         credentials: "include",
-        headers: headers,
+        headers,
       });
-
       const data = await response.json();
-
       if (data.success) {
         alert("Offer deleted successfully");
-        // Refresh the list
         fetchOffers();
-      } else {
-        alert(data.message || "Failed to delete offer");
-      }
+      } else alert(data.message || "Failed to delete offer");
     } catch (error) {
-      console.error("Error deleting offer:", error);
       alert("Something went wrong while deleting");
     }
   };
 
-  // Open edit modal
   const handleEdit = (offer) => {
     setEditingOffer(offer);
     setIsCreateModalOpen(true);
   };
-
-  // Open view modal
   const handleView = (offer) => {
     setViewingOffer(offer);
     setIsViewModalOpen(true);
   };
 
-  // Update offer status (toggle active/inactive)
   const handleToggleStatus = async (offer) => {
     try {
       const token =
         localStorage.getItem("token") || localStorage.getItem("authToken");
-
-      const headers = {
-        "Content-Type": "application/json",
-      };
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
       const newStatus = offer.status === "active" ? "inactive" : "active";
-
       const response = await fetch(`${API_URL}/${offer._id}`, {
         method: "PUT",
         credentials: "include",
-        headers: headers,
+        headers,
         body: JSON.stringify({
           couponName: offer.couponName,
           offerId: offer.offerId,
@@ -163,22 +123,16 @@ const AllOffer = () => {
           usageLimit: offer.usageLimit,
         }),
       });
-
       const data = await response.json();
-
       if (data.success) {
         alert(`Offer status updated to ${newStatus}`);
         fetchOffers();
-      } else {
-        alert(data.message || "Failed to update offer");
-      }
+      } else alert(data.message || "Failed to update offer");
     } catch (error) {
-      console.error("Error updating offer:", error);
       alert("Something went wrong");
     }
   };
 
-  // Skeleton loader row
   const SkeletonRow = () => (
     <tr className="animate-pulse border-b-4 border-gray-200 text-center">
       {Array(9)
@@ -191,21 +145,15 @@ const AllOffer = () => {
     </tr>
   );
 
-  // Handle successful offer creation/update
-  const handleAddOffer = (newOffer) => {
-    // Refresh the list after creating/updating offer
+  const handleAddOffer = () => {
     fetchOffers();
     setIsCreateModalOpen(false);
     setEditingOffer(null);
   };
-
-  // Close modal handler
   const handleCloseModal = () => {
     setIsCreateModalOpen(false);
     setEditingOffer(null);
   };
-
-  // Format date
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString("en-IN");
@@ -213,7 +161,7 @@ const AllOffer = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-0 ml-6">
+      <div className="p-0 mt-2 ml-6">
         {/* Top Section */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
           <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
@@ -235,8 +183,8 @@ const AllOffer = () => {
                   {tab === "all"
                     ? "All"
                     : tab === "active"
-                    ? "Active"
-                    : "Inactive"}
+                      ? "Active"
+                      : "Inactive"}
                 </button>
               ))}
             </div>
@@ -267,7 +215,7 @@ const AllOffer = () => {
           </button>
         </div>
 
-        {/* Offer Table */}
+        {/* Table */}
         <div className="bg-white rounded-sm shadow-sm overflow-x-auto">
           <table className="w-full text-sm text-center">
             <thead>
@@ -284,7 +232,6 @@ const AllOffer = () => {
                 <th className="p-3 pr-6 text-right">Action</th>
               </tr>
             </thead>
-
             <tbody>
               {loading ? (
                 Array(7)
@@ -322,11 +269,7 @@ const AllOffer = () => {
                     <td className="p-3">
                       <button
                         onClick={() => handleToggleStatus(offer)}
-                        className={`px-3 py-1 rounded text-xs font-semibold ${
-                          offer.status === "active"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
+                        className={`px-3 py-1 rounded text-xs font-semibold ${offer.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}
                       >
                         {offer.status === "active" ? "Active" : "Inactive"}
                       </button>
@@ -363,33 +306,49 @@ const AllOffer = () => {
           </table>
         </div>
 
-        {/* Pagination */}
-        {!loading && filteredOffers.length > 0 && totalPages > 1 && (
-          <div className="flex justify-end items-center gap-4 mt-8">
+        {/* ✅ Pagination — always visible when offers exist, same style as CreateCategory */}
+        {!loading && filteredOffers.length > 0 && (
+          <div className="flex justify-end items-center gap-6 mt-8 max-w-[95%] mx-auto">
             <button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Back
             </button>
 
             <div className="flex items-center gap-2 text-sm text-black font-medium">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (page) => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-3 py-1 rounded ${
-                      currentPage === page
-                        ? "text-orange-600 font-semibold bg-orange-100"
-                        : "hover:bg-gray-100"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                )
-              )}
+              {(() => {
+                const pages = [];
+                const visiblePages = new Set([
+                  1,
+                  2,
+                  totalPages - 1,
+                  totalPages,
+                  currentPage - 1,
+                  currentPage,
+                  currentPage + 1,
+                ]);
+                for (let i = 1; i <= totalPages; i++) {
+                  if (visiblePages.has(i)) pages.push(i);
+                  else if (pages[pages.length - 1] !== "...") pages.push("...");
+                }
+                return pages.map((page, idx) =>
+                  page === "..." ? (
+                    <span key={idx} className="px-1 text-black select-none">
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`px-1 hover:text-orange-500 transition-colors ${currentPage === page ? "text-orange-600 font-semibold" : ""}`}
+                    >
+                      {page}
+                    </button>
+                  ),
+                );
+              })()}
             </div>
 
             <button
@@ -397,22 +356,19 @@ const AllOffer = () => {
                 setCurrentPage((prev) => Math.min(prev + 1, totalPages))
               }
               disabled={currentPage === totalPages}
-              className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
             </button>
           </div>
         )}
 
-        {/* Create/Edit Offer Popup */}
         <CreateOfferPopup
           isOpen={isCreateModalOpen}
           onClose={handleCloseModal}
           onSubmit={handleAddOffer}
           editData={editingOffer}
         />
-
-        {/* View Offer Modal */}
         <OfferViewModal
           isOpen={isViewModalOpen}
           onClose={() => setIsViewModalOpen(false)}
