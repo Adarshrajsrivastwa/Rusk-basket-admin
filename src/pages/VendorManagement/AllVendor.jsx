@@ -375,7 +375,7 @@
 // export default AllVendor;
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
-import { Eye, Edit, Trash2, Settings } from "lucide-react";
+import { Eye, Edit, Trash2 } from "lucide-react";
 import AddVendorModal from "../../components/AddVendorModal";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/api";
@@ -389,46 +389,30 @@ const AllVendor = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [vendors, setVendors] = useState([]);
-  const [pagination, setPagination] = useState({
-    total: 0,
-    pages: 1,
-    page: 1,
-    limit: 10,
-  });
+  const [totalVendors, setTotalVendors] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const itemsPerPage = 10;
   const navigate = useNavigate();
 
   // Fetch vendors from API
-  const fetchVendors = async (page = 1, limit = 10) => {
+  const fetchVendors = async (page = 1) => {
     try {
       setLoading(true);
-
-      console.log("Fetching vendors...");
-      console.log("Page:", page, "Limit:", limit);
-
       const response = await api.get(`/api/vendor`, {
-        params: {
-          page: page,
-          limit: limit,
-        },
+        params: { page, limit: itemsPerPage },
       });
-
-      console.log("Fetch vendors response status:", response.status);
-
       const result = response.data;
-      console.log("Fetch vendors response:", result);
-
       if (result.success) {
         setVendors(result.data || []);
-        setPagination(
-          result.pagination || {
-            total: result.count || 0,
-            pages: 1,
-            page: page,
-            limit: limit,
-          },
-        );
+        if (result.pagination) {
+          setTotalVendors(result.pagination.total || result.count || 0);
+          setTotalPages(result.pagination.pages || 1);
+        } else {
+          setTotalVendors(result.count || 0);
+          setTotalPages(1);
+        }
       } else {
-        console.error("Failed to fetch vendors:", result.message);
         setVendors([]);
       }
     } catch (error) {
@@ -439,29 +423,22 @@ const AllVendor = () => {
     }
   };
 
-  // Fetch vendors on mount and when page changes
   useEffect(() => {
-    fetchVendors(currentPage, 10);
+    fetchVendors(currentPage);
   }, [currentPage]);
 
-  // Refresh vendors list (call this after adding/editing/deleting)
-  const refreshVendors = () => {
-    fetchVendors(currentPage, 10);
-  };
+  const refreshVendors = () => fetchVendors(currentPage);
 
   const statusColors = {
-    true: "text-green-600 font-semibold", // isActive: true
-    false: "text-gray-600 font-semibold", // isActive: false
+    true: "text-green-600 font-semibold",
+    false: "text-gray-600 font-semibold",
   };
 
-  // Delete Functionality
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this vendor?")) {
       try {
         const response = await api.delete(`/api/vendor/${id}`);
-
         const result = response.data;
-
         if (result.success) {
           alert("Vendor deleted successfully");
           refreshVendors();
@@ -475,24 +452,18 @@ const AllVendor = () => {
     }
   };
 
-  // Edit Functionality
   const handleEdit = (vendor) => {
     setSelectedVendor(vendor);
     setIsEditModalOpen(true);
   };
 
-  // View Functionality
   const handleView = (vendor) => {
     navigate(`/vendor/${vendor._id}`, { state: { vendor } });
   };
 
-  // Filter vendors by status and search
   const filteredVendors = vendors.filter((vendor) => {
-    // Filter by active tab
     if (activeTab === "active" && !vendor.isActive) return false;
     if (activeTab === "suspended" && vendor.isActive) return false;
-
-    // Filter by search query
     if (searchQuery) {
       const searchLower = searchQuery.toLowerCase();
       return (
@@ -504,14 +475,12 @@ const AllVendor = () => {
         vendor.storeAddress?.pinCode?.toLowerCase().includes(searchLower)
       );
     }
-
     return true;
   });
 
-  // Skeleton Loader
   const TableSkeleton = () => (
     <tbody>
-      {Array.from({ length: 8 }).map((_, i) => (
+      {Array.from({ length: itemsPerPage }).map((_, i) => (
         <tr
           key={i}
           className="border-b border-gray-200 animate-pulse bg-white rounded-sm"
@@ -526,7 +495,6 @@ const AllVendor = () => {
     </tbody>
   );
 
-  // Empty State
   const EmptyState = () => (
     <tbody>
       <tr>
@@ -552,6 +520,7 @@ const AllVendor = () => {
                 key={tab}
                 onClick={() => {
                   setActiveTab(tab);
+                  setCurrentPage(1);
                 }}
                 className={`px-4 py-1 border rounded text-xs sm:text-sm whitespace-nowrap transition-colors ${
                   activeTab === tab
@@ -623,7 +592,7 @@ const AllVendor = () => {
                   className="bg-white shadow-sm hover:bg-gray-50 transition border-b-4 border-gray-200"
                 >
                   <td className="p-3">
-                    {(currentPage - 1) * pagination.limit + idx + 1}
+                    {(currentPage - 1) * itemsPerPage + idx + 1}
                   </td>
                   <td className="p-3 font-mono text-xs">
                     {vendor.storeId || "N/A"}
@@ -661,15 +630,6 @@ const AllVendor = () => {
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      {/* <button
-                        onClick={() =>
-                          navigate(`/vendors/${vendor._id}/settings`)
-                        }
-                        className="hover:text-blue-700 transition-colors"
-                        title="Settings"
-                      >
-                        <Settings className="w-4 h-4" />
-                      </button> */}
                     </div>
                   </td>
                 </tr>
@@ -679,20 +639,20 @@ const AllVendor = () => {
         </table>
       </div>
 
-      {/* Pagination */}
-      {!loading && filteredVendors.length > 0 && pagination.pages > 1 && (
-        <div className="flex justify-end items-center gap-6 mt-8 max-w-[95%] mx-auto pl-8">
+      {/* Pagination — always visible when vendors exist (matches AllProduct style) */}
+      {!loading && filteredVendors.length > 0 && (
+        <div className="flex justify-end pl-4 items-center gap-6 mt-8 max-w-[95%] mx-auto mb-6">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
-            className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Back
           </button>
+
           <div className="flex items-center gap-2 text-sm text-black font-medium">
             {(() => {
               const pages = [];
-              const totalPages = pagination.pages;
               const visiblePages = new Set([
                 1,
                 2,
@@ -727,12 +687,13 @@ const AllVendor = () => {
               );
             })()}
           </div>
+
           <button
             onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, pagination.pages))
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }
-            disabled={currentPage === pagination.pages}
-            className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            disabled={currentPage === totalPages}
+            className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Next
           </button>
@@ -741,8 +702,8 @@ const AllVendor = () => {
 
       {/* Pagination Info */}
       {!loading && filteredVendors.length > 0 && (
-        <div className="text-center text-sm text-gray-600 mt-4 mb-6">
-          Showing {filteredVendors.length} of {pagination.total} vendors
+        <div className="text-center text-sm text-gray-600 mt-2 mb-4">
+          Showing {filteredVendors.length} of {totalVendors} vendors
         </div>
       )}
 
@@ -751,17 +712,17 @@ const AllVendor = () => {
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
-          refreshVendors(); // Refresh list after adding
+          refreshVendors();
         }}
       />
 
-      {/* Edit Vendor Modal (with data pre-filled) */}
+      {/* Edit Vendor Modal */}
       <AddVendorModal
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
           setSelectedVendor(null);
-          refreshVendors(); // Refresh list after editing
+          refreshVendors();
         }}
         isEdit={true}
         vendorData={selectedVendor}
