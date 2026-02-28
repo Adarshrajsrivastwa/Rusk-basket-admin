@@ -1009,16 +1009,24 @@ const WithdrawalRequests = () => {
                       <button
                         onClick={() => {
                           // Get rider ID from request
-                          const riderId = request.riderId || request.rider?._id || request.rider?.riderId;
-                          
+                          const riderId =
+                            request.riderId ||
+                            request.rider?._id ||
+                            request.rider?.riderId;
+
                           if (riderId) {
                             fetchRiderDetails(riderId);
                           } else {
-                            console.error("Rider ID not found in request:", request);
-                            setError("Rider ID not found. Cannot fetch rider details.");
+                            console.error(
+                              "Rider ID not found in request:",
+                              request,
+                            );
+                            setError(
+                              "Rider ID not found. Cannot fetch rider details.",
+                            );
                           }
                         }}
-                        className="text-[#FF7B1D] p-1 hover:text-orange-600 transition-colors cursor-pointer"
+                        className="text-[#FF7B1D] p-1 pr-4 hover:text-orange-600 transition-colors cursor-pointer"
                         title="View Rider Details"
                       >
                         <Eye size={20} />
@@ -1180,9 +1188,7 @@ const WithdrawalRequests = () => {
                     </p>
                     <p className="text-gray-900 font-medium">
                       {selectedRider.emergencyContactPerson?.name || "N/A"} (
-                      {selectedRider.emergencyContactPerson?.relation ||
-                        "N/A"}
-                      )
+                      {selectedRider.emergencyContactPerson?.relation || "N/A"})
                     </p>
                     <p className="text-gray-600 text-sm mt-1">
                       {selectedRider.emergencyContactPerson?.contactNumber ||
@@ -1388,8 +1394,7 @@ const WithdrawalRequests = () => {
                       Bank Name
                     </p>
                     <p className="text-gray-900 font-medium">
-                      {selectedRider.documents?.bankDetails?.bankName ||
-                        "N/A"}
+                      {selectedRider.documents?.bankDetails?.bankName || "N/A"}
                     </p>
                   </div>
                   <div className="md:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
@@ -1410,15 +1415,12 @@ const WithdrawalRequests = () => {
                       Cancelled Cheque
                     </p>
                     <img
-                      src={
-                        selectedRider.documents.bankDetails.cancelCheque.url
-                      }
+                      src={selectedRider.documents.bankDetails.cancelCheque.url}
                       alt="Cancelled Cheque"
                       className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
                       onClick={() =>
                         setImageModal(
-                          selectedRider.documents.bankDetails.cancelCheque
-                            .url,
+                          selectedRider.documents.bankDetails.cancelCheque.url,
                         )
                       }
                     />
@@ -1475,7 +1477,10 @@ const WithdrawalRequests = () => {
                     ✓ Application{" "}
                     {getRiderStatusText(selectedRider.approvalStatus)}
                     {selectedRider.approvedAt && (
-                      <span> on {formatDateModal(selectedRider.approvedAt)}</span>
+                      <span>
+                        {" "}
+                        on {formatDateModal(selectedRider.approvedAt)}
+                      </span>
                     )}
                     {selectedRider.approvedBy && (
                       <div className="text-sm mt-2">

@@ -269,7 +269,7 @@ const AllOrder = () => {
           ))}
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+        <div className="flex pr-32 flex-col sm:flex-row gap-3 w-full lg:w-auto">
           <div className="flex items-center border border-black rounded overflow-hidden h-[36px] w-full sm:w-[400px]">
             <input
               type="text"
@@ -333,7 +333,7 @@ const AllOrder = () => {
                     <td className={`p-3 ${statusColors[order.status]}`}>
                       {order.status}
                     </td>
-                    <td className="p-3">
+                    <td className="p-3 pr-6">
                       <div className="flex gap-2 justify-end">
                         <button
                           onClick={() =>

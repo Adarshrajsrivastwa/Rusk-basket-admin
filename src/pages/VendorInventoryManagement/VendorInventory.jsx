@@ -403,7 +403,16 @@
 // export default InventoryManagement;
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
-import { Download, Eye, Edit2, Trash2, Plus, RefreshCw, X, Check } from "lucide-react";
+import {
+  Download,
+  Eye,
+  Edit2,
+  Trash2,
+  Plus,
+  RefreshCw,
+  X,
+  Check,
+} from "lucide-react";
 import ProductModal from "../../pages/InventoryManagement/ProductModal";
 import { BASE_URL } from "../../api/api";
 
@@ -425,7 +434,8 @@ const InventoryManagement = () => {
   const [error, setError] = useState(null);
   const [vendorId, setVendorId] = useState(null);
   const [isUpdateStockModalOpen, setIsUpdateStockModalOpen] = useState(false);
-  const [selectedProductForUpdate, setSelectedProductForUpdate] = useState(null);
+  const [selectedProductForUpdate, setSelectedProductForUpdate] =
+    useState(null);
   const [updateStockAmount, setUpdateStockAmount] = useState("");
   const [updatingStock, setUpdatingStock] = useState(false);
 
@@ -481,11 +491,14 @@ const InventoryManagement = () => {
         } else {
           // Try to fetch vendor profile
           try {
-            const profileResponse = await fetch(`${BASE_URL}/api/vendor/profile`, {
-              method: "GET",
-              credentials: "include",
-              headers: headers,
-            });
+            const profileResponse = await fetch(
+              `${BASE_URL}/api/vendor/profile`,
+              {
+                method: "GET",
+                credentials: "include",
+                headers: headers,
+              },
+            );
             if (profileResponse.ok) {
               const profileData = await profileResponse.json();
               if (profileData.success && profileData.data?._id) {
@@ -518,7 +531,11 @@ const InventoryManagement = () => {
 
       if (result.success && result.data) {
         // Extract vendorId from first product if not already set
-        if (!currentVendorId && result.data?.inventory?.length > 0 && result.data.inventory[0].vendor?._id) {
+        if (
+          !currentVendorId &&
+          result.data?.inventory?.length > 0 &&
+          result.data.inventory[0].vendor?._id
+        ) {
           currentVendorId = result.data.inventory[0].vendor._id;
           setVendorId(currentVendorId);
         }
@@ -541,42 +558,51 @@ const InventoryManagement = () => {
             };
 
             return {
-            id: product.productId,
-            productId: product.productId,
-            n: (result.data.pagination?.currentPage - 1) * (result.data.pagination?.limit || 20) + index + 1,
-            name: product.productName,
-            category: product.category?.name || "General",
-            subCategory: product.subCategory?.name || "N/A",
-            stock: product.currentInventory || 0,
-            initialInventory: product.initialInventory || 0,
-            lowStockThreshold: 20, // Default threshold
-            price: product.regularPrice || 0,
-            regularPrice: product.regularPrice || 0,
-            salePrice: 0,
-            actualPrice: product.regularPrice || 0,
-            vendor: product.vendor?.storeName || product.vendor?.vendorName || "N/A",
-            vendorId: product.vendor?._id,
-            expiryDate: null,
-            status: getStockStatusLabel(product.stockStatus),
-            stockStatus: product.stockStatus || "in_stock",
-            stockStatusLabel: getStockStatusLabel(product.stockStatus),
-            stockPercentage: product.stockPercentage || 100,
-            approvalStatus: "approved",
-            isActive: true,
-            skuHsn: product.skuHsn || "N/A",
-            thumbnail: null,
-            createdAt: null,
-          };
-          }
+              id: product.productId,
+              productId: product.productId,
+              n:
+                (result.data.pagination?.currentPage - 1) *
+                  (result.data.pagination?.limit || 20) +
+                index +
+                1,
+              name: product.productName,
+              category: product.category?.name || "General",
+              subCategory: product.subCategory?.name || "N/A",
+              stock: product.currentInventory || 0,
+              initialInventory: product.initialInventory || 0,
+              lowStockThreshold: 20, // Default threshold
+              price: product.regularPrice || 0,
+              regularPrice: product.regularPrice || 0,
+              salePrice: 0,
+              actualPrice: product.regularPrice || 0,
+              vendor:
+                product.vendor?.storeName ||
+                product.vendor?.vendorName ||
+                "N/A",
+              vendorId: product.vendor?._id,
+              expiryDate: null,
+              status: getStockStatusLabel(product.stockStatus),
+              stockStatus: product.stockStatus || "in_stock",
+              stockStatusLabel: getStockStatusLabel(product.stockStatus),
+              stockPercentage: product.stockPercentage || 100,
+              approvalStatus: "approved",
+              isActive: true,
+              skuHsn: product.skuHsn || "N/A",
+              thumbnail: null,
+              createdAt: null,
+            };
+          },
         );
 
         setProducts(transformedProducts);
-        setPagination(result.data.pagination || {
-          currentPage: 1,
-          totalPages: 1,
-          totalProducts: result.data.summary?.totalProducts || 0,
-          limit: 20,
-        });
+        setPagination(
+          result.data.pagination || {
+            currentPage: 1,
+            totalPages: 1,
+            totalProducts: result.data.summary?.totalProducts || 0,
+            limit: 20,
+          },
+        );
         setSummary(result.data.summary || null);
       } else {
         setError(result.message || "Failed to fetch products");
@@ -600,16 +626,16 @@ const InventoryManagement = () => {
   const calculateOutOfStockDate = (product) => {
     const currentStock = product.stock || 0;
     const lowStockThreshold = product.lowStockThreshold || 20;
-    
+
     if (currentStock === 0) {
       return "Already Out of Stock";
     }
-    
+
     // Assuming average daily sales rate (this can be improved with actual sales data)
     // For now, using a simple calculation: if stock is below threshold, estimate based on stock level
     const averageDailySales = Math.max(1, Math.floor(currentStock / 10)); // Rough estimate
     const daysUntilOutOfStock = Math.floor(currentStock / averageDailySales);
-    
+
     if (daysUntilOutOfStock <= 0) {
       return "Already Out of Stock";
     } else if (daysUntilOutOfStock <= 3) {
@@ -628,7 +654,7 @@ const InventoryManagement = () => {
     const lowStockThreshold = product.lowStockThreshold || 20;
     const averageDailySales = Math.max(1, Math.floor(currentStock / 10));
     const daysUntilOutOfStock = Math.floor(currentStock / averageDailySales);
-    
+
     if (currentStock === 0 || daysUntilOutOfStock <= 0) {
       return "text-red-600 font-bold";
     } else if (daysUntilOutOfStock <= 3) {
@@ -649,28 +675,45 @@ const InventoryManagement = () => {
     if (activeTab === "all") {
       matchesTab = true;
     } else if (activeTab === "instock") {
-      matchesTab = product.stockStatus === "in_stock" || product.status === "In Stock";
+      matchesTab =
+        product.stockStatus === "in_stock" || product.status === "In Stock";
     } else if (activeTab === "lowstock") {
-      matchesTab = product.stockStatus === "low_stock" || product.status === "Low Stock" || (product.stockPercentage < 20 && product.stockStatus !== "out_of_stock");
+      matchesTab =
+        product.stockStatus === "low_stock" ||
+        product.status === "Low Stock" ||
+        (product.stockPercentage < 20 &&
+          product.stockStatus !== "out_of_stock");
     } else if (activeTab === "outofstock") {
-      matchesTab = product.stockStatus === "out_of_stock" || product.status === "Out of Stock" || product.stock === 0;
+      matchesTab =
+        product.stockStatus === "out_of_stock" ||
+        product.status === "Out of Stock" ||
+        product.stock === 0;
     }
 
     const matchesSearch =
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (product.category && product.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (product.subCategory && product.subCategory.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (product.skuHsn && product.skuHsn.toLowerCase().includes(searchTerm.toLowerCase()));
+      (product.category &&
+        product.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (product.subCategory &&
+        product.subCategory.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (product.skuHsn &&
+        product.skuHsn.toLowerCase().includes(searchTerm.toLowerCase()));
 
     return matchesTab && matchesSearch;
   });
 
   // Pagination - use API pagination if available, otherwise use client-side pagination
   const useApiPagination = pagination && pagination.totalPages > 0;
-  const indexOfLast = useApiPagination ? filteredProducts.length : currentPage * itemsPerPage;
+  const indexOfLast = useApiPagination
+    ? filteredProducts.length
+    : currentPage * itemsPerPage;
   const indexOfFirst = useApiPagination ? 0 : indexOfLast - itemsPerPage;
-  const currentProducts = useApiPagination ? filteredProducts : filteredProducts.slice(indexOfFirst, indexOfLast);
-  const totalPages = useApiPagination ? pagination.totalPages : Math.ceil(filteredProducts.length / itemsPerPage);
+  const currentProducts = useApiPagination
+    ? filteredProducts
+    : filteredProducts.slice(indexOfFirst, indexOfLast);
+  const totalPages = useApiPagination
+    ? pagination.totalPages
+    : Math.ceil(filteredProducts.length / itemsPerPage);
 
   // Skeleton Loader
   const TableSkeleton = () => (
@@ -767,7 +810,11 @@ const InventoryManagement = () => {
 
   const handleSubmitStockUpdate = async (e) => {
     e.preventDefault();
-    if (!selectedProductForUpdate || !updateStockAmount || parseFloat(updateStockAmount) <= 0) {
+    if (
+      !selectedProductForUpdate ||
+      !updateStockAmount ||
+      parseFloat(updateStockAmount) <= 0
+    ) {
       setError("Please enter a valid stock amount to add");
       return;
     }
@@ -785,9 +832,10 @@ const InventoryManagement = () => {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const productId = selectedProductForUpdate.productId || selectedProductForUpdate.id;
+      const productId =
+        selectedProductForUpdate.productId || selectedProductForUpdate.id;
       const currentVendorId = vendorId || selectedProductForUpdate.vendorId;
-      
+
       // Try multiple endpoint strategies for stock update
       let response = null;
       let lastError = null;
@@ -802,7 +850,9 @@ const InventoryManagement = () => {
             headers: headers,
             body: JSON.stringify({
               addedProduct: parseFloat(updateStockAmount),
-              stock: (selectedProductForUpdate.stock || 0) + parseFloat(updateStockAmount),
+              stock:
+                (selectedProductForUpdate.stock || 0) +
+                parseFloat(updateStockAmount),
             }),
           });
           if (response.ok) {
@@ -823,11 +873,13 @@ const InventoryManagement = () => {
             method: "PUT",
             credentials: "include",
             headers: headers,
-          body: JSON.stringify({
-            productId: productId,
-            addedProduct: parseFloat(updateStockAmount),
-            stock: (selectedProductForUpdate.stock || 0) + parseFloat(updateStockAmount),
-          }),
+            body: JSON.stringify({
+              productId: productId,
+              addedProduct: parseFloat(updateStockAmount),
+              stock:
+                (selectedProductForUpdate.stock || 0) +
+                parseFloat(updateStockAmount),
+            }),
           });
           if (response.ok) {
             // Success with stock update endpoint 2
@@ -848,8 +900,12 @@ const InventoryManagement = () => {
             credentials: "include",
             headers: headers,
             body: JSON.stringify({
-              stock: (selectedProductForUpdate.stock || 0) + parseFloat(updateStockAmount),
-              inventory: (selectedProductForUpdate.stock || 0) + parseFloat(updateStockAmount),
+              stock:
+                (selectedProductForUpdate.stock || 0) +
+                parseFloat(updateStockAmount),
+              inventory:
+                (selectedProductForUpdate.stock || 0) +
+                parseFloat(updateStockAmount),
             }),
           });
           if (response.ok) {
@@ -863,9 +919,17 @@ const InventoryManagement = () => {
       }
 
       if (!response || !response.ok) {
-        const errorData = response ? await response.json().catch(() => ({})) : {};
-        console.error("All stock update endpoints failed. Last error:", lastError);
-        throw new Error(errorData.message || `Failed to update stock: ${response?.status || "No response"}. Please check the API endpoint.`);
+        const errorData = response
+          ? await response.json().catch(() => ({}))
+          : {};
+        console.error(
+          "All stock update endpoints failed. Last error:",
+          lastError,
+        );
+        throw new Error(
+          errorData.message ||
+            `Failed to update stock: ${response?.status || "No response"}. Please check the API endpoint.`,
+        );
       }
 
       const result = await response.json();
@@ -911,17 +975,21 @@ const InventoryManagement = () => {
           stock: productData.stock || 0,
         };
 
-        const response = await fetch(`${BASE_URL}/api/product/update/${editingProduct.id}`, {
-          method: "PUT",
-          credentials: "include",
-          headers: headers,
-          body: JSON.stringify(inventoryUpdatePayload),
-        });
+        const response = await fetch(
+          `${BASE_URL}/api/product/update/${editingProduct.id}`,
+          {
+            method: "PUT",
+            credentials: "include",
+            headers: headers,
+            body: JSON.stringify(inventoryUpdatePayload),
+          },
+        );
 
         const result = await response.json();
 
         if (!response.ok || !result.success) {
-          const errorMessage = result.message || result.error || "Failed to update product";
+          const errorMessage =
+            result.message || result.error || "Failed to update product";
           throw new Error(errorMessage);
         }
 
@@ -932,7 +1000,9 @@ const InventoryManagement = () => {
       } else {
         // Note: Creating products should use /api/product/add endpoint
         // The inventory endpoint doesn't support product creation
-        alert("Please use the Products page to add new products. This page is for inventory management only.");
+        alert(
+          "Please use the Products page to add new products. This page is for inventory management only.",
+        );
         setShowModal(false);
         setEditingProduct(null);
         return;
@@ -958,7 +1028,7 @@ const InventoryManagement = () => {
   return (
     <DashboardLayout>
       {/* Tabs + Search + Add Button */}
-      <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-2 w-full pl-4 max-w-[99%] mx-auto mt-0 mb-2">
+      <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-2 w-full pl-4 max-w-[99%] mx-auto mt-2 mb-2">
         <div className="flex gap-4 overflow-x-auto pb-2 lg:pb-0">
           {[
             { key: "all", label: "All Products" },
@@ -1014,38 +1084,46 @@ const InventoryManagement = () => {
             <tbody>
               {currentProducts.map((product, idx) => {
                 return (
-                <tr
-                  key={product.id}
-                  className="shadow-sm rounded-sm hover:bg-gray-50 transition border-b-4 border-gray-200 bg-white"
-                >
-                  <td className="p-3">{product.n !== undefined ? product.n : indexOfFirst + idx + 1}</td>
-                  <td className="p-3 font-semibold">{product.name}</td>
-                  <td className="p-3 font-semibold">{product.stock || 0}</td>
-                  <td className="p-3">{product.category || "N/A"}</td>
-                  <td className="p-3">{product.subCategory || "N/A"}</td>
-                  <td className="p-3">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      product.stockStatus === "in_stock" 
-                        ? "bg-green-100 text-green-700" 
-                        : product.stockStatus === "out_of_stock"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}>
-                      {product.stockStatusLabel || product.stockStatus || "In Stock"}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex gap-2 justify-end">
-                      <button
-                        onClick={() => handleUpdateStock(product)}
-                        className="text-orange-600 hover:text-orange-700"
-                        title="Update Stock"
+                  <tr
+                    key={product.id}
+                    className="shadow-sm rounded-sm hover:bg-gray-50 transition border-b-4 border-gray-200 bg-white"
+                  >
+                    <td className="p-3">
+                      {product.n !== undefined
+                        ? product.n
+                        : indexOfFirst + idx + 1}
+                    </td>
+                    <td className="p-3 font-semibold">{product.name}</td>
+                    <td className="p-3 font-semibold">{product.stock || 0}</td>
+                    <td className="p-3">{product.category || "N/A"}</td>
+                    <td className="p-3">{product.subCategory || "N/A"}</td>
+                    <td className="p-3">
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          product.stockStatus === "in_stock"
+                            ? "bg-green-100 text-green-700"
+                            : product.stockStatus === "out_of_stock"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-yellow-100 text-yellow-700"
+                        }`}
                       >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                        {product.stockStatusLabel ||
+                          product.stockStatus ||
+                          "In Stock"}
+                      </span>
+                    </td>
+                    <td className="p-3 pr-10">
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          onClick={() => handleUpdateStock(product)}
+                          className="text-orange-600 hover:text-orange-700"
+                          title="Update Stock"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 );
               })}
             </tbody>
@@ -1055,13 +1133,16 @@ const InventoryManagement = () => {
 
       {/* Pagination */}
       {!loading && filteredProducts.length > 0 && (
-        <div className="flex justify-between items-center mt-6 max-w-[98%] mx-auto">
+        <div className="flex justify-between items-center ml-6 mt-6 max-w-[98%] mx-auto">
           <div className="text-sm text-gray-600">
             {pagination && (
               <>
-                Showing {((pagination.currentPage - 1) * pagination.limit) + 1} to{" "}
-                {Math.min(pagination.currentPage * pagination.limit, pagination.totalProducts)} of{" "}
-                {pagination.totalProducts} products
+                Showing {(pagination.currentPage - 1) * pagination.limit + 1} to{" "}
+                {Math.min(
+                  pagination.currentPage * pagination.limit,
+                  pagination.totalProducts,
+                )}{" "}
+                of {pagination.totalProducts} products
               </>
             )}
           </div>
@@ -1087,7 +1168,7 @@ const InventoryManagement = () => {
                   >
                     {page}
                   </button>
-                )
+                ),
               )}
             </div>
             <button

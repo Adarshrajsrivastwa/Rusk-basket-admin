@@ -194,9 +194,9 @@ import SingleOffer from "./pages/CoupanOffer/SingleOffer.jsx";
 import CreateCoupon from "./components/CreateCoupon";
 import Notification from "./pages/NotificationManagement/Notification";
 import SingleNotification from "./pages/NotificationManagement/SingleNotification.jsx";
-import PushNotification from "./components/PushNotification";
+// import PushNotification from "./components/PushNotification";
 import BulkAudiance from "./components/BulkAudiencePopup";
-import SalesReport from "./pages/Analytics/SalesReport/VendorWiseSalesReport";
+// import SalesReport from "./pages/Analytics/SalesReport/VendorWiseSalesReport";
 import VendorReport from "./pages/Analytics/VendorReport.jsx";
 import AnalyticsDashboard from "./pages/Analytics/AnalyticsDashboard.jsx";
 import Login from "./pages/Login";
@@ -224,6 +224,9 @@ import WithdrawalRequests from "./pages/RiderManagement/WithdrawalRequests";
 import VendorWithdrawalRequests from "./pages/VendorDashboard/WithdrawalRequests";
 import AdminVendorWithdrawalRequests from "./pages/VendorManagement/VendorWithdrawalRequests";
 import ReferralCashbackSettings from "./pages/SettingsManagement/ReferralCashbackSettings";
+import SalesReport from "./pages/TopSalesReport/SalesReport.jsx";
+import PushNotification from "./components/PushNotification.jsx";
+
 function AppContent() {
   const location = useLocation();
 
@@ -327,6 +330,14 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
               <AllAdmin />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/push"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <PushNotification />
             </ProtectedRoute>
           }
         />
@@ -439,6 +450,14 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={["vendor"]}>
               <UpdateProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/reports"
+          element={
+            <ProtectedRoute allowedRoles={["vendor"]}>
+              <SalesReport />
             </ProtectedRoute>
           }
         />
@@ -566,7 +585,10 @@ function AppContent() {
         <Route path="/invoice/view/:orderId" element={<InvoiceView />} />
         <Route path="/invoice/view" element={<InvoiceView />} />
         <Route path="/orders/:id/bag-qr-scan" element={<BagQRScan />} />
-        <Route path="/orders/:id/add-extra-items" element={<AddExtraItemPage />} />
+        <Route
+          path="/orders/:id/add-extra-items"
+          element={<AddExtraItemPage />}
+        />
 
         <Route path="/Rider" element={<AllRider />} />
         <Route
@@ -592,7 +614,7 @@ function AppContent() {
 
         <Route path="/notification" element={<Notification />} />
         <Route path="/notification/:id" element={<SingleNotification />} />
-        <Route path="/notification/push" element={<PushNotification />} />
+
         <Route path="/notification/bulk" element={<BulkAudiance />} />
 
         <Route path="/analytics/sales" element={<SalesReport />} />
@@ -603,7 +625,6 @@ function AppContent() {
         <Route path="/mail" element={<TopBarMail />} />
         <Route path="/chat" element={<TopBarChat />} />
       </Routes>
-
     </>
   );
 }

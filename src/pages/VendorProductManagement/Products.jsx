@@ -820,7 +820,7 @@ const AllProduct = () => {
   const canvasRef = useRef(null);
   // Hidden canvas for QR code generation
   const qrCanvasRef = useRef(null);
-  
+
   // QR Code modal state
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [selectedProductForQR, setSelectedProductForQR] = useState(null);
@@ -1094,8 +1094,9 @@ const AllProduct = () => {
   // 🟢 Generate QR Code Function (Show in Modal)
   const handleGenerateQR = async (product) => {
     try {
-      const productId = product.productId || product.productNumber || product._id;
-      
+      const productId =
+        product.productId || product.productNumber || product._id;
+
       if (!productId) {
         alert("Product ID not found!");
         return;
@@ -1106,9 +1107,9 @@ const AllProduct = () => {
         width: 300,
         margin: 2,
         color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        }
+          dark: "#000000",
+          light: "#FFFFFF",
+        },
       });
 
       setSelectedProductForQR(product);
@@ -1151,7 +1152,10 @@ const AllProduct = () => {
     if (!qrCodeDataUrl) return;
 
     const link = document.createElement("a");
-    const productId = selectedProductForQR?.productId || selectedProductForQR?.productNumber || selectedProductForQR?._id;
+    const productId =
+      selectedProductForQR?.productId ||
+      selectedProductForQR?.productNumber ||
+      selectedProductForQR?._id;
     link.download = `${productId}-qr-code.png`;
     link.href = qrCodeDataUrl;
     link.click();
@@ -1342,7 +1346,7 @@ const AllProduct = () => {
       <canvas ref={qrCanvasRef} className="hidden" />
 
       {/* Header Section */}
-      <div className="flex flex-col lg:flex-row lg:items-center ml-2 sm:ml-8 lg:justify-between gap-4 max-w-[99%] mx-auto mt-0 mb-2 px-2 sm:px-0">
+      <div className="flex flex-col lg:flex-row lg:items-center ml-2 sm:ml-8 lg:justify-between gap-4 max-w-[99%] mx-auto mt-2 mb-2 px-2 sm:px-0">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
           {/* Tabs */}
           <div className="flex gap-2 items-center overflow-x-auto pb-2 lg:pb-0">
@@ -1386,7 +1390,7 @@ const AllProduct = () => {
                 }
               }}
             />
-            <button 
+            <button
               onClick={() => setCurrentPage(1)}
               className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-xs sm:text-sm px-3 sm:px-6 h-full transition-colors"
             >
@@ -1549,18 +1553,18 @@ const AllProduct = () => {
         </div>
       </div>
 
-      {/* Pagination */}
-      {!loading && searchedProducts.length > itemsPerPage && (
-        <div className="flex flex-col sm:flex-row justify-between sm:justify-end pl-0 sm:pl-8 items-center gap-4 sm:gap-6 mt-8 max-w-[95%] mx-auto mb-6 px-4 sm:px-0">
+      {/* ── Pagination (matches CreateCategory style) ── */}
+      {!loading && searchedProducts.length > 0 && (
+        <div className="flex justify-end pl-8 items-center gap-6 mt-8 max-w-[95%] mx-auto">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            className="bg-[#FF7B1D] text-white px-6 sm:px-10 py-2 sm:py-3 text-xs sm:text-sm font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+            className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={currentPage === 1}
           >
             Back
           </button>
 
-          <div className="flex items-center gap-2 text-xs sm:text-sm text-black font-medium overflow-x-auto">
+          <div className="flex items-center gap-2 text-sm text-black font-medium">
             {(() => {
               const pages = [];
               const visiblePages = new Set([
@@ -1585,7 +1589,7 @@ const AllProduct = () => {
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`px-2 sm:px-1 ${
+                    className={`px-1 ${
                       currentPage === page
                         ? "text-orange-600 font-semibold"
                         : ""
@@ -1602,7 +1606,7 @@ const AllProduct = () => {
             onClick={() =>
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }
-            className="bg-[#247606] text-white px-6 sm:px-10 py-2 sm:py-3 text-xs sm:text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+            className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={currentPage === totalPages}
           >
             Next
@@ -1623,7 +1627,9 @@ const AllProduct = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-800">Product QR Code</h2>
+              <h2 className="text-xl font-bold text-gray-800">
+                Product QR Code
+              </h2>
               <button
                 onClick={() => {
                   setQrModalOpen(false);
@@ -1632,12 +1638,22 @@ const AllProduct = () => {
                 }}
                 className="text-gray-500 hover:text-gray-700"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
-            
+
             <div className="flex flex-col items-center justify-center space-y-4">
               {/* QR Code Image */}
               {qrCodeDataUrl && (
@@ -1649,14 +1665,14 @@ const AllProduct = () => {
                   />
                 </div>
               )}
-              
+
               {/* Product ID below QR Code */}
               <div className="text-center">
                 <p className="text-sm text-gray-600 mb-1">Product ID</p>
                 <p className="text-lg font-bold text-gray-800 font-mono">
-                  {selectedProductForQR.productId || 
-                   selectedProductForQR.productNumber || 
-                   selectedProductForQR._id}
+                  {selectedProductForQR.productId ||
+                    selectedProductForQR.productNumber ||
+                    selectedProductForQR._id}
                 </p>
               </div>
 

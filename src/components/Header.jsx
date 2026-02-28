@@ -430,6 +430,7 @@ import {
   FiFileText,
   FiSettings,
   FiPieChart,
+  FiBarChart2,
 } from "react-icons/fi";
 import { useNavigate, useLocation } from "react-router-dom";
 import api, { BASE_URL } from "../api/api";
@@ -882,6 +883,12 @@ const Header = () => {
         icon: <FiUser />,
         category: "Profile",
       },
+      {
+        title: "Sales Report",
+        path: "/vendor/reports",
+        icon: <FiBarChart2 />,
+        category: "Analytics",
+      },
     ];
 
     if (userRole === "admin") return adminPages;
@@ -1103,6 +1110,7 @@ const Header = () => {
 
               {/* Menu Items */}
               <div className="py-2">
+                {/* Profile Settings */}
                 <button
                   onClick={() => {
                     if (userRole === "vendor") {
@@ -1117,6 +1125,20 @@ const Header = () => {
                   <FiUser className="text-orange-500 text-lg" />
                   <span>Profile Settings</span>
                 </button>
+
+                {/* Sales Report — visible only for vendors */}
+                {userRole === "vendor" && (
+                  <button
+                    onClick={() => {
+                      navigate("/vendor/reports");
+                      setIsDropdownOpen(false);
+                    }}
+                    className="w-full px-5 py-3 text-sm flex items-center gap-3 hover:bg-orange-50 text-gray-700 transition-colors font-medium"
+                  >
+                    <FiBarChart2 className="text-orange-500 text-lg" />
+                    <span>Sales Report</span>
+                  </button>
+                )}
               </div>
 
               {/* Logout Button */}

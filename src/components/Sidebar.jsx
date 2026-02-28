@@ -565,6 +565,11 @@ const Sidebar = () => {
       icon: <Image size={16} />,
       path: "/banners",
     },
+    {
+      name: "Push Notification",
+      icon: <Image size={16} />,
+      path: "/push",
+    },
 
     {
       name: "Coupons & Offer",

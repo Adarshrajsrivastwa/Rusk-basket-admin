@@ -2738,24 +2738,26 @@ const VendorDetails = () => {
       console.log("========================================");
       console.log("Vendor ID:", id);
       console.log("Page:", page);
-      
+
       const response = await api.get(`/api/admin/vendors/${id}/orders`, {
         params: {
           page: page,
           limit: 20,
         },
       });
-      
+
       console.log("Orders API Response:", response.data);
-      
+
       if (response.data && response.data.success) {
         setOrders(response.data.data || []);
-        setOrdersPagination(response.data.pagination || {
-          page: page,
-          limit: 20,
-          total: response.data.count || 0,
-          pages: Math.ceil((response.data.count || 0) / 20),
-        });
+        setOrdersPagination(
+          response.data.pagination || {
+            page: page,
+            limit: 20,
+            total: response.data.count || 0,
+            pages: Math.ceil((response.data.count || 0) / 20),
+          },
+        );
         console.log("✅ Orders fetched successfully");
         console.log("Total orders:", response.data.count);
         console.log("Orders data:", response.data.data);
@@ -2786,12 +2788,12 @@ const VendorDetails = () => {
         setError(null);
         let response;
         let endpointUsed = "";
-        
+
         console.log("========================================");
         console.log("🔍 FETCHING VENDOR DATA");
         console.log("========================================");
         console.log("Vendor ID:", id);
-        
+
         // Try /api/vendor/:id first (correct endpoint)
         try {
           endpointUsed = `/api/vendor/${id}`;
@@ -2803,7 +2805,7 @@ const VendorDetails = () => {
           console.log("Error status:", e.response?.status);
           console.log("Error message:", e.message);
           console.log("Error data:", e.response?.data);
-          
+
           // Fallback to /vendor/:id if /api/vendor/:id fails
           if (e.response?.status === 404) {
             try {
@@ -2820,7 +2822,7 @@ const VendorDetails = () => {
             throw e;
           }
         }
-        
+
         console.log("========================================");
         console.log("📦 RAW API RESPONSE");
         console.log("========================================");
@@ -2830,8 +2832,11 @@ const VendorDetails = () => {
         console.log("Full response object:", response);
         console.log("Response.data:", response.data);
         console.log("Response.data type:", typeof response.data);
-        console.log("Response.data keys:", response.data ? Object.keys(response.data) : "No data");
-        
+        console.log(
+          "Response.data keys:",
+          response.data ? Object.keys(response.data) : "No data",
+        );
+
         const result = response.data;
         console.log("========================================");
         console.log("📊 PROCESSED RESULT");
@@ -2840,18 +2845,21 @@ const VendorDetails = () => {
         console.log("Result.success:", result?.success);
         console.log("Result.data:", result?.data);
         console.log("Result.vendor:", result?.vendor);
-        
+
         if (result?.success) {
           let dataToUse = result.data || (result.vendor ? result : null);
           console.log("Data to use:", dataToUse);
-          console.log("Data to use keys:", dataToUse ? Object.keys(dataToUse) : "No data");
-          
+          console.log(
+            "Data to use keys:",
+            dataToUse ? Object.keys(dataToUse) : "No data",
+          );
+
           if (!dataToUse) {
             console.error("❌ No data received from API");
             setError("No data received from API");
             return;
           }
-          
+
           // Log metrics
           if (dataToUse.metrics) {
             console.log("========================================");
@@ -2862,17 +2870,29 @@ const VendorDetails = () => {
             console.log("Category Use:", dataToUse.metrics.categoryUse);
             console.log("Sub Category Use:", dataToUse.metrics.subCategoryUse);
             console.log("Total Products:", dataToUse.metrics.totalProducts);
-            console.log("Product Published:", dataToUse.metrics.productPublished);
-            console.log("Product In Review:", dataToUse.metrics.productInReview);
+            console.log(
+              "Product Published:",
+              dataToUse.metrics.productPublished,
+            );
+            console.log(
+              "Product In Review:",
+              dataToUse.metrics.productInReview,
+            );
             console.log("Total Order:", dataToUse.metrics.totalOrder);
-            console.log("Total Delivered Order:", dataToUse.metrics.totalDeliveredOrder);
-            console.log("Total Canceled Order:", dataToUse.metrics.totalCanceledOrder);
+            console.log(
+              "Total Delivered Order:",
+              dataToUse.metrics.totalDeliveredOrder,
+            );
+            console.log(
+              "Total Canceled Order:",
+              dataToUse.metrics.totalCanceledOrder,
+            );
             console.log("Total Riders:", dataToUse.metrics.totalRiders);
             console.log("Ratings:", dataToUse.metrics.ratings);
             console.log("Inventory:", dataToUse.metrics.inventory);
             console.log("Amount (Revenue):", dataToUse.metrics.amount);
           }
-          
+
           // Log order overview
           if (dataToUse.orderOverview) {
             console.log("========================================");
@@ -2880,15 +2900,30 @@ const VendorDetails = () => {
             console.log("========================================");
             console.log("Order Overview:", dataToUse.orderOverview);
             console.log("Total Orders:", dataToUse.orderOverview.totalOrders);
-            console.log("Status Distribution:", dataToUse.orderOverview.statusDistribution);
+            console.log(
+              "Status Distribution:",
+              dataToUse.orderOverview.statusDistribution,
+            );
             if (dataToUse.orderOverview.statusDistribution) {
-              console.log("Completed:", dataToUse.orderOverview.statusDistribution.completed);
-              console.log("In Progress:", dataToUse.orderOverview.statusDistribution.in_progress);
-              console.log("Pending:", dataToUse.orderOverview.statusDistribution.pending);
-              console.log("Cancelled:", dataToUse.orderOverview.statusDistribution.cancelled);
+              console.log(
+                "Completed:",
+                dataToUse.orderOverview.statusDistribution.completed,
+              );
+              console.log(
+                "In Progress:",
+                dataToUse.orderOverview.statusDistribution.in_progress,
+              );
+              console.log(
+                "Pending:",
+                dataToUse.orderOverview.statusDistribution.pending,
+              );
+              console.log(
+                "Cancelled:",
+                dataToUse.orderOverview.statusDistribution.cancelled,
+              );
             }
           }
-          
+
           setDashboardData(dataToUse);
           let vendorData = {};
           if (dataToUse.vendor && Object.keys(dataToUse.vendor).length > 0)
@@ -2899,13 +2934,13 @@ const VendorDetails = () => {
             vendorData = result.vendor;
           else if (result.id || result.vendorName || result.storeId)
             vendorData = result;
-          
+
           console.log("========================================");
           console.log("👤 VENDOR DATA EXTRACTED");
           console.log("========================================");
           console.log("Vendor Data:", vendorData);
           console.log("Vendor Data keys:", Object.keys(vendorData));
-          
+
           setVendor(vendorData);
           console.log("✅ Data set successfully!");
           console.log("========================================");
@@ -2924,7 +2959,7 @@ const VendorDetails = () => {
         console.error("Error data:", err.response?.data);
         console.error("Error message:", err.message);
         console.log("========================================");
-        
+
         if (err.response?.status === 404) {
           setError("Vendor not found.");
         } else if (err.response?.status === 401) {
@@ -3001,9 +3036,11 @@ const VendorDetails = () => {
   // Helper function to safely extract percentage value
   const getPercentageValue = (statusObj) => {
     if (!statusObj) return 0;
-    if (typeof statusObj === 'number') return statusObj;
-    if (typeof statusObj === 'object' && statusObj.percentage !== undefined) {
-      return typeof statusObj.percentage === 'number' ? statusObj.percentage : 0;
+    if (typeof statusObj === "number") return statusObj;
+    if (typeof statusObj === "object" && statusObj.percentage !== undefined) {
+      return typeof statusObj.percentage === "number"
+        ? statusObj.percentage
+        : 0;
     }
     return 0;
   };
@@ -3011,8 +3048,8 @@ const VendorDetails = () => {
   // Helper function to safely extract count value
   const getCountValue = (statusObj) => {
     if (!statusObj) return 0;
-    if (typeof statusObj === 'object' && statusObj.count !== undefined) {
-      return typeof statusObj.count === 'number' ? statusObj.count : 0;
+    if (typeof statusObj === "object" && statusObj.count !== undefined) {
+      return typeof statusObj.count === "number" ? statusObj.count : 0;
     }
     return 0;
   };
@@ -3020,25 +3057,30 @@ const VendorDetails = () => {
   const chartData = [
     {
       name: "Completed",
-      value: getPercentageValue(orderOverview?.statusDistribution?.completed) || 40,
+      value:
+        getPercentageValue(orderOverview?.statusDistribution?.completed) || 40,
       count: getCountValue(orderOverview?.statusDistribution?.completed),
       color: "#1e3a5f",
     },
     {
       name: "In Progress",
-      value: getPercentageValue(orderOverview?.statusDistribution?.in_progress) || 25,
+      value:
+        getPercentageValue(orderOverview?.statusDistribution?.in_progress) ||
+        25,
       count: getCountValue(orderOverview?.statusDistribution?.in_progress),
       color: "#16A34A",
     },
     {
       name: "Pending",
-      value: getPercentageValue(orderOverview?.statusDistribution?.pending) || 20,
+      value:
+        getPercentageValue(orderOverview?.statusDistribution?.pending) || 20,
       count: getCountValue(orderOverview?.statusDistribution?.pending),
       color: "#F59E0B",
     },
     {
       name: "Cancelled",
-      value: getPercentageValue(orderOverview?.statusDistribution?.cancelled) || 15,
+      value:
+        getPercentageValue(orderOverview?.statusDistribution?.cancelled) || 15,
       count: getCountValue(orderOverview?.statusDistribution?.cancelled),
       color: "#EF4444",
     },
@@ -3158,7 +3200,7 @@ const VendorDetails = () => {
       )}
 
       {/* ── Hero Header ────────────────────────────────────────── */}
-      <div className="mx-4 mt-4 mb-6 rounded-2xl bg-gradient-to-r from-[#1a1a2e] via-[#16213e] to-[#0f3460] p-5 sm:p-7 shadow-2xl overflow-hidden relative">
+      <div className="mx-0 mt-4 mb-6 rounded-sm bg-gradient-to-r from-[#1a1a2e] via-[#16213e] to-[#1a1a2e] p-0 ml-6 sm:p-7 shadow-sm overflow-hidden relative">
         <div
           className="absolute inset-0 opacity-10"
           style={{
@@ -3213,9 +3255,10 @@ const VendorDetails = () => {
               {
                 label: "Total Orders",
                 value: (() => {
-                  const total = orderOverview?.totalOrders || metrics.totalOrder || 0;
-                  if (typeof total === 'number') return total;
-                  if (typeof total === 'object' && total !== null) {
+                  const total =
+                    orderOverview?.totalOrders || metrics.totalOrder || 0;
+                  if (typeof total === "number") return total;
+                  if (typeof total === "object" && total !== null) {
                     return total.count || total.value || 0;
                   }
                   return 0;
@@ -3255,7 +3298,7 @@ const VendorDetails = () => {
       </div>
 
       {/* ── Tab Nav ────────────────────────────────────────────── */}
-      <div className="px-4 mb-4 flex gap-1 overflow-x-auto scrollbar-hide">
+      <div className="px-0 ml-6 mb-4 flex gap-1 overflow-x-auto scrollbar-hide">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -3268,7 +3311,7 @@ const VendorDetails = () => {
       </div>
 
       {/* ── Main Content ───────────────────────────────────────── */}
-      <div className="px-4 pb-8">
+      <div className="px-0 ml-6 pb-8">
         {/* OVERVIEW TAB */}
         {activeTab === "overview" && (
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
@@ -3548,11 +3591,13 @@ const VendorDetails = () => {
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <p className="text-3xl font-black text-gray-900">
-                      {typeof orderOverview?.totalOrders === 'number' 
-                        ? orderOverview.totalOrders 
-                        : typeof orderOverview?.totalOrders === 'object' 
-                        ? orderOverview.totalOrders?.count || orderOverview.totalOrders?.value || 0
-                        : 0}
+                      {typeof orderOverview?.totalOrders === "number"
+                        ? orderOverview.totalOrders
+                        : typeof orderOverview?.totalOrders === "object"
+                          ? orderOverview.totalOrders?.count ||
+                            orderOverview.totalOrders?.value ||
+                            0
+                          : 0}
                     </p>
                     <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">
                       Total Orders
@@ -3799,32 +3844,38 @@ const VendorDetails = () => {
                           </div>
                           <div>
                             <p className="font-bold text-gray-900 text-sm">
-                              {order.orderNumber || `Order #${(ordersPage - 1) * 20 + i + 1}`}
+                              {order.orderNumber ||
+                                `Order #${(ordersPage - 1) * 20 + i + 1}`}
                             </p>
                             <p className="text-xs text-gray-500">
-                              {order.createdAt ? formatDate(order.createdAt) : "—"}
+                              {order.createdAt
+                                ? formatDate(order.createdAt)
+                                : "—"}
                             </p>
                           </div>
                         </div>
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-bold capitalize ${
-                            order.status === "delivered" || order.status === "completed"
+                            order.status === "delivered" ||
+                            order.status === "completed"
                               ? "bg-green-50 text-green-700"
                               : order.status === "cancelled"
-                              ? "bg-red-50 text-red-700"
-                              : "bg-amber-50 text-amber-700"
+                                ? "bg-red-50 text-red-700"
+                                : "bg-amber-50 text-amber-700"
                           }`}
                         >
                           {order.status || "Pending"}
                         </span>
                       </div>
-                      
+
                       {/* Order Details */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3 pt-3 border-t border-gray-100">
                         {/* User Info */}
                         {order.user && (
                           <div>
-                            <p className="text-xs text-gray-500 mb-1">Customer</p>
+                            <p className="text-xs text-gray-500 mb-1">
+                              Customer
+                            </p>
                             <p className="text-sm font-semibold text-gray-900">
                               {order.user.userName || "N/A"}
                             </p>
@@ -3840,26 +3891,33 @@ const VendorDetails = () => {
                             )}
                           </div>
                         )}
-                        
+
                         {/* Items Count */}
                         {order.items && (
                           <div>
                             <p className="text-xs text-gray-500 mb-1">Items</p>
                             <p className="text-sm font-semibold text-gray-900">
-                              {order.items.length} item{order.items.length !== 1 ? "s" : ""}
+                              {order.items.length} item
+                              {order.items.length !== 1 ? "s" : ""}
                             </p>
                           </div>
                         )}
-                        
+
                         {/* Amount */}
                         <div>
                           <p className="text-xs text-gray-500 mb-1">Amount</p>
                           <p className="text-sm font-bold text-[#FF7B1D]">
-                            ₹{order.vendorSubtotal ? parseFloat(order.vendorSubtotal).toLocaleString("en-IN", { minimumFractionDigits: 2 }) : "0.00"}
+                            ₹
+                            {order.vendorSubtotal
+                              ? parseFloat(order.vendorSubtotal).toLocaleString(
+                                  "en-IN",
+                                  { minimumFractionDigits: 2 },
+                                )
+                              : "0.00"}
                           </p>
                         </div>
                       </div>
-                      
+
                       {/* Rider Info */}
                       {order.rider && (
                         <div className="mt-3 pt-3 border-t border-gray-100">
@@ -3882,7 +3940,12 @@ const VendorDetails = () => {
                 {ordersPagination.pages > 1 && (
                   <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
                     <div className="text-sm text-gray-600">
-                      Showing {((ordersPage - 1) * ordersPagination.limit) + 1} to {Math.min(ordersPage * ordersPagination.limit, ordersPagination.total)} of {ordersPagination.total} orders
+                      Showing {(ordersPage - 1) * ordersPagination.limit + 1} to{" "}
+                      {Math.min(
+                        ordersPage * ordersPagination.limit,
+                        ordersPagination.total,
+                      )}{" "}
+                      of {ordersPagination.total} orders
                     </div>
                     <div className="flex items-center gap-2">
                       <button
@@ -3893,34 +3956,44 @@ const VendorDetails = () => {
                         Previous
                       </button>
                       <div className="flex gap-1">
-                        {Array.from({ length: Math.min(ordersPagination.pages, 5) }, (_, i) => {
-                          let pageNum;
-                          if (ordersPagination.pages <= 5) {
-                            pageNum = i + 1;
-                          } else if (ordersPage <= 3) {
-                            pageNum = i + 1;
-                          } else if (ordersPage >= ordersPagination.pages - 2) {
-                            pageNum = ordersPagination.pages - 4 + i;
-                          } else {
-                            pageNum = ordersPage - 2 + i;
-                          }
-                          return (
-                            <button
-                              key={pageNum}
-                              onClick={() => setOrdersPage(pageNum)}
-                              className={`px-3 py-2 text-sm font-medium rounded-lg ${
-                                ordersPage === pageNum
-                                  ? "bg-[#FF7B1D] text-white"
-                                  : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
-                              }`}
-                            >
-                              {pageNum}
-                            </button>
-                          );
-                        })}
+                        {Array.from(
+                          { length: Math.min(ordersPagination.pages, 5) },
+                          (_, i) => {
+                            let pageNum;
+                            if (ordersPagination.pages <= 5) {
+                              pageNum = i + 1;
+                            } else if (ordersPage <= 3) {
+                              pageNum = i + 1;
+                            } else if (
+                              ordersPage >=
+                              ordersPagination.pages - 2
+                            ) {
+                              pageNum = ordersPagination.pages - 4 + i;
+                            } else {
+                              pageNum = ordersPage - 2 + i;
+                            }
+                            return (
+                              <button
+                                key={pageNum}
+                                onClick={() => setOrdersPage(pageNum)}
+                                className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                                  ordersPage === pageNum
+                                    ? "bg-[#FF7B1D] text-white"
+                                    : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
+                                }`}
+                              >
+                                {pageNum}
+                              </button>
+                            );
+                          },
+                        )}
                       </div>
                       <button
-                        onClick={() => setOrdersPage((p) => Math.min(p + 1, ordersPagination.pages))}
+                        onClick={() =>
+                          setOrdersPage((p) =>
+                            Math.min(p + 1, ordersPagination.pages),
+                          )
+                        }
                         disabled={ordersPage === ordersPagination.pages}
                         className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                       >

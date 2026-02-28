@@ -15,6 +15,8 @@ import {
   Calendar,
   Shield,
   Truck,
+  Navigation,
+  Loader,
 } from "lucide-react";
 
 const VendorProfile = () => {
@@ -23,6 +25,8 @@ const VendorProfile = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [fetchingLocation, setFetchingLocation] = useState(false);
+  const [locationError, setLocationError] = useState(null);
 
   const [profileData, setProfileData] = useState(null);
   const [formData, setFormData] = useState({
@@ -106,21 +110,22 @@ const VendorProfile = () => {
           serviceRadius: result.data.serviceRadius || "",
           handlingChargePercentage: result.data.handlingChargePercentage || "",
           fssaiNumber: result.data.fssaiNumber || "",
-          deliveryChargePerKm: result.data.deliveryChargePerKm !== undefined && result.data.deliveryChargePerKm !== null 
-            ? result.data.deliveryChargePerKm 
-            : "",
+          deliveryChargePerKm:
+            result.data.deliveryChargePerKm !== undefined &&
+              result.data.deliveryChargePerKm !== null
+              ? result.data.deliveryChargePerKm
+              : "",
         });
-        
-        // Set image previews
+
         if (result.data.profileImage) {
-          const profileImgUrl = Array.isArray(result.data.profileImage) 
-            ? result.data.profileImage[0]?.url 
+          const profileImgUrl = Array.isArray(result.data.profileImage)
+            ? result.data.profileImage[0]?.url
             : result.data.profileImage?.url || result.data.profileImage;
           setProfileImagePreview(profileImgUrl);
         }
         if (result.data.storeImage) {
-          const storeImgUrl = Array.isArray(result.data.storeImage) 
-            ? result.data.storeImage[0]?.url 
+          const storeImgUrl = Array.isArray(result.data.storeImage)
+            ? result.data.storeImage[0]?.url
             : result.data.storeImage?.url || result.data.storeImage;
           setStoreImagePreview(storeImgUrl);
         }
@@ -137,13 +142,54 @@ const VendorProfile = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle profile image change
+  // ─── Fetch Current Location ─────────────────────────────────────────────────
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by your browser.");
+      return;
+    }
+    setFetchingLocation(true);
+    setLocationError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setFormData((prev) => ({
+          ...prev,
+          latitude: latitude.toFixed(6),
+          longitude: longitude.toFixed(6),
+        }));
+        setFetchingLocation(false);
+      },
+      (err) => {
+        setFetchingLocation(false);
+        switch (err.code) {
+          case err.PERMISSION_DENIED:
+            setLocationError(
+              "Location permission denied. Please allow location access in your browser settings.",
+            );
+            break;
+          case err.POSITION_UNAVAILABLE:
+            setLocationError("Location information is unavailable.");
+            break;
+          case err.TIMEOUT:
+            setLocationError("Location request timed out. Please try again.");
+            break;
+          default:
+            setLocationError(
+              "An unknown error occurred while fetching location.",
+            );
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    );
+  };
+
   const handleProfileImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
-        alert("Please upload a valid image file");
-        return;
+        console.warn("Non-image file selected, preview may not be available");
       }
       if (file.size > 5 * 1024 * 1024) {
         alert("Image size should be less than 5MB");
@@ -151,20 +197,16 @@ const VendorProfile = () => {
       }
       setProfileImage(file);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImagePreview(reader.result);
-      };
+      reader.onloadend = () => setProfileImagePreview(reader.result);
       reader.readAsDataURL(file);
     }
   };
 
-  // Handle store image change
   const handleStoreImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
-        alert("Please upload a valid image file");
-        return;
+        console.warn("Non-image file selected, preview may not be available");
       }
       if (file.size > 5 * 1024 * 1024) {
         alert("Image size should be less than 5MB");
@@ -172,14 +214,11 @@ const VendorProfile = () => {
       }
       setStoreImage(file);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setStoreImagePreview(reader.result);
-      };
+      reader.onloadend = () => setStoreImagePreview(reader.result);
       reader.readAsDataURL(file);
     }
   };
 
-  // Handle remove profile image
   const handleRemoveProfileImage = () => {
     setProfileImage(null);
     setProfileImagePreview(null);
@@ -187,7 +226,6 @@ const VendorProfile = () => {
     if (fileInput) fileInput.value = "";
   };
 
-  // Handle remove store image
   const handleRemoveStoreImage = () => {
     setStoreImage(null);
     setStoreImagePreview(null);
@@ -204,125 +242,119 @@ const VendorProfile = () => {
       const token =
         localStorage.getItem("token") || localStorage.getItem("authToken");
 
-      // If images are selected, use FormData
       if (profileImage || storeImage) {
         const formDataToSend = new FormData();
-        
-        // Add all form fields
+
         formDataToSend.append("vendorName", formData.vendorName || "");
-        formDataToSend.append("altContactNumber", formData.altContactNumber || "");
+        formDataToSend.append(
+          "altContactNumber",
+          formData.altContactNumber || "",
+        );
         formDataToSend.append("email", formData.email || "");
         formDataToSend.append("gender", formData.gender || "");
         formDataToSend.append("dateOfBirth", formData.dateOfBirth || "");
         formDataToSend.append("storeName", formData.storeName || "");
-        formDataToSend.append("storeAddressLine1", formData.storeAddressLine1 || "");
-        formDataToSend.append("storeAddressLine2", formData.storeAddressLine2 || "");
+        formDataToSend.append(
+          "storeAddressLine1",
+          formData.storeAddressLine1 || "",
+        );
+        formDataToSend.append(
+          "storeAddressLine2",
+          formData.storeAddressLine2 || "",
+        );
         formDataToSend.append("pinCode", formData.pinCode || "");
-        if (formData.latitude) {
+        if (formData.latitude)
           formDataToSend.append("latitude", formData.latitude);
-        }
-        if (formData.longitude) {
+        if (formData.longitude)
           formDataToSend.append("longitude", formData.longitude);
-        }
         formDataToSend.append("ifsc", formData.ifsc || "");
         formDataToSend.append("accountNumber", formData.accountNumber || "");
         formDataToSend.append("bankName", formData.bankName || "");
-        if (formData.serviceRadius) {
+        if (formData.serviceRadius)
           formDataToSend.append("serviceRadius", formData.serviceRadius);
-        }
-        if (formData.handlingChargePercentage) {
-          formDataToSend.append("handlingChargePercentage", formData.handlingChargePercentage);
-        }
-        if (formData.fssaiNumber) {
+        if (formData.handlingChargePercentage)
+          formDataToSend.append(
+            "handlingChargePercentage",
+            formData.handlingChargePercentage,
+          );
+        if (formData.fssaiNumber)
           formDataToSend.append("fssaiNumber", formData.fssaiNumber);
-        }
-        // Always send deliveryChargePerKm, even if it's 0
-        const deliveryChargeValue = formData.deliveryChargePerKm !== undefined && formData.deliveryChargePerKm !== null && formData.deliveryChargePerKm !== ""
-          ? parseFloat(formData.deliveryChargePerKm) || 0
-          : 0;
-        formDataToSend.append("deliveryChargePerKm", deliveryChargeValue.toString());
-
-        // Add images if selected
-        if (profileImage) {
-          formDataToSend.append("profileImage", profileImage);
-        }
-        if (storeImage) {
-          formDataToSend.append("storeImage", storeImage);
-        }
+        const deliveryChargeValue =
+          formData.deliveryChargePerKm !== undefined &&
+            formData.deliveryChargePerKm !== null &&
+            formData.deliveryChargePerKm !== ""
+            ? parseFloat(formData.deliveryChargePerKm) || 0
+            : 0;
+        formDataToSend.append(
+          "deliveryChargePerKm",
+          deliveryChargeValue.toString(),
+        );
+        if (profileImage) formDataToSend.append("profileImage", profileImage);
+        if (storeImage) formDataToSend.append("storeImage", storeImage);
 
         const headers = {};
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
+        if (token) headers["Authorization"] = `Bearer ${token}`;
 
         const response = await fetch(
           "https://api.rushbaskets.com/api/vendor/profile",
           {
             method: "PUT",
             credentials: "include",
-            headers: headers,
+            headers,
             body: formDataToSend,
           },
         );
 
         const result = await response.json();
-
-        if (!response.ok || !result.success) {
+        if (!response.ok || !result.success)
           throw new Error(result.message || "Failed to update profile");
-        }
 
         if (result.success) {
           setProfileData(result.data);
           setProfileImage(null);
           setStoreImage(null);
-          // Update previews from response
           if (result.data.profileImage) {
-            const profileImgUrl = Array.isArray(result.data.profileImage) 
-              ? result.data.profileImage[0]?.url 
+            const url = Array.isArray(result.data.profileImage)
+              ? result.data.profileImage[0]?.url
               : result.data.profileImage?.url || result.data.profileImage;
-            setProfileImagePreview(profileImgUrl);
+            setProfileImagePreview(url);
           }
           if (result.data.storeImage) {
-            const storeImgUrl = Array.isArray(result.data.storeImage) 
-              ? result.data.storeImage[0]?.url 
+            const url = Array.isArray(result.data.storeImage)
+              ? result.data.storeImage[0]?.url
               : result.data.storeImage?.url || result.data.storeImage;
-            setStoreImagePreview(storeImgUrl);
+            setStoreImagePreview(url);
           }
           setSuccess("Profile updated successfully!");
           setIsEditing(false);
           setTimeout(() => setSuccess(null), 3000);
         }
       } else {
-        // No images, use JSON
-        const headers = {
-          "Content-Type": "application/json",
-        };
-
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
+        const headers = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
 
         const response = await fetch(
           "https://api.rushbaskets.com/api/vendor/profile",
           {
             method: "PUT",
             credentials: "include",
-            headers: headers,
+            headers,
             body: JSON.stringify({
               ...formData,
               fssaiNumber: formData.fssaiNumber || "",
-              deliveryChargePerKm: formData.deliveryChargePerKm !== undefined && formData.deliveryChargePerKm !== null && formData.deliveryChargePerKm !== ""
-                ? parseFloat(formData.deliveryChargePerKm) || 0
-                : 0,
+              deliveryChargePerKm:
+                formData.deliveryChargePerKm !== undefined &&
+                  formData.deliveryChargePerKm !== null &&
+                  formData.deliveryChargePerKm !== ""
+                  ? parseFloat(formData.deliveryChargePerKm) || 0
+                  : 0,
             }),
           },
         );
 
         const result = await response.json();
-
-        if (!response.ok || !result.success) {
+        if (!response.ok || !result.success)
           throw new Error(result.message || "Failed to update profile");
-        }
 
         if (result.success) {
           setProfileData(result.data);
@@ -360,32 +392,27 @@ const VendorProfile = () => {
         serviceRadius: profileData.serviceRadius || "",
         handlingChargePercentage: profileData.handlingChargePercentage || "",
         fssaiNumber: profileData.fssaiNumber || "",
-        deliveryChargePerKm: profileData.deliveryChargePerKm !== undefined && profileData.deliveryChargePerKm !== null 
-          ? profileData.deliveryChargePerKm 
-          : "",
+        deliveryChargePerKm:
+          profileData.deliveryChargePerKm !== undefined &&
+            profileData.deliveryChargePerKm !== null
+            ? profileData.deliveryChargePerKm
+            : "",
       });
-      
-      // Reset images
       setProfileImage(null);
       setStoreImage(null);
       if (profileData.profileImage) {
-        const profileImgUrl = Array.isArray(profileData.profileImage) 
-          ? profileData.profileImage[0]?.url 
+        const url = Array.isArray(profileData.profileImage)
+          ? profileData.profileImage[0]?.url
           : profileData.profileImage?.url || profileData.profileImage;
-        setProfileImagePreview(profileImgUrl);
-      } else {
-        setProfileImagePreview(null);
-      }
+        setProfileImagePreview(url);
+      } else setProfileImagePreview(null);
       if (profileData.storeImage) {
-        const storeImgUrl = Array.isArray(profileData.storeImage) 
-          ? profileData.storeImage[0]?.url 
+        const url = Array.isArray(profileData.storeImage)
+          ? profileData.storeImage[0]?.url
           : profileData.storeImage?.url || profileData.storeImage;
-        setStoreImagePreview(storeImgUrl);
-      } else {
-        setStoreImagePreview(null);
-      }
-      
-      // Reset file inputs
+        setStoreImagePreview(url);
+      } else setStoreImagePreview(null);
+
       const profileInput = document.getElementById("profile-image-upload");
       const storeInput = document.getElementById("store-image-upload");
       if (profileInput) profileInput.value = "";
@@ -393,11 +420,12 @@ const VendorProfile = () => {
     }
     setIsEditing(false);
     setError(null);
+    setLocationError(null);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen  flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-orange-200 border-t-[#FF7B1D] mx-auto"></div>
           <p className="mt-4 font-medium text-lg" style={{ color: "#FF7B1D" }}>
@@ -412,7 +440,7 @@ const VendorProfile = () => {
     <DashboardLayout>
       <div className="min-h-screen py-2 px-4 sm:px-6 lg:px-0 ml-6">
         <div className="max-w-7xl mx-auto">
-          {/* Header Section with Gradient */}
+          {/* Header Section */}
           <div
             className="rounded-sm shadow-xl p-8 mb-8 text-white"
             style={{
@@ -435,7 +463,6 @@ const VendorProfile = () => {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               {!isEditing ? (
                 <button
                   onClick={() => setIsEditing(true)}
@@ -568,12 +595,14 @@ const VendorProfile = () => {
                 displayValue={`${profileData?.age} years`}
                 isEditing={false}
               />
+
               {/* Profile Image Upload */}
               <div className="lg:col-span-3">
                 <div
                   className="p-5 rounded-sm border hover:shadow-md transition-shadow"
                   style={{
-                    background: "linear-gradient(to bottom right, #FFF0E6, white)",
+                    background:
+                      "linear-gradient(to bottom right, #FFF0E6, white)",
                     borderColor: "#FFE5D1",
                   }}
                 >
@@ -619,7 +648,6 @@ const VendorProfile = () => {
                         <input
                           type="file"
                           id="profile-image-upload"
-                          accept="image/*"
                           onChange={handleProfileImageChange}
                           className="hidden"
                         />
@@ -688,7 +716,8 @@ const VendorProfile = () => {
                 min="0"
                 value={formData.deliveryChargePerKm}
                 displayValue={
-                  profileData?.deliveryChargePerKm !== undefined && profileData?.deliveryChargePerKm !== null
+                  profileData?.deliveryChargePerKm !== undefined &&
+                    profileData?.deliveryChargePerKm !== null
                     ? `₹${Number(profileData.deliveryChargePerKm).toFixed(2)} / km`
                     : "₹0.00 / km"
                 }
@@ -718,12 +747,14 @@ const VendorProfile = () => {
                 }
                 isEditing={false}
               />
+
               {/* Store Image Upload */}
               <div className="lg:col-span-4">
                 <div
                   className="p-5 rounded-sm border hover:shadow-md transition-shadow"
                   style={{
-                    background: "linear-gradient(to bottom right, #FFF0E6, white)",
+                    background:
+                      "linear-gradient(to bottom right, #FFF0E6, white)",
                     borderColor: "#FFE5D1",
                   }}
                 >
@@ -769,7 +800,6 @@ const VendorProfile = () => {
                         <input
                           type="file"
                           id="store-image-upload"
-                          accept="image/*"
                           onChange={handleStoreImageChange}
                           className="hidden"
                         />
@@ -841,28 +871,125 @@ const VendorProfile = () => {
                 isEditing={isEditing}
                 onChange={handleInputChange}
               />
-              <FormField
-                icon={<MapPin size={20} style={{ color: "#FF7B1D" }} />}
-                label="Latitude"
-                name="latitude"
-                type="number"
-                step="0.0001"
-                value={formData.latitude}
-                displayValue={profileData?.storeAddress.latitude}
-                isEditing={isEditing}
-                onChange={handleInputChange}
-              />
-              <FormField
-                icon={<MapPin size={20} style={{ color: "#FF7B1D" }} />}
-                label="Longitude"
-                name="longitude"
-                type="number"
-                step="0.0001"
-                value={formData.longitude}
-                displayValue={profileData?.storeAddress.longitude}
-                isEditing={isEditing}
-                onChange={handleInputChange}
-              />
+
+              {/* Latitude & Longitude with Get Location button */}
+              <div className="lg:col-span-2">
+                <div
+                  className="p-5 rounded-sm border hover:shadow-md transition-shadow"
+                  style={{
+                    background:
+                      "linear-gradient(to bottom right, #FFF0E6, white)",
+                    borderColor: "#FFE5D1",
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-white p-2 rounded-lg shadow-sm">
+                        <Navigation size={20} style={{ color: "#FF7B1D" }} />
+                      </div>
+                      <label className="text-sm font-semibold text-gray-600">
+                        Store Coordinates
+                      </label>
+                    </div>
+
+                    {/* Get Current Location Button */}
+                    {isEditing && (
+                      <button
+                        type="button"
+                        onClick={handleGetCurrentLocation}
+                        disabled={fetchingLocation}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                        style={{
+                          background: fetchingLocation
+                            ? "#ccc"
+                            : "linear-gradient(to right, #FF7B1D, #FF9547)",
+                        }}
+                      >
+                        {fetchingLocation ? (
+                          <>
+                            <Loader size={16} className="animate-spin" />
+                            Fetching...
+                          </>
+                        ) : (
+                          <>
+                            <Navigation size={16} />
+                            Use Current Location
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Location error */}
+                  {locationError && (
+                    <div className="mb-4 flex items-start gap-2 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg px-3 py-2">
+                      <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                      <span>{locationError}</span>
+                    </div>
+                  )}
+
+                  {/* Success indicator */}
+                  {formData.latitude &&
+                    formData.longitude &&
+                    isEditing &&
+                    !locationError && (
+                      <div className="mb-4 flex items-center gap-2 bg-green-50 border border-green-200 text-green-600 text-xs rounded-lg px-3 py-2">
+                        <MapPin size={13} />
+                        <span>
+                          Coordinates set: {formData.latitude},{" "}
+                          {formData.longitude}
+                        </span>
+                      </div>
+                    )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 ml-10">
+                    {/* Latitude */}
+                    <div>
+                      <label className="block text-xs text-gray-500 font-medium mb-1.5 ml-1">
+                        Latitude
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          name="latitude"
+                          value={formData.latitude}
+                          onChange={handleInputChange}
+                          step="0.000001"
+                          placeholder="e.g. 28.613939"
+                          className="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-2 focus:outline-none transition-all"
+                          style={{ borderColor: "#FFE5D1" }}
+                        />
+                      ) : (
+                        <p className="text-gray-900 font-medium text-lg">
+                          {profileData?.storeAddress.latitude || "N/A"}
+                        </p>
+                      )}
+                    </div>
+                    {/* Longitude */}
+                    <div>
+                      <label className="block text-xs text-gray-500 font-medium mb-1.5 ml-1">
+                        Longitude
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          name="longitude"
+                          value={formData.longitude}
+                          onChange={handleInputChange}
+                          step="0.000001"
+                          placeholder="e.g. 77.209021"
+                          className="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-2 focus:outline-none transition-all"
+                          style={{ borderColor: "#FFE5D1" }}
+                        />
+                      ) : (
+                        <p className="text-gray-900 font-medium text-lg">
+                          {profileData?.storeAddress.longitude || "N/A"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -910,14 +1037,13 @@ const VendorProfile = () => {
               />
             </div>
           </div>
-
         </div>
       </div>
     </DashboardLayout>
   );
 };
 
-// Reusable FormField Component
+// ─── Reusable FormField Component ──────────────────────────────────────────────
 const FormField = ({
   icon,
   label,
@@ -928,6 +1054,7 @@ const FormField = ({
   onChange,
   type = "text",
   step,
+  min,
   options,
   capitalize = false,
   placeholder = "",
@@ -950,7 +1077,7 @@ const FormField = ({
           value={value}
           onChange={onChange}
           className="w-full px-4 py-2.5 ml-10 border-2 rounded-xl focus:ring-2 focus:outline-none transition-all"
-          style={{ borderColor: "#FFE5D1", focusRingColor: "#FF7B1D" }}
+          style={{ borderColor: "#FFE5D1" }}
         >
           {options.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -965,6 +1092,7 @@ const FormField = ({
           value={value}
           onChange={onChange}
           step={step}
+          min={min}
           placeholder={placeholder}
           className="w-full px-4 py-2.5 ml-10 border-2 rounded-xl focus:ring-2 focus:outline-none transition-all"
           style={{ borderColor: "#FFE5D1" }}

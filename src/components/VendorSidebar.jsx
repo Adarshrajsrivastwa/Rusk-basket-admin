@@ -704,6 +704,7 @@ const VendorSidebar = () => {
           path: "/vendor/settings/profile",
           icon: <User size={14} />,
         },
+
         {
           name: "Logout",
           path: "/logout",

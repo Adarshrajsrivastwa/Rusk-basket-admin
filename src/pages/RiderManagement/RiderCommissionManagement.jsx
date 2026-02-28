@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
-import { Settings, IndianRupee, Percent, Calendar, Wallet, DollarSign, Loader2 } from "lucide-react";
+import {
+  Settings,
+  IndianRupee,
+  Percent,
+  Calendar,
+  Wallet,
+  DollarSign,
+  Loader2,
+} from "lucide-react";
 import api from "../../api/api";
 import { X } from "lucide-react";
 
@@ -47,7 +55,7 @@ const RiderCommissionManagement = () => {
             pages: result.data.pagination?.pages || 1,
             page: result.data.pagination?.page || page,
             limit: result.data.pagination?.limit || limit,
-          }
+          },
         );
       } else {
         console.error("Failed to fetch riders:", result.message);
@@ -72,7 +80,8 @@ const RiderCommissionManagement = () => {
     if (rider.commission || rider.commissionType) {
       setCommissionData({
         type: rider.commissionType || rider.commission?.type || "percentage",
-        percentage: rider.commissionPercentage || rider.commission?.percentage || 10,
+        percentage:
+          rider.commissionPercentage || rider.commission?.percentage || 10,
         fixedAmount: rider.commission?.fixedAmount || 0,
         subscriptionAmount: rider.commission?.subscriptionAmount || 0,
         subscriptionPeriod: rider.commission?.subscriptionPeriod || "monthly",
@@ -107,13 +116,15 @@ const RiderCommissionManagement = () => {
         payload.percentage = parseFloat(commissionData.percentage);
         payload.fixedAmount = parseFloat(commissionData.fixedAmount);
       } else if (commissionData.type === "subscription") {
-        payload.subscriptionAmount = parseFloat(commissionData.subscriptionAmount);
+        payload.subscriptionAmount = parseFloat(
+          commissionData.subscriptionAmount,
+        );
         payload.subscriptionPeriod = commissionData.subscriptionPeriod;
       }
 
       const response = await api.put(
         `/api/admin/riders/${selectedRider.riderId || selectedRider._id}/commission`,
-        payload
+        payload,
       );
 
       const result = response.data;
@@ -131,7 +142,7 @@ const RiderCommissionManagement = () => {
       alert(
         error.response?.data?.message ||
           error.message ||
-          "Error updating commission. Please try again."
+          "Error updating commission. Please try again.",
       );
     } finally {
       setSaving(false);
@@ -141,7 +152,7 @@ const RiderCommissionManagement = () => {
   // Format commission display
   const formatCommission = (rider) => {
     if (!rider.commissionType && !rider.commission) return "Not Set";
-    
+
     const commType = rider.commissionType || rider.commission?.type;
     const comm = rider.commission || {};
 
@@ -205,12 +216,8 @@ const RiderCommissionManagement = () => {
   return (
     <DashboardLayout>
       {/* Top Bar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-0 mb-2">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-2 mb-2">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
-          <h1 className="text-2xl font-bold text-gray-800">
-            Rider Commission & Wallet Management
-          </h1>
-
           {/* Search */}
           <div className="flex items-center border border-black rounded overflow-hidden h-9 w-full max-w-full sm:max-w-[450px] mt-2 sm:mt-0">
             <input
@@ -238,7 +245,7 @@ const RiderCommissionManagement = () => {
               <th className="p-3 text-left">Wallet Balance</th>
               <th className="p-3 text-left">Due Balance</th>
               <th className="p-3 text-left">Current Commission</th>
-              <th className="p-3 pr-6 text-right">Action</th>
+              <th className="p-3 pr-32 text-right">Action</th>
             </tr>
           </thead>
 
@@ -256,7 +263,9 @@ const RiderCommissionManagement = () => {
                   <td className="p-3">
                     {(currentPage - 1) * pagination.limit + idx + 1}
                   </td>
-                  <td className="p-3 font-semibold">{rider.fullName || "N/A"}</td>
+                  <td className="p-3 font-semibold">
+                    {rider.fullName || "N/A"}
+                  </td>
                   <td className="p-3">{rider.mobileNumber || "N/A"}</td>
                   <td className="p-3">
                     <div className="flex items-center gap-2">
@@ -337,7 +346,7 @@ const RiderCommissionManagement = () => {
                   >
                     {page}
                   </button>
-                )
+                ),
               );
             })()}
           </div>
@@ -410,7 +419,10 @@ const RiderCommissionManagement = () => {
                 <select
                   value={commissionData.type}
                   onChange={(e) =>
-                    setCommissionData({ ...commissionData, type: e.target.value })
+                    setCommissionData({
+                      ...commissionData,
+                      type: e.target.value,
+                    })
                   }
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF7B1D]"
                 >
@@ -549,7 +561,8 @@ const RiderCommissionManagement = () => {
                       placeholder="500"
                     />
                     <p className="mt-1 text-xs text-red-600">
-                      ⚠️ Subscription amount will be automatically deducted from rider wallet
+                      ⚠️ Subscription amount will be automatically deducted from
+                      rider wallet
                     </p>
                   </div>
                   <div>
@@ -572,7 +585,8 @@ const RiderCommissionManagement = () => {
                     </select>
                   </div>
                   <p className="text-xs text-gray-500">
-                    Example: ₹500/month means rider pays ₹500 per month (deducted from wallet)
+                    Example: ₹500/month means rider pays ₹500 per month
+                    (deducted from wallet)
                   </p>
                 </div>
               )}

@@ -98,7 +98,13 @@ const RiderJobManagement = () => {
         markerInstanceRef.current = null;
       };
     }
-  }, [isModalOpen, showMap, mapLoaded, formData.locationLatitude, formData.locationLongitude]);
+  }, [
+    isModalOpen,
+    showMap,
+    mapLoaded,
+    formData.locationLatitude,
+    formData.locationLongitude,
+  ]);
 
   const initializeMap = () => {
     const mapContainer = document.getElementById("rider-map-container");
@@ -107,17 +113,31 @@ const RiderJobManagement = () => {
     }
 
     if (mapInstanceRef.current) {
-      if (formData.locationLatitude && formData.locationLongitude && markerInstanceRef.current) {
-        const newPos = [parseFloat(formData.locationLatitude), parseFloat(formData.locationLongitude)];
+      if (
+        formData.locationLatitude &&
+        formData.locationLongitude &&
+        markerInstanceRef.current
+      ) {
+        const newPos = [
+          parseFloat(formData.locationLatitude),
+          parseFloat(formData.locationLongitude),
+        ];
         markerInstanceRef.current.setLatLng(newPos);
-        mapInstanceRef.current.setView(newPos, mapInstanceRef.current.getZoom());
+        mapInstanceRef.current.setView(
+          newPos,
+          mapInstanceRef.current.getZoom(),
+        );
       }
       return;
     }
 
-    const center = formData.locationLatitude && formData.locationLongitude
-      ? [parseFloat(formData.locationLatitude), parseFloat(formData.locationLongitude)]
-      : [23.2599, 77.4126]; // Default: Bhopal
+    const center =
+      formData.locationLatitude && formData.locationLongitude
+        ? [
+            parseFloat(formData.locationLatitude),
+            parseFloat(formData.locationLongitude),
+          ]
+        : [23.2599, 77.4126]; // Default: Bhopal
 
     const map = window.L.map(mapContainer, {
       center: center,
@@ -126,18 +146,25 @@ const RiderJobManagement = () => {
     });
 
     window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
 
     mapInstanceRef.current = map;
     let marker = null;
 
     if (formData.locationLatitude && formData.locationLongitude) {
-      marker = window.L.marker([parseFloat(formData.locationLatitude), parseFloat(formData.locationLongitude)], {
-        draggable: true,
-      }).addTo(map);
+      marker = window.L.marker(
+        [
+          parseFloat(formData.locationLatitude),
+          parseFloat(formData.locationLongitude),
+        ],
+        {
+          draggable: true,
+        },
+      ).addTo(map);
 
-      marker.on('dragend', (e) => {
+      marker.on("dragend", (e) => {
         const lat = e.target.getLatLng().lat;
         const lng = e.target.getLatLng().lng;
         updateLocationFromCoords(lat, lng);
@@ -146,7 +173,7 @@ const RiderJobManagement = () => {
       markerInstanceRef.current = marker;
     }
 
-    map.on('click', (e) => {
+    map.on("click", (e) => {
       const lat = e.latlng.lat;
       const lng = e.latlng.lng;
       updateLocationFromCoords(lat, lng);
@@ -158,7 +185,7 @@ const RiderJobManagement = () => {
           draggable: true,
         }).addTo(map);
 
-        marker.on('dragend', (e) => {
+        marker.on("dragend", (e) => {
           const newLat = e.target.getLatLng().lat;
           const newLng = e.target.getLatLng().lng;
           updateLocationFromCoords(newLat, newLng);
@@ -170,13 +197,15 @@ const RiderJobManagement = () => {
 
     const searchInput = document.getElementById("rider-map-search-input");
     if (searchInput) {
-      searchInput.addEventListener('keydown', async (e) => {
-        if (e.key === 'Enter') {
+      searchInput.addEventListener("keydown", async (e) => {
+        if (e.key === "Enter") {
           e.preventDefault();
           const query = searchInput.value;
           if (query) {
             try {
-              const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`);
+              const response = await fetch(
+                `https://nominatim.openstreetmap.org/search?format=json&q=${query}`,
+              );
               const data = await response.json();
               if (data && data.length > 0) {
                 const place = data[0];
@@ -188,8 +217,10 @@ const RiderJobManagement = () => {
                 if (marker) {
                   marker.setLatLng([lat, lng]);
                 } else {
-                  marker = window.L.marker([lat, lng], { draggable: true }).addTo(map);
-                  marker.on('dragend', (ev) => {
+                  marker = window.L.marker([lat, lng], {
+                    draggable: true,
+                  }).addTo(map);
+                  marker.on("dragend", (ev) => {
                     const newLat = ev.target.getLatLng().lat;
                     const newLng = ev.target.getLatLng().lng;
                     updateLocationFromCoords(newLat, newLng);
@@ -217,14 +248,24 @@ const RiderJobManagement = () => {
     }));
 
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
+      );
       const data = await response.json();
       if (data && data.address) {
         const address = data.address;
         setFormData((prev) => ({
           ...prev,
-          locationLine1: address.road || address.building || address.house_number || prev.locationLine1,
-          locationCity: address.city || address.town || address.village || prev.locationCity,
+          locationLine1:
+            address.road ||
+            address.building ||
+            address.house_number ||
+            prev.locationLine1,
+          locationCity:
+            address.city ||
+            address.town ||
+            address.village ||
+            prev.locationCity,
           locationState: address.state || prev.locationState,
           locationPinCode: address.postcode || prev.locationPinCode,
         }));
@@ -541,7 +582,10 @@ const RiderJobManagement = () => {
       // Search in vendor name
       const vendorName = job.vendor?.storeName?.toLowerCase() || "";
       // Search in posted by name
-      const postedByName = job.postedBy?.vendorName?.toLowerCase() || job.postedBy?.name?.toLowerCase() || "";
+      const postedByName =
+        job.postedBy?.vendorName?.toLowerCase() ||
+        job.postedBy?.name?.toLowerCase() ||
+        "";
       // Search in address
       const addressLine1 = job.location?.line1?.toLowerCase() || "";
       const addressLine2 = job.location?.line2?.toLowerCase() || "";
@@ -573,9 +617,9 @@ const RiderJobManagement = () => {
   return (
     <DashboardLayout>
       <div className="min-h-screen p-0 ml-6">
-        <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="max-w-7xl mx-auto px-0 py-6">
           {/* Header Section */}
-          <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-6 mb-8">
+          <div className="bg-white rounded-sm shadow-md border-2 border-gray-100 p-6 mb-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -630,12 +674,12 @@ const RiderJobManagement = () => {
           {loading ? (
             <div className="flex justify-center items-center py-20">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF7B1D] mx-auto mb-4"></div>
+                <div className="animate-spin rounded-sm h-12 w-12 border-b-2 border-[#FF7B1D] mx-auto mb-4"></div>
                 <p className="text-gray-600">Loading job posts...</p>
               </div>
             </div>
           ) : filteredJobs.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-16 text-center">
+            <div className="bg-white rounded-sm shadow-md border-2 border-gray-100 p-16 text-center">
               <div className="bg-gray-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Briefcase className="text-gray-400" size={48} />
               </div>
@@ -643,7 +687,9 @@ const RiderJobManagement = () => {
                 No jobs found
               </h3>
               <p className="text-gray-500 mb-6">
-                {searchCity ? "Try adjusting your search criteria" : "Get started by creating your first job post"}
+                {searchCity
+                  ? "Try adjusting your search criteria"
+                  : "Get started by creating your first job post"}
               </p>
               {!searchCity && (
                 <button
@@ -661,7 +707,7 @@ const RiderJobManagement = () => {
                 {currentJobs.map((job) => (
                   <div
                     key={job._id}
-                    className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-6 hover:shadow-xl hover:border-[#FF7B1D] transition-all duration-300"
+                    className="bg-white rounded-sm shadow-md border-2 border-gray-100 p-6 hover:shadow-xl hover:border-[#FF7B1D] transition-all duration-300"
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
@@ -702,32 +748,51 @@ const RiderJobManagement = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                               <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border-2 border-green-200">
                                 <div className="bg-green-500 p-2 rounded-lg">
-                                  <DollarSign className="text-white" size={18} />
+                                  <DollarSign
+                                    className="text-white"
+                                    size={18}
+                                  />
                                 </div>
                                 <div>
-                                  <p className="text-xs text-gray-600 font-medium">Joining Bonus</p>
+                                  <p className="text-xs text-gray-600 font-medium">
+                                    Joining Bonus
+                                  </p>
                                   <p className="text-lg font-bold text-gray-900">
-                                    ₹{job.joiningBonus?.toLocaleString() || job.joiningBonus}
+                                    ₹
+                                    {job.joiningBonus?.toLocaleString() ||
+                                      job.joiningBonus}
                                   </p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
                                 <div className="bg-blue-500 p-2 rounded-lg">
-                                  <DollarSign className="text-white" size={18} />
+                                  <DollarSign
+                                    className="text-white"
+                                    size={18}
+                                  />
                                 </div>
                                 <div>
-                                  <p className="text-xs text-gray-600 font-medium">Onboarding Fee</p>
+                                  <p className="text-xs text-gray-600 font-medium">
+                                    Onboarding Fee
+                                  </p>
                                   <p className="text-lg font-bold text-gray-900">
-                                    ₹{job.onboardingFee?.toLocaleString() || job.onboardingFee}
+                                    ₹
+                                    {job.onboardingFee?.toLocaleString() ||
+                                      job.onboardingFee}
                                   </p>
                                 </div>
                               </div>
                             </div>
 
                             <div className="flex items-start gap-3 p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
-                              <MapPin className="text-[#FF7B1D] flex-shrink-0 mt-1" size={20} />
+                              <MapPin
+                                className="text-[#FF7B1D] flex-shrink-0 mt-1"
+                                size={20}
+                              />
                               <div className="text-sm text-gray-700">
-                                <p className="font-semibold mb-1">{job.location?.line1}</p>
+                                <p className="font-semibold mb-1">
+                                  {job.location?.line1}
+                                </p>
                                 {job.location?.line2 && (
                                   <p className="mb-1">{job.location.line2}</p>
                                 )}
@@ -816,7 +881,13 @@ const RiderJobManagement = () => {
                 </button>
               </div>
 
-              <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="p-6 space-y-6">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSubmit();
+                }}
+                className="p-6 space-y-6"
+              >
                 {/* Job Details Section */}
                 <div className="space-y-5">
                   <div className="flex items-center gap-3 pb-3 border-b-2 border-gray-200">
@@ -846,7 +917,8 @@ const RiderJobManagement = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Joining Bonus (₹) <span className="text-red-500">*</span>
+                        Joining Bonus (₹){" "}
+                        <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="number"
@@ -858,7 +930,8 @@ const RiderJobManagement = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Onboarding Fee (₹) <span className="text-red-500">*</span>
+                        Onboarding Fee (₹){" "}
+                        <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="number"
@@ -908,7 +981,8 @@ const RiderJobManagement = () => {
                         className="bg-gray-100"
                       ></div>
                       <div className="p-3 bg-gray-50 text-xs text-gray-600">
-                        💡 Click on the map to select location or drag the marker to adjust
+                        💡 Click on the map to select location or drag the
+                        marker to adjust
                       </div>
                     </div>
                   )}

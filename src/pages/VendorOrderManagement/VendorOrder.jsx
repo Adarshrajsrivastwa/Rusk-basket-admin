@@ -204,9 +204,10 @@ const AllOrder = () => {
       // Search in status
       const status = order.status?.toLowerCase() || "";
       // Search in product names (from items)
-      const productNames = order.items
-        ?.map((item) => item.product?.name?.toLowerCase() || "")
-        .join(" ") || "";
+      const productNames =
+        order.items
+          ?.map((item) => item.product?.name?.toLowerCase() || "")
+          .join(" ") || "";
       // Search in cart value
       const cartValue = order.cartValue?.toString() || "";
 
@@ -279,7 +280,7 @@ const AllOrder = () => {
   return (
     <DashboardLayout>
       {/* Search + Calendar */}
-      <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-2 w-full pl-4 max-w-[99%] mx-auto mt-0 mb-2">
+      <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-2 w-full pl-4 max-w-[99%] mx-auto mt-2 mb-2">
         <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
           {/* Search Bar */}
           <div className="flex items-center border border-black rounded overflow-hidden h-[36px] w-full sm:w-[400px]">
@@ -299,7 +300,7 @@ const AllOrder = () => {
                 }
               }}
             />
-            <button 
+            <button
               onClick={() => setCurrentPage(1)}
               className="bg-[#FF7B1D] hover:bg-orange-600 text-white px-4 sm:px-6 h-full text-sm transition-colors"
             >
@@ -357,7 +358,7 @@ const AllOrder = () => {
                     <td className="p-3">₹{order.cartValue}</td>
                     <td className="p-3">{order.payment}</td>
                     <td className={`p-3 ${statusColor}`}>{formattedStatus}</td>
-                    <td className="p-3">
+                    <td className="p-3 pr-6">
                       <div className="flex gap-2 justify-end">
                         <button
                           onClick={() => handleDownloadInvoice(order._id)}
@@ -367,7 +368,9 @@ const AllOrder = () => {
                           <Download className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => navigate(`/order/${order.id || order._id}`)}
+                          onClick={() =>
+                            navigate(`/order/${order.id || order._id}`)
+                          }
                           className="text-orange-600 hover:text-blue-700"
                           title="View Order Details"
                         >

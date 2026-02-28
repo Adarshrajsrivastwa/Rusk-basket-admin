@@ -31,14 +31,19 @@ export default function RiderDueAmountsPage() {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${BASE_URL}/api/vendor/riders/due-amounts`, {
-        method: "GET",
-        headers: headers,
-        credentials: "include",
-      });
+      const response = await fetch(
+        `${BASE_URL}/api/vendor/riders/due-amounts`,
+        {
+          method: "GET",
+          headers: headers,
+          credentials: "include",
+        },
+      );
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch rider due amounts: ${response.status}`);
+        throw new Error(
+          `Failed to fetch rider due amounts: ${response.status}`,
+        );
       }
       const result = await response.json();
       if (result.success) {
@@ -105,7 +110,8 @@ export default function RiderDueAmountsPage() {
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
-          errorData.message || `Failed to update due amount: ${response.status}`,
+          errorData.message ||
+            `Failed to update due amount: ${response.status}`,
         );
       }
 
@@ -127,7 +133,7 @@ export default function RiderDueAmountsPage() {
 
   return (
     <DashboardLayout>
-      <div className="p-6">
+      <div className="p-0 ml-6 mt-2">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Bike className="w-7 h-7 text-orange-600" />
@@ -140,7 +146,7 @@ export default function RiderDueAmountsPage() {
 
         {/* Summary Card */}
         {riderDueSummary && (
-          <div className="mb-6 p-6 bg-orange-50 rounded-xl border border-orange-200">
+          <div className="mb-6 p-6 bg-orange-50 rounded-sm border border-orange-200">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total Riders</p>
@@ -152,13 +158,12 @@ export default function RiderDueAmountsPage() {
                 <p className="text-sm text-gray-600">Total Due Amount</p>
                 <p className="text-2xl font-bold text-orange-600 mt-1">
                   ₹
-                  {parseFloat(riderDueSummary.totalDueAmount || 0).toLocaleString(
-                    "en-IN",
-                    {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    },
-                  )}
+                  {parseFloat(
+                    riderDueSummary.totalDueAmount || 0,
+                  ).toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </p>
               </div>
             </div>
@@ -166,7 +171,7 @@ export default function RiderDueAmountsPage() {
         )}
 
         {/* Main Content */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="bg-white rounded-sm shadow-sm p-2">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-gray-900">
               Rider Details
@@ -190,12 +195,16 @@ export default function RiderDueAmountsPage() {
           {riderDueLoading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500 mx-auto"></div>
-              <p className="text-gray-500 text-sm mt-4">Loading rider due amounts...</p>
+              <p className="text-gray-500 text-sm mt-4">
+                Loading rider due amounts...
+              </p>
             </div>
           ) : riderDueAmounts.length === 0 ? (
             <div className="text-center py-12">
               <Bike className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 font-medium">No rider due amounts found</p>
+              <p className="text-gray-500 font-medium">
+                No rider due amounts found
+              </p>
               <p className="text-gray-400 text-sm mt-2">
                 Riders with due amounts will appear here
               </p>
@@ -203,22 +212,22 @@ export default function RiderDueAmountsPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                    <thead>
-                      <tr className="border-b bg-gray-50">
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
-                          Rider Name
-                        </th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
-                          Mobile
-                        </th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
-                          Due Balance
-                        </th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
-                          Action
-                        </th>
-                      </tr>
-                    </thead>
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
+                      Rider Name
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
+                      Mobile
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
+                      Due Balance
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
                 <tbody>
                   {riderDueAmounts.map((rider, index) => (
                     <tr key={index} className="border-b hover:bg-gray-50">
@@ -283,13 +292,12 @@ export default function RiderDueAmountsPage() {
                       </p>
                       <p className="text-gray-600">
                         Current Due: ₹
-                        {parseFloat(selectedRider.dueBalance || 0).toLocaleString(
-                          "en-IN",
-                          {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          },
-                        )}
+                        {parseFloat(
+                          selectedRider.dueBalance || 0,
+                        ).toLocaleString("en-IN", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </p>
                     </div>
                   )}
@@ -357,7 +365,8 @@ export default function RiderDueAmountsPage() {
                   >
                     {updating ? (
                       <>
-                        <RefreshCw className="w-4 h-4 animate-spin" /> Submitting...
+                        <RefreshCw className="w-4 h-4 animate-spin" />{" "}
+                        Submitting...
                       </>
                     ) : (
                       <>

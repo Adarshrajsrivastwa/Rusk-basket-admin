@@ -134,10 +134,12 @@ const Notifications = () => {
       console.log("🔔 FETCHING NOTIFICATIONS:");
       console.log("User Role from localStorage:", userRole);
       console.log("========================================");
-      
+
       if (userRole === "vendor") {
         // Fetch vendor notifications
-        console.log("📱 Fetching VENDOR notifications from: /api/vendor/notifications");
+        console.log(
+          "📱 Fetching VENDOR notifications from: /api/vendor/notifications",
+        );
         response = await api.get("/api/vendor/notifications", {
           params: {
             page: 1,
@@ -149,7 +151,9 @@ const Notifications = () => {
         console.log("Vendor notifications count:", response.data?.data?.length);
       } else if (userRole === "admin") {
         // Fetch admin notifications (support tickets, etc.)
-        console.log("👤 Fetching ADMIN notifications from: /api/admin/notifications");
+        console.log(
+          "👤 Fetching ADMIN notifications from: /api/admin/notifications",
+        );
         response = await api.get("/api/admin/notifications", {
           params: {
             page: 1,
@@ -323,7 +327,7 @@ const Notifications = () => {
           : `/api/admin/notifications/${notificationId}/read`;
 
       await api.put(endpoint);
-      
+
       // Update local state immediately
       setNotifications((prev) =>
         prev.map((n) =>
@@ -332,10 +336,10 @@ const Notifications = () => {
             : n,
         ),
       );
-      
+
       // Update unread count immediately
       setUnreadCount((prev) => Math.max(0, prev - 1));
-      
+
       // Refresh unread count from server to ensure accuracy
       await fetchUnreadCount();
     } catch (error) {
@@ -440,7 +444,7 @@ const Notifications = () => {
               </span>
             )}
           </h1>
-          <div className="flex gap-3">
+          {/* <div className="flex gap-3">
             {notifications.length > 0 && (
               <button
                 onClick={deleteAllNotifications}
@@ -457,7 +461,7 @@ const Notifications = () => {
                 Mark all as read
               </button>
             )}
-          </div>
+          </div> */}
         </div>
 
         {/* Error Message */}
@@ -642,7 +646,10 @@ const Notifications = () => {
                               Category:
                             </span>
                             <span className="text-white font-semibold capitalize">
-                              {selectedNotification.data.category.replace(/_/g, " ")}
+                              {selectedNotification.data.category.replace(
+                                /_/g,
+                                " ",
+                              )}
                             </span>
                           </div>
                         )}
@@ -651,13 +658,16 @@ const Notifications = () => {
                             <span className="text-gray-400 text-sm">
                               Status:
                             </span>
-                            <span className={`font-semibold capitalize ${
-                              selectedNotification.data.status === "active" 
-                                ? "text-orange-400" 
-                                : selectedNotification.data.status === "resolved"
-                                ? "text-green-400"
-                                : "text-gray-400"
-                            }`}>
+                            <span
+                              className={`font-semibold capitalize ${
+                                selectedNotification.data.status === "active"
+                                  ? "text-orange-400"
+                                  : selectedNotification.data.status ===
+                                      "resolved"
+                                    ? "text-green-400"
+                                    : "text-gray-400"
+                              }`}
+                            >
                               {selectedNotification.data.status}
                             </span>
                           </div>

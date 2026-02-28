@@ -61,7 +61,7 @@ const AnalyticsDashboard = () => {
         // Fetch dashboard data
         const dashboardRes = await fetch(
           `${API_BASE_URL}/dashboard`,
-          fetchOptions
+          fetchOptions,
         );
         const dashboardJson = await dashboardRes.json();
 
@@ -72,7 +72,7 @@ const AnalyticsDashboard = () => {
         // Fetch products data
         const productsRes = await fetch(
           `${API_BASE_URL}/products`,
-          fetchOptions
+          fetchOptions,
         );
         const productsJson = await productsRes.json();
 
@@ -83,7 +83,7 @@ const AnalyticsDashboard = () => {
       } catch (error) {
         console.error("Error fetching analytics data:", error);
         alert(
-          "Failed to fetch analytics data. Please check your authentication."
+          "Failed to fetch analytics data. Please check your authentication.",
         );
       } finally {
         setLoading(false);
@@ -169,7 +169,7 @@ const AnalyticsDashboard = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-white ml-6">
+      <div className="min-h-screen bg-white mt-2 ml-6">
         {/* Top Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white border-2 border-[#FF7B1D] rounded-sm shadow-md p-6">
@@ -465,7 +465,7 @@ const AnalyticsDashboard = () => {
                 <span className="text-gray-600">Total Revenue:</span>
                 <span className="font-bold text-[#FF7B1D]">
                   {formatCurrency(
-                    dashboardData?.revenue?.totalItemRevenue || 0
+                    dashboardData?.revenue?.totalItemRevenue || 0,
                   )}
                 </span>
               </div>
@@ -525,7 +525,7 @@ const AnalyticsDashboard = () => {
                 <span className="text-gray-600">Avg Order Value:</span>
                 <span className="font-bold text-black">
                   {formatCurrency(
-                    dashboardData?.revenue?.averageOrderValue || 0
+                    dashboardData?.revenue?.averageOrderValue || 0,
                   )}
                 </span>
               </div>

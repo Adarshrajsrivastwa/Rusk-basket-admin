@@ -19,6 +19,127 @@ import {
   CheckIcon,
 } from "@heroicons/react/24/outline";
 
+// ─── Get Current Location Button ─────────────────────────────────────────────
+const GetLocationButton = ({ onLocation, onError }) => {
+  const [fetching, setFetching] = useState(false);
+
+  const handleClick = () => {
+    if (!navigator.geolocation) {
+      onError("Geolocation is not supported by your browser.");
+      return;
+    }
+    setFetching(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        onLocation(
+          pos.coords.latitude.toFixed(6),
+          pos.coords.longitude.toFixed(6),
+        );
+        setFetching(false);
+      },
+      (err) => {
+        setFetching(false);
+        switch (err.code) {
+          case err.PERMISSION_DENIED:
+            onError(
+              "Location permission denied. Please allow access in browser settings.",
+            );
+            break;
+          case err.POSITION_UNAVAILABLE:
+            onError("Location information is unavailable.");
+            break;
+          case err.TIMEOUT:
+            onError("Location request timed out. Please try again.");
+            break;
+          default:
+            onError("An unknown error occurred while fetching location.");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    );
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={fetching}
+      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg text-white transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed hover:opacity-90"
+      style={{
+        background: fetching
+          ? "#9ca3af"
+          : "linear-gradient(to right, #FF7B1D, #FF9547)",
+      }}
+    >
+      {fetching ? (
+        <>
+          <svg
+            className="animate-spin w-3.5 h-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v8z"
+            />
+          </svg>
+          Fetching…
+        </>
+      ) : (
+        <>
+          <MapPinIcon className="w-3.5 h-3.5" />
+          Use Current Location
+        </>
+      )}
+    </button>
+  );
+};
+
+// ─── Google Map Embed ─────────────────────────────────────────────────────────
+const GoogleMapEmbed = ({ lat, lng }) => {
+  const hasCoords =
+    lat && lng && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng));
+
+  if (!hasCoords) {
+    return (
+      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl h-56 flex flex-col items-center justify-center border-2 border-dashed border-gray-200">
+        <MapPinIcon className="w-10 h-10 text-gray-300 mb-2" />
+        <p className="text-sm font-medium text-gray-400">No coordinates set</p>
+        <p className="text-xs text-gray-300 mt-0.5">
+          Enter or fetch lat/lng to see map
+        </p>
+      </div>
+    );
+  }
+
+  const src = `https://maps.google.com/maps?q=${parseFloat(lat)},${parseFloat(lng)}&z=15&output=embed`;
+
+  return (
+    <div className="rounded-xl overflow-hidden border-2 border-orange-200 shadow-md">
+      <iframe
+        title="Office Location"
+        src={src}
+        width="100%"
+        height="224"
+        style={{ border: 0 }}
+        allowFullScreen
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
+      />
+    </div>
+  );
+};
+
+// ─── Main Component ────────────────────────────────────────────────────────────
 const AdminProfile = () => {
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,6 +152,35 @@ const AdminProfile = () => {
   const [profileImagePreview, setProfileImagePreview] = useState(null);
   const [companyLogo, setCompanyLogo] = useState(null);
   const [companyLogoPreview, setCompanyLogoPreview] = useState(null);
+  const [locationError, setLocationError] = useState(null);
+
+  // ── build flat form data helper ──────────────────────────────────────────
+  const buildFlatFormData = (data) => ({
+    name: data.name || "",
+    email: data.email || "",
+    mobile: data.mobile || "",
+    companyName: data.companyName || "",
+    legalName: data.legalName || "",
+    website: data.website || "",
+    alternatePhone: data.alternatePhone || "",
+    contactPerson: data.contactPerson || "",
+    designation: data.designation || "",
+    foundedYear: data.foundedYear || "",
+    bankName: data.bankName || "",
+    branchName: data.branchName || "",
+    accountNumber: data.accountNumber || "",
+    ifscCode: data.ifscCode || "",
+    registrationNumber: data.registrationNumber || "",
+    gstNumber: data.gstNumber || "",
+    panNumber: data.panNumber || "",
+    streetAddress: data.officeAddress?.streetAddress || "",
+    city: data.officeAddress?.city || "",
+    state: data.officeAddress?.state || "",
+    pincode: data.officeAddress?.pincode || "",
+    country: data.officeAddress?.country || "India",
+    latitude: data.officeAddress?.latitude || "",
+    longitude: data.officeAddress?.longitude || "",
+  });
 
   // Fetch admin profile data
   useEffect(() => {
@@ -38,66 +188,20 @@ const AdminProfile = () => {
       try {
         setLoading(true);
         setError(null);
-
         const response = await api.get("/api/admin/profile");
         const result = response.data;
-
         if (result.success) {
           setProfileData(result.data);
-
-          // Set profile image preview (check multiple possible field names)
           const imageUrl =
             result.data.profileImage ||
             result.data.profilePhoto?.url ||
             result.data.profilePhoto ||
             null;
-          if (imageUrl) {
-            setProfileImagePreview(imageUrl);
-          }
-
-          // Set company logo preview
+          if (imageUrl) setProfileImagePreview(imageUrl);
           const logoUrl =
             result.data.companyLogo || result.data.companyLogo?.url || null;
-          if (logoUrl) {
-            setCompanyLogoPreview(logoUrl);
-          }
-
-          // Map nested response data to flat structure for editing
-          const flatFormData = {
-            // Basic fields
-            name: result.data.name || "",
-            email: result.data.email || "",
-            mobile: result.data.mobile || "",
-            companyName: result.data.companyName || "",
-            legalName: result.data.legalName || "",
-            website: result.data.website || "",
-            alternatePhone: result.data.alternatePhone || "",
-            contactPerson: result.data.contactPerson || "",
-            designation: result.data.designation || "",
-            foundedYear: result.data.foundedYear || "",
-
-            // Bank details
-            bankName: result.data.bankName || "",
-            branchName: result.data.branchName || "",
-            accountNumber: result.data.accountNumber || "",
-            ifscCode: result.data.ifscCode || "",
-
-            // Legal info
-            registrationNumber: result.data.registrationNumber || "",
-            gstNumber: result.data.gstNumber || "",
-            panNumber: result.data.panNumber || "",
-
-            // Office address (flattened from nested object)
-            streetAddress: result.data.officeAddress?.streetAddress || "",
-            city: result.data.officeAddress?.city || "",
-            state: result.data.officeAddress?.state || "",
-            pincode: result.data.officeAddress?.pincode || "",
-            country: result.data.officeAddress?.country || "India",
-            latitude: result.data.officeAddress?.latitude || "",
-            longitude: result.data.officeAddress?.longitude || "",
-          };
-
-          setEditFormData(flatFormData);
+          if (logoUrl) setCompanyLogoPreview(logoUrl);
+          setEditFormData(buildFlatFormData(result.data));
         } else {
           setError(result.message || "Failed to fetch profile data");
         }
@@ -105,63 +209,49 @@ const AdminProfile = () => {
         console.error("Error fetching profile:", error);
         setError(
           error.response?.data?.message ||
-            error.message ||
-            "Error fetching profile data",
+          error.message ||
+          "Error fetching profile data",
         );
       } finally {
         setLoading(false);
       }
     };
-
     fetchProfileData();
   }, []);
 
-  // Handle input changes
   const handleInputChange = (field, value) => {
-    setEditFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setEditFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Handle profile image change
+  // ── Location handler ──────────────────────────────────────────────────────
+  const handleLocationFetched = (lat, lng) => {
+    setLocationError(null);
+    setEditFormData((prev) => ({ ...prev, latitude: lat, longitude: lng }));
+  };
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         alert("File size should be less than 5MB");
         return;
       }
-
       setProfileImage(file);
-
-      // Create preview (for images only)
       if (file.type.startsWith("image/")) {
         const reader = new FileReader();
-        reader.onloadend = () => {
-          setProfileImagePreview(reader.result);
-        };
+        reader.onloadend = () => setProfileImagePreview(reader.result);
         reader.readAsDataURL(file);
-      } else {
-        // For non-image files, clear preview
-        setProfileImagePreview(null);
-      }
+      } else setProfileImagePreview(null);
     }
   };
 
-  // Handle remove image
   const handleRemoveImage = () => {
     setProfileImage(null);
     setProfileImagePreview(null);
-    // Reset file input
     const fileInput = document.getElementById("profile-image-upload");
-    if (fileInput) {
-      fileInput.value = "";
-    }
+    if (fileInput) fileInput.value = "";
   };
 
-  // Handle company logo change
   const handleCompanyLogoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -170,41 +260,28 @@ const AdminProfile = () => {
         return;
       }
       setCompanyLogo(file);
-      // Create preview (for images only)
       if (file.type.startsWith("image/")) {
         const reader = new FileReader();
-        reader.onloadend = () => {
-          setCompanyLogoPreview(reader.result);
-        };
+        reader.onloadend = () => setCompanyLogoPreview(reader.result);
         reader.readAsDataURL(file);
-      } else {
-        // For non-image files, clear preview
-        setCompanyLogoPreview(null);
-      }
+      } else setCompanyLogoPreview(null);
     }
   };
 
-  // Handle remove company logo
   const handleRemoveCompanyLogo = () => {
     setCompanyLogo(null);
     setCompanyLogoPreview(null);
     const fileInput = document.getElementById("company-logo-upload");
-    if (fileInput) {
-      fileInput.value = "";
-    }
+    if (fileInput) fileInput.value = "";
   };
 
-  // Handle save profile
   const handleSaveProfile = async () => {
     try {
       setIsSaving(true);
       setError(null);
 
-      // If profile image or company logo is selected, use FormData
       if (profileImage || companyLogo) {
         const formData = new FormData();
-
-        // Add all form fields
         formData.append("name", editFormData.name || "");
         formData.append("companyName", editFormData.companyName || "");
         formData.append("legalName", editFormData.legalName || "");
@@ -216,9 +293,8 @@ const AdminProfile = () => {
         formData.append("branchName", editFormData.branchName || "");
         formData.append("accountNumber", editFormData.accountNumber || "");
         formData.append("ifscCode", editFormData.ifscCode || "");
-        if (editFormData.foundedYear) {
+        if (editFormData.foundedYear)
           formData.append("foundedYear", Number(editFormData.foundedYear));
-        }
         formData.append(
           "registrationNumber",
           editFormData.registrationNumber || "",
@@ -230,90 +306,36 @@ const AdminProfile = () => {
         formData.append("state", editFormData.state || "");
         formData.append("pincode", editFormData.pincode || "");
         formData.append("country", editFormData.country || "India");
-        if (editFormData.latitude) {
+        if (editFormData.latitude)
           formData.append("latitude", Number(editFormData.latitude));
-        }
-        if (editFormData.longitude) {
+        if (editFormData.longitude)
           formData.append("longitude", Number(editFormData.longitude));
-        }
+        if (profileImage) formData.append("profileImage", profileImage);
+        if (companyLogo) formData.append("companyLogo", companyLogo);
 
-        // Add profile image - API only accepts "profileImage" field name
-        if (profileImage) {
-          formData.append("profileImage", profileImage);
-        }
-
-        // Add company logo
-        if (companyLogo) {
-          formData.append("companyLogo", companyLogo);
-        }
-
-        // API interceptor will handle FormData Content-Type automatically
         const response = await api.put("/api/admin/profile", formData);
         const result = response.data;
-
         if (result.success) {
           setProfileData(result.data);
-
-          // Update profile image preview (check multiple possible field names)
           const updatedImageUrl =
             result.data.profileImage ||
             result.data.profilePhoto?.url ||
             result.data.profilePhoto ||
             null;
-          if (updatedImageUrl) {
-            setProfileImagePreview(updatedImageUrl);
-          }
-          setProfileImage(null); // Clear selected file
-
-          // Update company logo preview
+          if (updatedImageUrl) setProfileImagePreview(updatedImageUrl);
+          setProfileImage(null);
           const updatedLogoUrl =
             result.data.companyLogo || result.data.companyLogo?.url || null;
-          if (updatedLogoUrl) {
-            setCompanyLogoPreview(updatedLogoUrl);
-          }
-          setCompanyLogo(null); // Clear selected file
-
-          // Map the updated response back to flat form data
-          const flatFormData = {
-            name: result.data.name || "",
-            email: result.data.email || "",
-            mobile: result.data.mobile || "",
-            companyName: result.data.companyName || "",
-            legalName: result.data.legalName || "",
-            website: result.data.website || "",
-            alternatePhone: result.data.alternatePhone || "",
-            contactPerson: result.data.contactPerson || "",
-            designation: result.data.designation || "",
-            foundedYear: result.data.foundedYear || "",
-            bankName: result.data.bankName || "",
-            branchName: result.data.branchName || "",
-            accountNumber: result.data.accountNumber || "",
-            ifscCode: result.data.ifscCode || "",
-            registrationNumber: result.data.registrationNumber || "",
-            gstNumber: result.data.gstNumber || "",
-            panNumber: result.data.panNumber || "",
-            streetAddress: result.data.officeAddress?.streetAddress || "",
-            city: result.data.officeAddress?.city || "",
-            state: result.data.officeAddress?.state || "",
-            pincode: result.data.officeAddress?.pincode || "",
-            country: result.data.officeAddress?.country || "India",
-            latitude: result.data.officeAddress?.latitude || "",
-            longitude: result.data.officeAddress?.longitude || "",
-          };
-
-          setEditFormData(flatFormData);
+          if (updatedLogoUrl) setCompanyLogoPreview(updatedLogoUrl);
+          setCompanyLogo(null);
+          setEditFormData(buildFlatFormData(result.data));
           setIsEditing(false);
           setSaveSuccess(true);
-
-          // Hide success message after 3 seconds
-          setTimeout(() => {
-            setSaveSuccess(false);
-          }, 3000);
+          setTimeout(() => setSaveSuccess(false), 3000);
         } else {
           setError(result.message || "Failed to update profile");
         }
       } else {
-        // No image, use regular JSON request
         const requestBody = {
           name: editFormData.name,
           companyName: editFormData.companyName,
@@ -344,149 +366,67 @@ const AdminProfile = () => {
             ? Number(editFormData.longitude)
             : undefined,
         };
-
-        // Remove undefined values
         Object.keys(requestBody).forEach((key) => {
-          if (requestBody[key] === undefined || requestBody[key] === "") {
+          if (requestBody[key] === undefined || requestBody[key] === "")
             delete requestBody[key];
-          }
         });
-
         const response = await api.put("/api/admin/profile", requestBody);
         const result = response.data;
-
         if (result.success) {
           setProfileData(result.data);
-
-          // Map the updated response back to flat form data
-          const flatFormData = {
-            name: result.data.name || "",
-            email: result.data.email || "",
-            mobile: result.data.mobile || "",
-            companyName: result.data.companyName || "",
-            legalName: result.data.legalName || "",
-            website: result.data.website || "",
-            alternatePhone: result.data.alternatePhone || "",
-            contactPerson: result.data.contactPerson || "",
-            designation: result.data.designation || "",
-            foundedYear: result.data.foundedYear || "",
-            bankName: result.data.bankName || "",
-            branchName: result.data.branchName || "",
-            accountNumber: result.data.accountNumber || "",
-            ifscCode: result.data.ifscCode || "",
-            registrationNumber: result.data.registrationNumber || "",
-            gstNumber: result.data.gstNumber || "",
-            panNumber: result.data.panNumber || "",
-            streetAddress: result.data.officeAddress?.streetAddress || "",
-            city: result.data.officeAddress?.city || "",
-            state: result.data.officeAddress?.state || "",
-            pincode: result.data.officeAddress?.pincode || "",
-            country: result.data.officeAddress?.country || "India",
-            latitude: result.data.officeAddress?.latitude || "",
-            longitude: result.data.officeAddress?.longitude || "",
-          };
-
-          setEditFormData(flatFormData);
+          setEditFormData(buildFlatFormData(result.data));
           setIsEditing(false);
           setSaveSuccess(true);
-
-          // Hide success message after 3 seconds
-          setTimeout(() => {
-            setSaveSuccess(false);
-          }, 3000);
+          setTimeout(() => setSaveSuccess(false), 3000);
         } else {
           setError(result.message || "Failed to update profile");
         }
       }
     } catch (error) {
       console.error("Error updating profile:", error);
-      console.error("Error details:", {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-      });
-
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.error ||
         error.message ||
         "Error updating profile data. Please check console for details.";
-
       setError(errorMessage);
-
-      // Show alert for better visibility
-      if (error.response?.status === 413) {
+      if (error.response?.status === 413)
         alert("File too large! Please upload an image smaller than 5MB.");
-      } else if (error.response?.status === 400) {
+      else if (error.response?.status === 400)
         alert(
-          "Invalid file format. Please upload a valid image file (JPG, PNG, etc.).",
+          "Invalid request or file. Please check your data and try again.",
         );
-      } else if (error.response?.status === 500) {
+      else if (error.response?.status === 500)
         alert("Server error. Please try again later.");
-      }
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Handle cancel edit
   const handleCancelEdit = () => {
-    // Reset to original profile data
-    const flatFormData = {
-      name: profileData.name || "",
-      email: profileData.email || "",
-      mobile: profileData.mobile || "",
-      companyName: profileData.companyName || "",
-      legalName: profileData.legalName || "",
-      website: profileData.website || "",
-      alternatePhone: profileData.alternatePhone || "",
-      contactPerson: profileData.contactPerson || "",
-      designation: profileData.designation || "",
-      foundedYear: profileData.foundedYear || "",
-      bankName: profileData.bankName || "",
-      branchName: profileData.branchName || "",
-      accountNumber: profileData.accountNumber || "",
-      ifscCode: profileData.ifscCode || "",
-      registrationNumber: profileData.registrationNumber || "",
-      gstNumber: profileData.gstNumber || "",
-      panNumber: profileData.panNumber || "",
-      streetAddress: profileData.officeAddress?.streetAddress || "",
-      city: profileData.officeAddress?.city || "",
-      state: profileData.officeAddress?.state || "",
-      pincode: profileData.officeAddress?.pincode || "",
-      country: profileData.officeAddress?.country || "India",
-      latitude: profileData.officeAddress?.latitude || "",
-      longitude: profileData.officeAddress?.longitude || "",
-    };
-
-    setEditFormData(flatFormData);
-    // Reset image state
-    setProfileImage(null);
-    setCompanyLogo(null);
-    const originalImageUrl =
-      profileData.profileImage ||
-      profileData.profilePhoto?.url ||
-      profileData.profilePhoto ||
-      null;
-    setProfileImagePreview(originalImageUrl);
-    const originalLogoUrl =
-      profileData.companyLogo || profileData.companyLogo?.url || null;
-    setCompanyLogoPreview(originalLogoUrl);
-    // Reset file inputs
-    const fileInput = document.getElementById("profile-image-upload");
-    const logoInput = document.getElementById("company-logo-upload");
-    if (fileInput) {
-      fileInput.value = "";
-    }
-    if (logoInput) {
-      logoInput.value = "";
+    if (profileData) {
+      setEditFormData(buildFlatFormData(profileData));
+      setProfileImage(null);
+      setCompanyLogo(null);
+      const originalImageUrl =
+        profileData.profileImage ||
+        profileData.profilePhoto?.url ||
+        profileData.profilePhoto ||
+        null;
+      setProfileImagePreview(originalImageUrl);
+      const originalLogoUrl =
+        profileData.companyLogo || profileData.companyLogo?.url || null;
+      setCompanyLogoPreview(originalLogoUrl);
+      const fileInput = document.getElementById("profile-image-upload");
+      const logoInput = document.getElementById("company-logo-upload");
+      if (fileInput) fileInput.value = "";
+      if (logoInput) logoInput.value = "";
     }
     setIsEditing(false);
     setError(null);
+    setLocationError(null);
   };
 
-  // Format date helper
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -499,7 +439,6 @@ const AdminProfile = () => {
     });
   };
 
-  // Loading state
   if (loading) {
     return (
       <DashboardLayout>
@@ -513,7 +452,6 @@ const AdminProfile = () => {
     );
   }
 
-  // Error state
   if (!profileData) {
     return (
       <DashboardLayout>
@@ -549,10 +487,18 @@ const AdminProfile = () => {
 
   const { officeAddress, verificationStatus } = profileData;
 
+  // Live map coords — update in real time while editing
+  const mapLat = isEditing
+    ? editFormData.latitude
+    : officeAddress?.latitude || "";
+  const mapLng = isEditing
+    ? editFormData.longitude
+    : officeAddress?.longitude || "";
+
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-4 ml-4 py-4">
-        {/* Success Message */}
+        {/* Success */}
         {saveSuccess && (
           <div className="mb-4 bg-green-50 border border-green-200 rounded-sm p-4 flex items-center gap-3 shadow-md">
             <CheckIcon className="w-6 h-6 text-green-600" />
@@ -562,7 +508,7 @@ const AdminProfile = () => {
           </div>
         )}
 
-        {/* Error Message */}
+        {/* Error */}
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 shadow-md">
             <XMarkIcon className="w-6 h-6 text-red-600" />
@@ -570,11 +516,10 @@ const AdminProfile = () => {
           </div>
         )}
 
-        {/* Header Section */}
+        {/* Header */}
         <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-sm shadow-xl p-6 mb-6">
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="flex items-center gap-4 mb-4 md:mb-0">
-              {/* Profile Picture */}
               <div className="relative">
                 <label
                   htmlFor="profile-image-upload"
@@ -584,8 +529,8 @@ const AdminProfile = () => {
                     className={`w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg ring-4 ring-orange-300 overflow-hidden transition-all ${isEditing ? "hover:ring-orange-400 hover:scale-105" : ""}`}
                   >
                     {profileImagePreview ||
-                    profileData.profileImage ||
-                    profileData.profilePhoto?.url ? (
+                      profileData.profileImage ||
+                      profileData.profilePhoto?.url ? (
                       <img
                         src={
                           profileImagePreview ||
@@ -596,17 +541,11 @@ const AdminProfile = () => {
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           e.target.style.display = "none";
-                          e.target.nextElementSibling?.classList.remove(
-                            "hidden",
-                          );
                         }}
                       />
-                    ) : null}
-                    {!(
-                      profileImagePreview ||
-                      profileData.profileImage ||
-                      profileData.profilePhoto?.url
-                    ) && <UserIcon className="w-12 h-12 text-orange-600" />}
+                    ) : (
+                      <UserIcon className="w-12 h-12 text-orange-600" />
+                    )}
                     {isEditing && (
                       <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all">
                         <PencilIcon className="w-6 h-6 text-white opacity-0 hover:opacity-100 transition-opacity" />
@@ -627,7 +566,7 @@ const AdminProfile = () => {
                   disabled={!isEditing}
                 />
               </div>
-              {/* Upload Button - More Visible */}
+
               {isEditing && (
                 <div className="flex flex-col gap-2">
                   <label
@@ -655,6 +594,7 @@ const AdminProfile = () => {
                   )}
                 </div>
               )}
+
               <div className="text-white">
                 <h1 className="text-3xl font-bold mb-1">{profileData.name}</h1>
                 <p className="text-orange-100 text-lg">
@@ -665,28 +605,23 @@ const AdminProfile = () => {
                 </p>
                 <div className="flex items-center gap-2">
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold shadow ${
-                      profileData.isActive
-                        ? "bg-green-500 text-white"
-                        : "bg-red-500 text-white"
-                    }`}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold shadow ${profileData.isActive ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}
                   >
                     {profileData.isActive ? "● Active" : "● Inactive"}
                   </span>
                 </div>
               </div>
             </div>
+
             <div className="flex gap-3">
               {!isEditing ? (
-                <>
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-2 bg-white text-orange-600 px-6 py-2.5 rounded-lg font-semibold hover:bg-orange-50 transition-colors shadow-md"
-                  >
-                    <PencilIcon className="w-5 h-5" />
-                    Edit Profile
-                  </button>
-                </>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-2 bg-white text-orange-600 px-6 py-2.5 rounded-lg font-semibold hover:bg-orange-50 transition-colors shadow-md"
+                >
+                  <PencilIcon className="w-5 h-5" />
+                  Edit Profile
+                </button>
               ) : (
                 <>
                   <button
@@ -704,7 +639,7 @@ const AdminProfile = () => {
                   >
                     {isSaving ? (
                       <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
                         Saving...
                       </>
                     ) : (
@@ -720,11 +655,10 @@ const AdminProfile = () => {
           </div>
         </div>
 
-        {/* Main Content Grid */}
+        {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Personal & Contact Info */}
+          {/* ── Left Column ── */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Personal Information */}
             <InfoSection title="Personal Information" icon={UserIcon}>
               <InfoGrid>
                 <InfoItem
@@ -732,7 +666,7 @@ const AdminProfile = () => {
                   value={editFormData.name}
                   icon={UserIcon}
                   isEditing={isEditing}
-                  onChange={(value) => handleInputChange("name", value)}
+                  onChange={(v) => handleInputChange("name", v)}
                 />
                 <InfoItem
                   label="Email"
@@ -754,30 +688,25 @@ const AdminProfile = () => {
                   value={editFormData.alternatePhone}
                   icon={PhoneIcon}
                   isEditing={isEditing}
-                  onChange={(value) =>
-                    handleInputChange("alternatePhone", value)
-                  }
+                  onChange={(v) => handleInputChange("alternatePhone", v)}
                 />
                 <InfoItem
                   label="Designation"
                   value={editFormData.designation}
                   icon={BriefcaseIcon}
                   isEditing={isEditing}
-                  onChange={(value) => handleInputChange("designation", value)}
+                  onChange={(v) => handleInputChange("designation", v)}
                 />
                 <InfoItem
                   label="Contact Person"
                   value={editFormData.contactPerson}
                   icon={UserIcon}
                   isEditing={isEditing}
-                  onChange={(value) =>
-                    handleInputChange("contactPerson", value)
-                  }
+                  onChange={(v) => handleInputChange("contactPerson", v)}
                 />
               </InfoGrid>
             </InfoSection>
 
-            {/* Company Information */}
             <InfoSection title="Company Information" icon={BuildingOfficeIcon}>
               <InfoGrid>
                 <InfoItem
@@ -785,21 +714,21 @@ const AdminProfile = () => {
                   value={editFormData.companyName}
                   icon={BuildingOfficeIcon}
                   isEditing={isEditing}
-                  onChange={(value) => handleInputChange("companyName", value)}
+                  onChange={(v) => handleInputChange("companyName", v)}
                 />
                 <InfoItem
                   label="Legal Name"
                   value={editFormData.legalName}
                   icon={DocumentTextIcon}
                   isEditing={isEditing}
-                  onChange={(value) => handleInputChange("legalName", value)}
+                  onChange={(v) => handleInputChange("legalName", v)}
                 />
                 <InfoItem
                   label="Founded Year"
                   value={editFormData.foundedYear}
                   icon={CalendarIcon}
                   isEditing={isEditing}
-                  onChange={(value) => handleInputChange("foundedYear", value)}
+                  onChange={(v) => handleInputChange("foundedYear", v)}
                   inputType="number"
                 />
                 <InfoItem
@@ -808,7 +737,7 @@ const AdminProfile = () => {
                   icon={GlobeAltIcon}
                   isLink={!isEditing}
                   isEditing={isEditing}
-                  onChange={(value) => handleInputChange("website", value)}
+                  onChange={(v) => handleInputChange("website", v)}
                   inputType="url"
                 />
                 <InfoItem
@@ -816,14 +745,14 @@ const AdminProfile = () => {
                   value={editFormData.gstNumber}
                   icon={DocumentTextIcon}
                   isEditing={isEditing}
-                  onChange={(value) => handleInputChange("gstNumber", value)}
+                  onChange={(v) => handleInputChange("gstNumber", v)}
                 />
                 <InfoItem
                   label="PAN Number"
                   value={editFormData.panNumber}
                   icon={DocumentTextIcon}
                   isEditing={isEditing}
-                  onChange={(value) => handleInputChange("panNumber", value)}
+                  onChange={(v) => handleInputChange("panNumber", v)}
                 />
                 <InfoItem
                   label="Registration Number"
@@ -831,11 +760,8 @@ const AdminProfile = () => {
                   icon={ShieldCheckIcon}
                   fullWidth
                   isEditing={isEditing}
-                  onChange={(value) =>
-                    handleInputChange("registrationNumber", value)
-                  }
+                  onChange={(v) => handleInputChange("registrationNumber", v)}
                 />
-                {/* Company Logo Upload */}
                 <div className="sm:col-span-2">
                   <div className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors border border-gray-200">
                     <div className="flex items-center gap-2 mb-3">
@@ -889,7 +815,6 @@ const AdminProfile = () => {
               </InfoGrid>
             </InfoSection>
 
-            {/* Bank Details */}
             <InfoSection title="Bank Details" icon={BanknotesIcon}>
               <InfoGrid>
                 <InfoItem
@@ -897,36 +822,34 @@ const AdminProfile = () => {
                   value={editFormData.bankName}
                   icon={BanknotesIcon}
                   isEditing={isEditing}
-                  onChange={(value) => handleInputChange("bankName", value)}
+                  onChange={(v) => handleInputChange("bankName", v)}
                 />
                 <InfoItem
                   label="Branch Name"
                   value={editFormData.branchName}
                   icon={BuildingOfficeIcon}
                   isEditing={isEditing}
-                  onChange={(value) => handleInputChange("branchName", value)}
+                  onChange={(v) => handleInputChange("branchName", v)}
                 />
                 <InfoItem
                   label="Account Number"
                   value={editFormData.accountNumber}
                   icon={DocumentTextIcon}
                   isEditing={isEditing}
-                  onChange={(value) =>
-                    handleInputChange("accountNumber", value)
-                  }
+                  onChange={(v) => handleInputChange("accountNumber", v)}
                 />
                 <InfoItem
                   label="IFSC Code"
                   value={editFormData.ifscCode}
                   icon={DocumentTextIcon}
                   isEditing={isEditing}
-                  onChange={(value) => handleInputChange("ifscCode", value)}
+                  onChange={(v) => handleInputChange("ifscCode", v)}
                 />
               </InfoGrid>
             </InfoSection>
           </div>
 
-          {/* Right Column - Office Address & Activity */}
+          {/* ── Right Column ── */}
           <div className="space-y-6">
             {/* Office Address */}
             <InfoSection title="Office Address" icon={MapPinIcon}>
@@ -949,24 +872,25 @@ const AdminProfile = () => {
                         />
                       ) : (
                         <p className="text-sm text-gray-800 font-semibold">
-                          {officeAddress.streetAddress}
+                          {officeAddress?.streetAddress || "N/A"}
                         </p>
                       )}
                     </div>
                   </div>
                 </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <InfoItem
                     label="City"
                     value={editFormData.city}
                     isEditing={isEditing}
-                    onChange={(value) => handleInputChange("city", value)}
+                    onChange={(v) => handleInputChange("city", v)}
                   />
                   <InfoItem
                     label="State"
                     value={editFormData.state}
                     isEditing={isEditing}
-                    onChange={(value) => handleInputChange("state", value)}
+                    onChange={(v) => handleInputChange("state", v)}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -974,71 +898,125 @@ const AdminProfile = () => {
                     label="Pincode"
                     value={editFormData.pincode}
                     isEditing={isEditing}
-                    onChange={(value) => handleInputChange("pincode", value)}
+                    onChange={(v) => handleInputChange("pincode", v)}
                   />
                   <InfoItem
                     label="Country"
                     value={editFormData.country}
                     isEditing={isEditing}
-                    onChange={(value) => handleInputChange("country", value)}
+                    onChange={(v) => handleInputChange("country", v)}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3 mt-3">
-                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    <p className="text-xs text-gray-500 mb-1">Latitude</p>
-                    {isEditing ? (
-                      <input
-                        type="number"
-                        step="any"
-                        value={editFormData.latitude || ""}
-                        onChange={(e) =>
-                          handleInputChange("latitude", e.target.value)
-                        }
-                        className="w-full text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
+
+                {/* ── Coordinates + Get Location ── */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+                      <MapPinIcon className="w-3.5 h-3.5 text-orange-500" />
+                      Coordinates
+                    </p>
+                    {isEditing && (
+                      <GetLocationButton
+                        onLocation={handleLocationFetched}
+                        onError={(msg) => setLocationError(msg)}
                       />
-                    ) : (
-                      <p className="text-sm font-semibold text-gray-800">
-                        {officeAddress.latitude}
-                      </p>
                     )}
                   </div>
-                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    <p className="text-xs text-gray-500 mb-1">Longitude</p>
-                    {isEditing ? (
-                      <input
-                        type="number"
-                        step="any"
-                        value={editFormData.longitude || ""}
-                        onChange={(e) =>
-                          handleInputChange("longitude", e.target.value)
-                        }
-                        className="w-full text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      />
-                    ) : (
-                      <p className="text-sm font-semibold text-gray-800">
-                        {officeAddress.longitude}
-                      </p>
+
+                  {/* Location error banner */}
+                  {locationError && isEditing && (
+                    <div className="mb-2 flex items-start gap-1.5 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg px-2.5 py-2">
+                      <XMarkIcon className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                      <span>{locationError}</span>
+                    </div>
+                  )}
+
+                  {/* Success banner */}
+                  {isEditing &&
+                    editFormData.latitude &&
+                    editFormData.longitude &&
+                    !locationError && (
+                      <div className="mb-2 flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 text-xs rounded-lg px-2.5 py-1.5">
+                        <CheckIcon className="w-3.5 h-3.5 shrink-0" />
+                        <span>
+                          Location set: {editFormData.latitude},{" "}
+                          {editFormData.longitude}
+                        </span>
+                      </div>
                     )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-white p-2.5 rounded-lg border border-gray-200">
+                      <p className="text-xs text-gray-400 mb-1">Latitude</p>
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          step="any"
+                          value={editFormData.latitude || ""}
+                          onChange={(e) =>
+                            handleInputChange("latitude", e.target.value)
+                          }
+                          placeholder="e.g. 28.6139"
+                          className="w-full text-sm font-semibold text-gray-800 bg-gray-50 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        />
+                      ) : (
+                        <p className="text-sm font-semibold text-gray-800">
+                          {officeAddress?.latitude || "N/A"}
+                        </p>
+                      )}
+                    </div>
+                    <div className="bg-white p-2.5 rounded-lg border border-gray-200">
+                      <p className="text-xs text-gray-400 mb-1">Longitude</p>
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          step="any"
+                          value={editFormData.longitude || ""}
+                          onChange={(e) =>
+                            handleInputChange("longitude", e.target.value)
+                          }
+                          placeholder="e.g. 77.2090"
+                          className="w-full text-sm font-semibold text-gray-800 bg-gray-50 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        />
+                      ) : (
+                        <p className="text-sm font-semibold text-gray-800">
+                          {officeAddress?.longitude || "N/A"}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             </InfoSection>
 
-            {/* Map Preview */}
+            {/* ── Google Map (replaces old placeholder) ── */}
             <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
-              <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <MapPinIcon className="w-5 h-5 text-orange-600" />
-                Location Map
+              <h3 className="font-semibold text-gray-800 mb-3 flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <MapPinIcon className="w-5 h-5 text-orange-600" />
+                  Location Map
+                </span>
+                {mapLat && mapLng && (
+                  <span className="text-xs text-gray-400 font-normal">
+                    {parseFloat(mapLat).toFixed(4)},{" "}
+                    {parseFloat(mapLng).toFixed(4)}
+                  </span>
+                )}
               </h3>
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg h-48 flex items-center justify-center border border-gray-200">
-                <div className="text-center text-gray-400">
-                  <MapPinIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                  <p className="text-sm font-medium text-gray-500">Map View</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {officeAddress.latitude}, {officeAddress.longitude}
-                  </p>
-                </div>
-              </div>
+
+              <GoogleMapEmbed lat={mapLat} lng={mapLng} />
+
+              {mapLat && mapLng && (
+                <a
+                  href={`https://www.google.com/maps?q=${mapLat},${mapLng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2.5 flex items-center justify-center gap-1.5 text-xs text-orange-600 hover:text-orange-700 font-semibold hover:underline"
+                >
+                  <GlobeAltIcon className="w-3.5 h-3.5" />
+                  Open in Google Maps
+                </a>
+              )}
             </div>
 
             {/* Verification Status */}
@@ -1093,7 +1071,7 @@ const AdminProfile = () => {
   );
 };
 
-// Component: Info Section
+// ─── Sub-components ────────────────────────────────────────────────────────────
 const InfoSection = ({ title, icon: Icon, children }) => (
   <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
     <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
@@ -1104,12 +1082,10 @@ const InfoSection = ({ title, icon: Icon, children }) => (
   </div>
 );
 
-// Component: Info Grid
 const InfoGrid = ({ children }) => (
   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{children}</div>
 );
 
-// Component: Info Item
 const InfoItem = ({
   label,
   value,
@@ -1121,7 +1097,7 @@ const InfoItem = ({
   onChange,
   inputType = "text",
 }) => (
-  <div className={`${fullWidth ? "sm:col-span-2" : ""}`}>
+  <div className={fullWidth ? "sm:col-span-2" : ""}>
     <div className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors border border-gray-200">
       <div className="flex items-center gap-2 mb-2">
         {Icon && <Icon className="w-4 h-4 text-gray-500" />}
@@ -1153,9 +1129,7 @@ const InfoItem = ({
         )}
         {verified !== undefined && !isEditing && (
           <span
-            className={`ml-2 flex-shrink-0 ${
-              verified ? "text-green-600" : "text-red-600"
-            }`}
+            className={`ml-2 flex-shrink-0 ${verified ? "text-green-600" : "text-red-600"}`}
           >
             {verified ? (
               <ShieldCheckIcon className="w-5 h-5" />
@@ -1169,31 +1143,22 @@ const InfoItem = ({
   </div>
 );
 
-// Component: Verification Badge
 const VerificationBadge = ({ label, verified }) => (
   <div
-    className={`flex items-center justify-between p-3 rounded-lg border shadow-sm transition-colors ${
-      verified
-        ? "bg-green-50 border-green-200 hover:bg-green-100"
-        : "bg-red-50 border-red-200 hover:bg-red-100"
-    }`}
+    className={`flex items-center justify-between p-3 rounded-lg border shadow-sm transition-colors ${verified ? "bg-green-50 border-green-200 hover:bg-green-100" : "bg-red-50 border-red-200 hover:bg-red-100"}`}
   >
     <div className="flex items-center gap-2">
       <ShieldCheckIcon
         className={`w-5 h-5 ${verified ? "text-green-600" : "text-red-600"}`}
       />
       <span
-        className={`text-sm font-medium ${
-          verified ? "text-green-700" : "text-red-700"
-        }`}
+        className={`text-sm font-medium ${verified ? "text-green-700" : "text-red-700"}`}
       >
         {label}
       </span>
     </div>
     <span
-      className={`px-3 py-1 rounded-full text-xs font-semibold ${
-        verified ? "bg-green-200 text-green-800" : "bg-red-200 text-red-800"
-      }`}
+      className={`px-3 py-1 rounded-full text-xs font-semibold ${verified ? "bg-green-200 text-green-800" : "bg-red-200 text-red-800"}`}
     >
       {verified ? "✓ Verified" : "✗ Not Verified"}
     </span>
