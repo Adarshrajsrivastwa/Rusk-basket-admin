@@ -105,11 +105,6 @@ const AdminDashboard = () => {
 
         const result = await response.json();
 
-        if (result.data) {
-          );
-          ,
-          );
-        }
         if (result.success) {
           setDashboardData(result.data);
           } else {
