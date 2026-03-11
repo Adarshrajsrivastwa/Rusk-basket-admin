@@ -67,6 +67,7 @@ const AdminDashboard = () => {
           }
         }
       } catch (err) {
+        console.error("Error fetching admin profile:", err);
         // Don't set error, just use default values
       }
     };
@@ -105,12 +106,41 @@ const AdminDashboard = () => {
 
         const result = await response.json();
 
+        console.log("========================================");
+        console.log("ADMIN DASHBOARD API RESPONSE:");
+        console.log("Full response:", result);
+        console.log("Response success:", result.success);
+        console.log("Response data:", result.data);
+        console.log("========================================");
+
+        if (result.data) {
+          console.log("Dashboard data keys:", Object.keys(result.data));
+          console.log("Notifications data:", result.data.notifications);
+          console.log("Notifications type:", typeof result.data.notifications);
+          console.log(
+            "Notifications unread:",
+            result.data.notifications?.unread,
+          );
+          console.log(
+            "Notifications message:",
+            result.data.notifications?.message,
+          );
+          console.log("Notifications total:", result.data.notifications?.total);
+          console.log(
+            "Full notifications object:",
+            JSON.stringify(result.data.notifications, null, 2),
+          );
+        }
+        console.log("========================================");
+
         if (result.success) {
           setDashboardData(result.data);
-          } else {
+          console.log("Dashboard data set successfully");
+        } else {
           throw new Error("API returned unsuccessful response");
         }
       } catch (err) {
+        console.error("Error fetching dashboard data:", err);
         setError(err.message);
       }
       // ✅ No setLoading(false) needed — loading is always false

@@ -34,7 +34,8 @@
 //         const token = getAuthToken();
 
 //         if (!token) {
-//           //           setError("Please login to view product details");
+//           console.error("No auth token found");
+//           setError("Please login to view product details");
 //           setLoading(false);
 //           return;
 //         }
@@ -44,26 +45,41 @@
 //           Authorization: `Bearer ${token}`,
 //         };
 
-//         //         // Try vendor-specific endpoint first
+//         console.log("Fetching product with ID:", id);
+
+//         // Try vendor-specific endpoint first
 //         let response = await fetch(`${API_BASE_URL}/vendor/product/${id}`, {
 //           method: "GET",
 //           headers: headers,
 //           credentials: "include",
 //         });
 
-//         //         // If vendor endpoint fails with 404, try general product endpoint
+//         console.log("Vendor endpoint response status:", response.status);
+
+//         // If vendor endpoint fails with 404, try general product endpoint
 //         if (!response.ok && response.status === 404) {
-//           //           response = await fetch(`${API_BASE_URL}/product/${id}`, {
+//           console.log(
+//             "Vendor endpoint failed, trying general product endpoint",
+//           );
+//           response = await fetch(`${API_BASE_URL}/product/${id}`, {
 //             method: "GET",
 //             headers: headers,
 //             credentials: "include",
 //           });
 
-//           //         }
+//           console.log(
+//             "General product endpoint response status:",
+//             response.status,
+//           );
+//         }
 
 //         // If both endpoints fail with 404, try fetching from vendor products list
 //         if (!response.ok && response.status === 404) {
-//           //           const productsResponse = await fetch(
+//           console.log(
+//             "Direct endpoints failed, fetching from vendor products list",
+//           );
+
+//           const productsResponse = await fetch(
 //             `${API_BASE_URL}/vendor/products`,
 //             {
 //               method: "GET",
@@ -82,7 +98,11 @@
 
 //               if (foundProduct) {
 //                 setProduct(foundProduct);
-//                 //                 setLoading(false);
+//                 console.log(
+//                   "Product found in vendor products list:",
+//                   foundProduct,
+//                 );
+//                 setLoading(false);
 //                 return;
 //               } else {
 //                 throw new Error("Product not found in vendor products list");
@@ -91,9 +111,13 @@
 //           }
 //         }
 
-//         //         if (!response.ok) {
+//         console.log("Fetch response status:", response.status);
+
+//         if (!response.ok) {
 //           const errorText = await response.text();
-//           //           if (response.status === 404) {
+//           console.error("Fetch error response:", errorText);
+
+//           if (response.status === 404) {
 //             throw new Error("Product not found");
 //           } else if (response.status === 401) {
 //             throw new Error("Unauthorized. Please log in again.");
@@ -108,14 +132,18 @@
 
 //         const result = await response.json();
 
-//         //         if (result.success && result.data) {
+//         console.log("Fetched product result:", result);
+
+//         if (result.success && result.data) {
 //           setProduct(result.data);
-//           //         } else {
+//           console.log("Product loaded successfully:", result.data);
+//         } else {
 //           throw new Error(result.message || "Invalid response format");
 //         }
 //       } catch (err) {
 //         setError(err.message);
-//         //       } finally {
+//         console.error("Error fetching product:", err);
+//       } finally {
 //         setLoading(false);
 //       }
 //     };
@@ -132,12 +160,14 @@
 //   const handleEdit = () => {
 //     if (!product) return;
 
-//     //     setIsEditModalOpen(true);
+//     console.log("Editing product:", product);
+//     setIsEditModalOpen(true);
 //   };
 
 //   // Handle Product Updated
 //   const handleProductUpdated = async (updatedProduct) => {
-//     //     setIsEditModalOpen(false);
+//     console.log("Product updated, refreshing:", updatedProduct);
+//     setIsEditModalOpen(false);
 
 //     // Refresh product data after a small delay
 //     setTimeout(() => {
@@ -155,7 +185,7 @@
 //       const token = getAuthToken();
 
 //       if (!token) {
-//         showToast.warning("Please login to delete products");
+//         alert("Please login to delete products");
 //         return;
 //       }
 
@@ -164,22 +194,29 @@
 //         Authorization: `Bearer ${token}`,
 //       };
 
-//       //       const response = await fetch(`${API_BASE_URL}/product/vendor/${id}`, {
+//       console.log("Deleting product with ID:", id);
+
+//       const response = await fetch(`${API_BASE_URL}/product/vendor/${id}`, {
 //         method: "DELETE",
 //         headers: headers,
 //         credentials: "include",
 //       });
 
-//       //       if (response.ok) {
+//       console.log("Delete response status:", response.status);
+
+//       if (response.ok) {
 //         const result = await response.json();
-//         //         showToast.success("Product deleted successfully!");
+//         console.log("Delete response:", result);
+//         alert("Product deleted successfully!");
 //         navigate("/vendor/products");
 //       } else {
 //         const result = await response.json();
-//         //         showToast.error(result.message || "Failed to delete product");
+//         console.error("Delete error:", result);
+//         alert(result.message || "Failed to delete product");
 //       }
 //     } catch (error) {
-//       //       showToast.error("Failed to delete product. Please try again.");
+//       console.error("Error deleting product:", error);
+//       alert("Failed to delete product. Please try again.");
 //     }
 //   };
 
@@ -695,7 +732,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import AddProductModal from "../../components/AddProduct";
 import { BASE_URL } from "../../api/api";
-import { showToast } from "../../utils/toast";
 
 const API_BASE_URL = `${BASE_URL}/api`;
 
@@ -724,6 +760,7 @@ const SingleProduct = () => {
         const token = getAuthToken();
 
         if (!token) {
+          console.error("No auth token found");
           setError("Please login to view product details");
           setLoading(false);
           return;
@@ -734,6 +771,8 @@ const SingleProduct = () => {
           Authorization: `Bearer ${token}`,
         };
 
+        console.log("Fetching product with ID:", id);
+
         // Try vendor-specific endpoint first
         let response = await fetch(`${API_BASE_URL}/vendor/product/${id}`, {
           method: "GET",
@@ -741,18 +780,31 @@ const SingleProduct = () => {
           credentials: "include",
         });
 
+        console.log("Vendor endpoint response status:", response.status);
+
         // If vendor endpoint fails with 404, try general product endpoint
         if (!response.ok && response.status === 404) {
+          console.log(
+            "Vendor endpoint failed, trying general product endpoint",
+          );
           response = await fetch(`${API_BASE_URL}/product/${id}`, {
             method: "GET",
             headers: headers,
             credentials: "include",
           });
 
-          }
+          console.log(
+            "General product endpoint response status:",
+            response.status,
+          );
+        }
 
         // If both endpoints fail with 404, try fetching from vendor products list
         if (!response.ok && response.status === 404) {
+          console.log(
+            "Direct endpoints failed, fetching from vendor products list",
+          );
+
           const productsResponse = await fetch(
             `${API_BASE_URL}/vendor/products`,
             {
@@ -772,6 +824,10 @@ const SingleProduct = () => {
 
               if (foundProduct) {
                 setProduct(foundProduct);
+                console.log(
+                  "Product found in vendor products list:",
+                  foundProduct,
+                );
                 setLoading(false);
                 return;
               } else {
@@ -781,8 +837,12 @@ const SingleProduct = () => {
           }
         }
 
+        console.log("Fetch response status:", response.status);
+
         if (!response.ok) {
           const errorText = await response.text();
+          console.error("Fetch error response:", errorText);
+
           if (response.status === 404) {
             throw new Error("Product not found");
           } else if (response.status === 401) {
@@ -798,14 +858,18 @@ const SingleProduct = () => {
 
         const result = await response.json();
 
+        console.log("Fetched product result:", result);
+
         if (result.success && result.data) {
           setProduct(result.data);
-          } else {
+          console.log("Product loaded successfully:", result.data);
+        } else {
           throw new Error(result.message || "Invalid response format");
         }
       } catch (err) {
         setError(err.message);
-        } finally {
+        console.error("Error fetching product:", err);
+      } finally {
         setLoading(false);
       }
     };
@@ -822,11 +886,13 @@ const SingleProduct = () => {
   const handleEdit = () => {
     if (!product) return;
 
+    console.log("Editing product:", product);
     setIsEditModalOpen(true);
   };
 
   // Handle Product Updated
   const handleProductUpdated = async (updatedProduct) => {
+    console.log("Product updated, refreshing:", updatedProduct);
     setIsEditModalOpen(false);
 
     // Refresh product data after a small delay
@@ -845,7 +911,7 @@ const SingleProduct = () => {
       const token = getAuthToken();
 
       if (!token) {
-        showToast.warning("Please login to delete products");
+        alert("Please login to delete products");
         return;
       }
 
@@ -854,22 +920,29 @@ const SingleProduct = () => {
         Authorization: `Bearer ${token}`,
       };
 
+      console.log("Deleting product with ID:", id);
+
       const response = await fetch(`${API_BASE_URL}/product/vendor/${id}`, {
         method: "DELETE",
         headers: headers,
         credentials: "include",
       });
 
+      console.log("Delete response status:", response.status);
+
       if (response.ok) {
         const result = await response.json();
-        showToast.success("Product deleted successfully!");
+        console.log("Delete response:", result);
+        alert("Product deleted successfully!");
         navigate("/vendor/products");
       } else {
         const result = await response.json();
-        showToast.error(result.message || "Failed to delete product");
+        console.error("Delete error:", result);
+        alert(result.message || "Failed to delete product");
       }
     } catch (error) {
-      showToast.error("Failed to delete product. Please try again.");
+      console.error("Error deleting product:", error);
+      alert("Failed to delete product. Please try again.");
     }
   };
 

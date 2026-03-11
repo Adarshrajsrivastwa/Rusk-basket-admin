@@ -53,7 +53,8 @@
 //         throw new Error(result.message || "Failed to fetch rider due amounts");
 //       }
 //     } catch (err) {
-//       //       setError(err.message);
+//       console.error("Error fetching rider due amounts:", err);
+//       setError(err.message);
 //     } finally {
 //       setRiderDueLoading(false);
 //     }
@@ -116,14 +117,15 @@
 
 //       const result = await response.json();
 //       if (result.success) {
-//         showToast.success("Due amount updated successfully!");
+//         alert("Due amount updated successfully!");
 //         closeUpdateModal();
 //         fetchRiderDueAmounts(); // Refresh data
 //       } else {
 //         throw new Error(result.message || "Failed to update due amount");
 //       }
 //     } catch (err) {
-//       //       setError(err.message);
+//       console.error("Error updating due amount:", err);
+//       setError(err.message);
 //     } finally {
 //       setUpdating(false);
 //     }
@@ -385,7 +387,6 @@ import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { BASE_URL } from "../../api/api";
 import { Bike, Edit, RefreshCw, X, Check } from "lucide-react";
-import { showToast } from "../../utils/toast";
 
 export default function RiderDueAmountsPage() {
   const [riderDueAmounts, setRiderDueAmounts] = useState([]);
@@ -437,6 +438,7 @@ export default function RiderDueAmountsPage() {
         throw new Error(result.message || "Failed to fetch rider due amounts");
       }
     } catch (err) {
+      console.error("Error fetching rider due amounts:", err);
       setError(err.message);
     } finally {
       setRiderDueLoading(false);
@@ -496,13 +498,14 @@ export default function RiderDueAmountsPage() {
       }
       const result = await response.json();
       if (result.success) {
-        showToast.success("Due amount updated successfully!");
+        alert("Due amount updated successfully!");
         closeUpdateModal();
         fetchRiderDueAmounts();
       } else {
         throw new Error(result.message || "Failed to update due amount");
       }
     } catch (err) {
+      console.error("Error updating due amount:", err);
       setError(err.message);
     } finally {
       setUpdating(false);

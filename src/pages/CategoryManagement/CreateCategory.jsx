@@ -376,7 +376,6 @@ import { Eye, Edit, Trash2 } from "lucide-react";
 import AddCategoryModal from "../../components/AddCategoryModal";
 import { useNavigate } from "react-router-dom";
 import { BASE_URL } from "../../api/api";
-import { showToast } from "../../utils/toast";
 
 const API_GET_ALL = `${BASE_URL}/api/category`;
 const API_DELETE = `${BASE_URL}/api/category`;
@@ -438,6 +437,7 @@ const CreateCategory = () => {
 
       setCategories(transformedCategories);
     } catch (err) {
+      console.error("Error fetching categories:", err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -528,9 +528,10 @@ const CreateCategory = () => {
         }
 
         setCategories((prev) => prev.filter((cat) => cat.id !== id));
-        showToast.success("Category deleted successfully!");
+        alert("Category deleted successfully!");
       } catch (err) {
-        showToast.error(err.message || "Failed to delete category. Please try again.");
+        console.error("Error deleting category:", err);
+        alert(err.message || "Failed to delete category. Please try again.");
       }
     }
   };

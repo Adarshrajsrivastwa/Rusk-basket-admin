@@ -47,7 +47,8 @@ export default function OfferViewModal({
       }
     } catch (err) {
       setError(err.message);
-      } finally {
+      console.error("Error fetching offer:", err);
+    } finally {
       setLoading(false);
     }
   };

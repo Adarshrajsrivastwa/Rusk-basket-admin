@@ -56,7 +56,9 @@
 //         setRequests([]);
 //       }
 //     } catch (error) {
-//       //       // Check for backend routing issue
+//       console.error("Error fetching withdrawal requests:", error);
+
+//       // Check for backend routing issue
 //       if (error.response?.status === 500) {
 //         const errorData = error.response?.data;
 //         if (
@@ -120,7 +122,8 @@
 //         setError(result.message || "Failed to approve request");
 //       }
 //     } catch (error) {
-//       //       setError(
+//       console.error("Error approving request:", error);
+//       setError(
 //         error.response?.data?.message || "Error approving withdrawal request",
 //       );
 //     } finally {
@@ -157,7 +160,8 @@
 //         setError(result.message || "Failed to reject request");
 //       }
 //     } catch (error) {
-//       //       setError(
+//       console.error("Error rejecting request:", error);
+//       setError(
 //         error.response?.data?.message || "Error rejecting withdrawal request",
 //       );
 //     } finally {
@@ -559,6 +563,8 @@ const WithdrawalRequests = () => {
         setRequests([]);
       }
     } catch (error) {
+      console.error("Error fetching withdrawal requests:", error);
+
       // Check for backend routing issue
       if (error.response?.status === 500) {
         const errorData = error.response?.data;
@@ -623,6 +629,7 @@ const WithdrawalRequests = () => {
         setError(result.message || "Failed to approve request");
       }
     } catch (error) {
+      console.error("Error approving request:", error);
       setError(
         error.response?.data?.message || "Error approving withdrawal request",
       );
@@ -660,6 +667,7 @@ const WithdrawalRequests = () => {
         setError(result.message || "Failed to reject request");
       }
     } catch (error) {
+      console.error("Error rejecting request:", error);
       setError(
         error.response?.data?.message || "Error rejecting withdrawal request",
       );
@@ -1009,6 +1017,10 @@ const WithdrawalRequests = () => {
                           if (riderId) {
                             fetchRiderDetails(riderId);
                           } else {
+                            console.error(
+                              "Rider ID not found in request:",
+                              request,
+                            );
                             setError(
                               "Rider ID not found. Cannot fetch rider details.",
                             );

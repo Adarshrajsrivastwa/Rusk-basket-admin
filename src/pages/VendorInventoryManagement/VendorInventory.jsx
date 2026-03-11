@@ -415,7 +415,6 @@ import {
 } from "lucide-react";
 import ProductModal from "../../pages/InventoryManagement/ProductModal";
 import { BASE_URL } from "../../api/api";
-import { showToast } from "../../utils/toast";
 
 const InventoryManagement = () => {
   const [activeTab, setActiveTab] = useState("all");
@@ -466,7 +465,8 @@ const InventoryManagement = () => {
       // If not available, we'll get it from the API response
       await fetchProducts();
     } catch (err) {
-      }
+      console.error("Error fetching vendor ID and products:", err);
+    }
   };
 
   const fetchProducts = async () => {
@@ -523,6 +523,7 @@ const InventoryManagement = () => {
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => "No error details");
+        console.error("API Error:", response.status, errorText);
         throw new Error(`Failed to fetch products: ${response.status}`);
       }
 
@@ -607,6 +608,7 @@ const InventoryManagement = () => {
         setError(result.message || "Failed to fetch products");
       }
     } catch (err) {
+      console.error("Error fetching products:", err);
       setError(err.message || "Error loading products. Please try again.");
     } finally {
       setLoading(false);
@@ -778,11 +780,12 @@ const InventoryManagement = () => {
           throw new Error(result.message || "Failed to delete product");
         }
 
-        showToast.success("Product deleted successfully");
+        alert("Product deleted successfully");
         // Refresh the product list
         fetchProducts();
       } catch (err) {
-        showToast.error(err.message || "Failed to delete product");
+        console.error("Error deleting product:", err);
+        alert(err.message || "Failed to delete product");
       }
     }
   };
@@ -919,6 +922,10 @@ const InventoryManagement = () => {
         const errorData = response
           ? await response.json().catch(() => ({}))
           : {};
+        console.error(
+          "All stock update endpoints failed. Last error:",
+          lastError,
+        );
         throw new Error(
           errorData.message ||
             `Failed to update stock: ${response?.status || "No response"}. Please check the API endpoint.`,
@@ -927,13 +934,14 @@ const InventoryManagement = () => {
 
       const result = await response.json();
       if (result.success) {
-        showToast.success("Stock updated successfully!");
+        alert("Stock updated successfully!");
         closeUpdateStockModal();
         fetchProducts(); // Refresh the product list
       } else {
         throw new Error(result.message || "Failed to update stock");
       }
     } catch (err) {
+      console.error("Error updating stock:", err);
       setError(err.message);
     } finally {
       setUpdatingStock(false);
@@ -985,14 +993,14 @@ const InventoryManagement = () => {
           throw new Error(errorMessage);
         }
 
-        showToast.success("Product inventory updated successfully");
+        alert("Product inventory updated successfully");
 
         // Refresh the product list
         fetchProducts();
       } else {
         // Note: Creating products should use /api/product/add endpoint
         // The inventory endpoint doesn't support product creation
-        showToast.warning(
+        alert(
           "Please use the Products page to add new products. This page is for inventory management only.",
         );
         setShowModal(false);
@@ -1005,8 +1013,9 @@ const InventoryManagement = () => {
       // Refetch products to get updated data
       fetchProducts();
     } catch (err) {
+      console.error("Error saving product:", err);
       const errorMessage = err.message || "Failed to save product";
-      showToast.error(errorMessage);
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

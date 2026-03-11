@@ -59,10 +59,15 @@
 //         setAdmins([]);
 //       }
 //     } catch (error) {
-//       //       // Check if it's a 404 error
+//       console.error("Error fetching admins:", error);
+
+//       // Check if it's a 404 error
 //       if (error.response?.status === 404) {
 //         // Show info message instead of error - user can still add admins
-//         //         setEndpointNotFound(true);
+//         console.warn(
+//           "GET endpoint for listing admins not found. Backend needs to implement: GET /api/admin/list",
+//         );
+//         setEndpointNotFound(true);
 //         setAdmins([]);
 //         setError(null); // Clear error so it doesn't show red banner
 //       } else {
@@ -136,7 +141,8 @@
 //         setError(result.message || "Failed to add admin");
 //       }
 //     } catch (error) {
-//       //       const errorMessage =
+//       console.error("Error adding admin:", error);
+//       const errorMessage =
 //         error.response?.data?.error ||
 //         error.response?.data?.message ||
 //         "Error adding admin";
@@ -556,7 +562,12 @@ const AllAdmin = () => {
         setAdmins([]);
       }
     } catch (error) {
+      console.error("Error fetching admins:", error);
+
       if (error.response?.status === 404) {
+        console.warn(
+          "GET endpoint for listing admins not found. Backend needs to implement: GET /api/admin/list",
+        );
         setEndpointNotFound(true);
         setAdmins([]);
         setError(null);
@@ -626,6 +637,7 @@ const AllAdmin = () => {
         setError(result.message || "Failed to add admin");
       }
     } catch (error) {
+      console.error("Error adding admin:", error);
       const errorMessage =
         error.response?.data?.error ||
         error.response?.data?.message ||

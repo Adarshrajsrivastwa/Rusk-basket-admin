@@ -75,7 +75,8 @@
 //       script.defer = true;
 //       script.onload = () => setMapLoaded(true);
 //       script.onerror = () => {
-//         //       };
+//         console.error("Failed to load Leaflet JS");
+//       };
 //       document.head.appendChild(script);
 //     } else {
 //       setMapLoaded(true);
@@ -227,10 +228,11 @@
 //                   markerInstanceRef.current = marker;
 //                 }
 //               } else {
-//                 showToast.info("No results found for your search.");
+//                 alert("No results found for your search.");
 //               }
 //             } catch (error) {
-//               //               showToast.error("Error searching location. Please try again.");
+//               console.error("Error searching location:", error);
+//               alert("Error searching location. Please try again.");
 //             }
 //           }
 //         }
@@ -269,12 +271,17 @@
 //         }));
 //       }
 //     } catch (error) {
-//       //     }
+//       console.error("Error reverse geocoding:", error);
+//     }
 //   };
 
 //   // Fetch all jobs
 //   const fetchJobs = async (city = "") => {
-//     //     //     //     //     setLoading(true);
+//     console.log("========================================");
+//     console.log("fetchJobs called");
+//     console.log("City filter:", city || "No filter");
+//     console.log("========================================");
+//     setLoading(true);
 //     try {
 //       // Use vendor-specific endpoint to get vendor's job posts
 //       const url = `${API_BASE_URL}/vendor/my-job-posts`;
@@ -283,49 +290,129 @@
 //         localStorage.getItem("token") || localStorage.getItem("authToken");
 //       const headers = getAuthHeaders();
 
-//       //       //       //       //       //       //       //       //       const response = await fetch(url, {
+//       console.log("========================================");
+//       console.log("API REQUEST DETAILS:");
+//       console.log("URL:", url);
+//       console.log("Method: GET");
+//       console.log("Token available:", !!token);
+//       console.log("Token length:", token ? token.length : 0);
+//       console.log("Headers:", headers);
+//       console.log("========================================");
+
+//       const response = await fetch(url, {
 //         method: "GET",
 //         credentials: "include",
 //         headers: headers,
 //       });
 
-//       //       //       //       //       //       );
-//       //       const result = await response.json();
-//       //       //       //       //       );
-//       //       //       //       //       //       //       ? "Array" : typeof result.data,
+//       console.log("========================================");
+//       console.log("RESPONSE RECEIVED:");
+//       console.log("Status:", response.status);
+//       console.log("Status Text:", response.statusText);
+//       console.log("OK:", response.ok);
+//       console.log("Content-Type:", response.headers.get("content-type"));
+//       console.log("========================================");
+
+//       const result = await response.json();
+//       console.log("========================================");
+//       console.log("PARSED JSON RESPONSE:");
+//       console.log("Full response:", result);
+//       console.log("Response type:", typeof result);
+//       console.log("Response keys:", Object.keys(result));
+//       console.log("========================================");
+//       console.log("Response success:", result.success);
+//       console.log("Response count:", result.count);
+//       console.log("Response pagination:", result.pagination);
+//       console.log("========================================");
+//       console.log("Response data:", result.data);
+//       console.log(
+//         "Data type:",
+//         Array.isArray(result.data) ? "Array" : typeof result.data,
 //       );
-//       ? result.data.length : "Not an array",
+//       console.log(
+//         "Data length:",
+//         Array.isArray(result.data) ? result.data.length : "Not an array",
 //       );
-//       //       if (Array.isArray(result.data)) {
-//         //         result.data.forEach((job, index) => {
-//           //           //           //           //           //           //           //           //           //           //           //           //           );
+//       console.log("========================================");
+
+//       if (Array.isArray(result.data)) {
+//         console.log("ITERATING THROUGH JOBS:");
+//         result.data.forEach((job, index) => {
+//           console.log(`\n--- Job ${index + 1} ---`);
+//           console.log("_id:", job._id);
+//           console.log("jobTitle:", job.jobTitle);
+//           console.log("joiningBonus:", job.joiningBonus);
+//           console.log("onboardingFee:", job.onboardingFee);
+//           console.log("isActive:", job.isActive);
+//           console.log("postedByType:", job.postedByType);
+//           console.log("location:", job.location);
+//           console.log("vendor:", job.vendor);
+//           console.log("postedBy:", job.postedBy);
+//           console.log("createdAt:", job.createdAt);
+//           console.log("updatedAt:", job.updatedAt);
+//           console.log("Full job object:", JSON.stringify(job, null, 2));
 //         });
 //       }
 
 //       if (result.success) {
 //         let jobsData = result.data || [];
-//         //         //         //         //         // If city filter is provided, filter by city
+//         console.log("========================================");
+//         console.log("BEFORE FILTERING:");
+//         console.log("Jobs count:", jobsData.length);
+//         console.log("========================================");
+
+//         // If city filter is provided, filter by city
 //         if (city && city.trim()) {
 //           const cityLower = city.toLowerCase().trim();
-//           //           const beforeFilter = jobsData.length;
+//           console.log("Applying city filter:", cityLower);
+//           const beforeFilter = jobsData.length;
 //           jobsData = jobsData.filter((job) => {
 //             const jobCity = job.location?.city?.toLowerCase() || "";
 //             const matches = jobCity.includes(cityLower);
-//             //             return matches;
+//             console.log(
+//               `Job ${job._id} - City: "${jobCity}" - Matches: ${matches}`,
+//             );
+//             return matches;
 //           });
-//           //           //           //           //         }
+//           console.log("AFTER FILTERING:");
+//           console.log("Before filter count:", beforeFilter);
+//           console.log("After filter count:", jobsData.length);
+//           console.log("Filtered jobs:", jobsData);
+//         }
 
-//         //         //         //         //         //         //         setJobs(jobsData);
-//         //       } else {
-//         //         //         //         //         //         //         showToast.error(result.message || "Failed to fetch jobs");
+//         console.log("========================================");
+//         console.log("SETTING JOBS TO STATE:");
+//         console.log("Final jobs array:", jobsData);
+//         console.log("Final count:", jobsData.length);
+//         console.log("First job:", jobsData[0]);
+//         console.log("========================================");
+//         setJobs(jobsData);
+//         console.log("Jobs state updated successfully");
+//       } else {
+//         console.error("========================================");
+//         console.error("API RETURNED SUCCESS: FALSE");
+//         console.error("Error message:", result.message);
+//         console.error("Error:", result.error);
+//         console.error("Full error response:", result);
+//         console.error("========================================");
+//         alert(result.message || "Failed to fetch jobs");
 //         setJobs([]);
 //       }
 //     } catch (error) {
-//       //       //       //       //       //       //       //       showToast.error("Failed to fetch jobs");
+//       console.error("========================================");
+//       console.error("EXCEPTION CAUGHT:");
+//       console.error("Error name:", error.name);
+//       console.error("Error message:", error.message);
+//       console.error("Error stack:", error.stack);
+//       console.error("Full error:", error);
+//       console.error("========================================");
+//       alert("Failed to fetch jobs");
 //       setJobs([]);
 //     } finally {
-//       //       setLoading(false);
-//       //     }
+//       console.log("Setting loading to false");
+//       setLoading(false);
+//       console.log("========================================");
+//     }
 //   };
 
 //   useEffect(() => {
@@ -398,7 +485,7 @@
 //       !formData.joiningBonus ||
 //       !formData.onboardingFee
 //     ) {
-//       showToast.warning("Please fill all required fields");
+//       alert("Please fill all required fields");
 //       return;
 //     }
 
@@ -422,7 +509,7 @@
 //       const result = await response.json();
 
 //       if (result.success) {
-//         showToast.success(
+//         alert(
 //           result.message ||
 //             `Job ${isEdit ? "updated" : "created"} successfully`,
 //         );
@@ -431,10 +518,11 @@
 //         fetchJobs(searchCity);
 //         resetForm();
 //       } else {
-//         showToast.error(result.message || "Operation failed");
+//         alert(result.message || "Operation failed");
 //       }
 //     } catch (error) {
-//       //       showToast.error("Failed to save job post");
+//       console.error("Error:", error);
+//       alert("Failed to save job post");
 //     }
 //   };
 
@@ -454,13 +542,14 @@
 //       const result = await response.json();
 
 //       if (result.success) {
-//         showToast.success("Job post deleted successfully");
+//         alert("Job post deleted successfully");
 //         fetchJobs(searchCity);
 //       } else {
-//         showToast.error(result.message || "Failed to delete job post");
+//         alert(result.message || "Failed to delete job post");
 //       }
 //     } catch (error) {
-//       //       showToast.error("Failed to delete job post");
+//       console.error("Error:", error);
+//       alert("Failed to delete job post");
 //     }
 //   };
 
@@ -1047,7 +1136,6 @@ import {
   Eye,
 } from "lucide-react";
 import { BASE_URL } from "../../api/api";
-import { showToast } from "../../utils/toast";
 
 const API_BASE_URL = `${BASE_URL}/api`;
 
@@ -1104,7 +1192,8 @@ const RiderJobManagement = () => {
       script.async = true;
       script.defer = true;
       script.onload = () => setMapLoaded(true);
-      script.onerror = () => document.head.appendChild(script);
+      script.onerror = () => console.error("Failed to load Leaflet JS");
+      document.head.appendChild(script);
     } else {
       setMapLoaded(true);
     }
@@ -1241,10 +1330,11 @@ const RiderJobManagement = () => {
                   markerInstanceRef.current = marker;
                 }
               } else {
-                showToast.info("No results found for your search.");
+                alert("No results found for your search.");
               }
             } catch (error) {
-              showToast.error("Error searching location. Please try again.");
+              console.error("Error searching location:", error);
+              alert("Error searching location. Please try again.");
             }
           }
         }
@@ -1282,7 +1372,8 @@ const RiderJobManagement = () => {
         }));
       }
     } catch (error) {
-      }
+      console.error("Error reverse geocoding:", error);
+    }
   };
 
   const fetchJobs = async (city = "") => {
@@ -1309,6 +1400,7 @@ const RiderJobManagement = () => {
         setJobs([]);
       }
     } catch (error) {
+      console.error("Error:", error);
       setJobs([]);
     } finally {
       setLoading(false);
@@ -1375,7 +1467,7 @@ const RiderJobManagement = () => {
       !formData.joiningBonus ||
       !formData.onboardingFee
     ) {
-      showToast.warning("Please fill all required fields");
+      alert("Please fill all required fields");
       return;
     }
     try {
@@ -1391,7 +1483,7 @@ const RiderJobManagement = () => {
       });
       const result = await response.json();
       if (result.success) {
-        showToast.success(
+        alert(
           result.message ||
             `Job ${isEdit ? "updated" : "created"} successfully`,
         );
@@ -1400,10 +1492,11 @@ const RiderJobManagement = () => {
         fetchJobs(searchCity);
         resetForm();
       } else {
-        showToast.error(result.message || "Operation failed");
+        alert(result.message || "Operation failed");
       }
     } catch (error) {
-      showToast.error("Failed to save job post");
+      console.error("Error:", error);
+      alert("Failed to save job post");
     }
   };
 
@@ -1418,13 +1511,14 @@ const RiderJobManagement = () => {
       });
       const result = await response.json();
       if (result.success) {
-        showToast.success("Job post deleted successfully");
+        alert("Job post deleted successfully");
         fetchJobs(searchCity);
       } else {
-        showToast.error(result.message || "Failed to delete job post");
+        alert(result.message || "Failed to delete job post");
       }
     } catch (error) {
-      showToast.error("Failed to delete job post");
+      console.error("Error:", error);
+      alert("Failed to delete job post");
     }
   };
 

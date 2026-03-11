@@ -36,7 +36,8 @@ export default function NewOrderPopup({ visible, onClose, orderData }) {
       audioRef.current = audio;
 
       audio.play().catch((err) => {
-        });
+        console.warn("Audio playback was blocked by browser:", err);
+      });
     } else {
       if (audioRef.current) {
         audioRef.current.pause();

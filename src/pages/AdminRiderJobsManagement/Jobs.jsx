@@ -63,7 +63,8 @@
 
 //   // Fetch all job posts - memoized with useCallback
 //   const fetchJobs = useCallback(async () => {
-//     //     setLoading(true);
+//     console.log("fetchJobs called");
+//     setLoading(true);
 //     try {
 //       const token =
 //         localStorage.getItem("token") || localStorage.getItem("authToken");
@@ -74,28 +75,48 @@
 //         headers["Authorization"] = `Bearer ${token}`;
 //       }
 
-//       //       //       // Use the correct endpoint
+//       console.log("Fetching jobs from:", `${API_BASE_URL}/rider-job-post`);
+//       console.log("Token available:", !!token);
+
+//       // Use the correct endpoint
 //       const response = await fetch(`${API_BASE_URL}/rider-job-post`, {
 //         method: "GET",
 //         headers: headers,
 //         credentials: "include",
 //       });
 
-//       //       //       const data = await response.json();
-//       //       //       //       //       //       if (data.success) {
+//       console.log("Response status:", response.status);
+//       console.log("Response ok:", response.ok);
+
+//       const data = await response.json();
+//       console.log("API Response:", data);
+//       console.log("Response success:", data.success);
+//       console.log("Response data:", data.data);
+//       console.log("Response count:", data.count);
+//       console.log("Response pagination:", data.pagination);
+
+//       if (data.success) {
 //         // Handle the response structure: {success, count, pagination, data}
 //         const jobsData = data.data || [];
-//         //         //         setJobs(jobsData);
+//         console.log("Setting jobs:", jobsData);
+//         console.log("Jobs count:", jobsData.length);
+//         setJobs(jobsData);
 //       } else {
-//         //         //         showNotification(
+//         console.error("API returned success: false");
+//         console.error("Error message:", data.message || data.error);
+//         showNotification(
 //           data.message || data.error || "Failed to fetch jobs",
 //           "error",
 //         );
 //       }
 //     } catch (error) {
-//       //       //       //       showNotification("Failed to fetch jobs", "error");
+//       console.error("Error fetching jobs:", error);
+//       console.error("Error message:", error.message);
+//       console.error("Error stack:", error.stack);
+//       showNotification("Failed to fetch jobs", "error");
 //     } finally {
-//       //       setLoading(false);
+//       console.log("Setting loading to false");
+//       setLoading(false);
 //     }
 //   }, []);
 
@@ -353,9 +374,11 @@
 //       if (data.success) {
 //         setVendors(data.data || []);
 //       } else {
-//         //       }
+//         console.error("Failed to fetch vendors:", data.message || data.error);
+//       }
 //     } catch (error) {
-//       //     }
+//       console.error("Failed to fetch vendors:", error);
+//     }
 //   }, []);
 
 //   useEffect(() => {
@@ -442,7 +465,8 @@
 //   const initializeOpenStreetMap = () => {
 //     const mapContainer = document.getElementById("map-container");
 //     if (!mapContainer || !window.L) {
-//       //       return;
+//       console.error("Map container or Leaflet not found");
+//       return;
 //     }
 
 //     // Don't reinitialize if map already exists
@@ -773,7 +797,8 @@
 //         }));
 //       }
 //     } catch (error) {
-//       //       // Coordinates are still saved even if geocoding fails
+//       console.log("Geocoding failed, coordinates saved:", error);
+//       // Coordinates are still saved even if geocoding fails
 //     }
 //   };
 
@@ -1468,7 +1493,8 @@
 //                                           }
 //                                         }
 //                                       } catch (error) {
-//                                         //                                       }
+//                                         console.error("Search failed:", error);
+//                                       }
 //                                     }
 //                                   }
 //                                 }}
@@ -2000,7 +2026,8 @@ const RiderJobPostManagement = () => {
       const data = await response.json();
       if (data.success) setVendors(data.data || []);
     } catch (error) {
-      }
+      console.error("Failed to fetch vendors:", error);
+    }
   }, []);
 
   useEffect(() => {

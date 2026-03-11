@@ -10,6 +10,7 @@ const DeliveryCostModal = ({ isOpen, onClose }) => {
   const costOptions = [30, 20, 40, 50, 60, 70];
 
   const handleAssign = () => {
+    console.log("Assigned Delivery Cost:", selectedCost || amount);
     onClose();
   };
 

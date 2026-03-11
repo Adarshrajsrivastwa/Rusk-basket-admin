@@ -3,7 +3,6 @@ import DashboardLayout from "../../components/DashboardLayout";
 import { useLocation, useParams } from "react-router-dom";
 import { BASE_URL } from "../../api/api";
 import {
-import { showToast } from "../../utils/toast";
   Download,
   Printer,
   ArrowLeft,
@@ -201,6 +200,7 @@ const InvoiceViewPage = () => {
           throw new Error("No invoice found for this order");
         }
       } catch (err) {
+        console.error("Error fetching invoice details:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -220,7 +220,7 @@ const InvoiceViewPage = () => {
 
   const handleDownload = async () => {
     if (!invoiceRef.current) {
-      showToast.info("Invoice content not available for download");
+      alert("Invoice content not available for download");
       return;
     }
 
@@ -242,10 +242,12 @@ const InvoiceViewPage = () => {
         .from(element)
         .save()
         .catch((err) => {
-          showToast.error("Failed to download invoice. Please try again.");
+          console.error("Error generating PDF:", err);
+          alert("Failed to download invoice. Please try again.");
         });
     } catch (error) {
-      showToast.error("Failed to load PDF generator. Please try again.");
+      console.error("Error loading html2pdf:", error);
+      alert("Failed to load PDF generator. Please try again.");
     }
   };
 

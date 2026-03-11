@@ -379,7 +379,6 @@ import { Eye, Edit, Trash2 } from "lucide-react";
 import AddVendorModal from "../../components/AddVendorModal";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/api";
-import { showToast } from "../../utils/toast";
 
 const AllVendor = () => {
   const [activeTab, setActiveTab] = useState("all");
@@ -417,6 +416,7 @@ const AllVendor = () => {
         setVendors([]);
       }
     } catch (error) {
+      console.error("Error fetching vendors:", error);
       setVendors([]);
     } finally {
       setLoading(false);
@@ -440,13 +440,14 @@ const AllVendor = () => {
         const response = await api.delete(`/api/vendor/${id}`);
         const result = response.data;
         if (result.success) {
-          showToast.success("Vendor deleted successfully");
+          alert("Vendor deleted successfully");
           refreshVendors();
         } else {
-          showToast.error(result.message || "Failed to delete vendor");
+          alert(result.message || "Failed to delete vendor");
         }
       } catch (error) {
-        showToast.error(error.response?.data?.message || "Error deleting vendor");
+        console.error("Error deleting vendor:", error);
+        alert(error.response?.data?.message || "Error deleting vendor");
       }
     }
   };

@@ -4,7 +4,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import AssignDeliveryBoyModal from "../../components/AssignDeliveryBoyModal";
 import { BASE_URL } from "../../api/api";
 import { Truck, X, Clock, User, Phone } from "lucide-react";
-import { showToast } from "../../utils/toast";
 
 const API_BASE_URL = `${BASE_URL}/api`;
 
@@ -30,6 +29,15 @@ const SingleOrder = () => {
         setLoading(true);
         setError(null);
 
+        console.log("========================================");
+        console.log("📦 FETCHING ORDER DATA:");
+        console.log("Order ID from params:", id);
+        console.log(
+          "API Endpoint:",
+          `${API_BASE_URL}/checkout/vendor/order/${id}`,
+        );
+        console.log("========================================");
+
         // Get token from localStorage
         const token =
           localStorage.getItem("token") || localStorage.getItem("authToken");
@@ -51,16 +59,52 @@ const SingleOrder = () => {
           },
         );
 
+        console.log("========================================");
+        console.log("📡 API RESPONSE:");
+        console.log("Response Status:", response.status);
+        console.log("Response OK:", response.ok);
+        console.log("========================================");
+
         const result = await response.json();
 
-        :", JSON.stringify(result, null, 2));
-        );
+        console.log("========================================");
+        console.log("📦 PARSED RESPONSE DATA:");
+        console.log("Full Response (JSON):", JSON.stringify(result, null, 2));
+        console.log("----------------------------------------");
+        console.log("Result type:", typeof result);
+        console.log("Result keys:", Object.keys(result));
+        console.log("Result.success:", result.success);
+        console.log("Result.message:", result.message);
+        console.log("----------------------------------------");
+        console.log("Result.data:", result.data);
+        console.log("Result.data type:", typeof result.data);
         if (result.data) {
+          console.log("Result.data keys:", Object.keys(result.data));
+          console.log("Result.data._id:", result.data._id);
+          console.log("Result.data.orderNumber:", result.data.orderNumber);
+          console.log("Result.data.status:", result.data.status);
+          console.log("Result.data.createdAt:", result.data.createdAt);
+          console.log("Result.data.deliveryImage:", result.data.deliveryImage);
+          console.log(
+            "Result.data.deliveryImage?.url:",
+            result.data.deliveryImage?.url,
           );
-          :",
+          console.log(
+            "Result.data.deliveredImage:",
+            result.data.deliveredImage,
+          );
+          console.log(
+            "Result.data.deliveredImage?.url:",
+            result.data.deliveredImage?.url,
+          );
+          console.log("Result.data.riderInfo:", result.data.riderInfo);
+          console.log(
+            "Result.data (Full JSON):",
             JSON.stringify(result.data, null, 2),
           );
         }
+        console.log("========================================");
+
         if (!response.ok || !result.success) {
           throw new Error(result.message || "Failed to fetch order data");
         }
@@ -68,12 +112,34 @@ const SingleOrder = () => {
         // Transform API response to match component structure
         const transformedData = transformOrderData(result.data);
 
-        :",
+        console.log("========================================");
+        console.log("🔄 TRANSFORMED ORDER DATA:");
+        console.log(
+          "Transformed Data (JSON):",
           JSON.stringify(transformedData, null, 2),
         );
+        console.log("----------------------------------------");
+        console.log("Transformed Data Keys:", Object.keys(transformedData));
+        console.log("Transformed Data._id:", transformedData._id);
+        console.log("Transformed Data.id:", transformedData.id);
+        console.log("Transformed Data.date:", transformedData.date);
+        console.log("Transformed Data.status:", transformedData.status);
+        console.log("Transformed Data.vendor:", transformedData.vendor);
+        console.log("Transformed Data.buyer:", transformedData.buyer);
+        console.log("Transformed Data.products:", transformedData.products);
+        console.log(
+          "Transformed Data.deliveryImage:",
+          transformedData.deliveryImage,
         );
+        console.log(
+          "Transformed Data.deliveredImage:",
+          transformedData.deliveredImage,
+        );
+        console.log("========================================");
+
         setOrderData(transformedData);
       } catch (err) {
+        console.error("Error fetching order:", err);
         setError(err.message || "Failed to load order data");
       } finally {
         setLoading(false);
@@ -97,6 +163,16 @@ const SingleOrder = () => {
         orderData.id
       ) {
         try {
+          console.log("========================================");
+          console.log("📄 AUTO-GENERATING INVOICE PDF:");
+          console.log("Order Number:", orderData.id);
+          console.log("Status:", orderData.status);
+          console.log(
+            "API Endpoint:",
+            `${API_BASE_URL}/invoice/order/${orderData.id}/generate-pdf`,
+          );
+          console.log("========================================");
+
           // Get token from localStorage
           const token =
             localStorage.getItem("token") || localStorage.getItem("authToken");
@@ -121,11 +197,17 @@ const SingleOrder = () => {
           const result = await response.json();
 
           if (response.ok && result.success) {
+            console.log("✅ Invoice PDF generated successfully:", result);
             pdfGeneratedRef.current = true; // Mark as generated to avoid duplicate calls
           } else {
+            console.warn(
+              "⚠️ Failed to generate invoice PDF:",
+              result.message || "Unknown error",
+            );
             // Don't mark as generated if it failed, so it can retry
           }
         } catch (err) {
+          console.error("❌ Error generating invoice PDF:", err);
           // Don't mark as generated if it failed, so it can retry
         }
       }
@@ -293,6 +375,7 @@ const SingleOrder = () => {
         setVendorsWithRiders([]);
       }
     } catch (error) {
+      console.error("Error fetching vendors with riders:", error);
       setVendorsWithRiders([]);
     } finally {
       setLoadingRiders(false);
@@ -302,7 +385,7 @@ const SingleOrder = () => {
   // Handle assign rider
   const handleAssignRider = async () => {
     if (!selectedRider) {
-      showToast.warning("⚠️ Please select a rider!");
+      alert("⚠️ Please select a rider!");
       return;
     }
 
@@ -365,18 +448,20 @@ const SingleOrder = () => {
       const result = await response.json();
 
       if (result.success) {
-        showToast.success("✅ Rider assigned successfully!");
+        alert("✅ Rider assigned successfully!");
         setShowAssignRiderModal(false);
         setSelectedRider(null);
         setAssignmentNotes("");
         // Refresh order data
         window.location.reload();
       } else {
-        showToast.error(
+        alert(
           `❌ Failed to assign rider: ${result.message || "Unknown error"}`,
         );
       }
     } catch (error) {
+      console.error("Error assigning rider:", error);
+
       // Provide user-friendly error message
       let errorMessage = "Failed to assign rider. ";
       if (error.message.includes("500")) {
@@ -388,7 +473,7 @@ const SingleOrder = () => {
         errorMessage += error.message || "Unknown error occurred.";
       }
 
-      showToast.error(`❌ ${errorMessage}`);
+      alert(`❌ ${errorMessage}`);
     } finally {
       setAssigningRider(false);
     }
@@ -975,7 +1060,7 @@ const SingleOrder = () => {
                   replace: false,
                 });
               } else {
-                showToast.info("Order ID not available");
+                alert("Order ID not available");
               }
             }}
             className="bg-[#FF7B1D] hover:bg-[#E66A0D] text-white px-6 py-4 rounded-sm font-bold shadow-sm hover:shadow-2xl transition-all duration-200 transform hover:scale-105 text-base"

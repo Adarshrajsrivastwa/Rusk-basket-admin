@@ -94,7 +94,8 @@
 //       const result = await response.json();
 
 //       if (!response.ok) {
-//         //         return;
+//         console.error("Failed to fetch subcategories:", result.message);
+//         return;
 //       }
 
 //       if (result.success) {
@@ -104,7 +105,8 @@
 //         }));
 //       }
 //     } catch (err) {
-//       //     } finally {
+//       console.error("Error fetching subcategories:", err.message);
+//     } finally {
 //       setLoadingSubCategories((prev) => ({ ...prev, [categoryId]: false }));
 //     }
 //   };
@@ -144,18 +146,18 @@
 //         const result = await response.json();
 
 //         if (!response.ok) {
-//           showToast.error(result.message || "Failed to delete category");
+//           alert(result.message || "Failed to delete category");
 //           return;
 //         }
 
 //         if (result.success) {
-//           showToast.success("Category deleted successfully!");
+//           alert("Category deleted successfully!");
 //           fetchCategories(); // Refresh the list
 //         } else {
-//           showToast.error(result.message || "Failed to delete category");
+//           alert(result.message || "Failed to delete category");
 //         }
 //       } catch (err) {
-//         showToast.error("Error deleting category: " + err.message);
+//         alert("Error deleting category: " + err.message);
 //       }
 //     }
 //   };
@@ -523,7 +525,6 @@ import { useNavigate } from "react-router-dom";
 import AddCategoryModal from "../../components/AddCategoryModal";
 import AddSubCategoryModal from "../../components/AddSubCategoryModal ";
 import { BASE_URL } from "../../api/api";
-import { showToast } from "../../utils/toast";
 
 const API_BASE_URL = `${BASE_URL}/api`;
 
@@ -636,6 +637,7 @@ const AllCategory = () => {
       const result = await response.json();
 
       if (!response.ok) {
+        console.error("Failed to fetch subcategories:", result.message);
         return;
       }
       if (result.success) {
@@ -645,7 +647,8 @@ const AllCategory = () => {
         }));
       }
     } catch (err) {
-      } finally {
+      console.error("Error fetching subcategories:", err.message);
+    } finally {
       setLoadingSubCategories((prev) => ({ ...prev, [categoryId]: false }));
     }
   };
@@ -684,13 +687,13 @@ const AllCategory = () => {
         const result = await response.json();
 
         if (!response.ok || !result.success) {
-          showToast.error(result.message || "Failed to delete category");
+          alert(result.message || "Failed to delete category");
           return;
         }
-        showToast.success("Category deleted successfully!");
+        alert("Category deleted successfully!");
         fetchCategories();
       } catch (err) {
-        showToast.error("Error deleting category: " + err.message);
+        alert("Error deleting category: " + err.message);
       }
     }
   };
@@ -722,10 +725,10 @@ const AllCategory = () => {
         const result = await response.json();
 
         if (!response.ok || !result.success) {
-          showToast.error(result.message || "Failed to delete subcategory");
+          alert(result.message || "Failed to delete subcategory");
           return;
         }
-        showToast.success("Subcategory deleted successfully!");
+        alert("Subcategory deleted successfully!");
         fetchCategories();
         setSubCategories((prev) => {
           const updated = { ...prev };
@@ -736,7 +739,7 @@ const AllCategory = () => {
         });
         window.dispatchEvent(new CustomEvent("subcategoryDeleted"));
       } catch (err) {
-        showToast.error("Error deleting subcategory: " + err.message);
+        alert("Error deleting subcategory: " + err.message);
       }
     }
   };

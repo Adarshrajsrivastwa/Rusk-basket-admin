@@ -115,6 +115,7 @@ const InvoicePage = () => {
           throw new Error("Invalid API response");
         }
       } catch (err) {
+        console.error("Error fetching invoices:", err);
         setError(err.message);
         setInvoices([]);
       } finally {
@@ -205,7 +206,8 @@ const InvoicePage = () => {
         replace: false,
       });
     } else {
-      }
+      console.error("Invoice data or orderId not found");
+    }
   };
 
   // Calculate stats from filtered invoices

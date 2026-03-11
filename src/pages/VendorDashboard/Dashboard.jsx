@@ -45,6 +45,7 @@ export default function DashboardPage() {
         setUnreadNotificationCount(response.data.unreadCount || 0);
       }
     } catch (error) {
+      console.error("Error fetching unread notification count:", error);
       setUnreadNotificationCount(0);
     }
   };

@@ -3,7 +3,6 @@ import DashboardLayout from "../../components/DashboardLayout";
 import { Trash2, X, Loader2, MessageSquare, Eye, Edit2 } from "lucide-react";
 import { BASE_URL } from "../../api/api";
 import api from "../../api/api";
-import { showToast } from "../../utils/toast";
 
 const API_URL = `${BASE_URL}/api/suggestion`;
 
@@ -44,10 +43,11 @@ const SuggestionManagement = () => {
           setTotalPages(response.data.pagination.pages || 1);
         }
       } else {
-        showToast.error("Failed to load suggestions");
+        alert("Failed to load suggestions");
       }
     } catch (error) {
-      showToast.error("Failed to load suggestions. Check if backend is running.");
+      console.error("Error loading suggestions:", error);
+      alert("Failed to load suggestions. Check if backend is running.");
     } finally {
       setLoading(false);
     }
@@ -75,7 +75,7 @@ const SuggestionManagement = () => {
   // ================= SUBMIT EDIT =================
   const handleSubmit = async () => {
     if (!formData.text.trim()) {
-      showToast.error("Suggestion text is required");
+      alert("Suggestion text is required");
       return;
     }
 
@@ -90,12 +90,13 @@ const SuggestionManagement = () => {
         setIsModalOpen(false);
         setEditingSuggestion(null);
         loadSuggestions(currentPage);
-        showToast.success("Suggestion updated successfully");
+        alert("Suggestion updated successfully");
       } else {
         throw new Error(response.data.message || "Failed to update suggestion");
       }
     } catch (error) {
-      showToast.error(error.response?.data?.message || "Failed to update suggestion");
+      console.error("Error updating suggestion:", error);
+      alert(error.response?.data?.message || "Failed to update suggestion");
     } finally {
       setSubmitting(false);
     }
@@ -110,12 +111,13 @@ const SuggestionManagement = () => {
       const response = await api.delete(`/api/suggestion/${id}`);
       if (response.data.success) {
         loadSuggestions(currentPage);
-        showToast.success("Suggestion deleted successfully");
+        alert("Suggestion deleted successfully");
       } else {
         throw new Error(response.data.message || "Failed to delete suggestion");
       }
     } catch (error) {
-      showToast.error(error.response?.data?.message || "Delete failed");
+      console.error("Error deleting suggestion:", error);
+      alert(error.response?.data?.message || "Delete failed");
     }
   };
 

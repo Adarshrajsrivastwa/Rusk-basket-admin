@@ -28,17 +28,25 @@
 //         setError(null);
 
 //         // Log the request details for debugging
-//         //         //         const response = await api.get(`/vendor/${id}`);
+//         console.log("Fetching vendor with ID:", id);
+//         console.log("Request URL:", `/vendor/${id}`);
+
+//         const response = await api.get(`/vendor/${id}`);
 
 //         const result = response.data;
 
 //         if (result.success) {
 //           setVendor(result.data);
-//           //         } else {
+//           console.log("Vendor data loaded successfully:", result.data);
+//         } else {
 //           setError(result.message || "Failed to fetch vendor data");
-//           //         }
+//           console.error("Failed to fetch vendor:", result.message);
+//         }
 //       } catch (error) {
-//         //         //         // Handle different error scenarios
+//         console.error("Error fetching vendor:", error);
+//         console.error("Error response:", error.response);
+
+//         // Handle different error scenarios
 //         if (error.response?.status === 404) {
 //           setError("Vendor not found. Please check the vendor ID.");
 //         } else if (error.response?.status === 401) {
@@ -1029,112 +1037,274 @@
 //         setLoading(true);
 //         setError(null);
 
-//         //         //         //         //         //         // Try /vendor/${id} first (as per user's route), then fallback to /api/vendor/${id}
+//         console.log("========================================");
+//         console.log("🚀 STARTING VENDOR DATA FETCH");
+//         console.log("========================================");
+//         console.log("Vendor ID:", id);
+//         console.log(
+//           "Full URL will be:",
+//           `${api.defaults.baseURL}/vendor/${id}`,
+//         );
+
+//         // Try /vendor/${id} first (as per user's route), then fallback to /api/vendor/${id}
 //         let response;
 //         let endpointUsed = "";
 
 //         try {
 //           endpointUsed = `/vendor/${id}`;
-//           //           //           response = await api.get(endpointUsed);
-//           //         } catch (firstError) {
-//           //           //           //           //           if (firstError.response?.status === 404) {
+//           console.log("📍 Trying endpoint 1:", endpointUsed);
+//           console.log("Full URL:", `${api.defaults.baseURL}${endpointUsed}`);
+//           response = await api.get(endpointUsed);
+//           console.log("✅ Endpoint 1 SUCCESS!");
+//         } catch (firstError) {
+//           console.log("❌ Endpoint 1 FAILED");
+//           console.log("Error status:", firstError.response?.status);
+//           console.log("Error message:", firstError.message);
+//           console.log("Error data:", firstError.response?.data);
+
+//           if (firstError.response?.status === 404) {
 //             endpointUsed = `/api/vendor/${id}`;
-//             //             //             response = await api.get(endpointUsed);
-//             //           } else {
+//             console.log("📍 Trying endpoint 2:", endpointUsed);
+//             console.log("Full URL:", `${api.defaults.baseURL}${endpointUsed}`);
+//             response = await api.get(endpointUsed);
+//             console.log("✅ Endpoint 2 SUCCESS!");
+//           } else {
 //             throw firstError;
 //           }
 //         }
 
-//         //         //         //         //         //         //         //         //         //         //         );
+//         console.log("========================================");
+//         console.log("📦 RAW RESPONSE RECEIVED");
+//         console.log("========================================");
+//         console.log("Endpoint used:", endpointUsed);
+//         console.log("Response status:", response.status);
+//         console.log("Response status text:", response.statusText);
+//         console.log("Response headers:", response.headers);
+//         console.log("Full response object:", response);
+//         console.log("Response.data:", response.data);
+//         console.log("Response.data type:", typeof response.data);
+//         console.log("Response.data is array?", Array.isArray(response.data));
 
 //         const result = response.data;
 
-//         //         //         //         //         //         : "Result is null/undefined",
+//         console.log("========================================");
+//         console.log("🔍 ANALYZING RESPONSE STRUCTURE");
+//         console.log("========================================");
+//         console.log("Result:", result);
+//         console.log("Result type:", typeof result);
+//         console.log(
+//           "Result keys:",
+//           result ? Object.keys(result) : "Result is null/undefined",
 //         );
 
 //         if (result) {
-//           //           //           //           //           //               : "result.data is null/undefined",
+//           console.log("Result.success:", result.success);
+//           console.log("Result.message:", result.message);
+//           console.log("Result.data:", result.data);
+//           console.log("Result.data type:", typeof result.data);
+//           console.log(
+//             "Result.data keys:",
+//             result.data
+//               ? Object.keys(result.data)
+//               : "result.data is null/undefined",
 //           );
 
 //           // Log full JSON structure
-//           //           //           //           );
-//           //         }
+//           console.log("========================================");
+//           console.log("📄 FULL JSON RESPONSE");
+//           console.log("========================================");
+//           console.log(JSON.stringify(result, null, 2));
+//           console.log("========================================");
+//         }
 
 //         if (result && result.success) {
-//           //           //           //           // Handle different response structures
+//           console.log("========================================");
+//           console.log("✅ API CALL SUCCESSFUL");
+//           console.log("========================================");
+
+//           // Handle different response structures
 //           let dataToUse = result.data;
 
-//           //           //           : "dataToUse is null/undefined",
+//           console.log("Initial dataToUse:", dataToUse);
+//           console.log("dataToUse type:", typeof dataToUse);
+//           console.log(
+//             "dataToUse keys:",
+//             dataToUse ? Object.keys(dataToUse) : "dataToUse is null/undefined",
 //           );
 
 //           // If result.data doesn't exist, maybe data is directly in result
 //           if (!dataToUse && result.vendor) {
-//             //             //             dataToUse = result;
+//             console.log("⚠️ result.data is null, but result.vendor exists");
+//             console.log("Using result directly as dataToUse");
+//             dataToUse = result;
 //           }
 
 //           // Check if data exists
 //           if (!dataToUse) {
-//             //             //             setError("No data received from API");
+//             console.error("❌ No data found in response");
+//             console.error("Result structure:", result);
+//             setError("No data received from API");
 //             return;
 //           }
 
-//           //           //           //           //           );
+//           console.log("========================================");
+//           console.log("📊 EXTRACTING DATA");
+//           console.log("========================================");
+//           console.log("Using data structure:", dataToUse);
+//           console.log("Data keys:", Object.keys(dataToUse));
 
 //           // Set the full dashboard data
 //           setDashboardData(dataToUse);
-//           //           // Try multiple ways to get vendor data
+//           console.log("✅ Dashboard data set");
+
+//           // Try multiple ways to get vendor data
 //           let vendorData = {};
 
 //           // Method 1: Check if vendor is in dataToUse.vendor
 //           if (dataToUse.vendor && Object.keys(dataToUse.vendor).length > 0) {
 //             vendorData = dataToUse.vendor;
-//             //           }
+//             console.log("✅ Found vendor in dataToUse.vendor");
+//           }
 //           // Method 2: Check if vendor data is directly in dataToUse (flat structure)
 //           else if (dataToUse.id || dataToUse.vendorName || dataToUse.storeId) {
-//             ",
+//             console.log(
+//               "⚠️ Vendor data appears to be directly in dataToUse (flat structure)",
 //             );
 //             vendorData = dataToUse;
-//             //           }
+//             console.log("✅ Using dataToUse directly as vendor data");
+//           }
 //           // Method 3: Check if vendor is in result directly
 //           else if (result.vendor && Object.keys(result.vendor).length > 0) {
 //             vendorData = result.vendor;
-//             //           }
+//             console.log("✅ Found vendor in result.vendor");
+//           }
 //           // Method 4: Check if result itself is vendor data
 //           else if (result.id || result.vendorName || result.storeId) {
-//             //             vendorData = result;
-//             //           } else {
-//             //             //             //             vendorData = {};
+//             console.log("⚠️ Result appears to be vendor data directly");
+//             vendorData = result;
+//             console.log("✅ Using result directly as vendor data");
+//           } else {
+//             console.warn(
+//               "⚠️ Could not find vendor data in any expected location",
+//             );
+//             console.warn("dataToUse:", dataToUse);
+//             console.warn("result:", result);
+//             vendorData = {};
 //           }
 
 //           setVendor(vendorData);
-//           //           );
-//           //           //           //           //           //           );
-//           .length);
-//           //           //               : "No storeInfo",
+//           console.log("✅ Vendor data set");
+//           console.log("Vendor data keys:", Object.keys(vendorData));
+//           console.log("Vendor data sample:", {
+//             id: vendorData.id,
+//             vendorName: vendorData.vendorName,
+//             storeId: vendorData.storeId,
+//             storeName: vendorData.storeName,
+//             isActive: vendorData.isActive,
+//           });
+
+//           console.log("========================================");
+//           console.log("🔎 EXTRACTED DATA DETAILS");
+//           console.log("========================================");
+//           console.log("Vendor data:", vendorData);
+//           console.log("Vendor data keys:", Object.keys(vendorData));
+//           console.log("Vendor data length:", Object.keys(vendorData).length);
+//           console.log("StoreInfo:", dataToUse.storeInfo);
+//           console.log(
+//             "StoreInfo keys:",
+//             dataToUse.storeInfo
+//               ? Object.keys(dataToUse.storeInfo)
+//               : "No storeInfo",
 //           );
-//           //           //               : "No storeDetails",
+//           console.log("StoreDetails:", dataToUse.storeDetails);
+//           console.log(
+//             "StoreDetails keys:",
+//             dataToUse.storeDetails
+//               ? Object.keys(dataToUse.storeDetails)
+//               : "No storeDetails",
 //           );
-//           //           //               : "No storeAddress",
+//           console.log("StoreAddress:", dataToUse.storeAddress);
+//           console.log(
+//             "StoreAddress keys:",
+//             dataToUse.storeAddress
+//               ? Object.keys(dataToUse.storeAddress)
+//               : "No storeAddress",
 //           );
-//           //           //               : "No orderOverview",
+//           console.log("OrderOverview:", dataToUse.orderOverview);
+//           console.log(
+//             "OrderOverview keys:",
+//             dataToUse.orderOverview
+//               ? Object.keys(dataToUse.orderOverview)
+//               : "No orderOverview",
 //           );
-//           //           : "No metrics",
+//           console.log("Metrics:", dataToUse.metrics);
+//           console.log(
+//             "Metrics keys:",
+//             dataToUse.metrics ? Object.keys(dataToUse.metrics) : "No metrics",
 //           );
-//           //           : "No wallet",
+//           console.log("Wallet:", dataToUse.wallet);
+//           console.log(
+//             "Wallet keys:",
+//             dataToUse.wallet ? Object.keys(dataToUse.wallet) : "No wallet",
 //           );
-//           //           //           //           //           //           // If vendor is empty but we have other data, still proceed
+//           console.log("DeliveryPartners:", dataToUse.deliveryPartners);
+//           console.log(
+//             "DeliveryPartners length:",
+//             dataToUse.deliveryPartners ? dataToUse.deliveryPartners.length : 0,
+//           );
+//           console.log("Invoices:", dataToUse.invoices);
+//           console.log(
+//             "Invoices length:",
+//             dataToUse.invoices ? dataToUse.invoices.length : 0,
+//           );
+//           console.log("========================================");
+
+//           // If vendor is empty but we have other data, still proceed
 //           if (!vendorData || Object.keys(vendorData).length === 0) {
-//             //           } else {
-//             .length,
+//             console.warn(
+//               "⚠️ Vendor object is empty, but proceeding with dashboard data",
+//             );
+//           } else {
+//             console.log(
+//               "✅ Vendor data has",
+//               Object.keys(vendorData).length,
 //               "keys",
 //             );
 //           }
 
-//           //           //           //         } else {
-//           //           //           //           //           //           //           setError(result?.message || "Failed to fetch vendor data");
+//           console.log("========================================");
+//           console.log("✅ DATA LOADING COMPLETE");
+//           console.log("========================================");
+//         } else {
+//           console.error("========================================");
+//           console.error("❌ API RETURNED SUCCESS: FALSE");
+//           console.error("========================================");
+//           console.error("Result:", result);
+//           console.error("Result.success:", result?.success);
+//           console.error("Result.message:", result?.message);
+//           setError(result?.message || "Failed to fetch vendor data");
 //         }
 //       } catch (error) {
-//         //         //         //         //         //         //         //         //         //         //         //         //         //         //         //         if (error.response?.status === 404) {
+//         console.error("========================================");
+//         console.error("❌ ERROR FETCHING VENDOR DATA");
+//         console.error("========================================");
+//         console.error("Error object:", error);
+//         console.error("Error message:", error.message);
+//         console.error("Error stack:", error.stack);
+//         console.error("Error response:", error.response);
+//         console.error("Error response status:", error.response?.status);
+//         console.error(
+//           "Error response status text:",
+//           error.response?.statusText,
+//         );
+//         console.error("Error response data:", error.response?.data);
+//         console.error("Error response headers:", error.response?.headers);
+//         console.error("Error config:", error.config);
+//         console.error("Error config URL:", error.config?.url);
+//         console.error("Error config method:", error.config?.method);
+//         console.error("========================================");
+
+//         if (error.response?.status === 404) {
 //           setError("Vendor not found. Please check the vendor ID.");
 //         } else if (error.response?.status === 401) {
 //           setError("Unauthorized. Please log in again.");
@@ -1150,14 +1320,21 @@
 //           );
 //         }
 //       } finally {
-//         //         //         //         setLoading(false);
+//         console.log("========================================");
+//         console.log("🏁 FETCH COMPLETE - Setting loading to false");
+//         console.log("========================================");
+//         setLoading(false);
 //       }
 //     };
 
 //     if (id) {
-//       //       //       //       fetchVendorData();
+//       console.log("========================================");
+//       console.log("🎯 VENDOR ID FOUND, STARTING FETCH");
+//       console.log("========================================");
+//       fetchVendorData();
 //     } else {
-//       //       setError("No vendor ID provided");
+//       console.error("❌ No vendor ID provided");
+//       setError("No vendor ID provided");
 //       setLoading(false);
 //     }
 //   }, [id]);
@@ -1239,11 +1416,26 @@
 //   const recentTransactions = wallet?.recentTransactions || [];
 
 //   // Debug logs for data extraction
-//   //   //   //   //   : "No dashboardData",
+//   console.log("========================================");
+//   console.log("🔍 RENDER - DATA EXTRACTION CHECK");
+//   console.log("========================================");
+//   console.log("dashboardData:", dashboardData);
+//   console.log(
+//     "dashboardData keys:",
+//     dashboardData ? Object.keys(dashboardData) : "No dashboardData",
 //   );
-//   //   : "No wallet");
-//   //   //   //   //   //   //   : "No metrics");
-//   //   // Prepare chart data from API - handle new structure with count and percentage
+//   console.log("wallet:", wallet);
+//   console.log("wallet keys:", wallet ? Object.keys(wallet) : "No wallet");
+//   console.log("wallet.earningWallet:", wallet?.earningWallet);
+//   console.log("wallet.formattedEarningWallet:", wallet?.formattedEarningWallet);
+//   console.log("wallet.recentTransactions:", wallet?.recentTransactions);
+//   console.log("vendorInvoices:", vendorInvoices);
+//   console.log("vendorInvoices length:", vendorInvoices?.length || 0);
+//   console.log("metrics:", metrics);
+//   console.log("metrics keys:", metrics ? Object.keys(metrics) : "No metrics");
+//   console.log("========================================");
+
+//   // Prepare chart data from API - handle new structure with count and percentage
 //   const chartData = orderOverview?.statusDistribution
 //     ? [
 //         {
@@ -2521,11 +2713,73 @@ const VendorDetails = () => {
   const [error, setError] = useState(null);
   const [lightbox, setLightbox] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersPagination, setOrdersPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    pages: 1,
+  });
+  const [ordersPage, setOrdersPage] = useState(1);
 
   const openLightbox = useCallback((src, title) => {
     if (src) setLightbox({ src, title });
   }, []);
   const closeLightbox = useCallback(() => setLightbox(null), []);
+
+  // Fetch vendor orders
+  const fetchVendorOrders = async (page = 1) => {
+    if (!id) return;
+    try {
+      setOrdersLoading(true);
+      console.log("========================================");
+      console.log("📦 FETCHING VENDOR ORDERS");
+      console.log("========================================");
+      console.log("Vendor ID:", id);
+      console.log("Page:", page);
+
+      const response = await api.get(`/api/admin/vendors/${id}/orders`, {
+        params: {
+          page: page,
+          limit: 20,
+        },
+      });
+
+      console.log("Orders API Response:", response.data);
+
+      if (response.data && response.data.success) {
+        setOrders(response.data.data || []);
+        setOrdersPagination(
+          response.data.pagination || {
+            page: page,
+            limit: 20,
+            total: response.data.count || 0,
+            pages: Math.ceil((response.data.count || 0) / 20),
+          },
+        );
+        console.log("✅ Orders fetched successfully");
+        console.log("Total orders:", response.data.count);
+        console.log("Orders data:", response.data.data);
+      } else {
+        console.error("❌ Failed to fetch orders");
+        setOrders([]);
+      }
+    } catch (error) {
+      console.error("Error fetching vendor orders:", error);
+      console.error("Error response:", error.response);
+      setOrders([]);
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  // Fetch orders when orders tab is active
+  useEffect(() => {
+    if (activeTab === "orders" && id) {
+      fetchVendorOrders(ordersPage);
+    }
+  }, [activeTab, id, ordersPage]);
 
   useEffect(() => {
     const fetchVendorData = async () => {
@@ -2533,20 +2787,143 @@ const VendorDetails = () => {
         setLoading(true);
         setError(null);
         let response;
+        let endpointUsed = "";
+
+        console.log("========================================");
+        console.log("🔍 FETCHING VENDOR DATA");
+        console.log("========================================");
+        console.log("Vendor ID:", id);
+
+        // Try /api/vendor/:id first (correct endpoint)
         try {
-          response = await api.get(`/vendor/${id}`);
+          endpointUsed = `/api/vendor/${id}`;
+          console.log("📍 Trying endpoint 1:", endpointUsed);
+          response = await api.get(endpointUsed);
+          console.log("✅ Endpoint 1 SUCCESS!");
         } catch (e) {
-          if (e.response?.status === 404)
-            response = await api.get(`/api/vendor/${id}`);
-          else throw e;
+          console.log("❌ Endpoint 1 FAILED");
+          console.log("Error status:", e.response?.status);
+          console.log("Error message:", e.message);
+          console.log("Error data:", e.response?.data);
+
+          // Fallback to /vendor/:id if /api/vendor/:id fails
+          if (e.response?.status === 404) {
+            try {
+              endpointUsed = `/vendor/${id}`;
+              console.log("📍 Trying endpoint 2 (fallback):", endpointUsed);
+              response = await api.get(endpointUsed);
+              console.log("✅ Endpoint 2 SUCCESS!");
+            } catch (fallbackError) {
+              console.log("❌ Endpoint 2 also FAILED");
+              console.log("Fallback error:", fallbackError);
+              throw fallbackError;
+            }
+          } else {
+            throw e;
+          }
         }
+
+        console.log("========================================");
+        console.log("📦 RAW API RESPONSE");
+        console.log("========================================");
+        console.log("Endpoint used:", endpointUsed);
+        console.log("Response status:", response.status);
+        console.log("Response status text:", response.statusText);
+        console.log("Full response object:", response);
+        console.log("Response.data:", response.data);
+        console.log("Response.data type:", typeof response.data);
+        console.log(
+          "Response.data keys:",
+          response.data ? Object.keys(response.data) : "No data",
+        );
+
         const result = response.data;
+        console.log("========================================");
+        console.log("📊 PROCESSED RESULT");
+        console.log("========================================");
+        console.log("Result:", result);
+        console.log("Result.success:", result?.success);
+        console.log("Result.data:", result?.data);
+        console.log("Result.vendor:", result?.vendor);
+
         if (result?.success) {
           let dataToUse = result.data || (result.vendor ? result : null);
+          console.log("Data to use:", dataToUse);
+          console.log(
+            "Data to use keys:",
+            dataToUse ? Object.keys(dataToUse) : "No data",
+          );
+
           if (!dataToUse) {
+            console.error("❌ No data received from API");
             setError("No data received from API");
             return;
           }
+
+          // Log metrics
+          if (dataToUse.metrics) {
+            console.log("========================================");
+            console.log("📈 METRICS DATA");
+            console.log("========================================");
+            console.log("Metrics:", dataToUse.metrics);
+            console.log("Metrics keys:", Object.keys(dataToUse.metrics));
+            console.log("Category Use:", dataToUse.metrics.categoryUse);
+            console.log("Sub Category Use:", dataToUse.metrics.subCategoryUse);
+            console.log("Total Products:", dataToUse.metrics.totalProducts);
+            console.log(
+              "Product Published:",
+              dataToUse.metrics.productPublished,
+            );
+            console.log(
+              "Product In Review:",
+              dataToUse.metrics.productInReview,
+            );
+            console.log("Total Order:", dataToUse.metrics.totalOrder);
+            console.log(
+              "Total Delivered Order:",
+              dataToUse.metrics.totalDeliveredOrder,
+            );
+            console.log(
+              "Total Canceled Order:",
+              dataToUse.metrics.totalCanceledOrder,
+            );
+            console.log("Total Riders:", dataToUse.metrics.totalRiders);
+            console.log("Ratings:", dataToUse.metrics.ratings);
+            console.log("Inventory:", dataToUse.metrics.inventory);
+            console.log("Amount (Revenue):", dataToUse.metrics.amount);
+          }
+
+          // Log order overview
+          if (dataToUse.orderOverview) {
+            console.log("========================================");
+            console.log("📋 ORDER OVERVIEW DATA");
+            console.log("========================================");
+            console.log("Order Overview:", dataToUse.orderOverview);
+            console.log("Total Orders:", dataToUse.orderOverview.totalOrders);
+            console.log(
+              "Status Distribution:",
+              dataToUse.orderOverview.statusDistribution,
+            );
+            if (dataToUse.orderOverview.statusDistribution) {
+              console.log(
+                "Completed:",
+                dataToUse.orderOverview.statusDistribution.completed,
+              );
+              console.log(
+                "In Progress:",
+                dataToUse.orderOverview.statusDistribution.in_progress,
+              );
+              console.log(
+                "Pending:",
+                dataToUse.orderOverview.statusDistribution.pending,
+              );
+              console.log(
+                "Cancelled:",
+                dataToUse.orderOverview.statusDistribution.cancelled,
+              );
+            }
+          }
+
           setDashboardData(dataToUse);
           let vendorData = {};
           if (dataToUse.vendor && Object.keys(dataToUse.vendor).length > 0)
@@ -2557,19 +2934,45 @@ const VendorDetails = () => {
             vendorData = result.vendor;
           else if (result.id || result.vendorName || result.storeId)
             vendorData = result;
+
+          console.log("========================================");
+          console.log("👤 VENDOR DATA EXTRACTED");
+          console.log("========================================");
+          console.log("Vendor Data:", vendorData);
+          console.log("Vendor Data keys:", Object.keys(vendorData));
+
           setVendor(vendorData);
-        } else setError(result?.message || "Failed to fetch vendor data");
+          console.log("✅ Data set successfully!");
+          console.log("========================================");
+        } else {
+          console.error("❌ API returned success: false");
+          console.error("Error message:", result?.message);
+          setError(result?.message || "Failed to fetch vendor data");
+        }
       } catch (err) {
-        if (err.response?.status === 404) setError("Vendor not found.");
-        else if (err.response?.status === 401)
+        console.log("========================================");
+        console.log("❌ ERROR FETCHING VENDOR DATA");
+        console.log("========================================");
+        console.error("Error:", err);
+        console.error("Error response:", err.response);
+        console.error("Error status:", err.response?.status);
+        console.error("Error data:", err.response?.data);
+        console.error("Error message:", err.message);
+        console.log("========================================");
+
+        if (err.response?.status === 404) {
+          setError("Vendor not found.");
+        } else if (err.response?.status === 401) {
           setError("Unauthorized. Please log in again.");
-        else if (err.response?.status === 403) setError("Access denied.");
-        else
+        } else if (err.response?.status === 403) {
+          setError("Access denied.");
+        } else {
           setError(
             err.response?.data?.message ||
               err.message ||
               "Error fetching vendor data.",
           );
+        }
       } finally {
         setLoading(false);
       }
@@ -2630,41 +3033,55 @@ const VendorDetails = () => {
   const vendorInvoices = dashboardData?.invoices || [];
   const orderList = orderOverview?.orderList || [];
 
+  // Helper function to safely extract percentage value
+  const getPercentageValue = (statusObj) => {
+    if (!statusObj) return 0;
+    if (typeof statusObj === "number") return statusObj;
+    if (typeof statusObj === "object" && statusObj.percentage !== undefined) {
+      return typeof statusObj.percentage === "number"
+        ? statusObj.percentage
+        : 0;
+    }
+    return 0;
+  };
+
+  // Helper function to safely extract count value
+  const getCountValue = (statusObj) => {
+    if (!statusObj) return 0;
+    if (typeof statusObj === "object" && statusObj.count !== undefined) {
+      return typeof statusObj.count === "number" ? statusObj.count : 0;
+    }
+    return 0;
+  };
+
   const chartData = [
     {
       name: "Completed",
       value:
-        orderOverview?.statusDistribution?.completed?.percentage ||
-        orderOverview?.statusDistribution?.completed ||
-        40,
-      count: orderOverview?.statusDistribution?.completed?.count || 0,
+        getPercentageValue(orderOverview?.statusDistribution?.completed) || 40,
+      count: getCountValue(orderOverview?.statusDistribution?.completed),
       color: "#1e3a5f",
     },
     {
       name: "In Progress",
       value:
-        orderOverview?.statusDistribution?.in_progress?.percentage ||
-        orderOverview?.statusDistribution?.in_progress ||
+        getPercentageValue(orderOverview?.statusDistribution?.in_progress) ||
         25,
-      count: orderOverview?.statusDistribution?.in_progress?.count || 0,
+      count: getCountValue(orderOverview?.statusDistribution?.in_progress),
       color: "#16A34A",
     },
     {
       name: "Pending",
       value:
-        orderOverview?.statusDistribution?.pending?.percentage ||
-        orderOverview?.statusDistribution?.pending ||
-        20,
-      count: orderOverview?.statusDistribution?.pending?.count || 0,
+        getPercentageValue(orderOverview?.statusDistribution?.pending) || 20,
+      count: getCountValue(orderOverview?.statusDistribution?.pending),
       color: "#F59E0B",
     },
     {
       name: "Cancelled",
       value:
-        orderOverview?.statusDistribution?.cancelled?.percentage ||
-        orderOverview?.statusDistribution?.cancelled ||
-        15,
-      count: orderOverview?.statusDistribution?.cancelled?.count || 0,
+        getPercentageValue(orderOverview?.statusDistribution?.cancelled) || 15,
+      count: getCountValue(orderOverview?.statusDistribution?.cancelled),
       color: "#EF4444",
     },
   ];
@@ -2783,7 +3200,7 @@ const VendorDetails = () => {
       )}
 
       {/* ── Hero Header ────────────────────────────────────────── */}
-      <div className="mx-4 mt-4 mb-6 rounded-2xl bg-gradient-to-r from-[#1a1a2e] via-[#16213e] to-[#0f3460] p-5 sm:p-7 shadow-2xl overflow-hidden relative">
+      <div className="mx-0 mt-4 mb-6 rounded-sm bg-gradient-to-r from-[#1a1a2e] via-[#16213e] to-[#1a1a2e] p-0 ml-6 sm:p-7 shadow-sm overflow-hidden relative">
         <div
           className="absolute inset-0 opacity-10"
           style={{
@@ -2837,7 +3254,15 @@ const VendorDetails = () => {
             {[
               {
                 label: "Total Orders",
-                value: orderOverview?.totalOrders || metrics.totalOrder || 0,
+                value: (() => {
+                  const total =
+                    orderOverview?.totalOrders || metrics.totalOrder || 0;
+                  if (typeof total === "number") return total;
+                  if (typeof total === "object" && total !== null) {
+                    return total.count || total.value || 0;
+                  }
+                  return 0;
+                })(),
               },
               { label: "Rating", value: metrics.ratings || "—" },
               { label: "Products", value: metrics.totalProducts || 0 },
@@ -2873,7 +3298,7 @@ const VendorDetails = () => {
       </div>
 
       {/* ── Tab Nav ────────────────────────────────────────────── */}
-      <div className="px-4 mb-4 flex gap-1 overflow-x-auto scrollbar-hide">
+      <div className="px-0 ml-6 mb-4 flex gap-1 overflow-x-auto scrollbar-hide">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -2886,7 +3311,7 @@ const VendorDetails = () => {
       </div>
 
       {/* ── Main Content ───────────────────────────────────────── */}
-      <div className="px-4 pb-8">
+      <div className="px-0 ml-6 pb-8">
         {/* OVERVIEW TAB */}
         {activeTab === "overview" && (
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
@@ -3166,7 +3591,13 @@ const VendorDetails = () => {
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <p className="text-3xl font-black text-gray-900">
-                      {orderOverview?.totalOrders || 0}
+                      {typeof orderOverview?.totalOrders === "number"
+                        ? orderOverview.totalOrders
+                        : typeof orderOverview?.totalOrders === "object"
+                          ? orderOverview.totalOrders?.count ||
+                            orderOverview.totalOrders?.value ||
+                            0
+                          : 0}
                     </p>
                     <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">
                       Total Orders
@@ -3197,33 +3628,6 @@ const VendorDetails = () => {
                       </div>
                     </div>
                   ))}
-                </div>
-
-                {/* Order List Footer */}
-                <div className="mt-4 flex items-center justify-between pt-4 border-t border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-gray-600 uppercase tracking-wide">
-                      Order List
-                    </span>
-                    <div className="flex -space-x-2">
-                      {orderList.slice(0, 4).map((_, i) => (
-                        <div
-                          key={i}
-                          className="w-7 h-7 rounded-full border-2 border-white bg-gradient-to-br from-[#FF7B1D] to-orange-600 flex items-center justify-center text-xs font-bold text-white shadow-sm"
-                        >
-                          {i + 1}
-                        </div>
-                      ))}
-                      {orderList.length > 4 && (
-                        <div className="w-7 h-7 rounded-full border-2 border-white bg-gray-800 flex items-center justify-center text-xs font-bold text-white">
-                          +{orderList.length - 4}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <button className="text-xs font-bold text-[#FF7B1D] border border-[#FF7B1D] px-3 py-1.5 rounded-lg hover:bg-[#FF7B1D] hover:text-white transition-all flex items-center gap-1">
-                    View <ChevronRight className="w-3 h-3" />
-                  </button>
                 </div>
               </div>
 
@@ -3416,37 +3820,189 @@ const VendorDetails = () => {
                 Order List
               </h2>
               <span className="text-xs font-bold bg-orange-50 text-orange-600 border border-orange-200 px-3 py-1 rounded-full">
-                {orderList.length} Orders
+                {ordersPagination.total || 0} Orders
               </span>
             </div>
-            {orderList.length > 0 ? (
-              <div className="divide-y divide-gray-50">
-                {orderList.map((order, i) => (
-                  <div
-                    key={order.id || i}
-                    className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF7B1D] to-orange-600 flex items-center justify-center text-white text-xs font-black">
-                        {i + 1}
-                      </div>
-                      <div>
-                        <p className="font-bold text-gray-900 text-sm">
-                          {order.id || `Order #${i + 1}`}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {order.date ? formatDate(order.date) : "—"}
-                        </p>
-                      </div>
-                    </div>
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-bold ${order.status === "Completed" ? "bg-green-50 text-green-700" : order.status === "Cancelled" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}
-                    >
-                      {order.status || "Pending"}
-                    </span>
-                  </div>
-                ))}
+
+            {ordersLoading ? (
+              <div className="py-16 text-center">
+                <div className="w-12 h-12 border-4 border-orange-200 border-t-[#FF7B1D] rounded-full animate-spin mx-auto mb-3"></div>
+                <p className="text-gray-400 font-medium">Loading orders...</p>
               </div>
+            ) : orders.length > 0 ? (
+              <>
+                <div className="divide-y divide-gray-50">
+                  {orders.map((order, i) => (
+                    <div
+                      key={order._id || i}
+                      className="px-6 py-4 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF7B1D] to-orange-600 flex items-center justify-center text-white text-xs font-black">
+                            {(ordersPage - 1) * 20 + i + 1}
+                          </div>
+                          <div>
+                            <p className="font-bold text-gray-900 text-sm">
+                              {order.orderNumber ||
+                                `Order #${(ordersPage - 1) * 20 + i + 1}`}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {order.createdAt
+                                ? formatDate(order.createdAt)
+                                : "—"}
+                            </p>
+                          </div>
+                        </div>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-bold capitalize ${
+                            order.status === "delivered" ||
+                            order.status === "completed"
+                              ? "bg-green-50 text-green-700"
+                              : order.status === "cancelled"
+                                ? "bg-red-50 text-red-700"
+                                : "bg-amber-50 text-amber-700"
+                          }`}
+                        >
+                          {order.status || "Pending"}
+                        </span>
+                      </div>
+
+                      {/* Order Details */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3 pt-3 border-t border-gray-100">
+                        {/* User Info */}
+                        {order.user && (
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">
+                              Customer
+                            </p>
+                            <p className="text-sm font-semibold text-gray-900">
+                              {order.user.userName || "N/A"}
+                            </p>
+                            {order.user.contactNumber && (
+                              <p className="text-xs text-gray-500">
+                                {order.user.contactNumber}
+                              </p>
+                            )}
+                            {order.user.email && (
+                              <p className="text-xs text-gray-500">
+                                {order.user.email}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Items Count */}
+                        {order.items && (
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Items</p>
+                            <p className="text-sm font-semibold text-gray-900">
+                              {order.items.length} item
+                              {order.items.length !== 1 ? "s" : ""}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Amount */}
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Amount</p>
+                          <p className="text-sm font-bold text-[#FF7B1D]">
+                            ₹
+                            {order.vendorSubtotal
+                              ? parseFloat(order.vendorSubtotal).toLocaleString(
+                                  "en-IN",
+                                  { minimumFractionDigits: 2 },
+                                )
+                              : "0.00"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Rider Info */}
+                      {order.rider && (
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <p className="text-xs text-gray-500 mb-1">Rider</p>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {order.rider.name || order.rider.riderName || "N/A"}
+                          </p>
+                          {order.rider.contactNumber && (
+                            <p className="text-xs text-gray-500">
+                              {order.rider.contactNumber}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {ordersPagination.pages > 1 && (
+                  <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      Showing {(ordersPage - 1) * ordersPagination.limit + 1} to{" "}
+                      {Math.min(
+                        ordersPage * ordersPagination.limit,
+                        ordersPagination.total,
+                      )}{" "}
+                      of {ordersPagination.total} orders
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setOrdersPage((p) => Math.max(p - 1, 1))}
+                        disabled={ordersPage === 1}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      <div className="flex gap-1">
+                        {Array.from(
+                          { length: Math.min(ordersPagination.pages, 5) },
+                          (_, i) => {
+                            let pageNum;
+                            if (ordersPagination.pages <= 5) {
+                              pageNum = i + 1;
+                            } else if (ordersPage <= 3) {
+                              pageNum = i + 1;
+                            } else if (
+                              ordersPage >=
+                              ordersPagination.pages - 2
+                            ) {
+                              pageNum = ordersPagination.pages - 4 + i;
+                            } else {
+                              pageNum = ordersPage - 2 + i;
+                            }
+                            return (
+                              <button
+                                key={pageNum}
+                                onClick={() => setOrdersPage(pageNum)}
+                                className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                                  ordersPage === pageNum
+                                    ? "bg-[#FF7B1D] text-white"
+                                    : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
+                                }`}
+                              >
+                                {pageNum}
+                              </button>
+                            );
+                          },
+                        )}
+                      </div>
+                      <button
+                        onClick={() =>
+                          setOrdersPage((p) =>
+                            Math.min(p + 1, ordersPagination.pages),
+                          )
+                        }
+                        disabled={ordersPage === ordersPagination.pages}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="py-16 text-center">
                 <ShoppingCart className="w-12 h-12 text-gray-200 mx-auto mb-3" />

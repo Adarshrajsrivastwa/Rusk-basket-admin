@@ -94,9 +94,9 @@
 
 //       if (!response.ok) {
 //         if (response.status === 401) {
-//           showToast.warning("Unauthorized. Please login again.");
+//           alert("Unauthorized. Please login again.");
 //         } else {
-//           showToast.error(result.message || "Failed to fetch rider details");
+//           alert(result.message || "Failed to fetch rider details");
 //         }
 //         return;
 //       }
@@ -104,10 +104,10 @@
 //       if (result.success) {
 //         setSelectedRider(result.data);
 //       } else {
-//         showToast.error("Failed to fetch rider details");
+//         alert("Failed to fetch rider details");
 //       }
 //     } catch (err) {
-//       showToast.error("Error fetching rider details: " + err.message);
+//       alert("Error fetching rider details: " + err.message);
 //     }
 //   };
 
@@ -126,15 +126,15 @@
 
 //       if (!response.ok) {
 //         if (response.status === 401) {
-//           showToast.warning("Unauthorized. Please login again.");
+//           alert("Unauthorized. Please login again.");
 //         } else {
-//           showToast.error(result.message || "Action failed");
+//           alert(result.message || "Action failed");
 //         }
 //         return;
 //       }
 
 //       if (result.success) {
-//         showToast.success(
+//         alert(
 //           `Rider ${
 //             action === "approved" ? "Approved" : "Rejected"
 //           } Successfully!`,
@@ -142,10 +142,10 @@
 //         setSelectedRider(null);
 //         fetchRiders(); // Refresh the list
 //       } else {
-//         showToast.error(result.message || "Action failed");
+//         alert(result.message || "Action failed");
 //       }
 //     } catch (err) {
-//       showToast.error("Error performing action: " + err.message);
+//       alert("Error performing action: " + err.message);
 //     } finally {
 //       setActionLoading(false);
 //     }
@@ -995,7 +995,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { BASE_URL } from "../../api/api";
-import { showToast } from "../../utils/toast";
 
 const API_BASE_URL = `${BASE_URL}/api/rider`;
 
@@ -1056,7 +1055,7 @@ const RiderManagement = () => {
       });
       const result = await response.json();
       if (!response.ok) {
-        showToast.error(
+        alert(
           response.status === 401
             ? "Unauthorized. Please login again."
             : result.message || "Failed to fetch rider details",
@@ -1064,9 +1063,9 @@ const RiderManagement = () => {
         return;
       }
       if (result.success) setSelectedRider(result.data);
-      else showToast.error("Failed to fetch rider details");
+      else alert("Failed to fetch rider details");
     } catch (err) {
-      showToast.error("Error fetching rider details: " + err.message);
+      alert("Error fetching rider details: " + err.message);
     }
   };
 
@@ -1081,7 +1080,7 @@ const RiderManagement = () => {
       });
       const result = await response.json();
       if (!response.ok) {
-        showToast.error(
+        alert(
           response.status === 401
             ? "Unauthorized. Please login again."
             : result.message || "Action failed",
@@ -1089,16 +1088,16 @@ const RiderManagement = () => {
         return;
       }
       if (result.success) {
-        showToast.success(
+        alert(
           `Rider ${action === "approved" ? "Approved" : "Rejected"} Successfully!`,
         );
         setSelectedRider(null);
         fetchRiders();
       } else {
-        showToast.error(result.message || "Action failed");
+        alert(result.message || "Action failed");
       }
     } catch (err) {
-      showToast.error("Error performing action: " + err.message);
+      alert("Error performing action: " + err.message);
     } finally {
       setActionLoading(false);
     }

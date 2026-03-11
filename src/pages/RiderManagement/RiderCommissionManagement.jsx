@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import api from "../../api/api";
 import { X } from "lucide-react";
-import { showToast } from "../../utils/toast";
 
 const RiderCommissionManagement = () => {
   const [riders, setRiders] = useState([]);
@@ -59,9 +58,11 @@ const RiderCommissionManagement = () => {
           },
         );
       } else {
+        console.error("Failed to fetch riders:", result.message);
         setRiders([]);
       }
     } catch (error) {
+      console.error("Error fetching riders:", error);
       setRiders([]);
     } finally {
       setLoading(false);
@@ -129,15 +130,16 @@ const RiderCommissionManagement = () => {
       const result = response.data;
 
       if (result.success) {
-        showToast.success("Commission updated successfully!");
+        alert("Commission updated successfully!");
         setIsModalOpen(false);
         setSelectedRider(null);
         fetchRiders(currentPage, 10); // Refresh riders list
       } else {
-        showToast.error(result.message || "Failed to update commission");
+        alert(result.message || "Failed to update commission");
       }
     } catch (error) {
-      showToast.error(
+      console.error("Error updating commission:", error);
+      alert(
         error.response?.data?.message ||
           error.message ||
           "Error updating commission. Please try again.",

@@ -14,7 +14,6 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { BASE_URL } from "../../api/api";
-import { showToast } from "../../utils/toast";
 
 const API_BASE_URL = `${BASE_URL}/api`;
 
@@ -60,10 +59,11 @@ const RiderJobApplications = () => {
           setJobDetails(result.data[0].jobPost);
         }
       } else {
-        showToast.error(result.message || "Failed to fetch applications");
+        alert(result.message || "Failed to fetch applications");
       }
     } catch (error) {
-      showToast.error("Failed to fetch applications");
+      console.error("Error fetching applications:", error);
+      alert("Failed to fetch applications");
     } finally {
       setLoading(false);
     }
@@ -93,7 +93,12 @@ const RiderJobApplications = () => {
       const requestBody = { status };
       const url = `${API_BASE_URL}/rider-job-application/${applicationId}/review`;
 
-      );
+      console.log("=== API Request Debug ===");
+      console.log("URL:", url);
+      console.log("Method: PUT");
+      console.log("Headers:", headers);
+      console.log("Body:", requestBody);
+      console.log("Body JSON:", JSON.stringify(requestBody));
 
       const response = await fetch(url, {
         method: "PUT",
@@ -102,15 +107,21 @@ const RiderJobApplications = () => {
         body: JSON.stringify(requestBody),
       });
 
+      console.log("Response Status:", response.status);
+      console.log("Response OK:", response.ok);
+
       const result = await response.json();
+      console.log("Response Data:", result);
+
       if (result.success) {
-        showToast.info(result.message);
+        alert(result.message);
         await fetchApplications();
       } else {
-        showToast.error(result.message || `Failed to ${action} application`);
+        alert(result.message || `Failed to ${action} application`);
       }
     } catch (error) {
-      showToast.error(`Failed to ${action} application. Please try again.`);
+      console.error("Error reviewing application:", error);
+      alert(`Failed to ${action} application. Please try again.`);
     } finally {
       setProcessingId(null);
     }

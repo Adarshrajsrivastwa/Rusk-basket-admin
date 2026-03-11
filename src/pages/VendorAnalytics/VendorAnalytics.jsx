@@ -25,7 +25,6 @@ import {
   AreaChart,
 } from "recharts";
 import { BASE_URL } from "../../api/api";
-import { showToast } from "../../utils/toast";
 
 // API Base URL
 const API_BASE_URL = `${BASE_URL}/api/analytics/vendor`;
@@ -82,7 +81,8 @@ const AnalyticsDashboard = () => {
         if (productsJson.success)
           setProductsData(productsJson.data.products || []);
       } catch (error) {
-        showToast.error(
+        console.error("Error fetching analytics data:", error);
+        alert(
           "Failed to fetch analytics data. Please check your authentication.",
         );
       } finally {

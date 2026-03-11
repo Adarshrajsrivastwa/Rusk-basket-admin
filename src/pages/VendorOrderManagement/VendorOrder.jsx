@@ -95,9 +95,16 @@ const AllOrder = () => {
           setOrders(transformedOrders);
           setPagination(data.pagination);
         } else {
+          console.error("========================================");
+          console.error("=== API ERROR ===");
+          console.error("API returned success: false");
+          console.error("Error Message:", data.message);
+          console.error("Full Error Data:", data);
+          console.error("========================================");
           throw new Error(data.message || "API returned success: false");
         }
       } catch (err) {
+        console.error("Error fetching orders:", err);
         setError(err.message);
 
         // If unauthorized, redirect to login
@@ -141,6 +148,7 @@ const AllOrder = () => {
 
   // Handle download invoice - navigate to invoice page
   const handleDownloadInvoice = (orderId) => {
+    console.log("Opening invoice for order:", orderId);
     // Navigate to invoice view page with orderId
     navigate(`/invoice/view/${orderId}`, {
       state: { orderId: orderId },

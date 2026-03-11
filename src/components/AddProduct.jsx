@@ -38,7 +38,8 @@
 
 //   const handleSubmit = (e) => {
 //     e.preventDefault();
-//     //     showToast.info("Product submitted! Check console for details.");
+//     console.log("Form Data:", formData);
+//     alert("Product submitted! Check console for details.");
 //     onClose(); // Close modal after submission
 //   };
 
@@ -347,7 +348,8 @@
 //       const data = await response.json();
 //       setCategories(data.data || []);
 //     } catch (err) {
-//       //     } finally {
+//       console.error("Error fetching categories:", err);
+//     } finally {
 //       setLoadingCategories(false);
 //     }
 //   };
@@ -369,7 +371,8 @@
 //       const data = await response.json();
 //       setSubCategories(data.data || []);
 //     } catch (err) {
-//       //     } finally {
+//       console.error("Error fetching sub-categories:", err);
+//     } finally {
 //       setLoadingSubCategories(false);
 //     }
 //   };
@@ -390,13 +393,13 @@
 //     if (file) {
 //       // Validate file type
 //       if (!file.type.startsWith("image/")) {
-//         showToast.warning("Please upload an image file.");
+//         alert("Please upload an image file.");
 //         return;
 //       }
 
 //       // Validate file size (max 5MB)
 //       if (file.size > 5 * 1024 * 1024) {
-//         showToast.info("Image size should be less than 5MB");
+//         alert("Image size should be less than 5MB");
 //         return;
 //       }
 
@@ -553,7 +556,9 @@
 //         formDataToSend.append("images", file);
 //       });
 
-//       //       const headers = {};
+//       console.log("Submitting product data...");
+
+//       const headers = {};
 //       if (authToken) {
 //         headers.Authorization = `Bearer ${authToken}`;
 //       }
@@ -568,7 +573,9 @@
 
 //       if (response.ok && result.success) {
 //         setSubmitStatus("success");
-//         //         // Call success callback if provided
+//         console.log("✅ Product added successfully:", result);
+
+//         // Call success callback if provided
 //         if (onSuccess) {
 //           onSuccess(result.data);
 //         }
@@ -597,13 +604,15 @@
 //               "Failed to add product. Please try again."
 //           );
 //         }
-//         //       }
+//         console.error("Error response:", result);
+//       }
 //     } catch (error) {
 //       setSubmitStatus("error");
 //       setErrorMessage(
 //         "Network error. Please check your connection and try again."
 //       );
-//       //     } finally {
+//       console.error("Submit error:", error);
+//     } finally {
 //       setIsSubmitting(false);
 //     }
 //   };
@@ -1100,7 +1109,8 @@
 //       const response = await api.get("/api/vendor");
 //       if (response.data.success) setVendors(response.data.data || []);
 //     } catch (err) {
-//       //     } finally {
+//       console.error("Error fetching vendors:", err);
+//     } finally {
 //       setVendorsLoading(false);
 //     }
 //   };
@@ -1249,7 +1259,8 @@
 //         throw new Error(response.data.message || "Failed to load categories");
 //       }
 //     } catch (err) {
-//       //       setError("Failed to load categories");
+//       console.error("Error fetching categories:", err);
+//       setError("Failed to load categories");
 //     } finally {
 //       setCategoriesLoading(false);
 //     }
@@ -1291,7 +1302,8 @@
 //         );
 //       }
 //     } catch (err) {
-//       //       setError("Failed to load subcategories");
+//       console.error("Error fetching subcategories:", err);
+//       setError("Failed to load subcategories");
 //       return [];
 //     } finally {
 //       setSubCategoriesLoading(false);
@@ -1321,7 +1333,7 @@
 //     if (files.length > 0) {
 //       const file = files[0]; // Process one at a time for cropping
 //       if (!file.type.startsWith("image/")) {
-//         showToast.warning("Please upload a valid image file.");
+//         alert("Please upload a valid image file.");
 //         return;
 //       }
 
@@ -1730,7 +1742,7 @@
 //             `Failed to ${isEditMode ? "update" : "add"} product`,
 //         );
 
-//       showToast.success(`Product ${isEditMode ? "updated" : "added"} successfully!`);
+//       alert(`Product ${isEditMode ? "updated" : "added"} successfully!`);
 
 //       if (onSuccess) onSuccess(result.data);
 
@@ -1758,7 +1770,11 @@
 
 //       setTimeout(() => onClose(), 300);
 //     } catch (err) {
-//       //       setError(
+//       console.error(
+//         `Error ${isEditMode ? "updating" : "submitting"} product:`,
+//         err,
+//       );
+//       setError(
 //         err.response?.data?.message ||
 //           err.message ||
 //           `Failed to ${
@@ -2338,7 +2354,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Upload, X, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import api from "../api/api";
-import { showToast } from "../utils/toast";
 
 export default function AddProductPopup({
   isOpen,
@@ -2477,7 +2492,8 @@ export default function AddProductPopup({
       const response = await api.get("/api/vendor");
       if (response.data.success) setVendors(response.data.data || []);
     } catch (err) {
-      } finally {
+      console.error("Error fetching vendors:", err);
+    } finally {
       setVendorsLoading(false);
     }
   };
@@ -2609,6 +2625,7 @@ export default function AddProductPopup({
       else
         throw new Error(response.data.message || "Failed to load categories");
     } catch (err) {
+      console.error("Error fetching categories:", err);
       setError("Failed to load categories");
     } finally {
       setCategoriesLoading(false);
@@ -2647,6 +2664,7 @@ export default function AddProductPopup({
         );
       }
     } catch (err) {
+      console.error("Error fetching subcategories:", err);
       setError("Failed to load subcategories");
       return [];
     } finally {
@@ -2699,7 +2717,7 @@ export default function AddProductPopup({
     const toProcess = files.slice(0, available);
 
     if (toProcess.length === 0) {
-      showToast.warning("Maximum 6 images allowed.");
+      alert("Maximum 6 images allowed.");
       e.target.value = "";
       return;
     }
@@ -3071,7 +3089,7 @@ export default function AddProductPopup({
             `Failed to ${isEditMode ? "update" : "add"} product`,
         );
 
-      showToast.success(`Product ${isEditMode ? "updated" : "added"} successfully!`);
+      alert(`Product ${isEditMode ? "updated" : "added"} successfully!`);
       if (onSuccess) onSuccess(result.data);
 
       setFormData({
@@ -3097,6 +3115,10 @@ export default function AddProductPopup({
       setTagInput("");
       setTimeout(() => onClose(), 300);
     } catch (err) {
+      console.error(
+        `Error ${isEditMode ? "updating" : "submitting"} product:`,
+        err,
+      );
       setError(
         err.response?.data?.message ||
           err.message ||

@@ -33,39 +33,89 @@ const VendorWithdrawalRequests = () => {
       setLoading(true);
       setError(null);
 
+      console.log("========================================");
+      console.log("API CALL: /api/vendor/wallet/earning/withdrawal-requests");
+      console.log("Method: GET");
+      console.log("========================================");
+
       const response = await api.get(
         "/api/vendor/wallet/earning/withdrawal-requests",
       );
 
+      console.log("========================================");
+      console.log("API RESPONSE RECEIVED:");
+      console.log("Full Response:", response);
+      console.log("Response Status:", response.status);
+      console.log("Response Headers:", response.headers);
+      console.log("========================================");
+
       const result = response.data;
 
-      :", JSON.stringify(result, null, 2));
+      console.log("========================================");
+      console.log("📦 PARSED RESPONSE DATA:");
+      console.log("========================================");
+      console.log("Full result (JSON):", JSON.stringify(result, null, 2));
+      console.log("----------------------------------------");
+      console.log("Result type:", typeof result);
+      console.log("Result keys:", Object.keys(result));
+      console.log("----------------------------------------");
+      console.log("✅ Result.success:", result.success);
+      console.log("📊 Result.count:", result.count);
+      console.log(
+        "📄 Result.pagination:",
+        JSON.stringify(result.pagination, null, 2),
       );
-      ,
+      console.log(
+        "💵 Result.earningWallet:",
+        JSON.stringify(result.earningWallet, null, 2),
       );
-      ,
+      console.log(
+        "💰 Result.earningWallet.currentBalance:",
+        result.earningWallet?.currentBalance,
       );
-      ? "Array" : typeof result.data,
+      console.log("----------------------------------------");
+      console.log("📋 Result.data:", result.data);
+      console.log(
+        "📋 Result.data type:",
+        Array.isArray(result.data) ? "Array" : typeof result.data,
       );
-      ? result.data.length : "Not an array",
+      console.log(
+        "📋 Result.data length:",
+        Array.isArray(result.data) ? result.data.length : "Not an array",
       );
       if (Array.isArray(result.data)) {
-        :",
+        console.log(
+          "📋 Result.data (JSON):",
           JSON.stringify(result.data, null, 2),
         );
       }
+      console.log("========================================");
+
       if (Array.isArray(result.data)) {
+        console.log("========================================");
+        console.log("📝 WITHDRAWAL REQUESTS DETAILS:");
+        console.log("========================================");
+        console.log(`Total Requests: ${result.data.length}`);
         result.data.forEach((request, index) => {
-          :",
+          console.log(`\n--- 📌 Request ${index + 1} ---`);
+          console.log(
+            "Full request object (JSON):",
             JSON.stringify(request, null, 2),
           );
-          );
+          console.log("_id:", request._id);
+          console.log("amount:", request.amount);
+          console.log("status:", request.status);
+          console.log("createdAt:", request.createdAt);
+          console.log("All keys:", Object.keys(request));
           // Log all properties
           Object.keys(request).forEach((key) => {
-            });
+            console.log(`  ${key}:`, request[key]);
+          });
         });
-        } else {
-        }
+        console.log("========================================");
+      } else {
+        console.log("⚠️ Result.data is not an array:", result.data);
+      }
 
       if (result.success) {
         setRequests(result.data || []);
@@ -78,11 +128,32 @@ const VendorWithdrawalRequests = () => {
         }
 
         // Summary log
-        } else {
+        console.log("========================================");
+        console.log("✅ API SUCCESS SUMMARY:");
+        console.log("========================================");
+        console.log("Total Requests:", result.data?.length || 0);
+        console.log(
+          "Wallet Balance:",
+          result.earningWallet?.currentBalance || "N/A",
+        );
+        console.log("Count:", result.count || 0);
+        console.log("Pagination:", result.pagination || "N/A");
+        console.log("========================================");
+      } else {
+        console.log("❌ API Response Success: false");
+        console.log("Error Message:", result.message);
         setError(result.message || "Failed to fetch withdrawal requests");
         setRequests([]);
       }
     } catch (error) {
+      console.error("========================================");
+      console.error("ERROR FETCHING WITHDRAWAL REQUESTS:");
+      console.error("Error object:", error);
+      console.error("Error message:", error.message);
+      console.error("Error response:", error.response);
+      console.error("Error response data:", error.response?.data);
+      console.error("Error response status:", error.response?.status);
+      console.error("========================================");
       setError(
         error.response?.data?.message || "Error fetching withdrawal requests",
       );
@@ -131,6 +202,7 @@ const VendorWithdrawalRequests = () => {
         setError(result.message || "Failed to create withdrawal request");
       }
     } catch (error) {
+      console.error("Error creating withdrawal request:", error);
       setError(
         error.response?.data?.message || "Error creating withdrawal request",
       );

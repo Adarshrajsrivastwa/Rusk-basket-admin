@@ -47,8 +47,46 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    // Enhanced error logging for debugging
+    const isDev = import.meta.env.DEV || process.env.NODE_ENV === 'development';
+    if (isDev) {
+      if (error.response) {
+        // Server responded with error status
+        console.error('API Error Response:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data,
+          url: error.config?.url,
+          headers: error.config?.headers,
+        });
+        // Log full error data
+        if (error.response.data) {
+          console.error('Error response data:', JSON.stringify(error.response.data, null, 2));
+        }
+      } else if (error.request) {
+        // Request was made but no response received (network error)
+        // Only log in development mode and if it's not a timeout
+        const isDev = import.meta.env.DEV || process.env.NODE_ENV === 'development';
+        if (isDev && !error.message.includes('timeout')) {
+          console.warn('API Network Error:', {
+            message: error.message,
+            url: error.config?.url,
+          });
+        }
+      } else {
+        // Something else happened
+        const isDev = import.meta.env.DEV || process.env.NODE_ENV === 'development';
+        if (isDev) {
+          console.error('API Error:', error.message);
+        }
+      }
+    }
+
     // If token is expired or invalid (401), clear localStorage and redirect to login
     if (error.response?.status === 401) {
+      const errorMessage = error.response?.data?.error || error.response?.data?.message;
+      console.warn('Authentication failed:', errorMessage);
+      
       localStorage.removeItem("token");
       localStorage.removeItem("authToken");
       localStorage.removeItem("userRole");

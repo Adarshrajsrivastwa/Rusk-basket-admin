@@ -3,7 +3,6 @@ import DashboardLayout from "../../components/DashboardLayout";
 import { Flame, Star, Eye, Trash2, TrendingUp } from "lucide-react";
 import AddProductModal from "../../components/AddProduct";
 import { useNavigate } from "react-router-dom";
-import { showToast } from "../../utils/toast";
 
 const TrendingProduct = () => {
   const [activeTab, setActiveTab] = useState("all");
@@ -220,7 +219,7 @@ const TrendingProduct = () => {
                       <Eye size={16} />
                     </button>
                     <button
-                      onClick={() => showToast.info("Deleted");}
+                      onClick={() => alert("Deleted")}
                       className="text-gray-500 hover:text-red-600"
                     >
                       <Trash2 size={16} />

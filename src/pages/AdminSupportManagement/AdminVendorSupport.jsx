@@ -92,7 +92,9 @@
 //           setTotalPages(1);
 //         }
 //       } catch (err) {
-//         //         // Check for MongoDB query construction errors
+//         console.error("Error fetching tickets:", err);
+
+//         // Check for MongoDB query construction errors
 //         const errorResponse = err.response?.data;
 //         let errorMsg =
 //           errorResponse?.message ||
@@ -105,7 +107,11 @@
 //           errorMsg.includes("Cast to Array failed") &&
 //           errorMsg.includes("$or")
 //         ) {
-//           //           // If we have tickets loaded and search query exists, use client-side filtering
+//           console.warn(
+//             "Backend MongoDB query error detected. Falling back to client-side search.",
+//           );
+
+//           // If we have tickets loaded and search query exists, use client-side filtering
 //           if (allTickets.length > 0 && searchToUse && searchToUse.trim()) {
 //             setUseClientSideSearch(true);
 //             setError(""); // Clear error since we're using fallback
@@ -134,7 +140,8 @@
 //                 return; // Will use client-side filtering below
 //               }
 //             } catch (fallbackErr) {
-//               //             }
+//               console.error("Fallback fetch also failed:", fallbackErr);
+//             }
 //           }
 
 //           errorMsg =
@@ -219,7 +226,8 @@
 //         setError(response.data.message || "Failed to load ticket details");
 //       }
 //     } catch (err) {
-//       //       setError(err.response?.data?.message || "Failed to load ticket details");
+//       console.error("Error fetching ticket details:", err);
+//       setError(err.response?.data?.message || "Failed to load ticket details");
 //     }
 //   };
 
@@ -244,7 +252,8 @@
 //         setError(response.data.message || "Failed to send message");
 //       }
 //     } catch (err) {
-//       //       setError(
+//       console.error("Error sending message:", err);
+//       setError(
 //         err.response?.data?.error ||
 //           err.response?.data?.message ||
 //           "Failed to send message. Please try again.",
@@ -279,7 +288,8 @@
 //         setError(response.data.message || "Failed to update status");
 //       }
 //     } catch (err) {
-//       //       setError(
+//       console.error("Error updating status:", err);
+//       setError(
 //         err.response?.data?.error ||
 //           err.response?.data?.message ||
 //           "Failed to update status. Please try again.",
@@ -1005,6 +1015,8 @@ const AdminVendorSupport = () => {
           setTotalPages(1);
         }
       } catch (err) {
+        console.error("Error fetching tickets:", err);
+
         const errorResponse = err.response?.data;
         let errorMsg =
           errorResponse?.message ||
@@ -1016,6 +1028,10 @@ const AdminVendorSupport = () => {
           errorMsg.includes("Cast to Array failed") &&
           errorMsg.includes("$or")
         ) {
+          console.warn(
+            "Backend MongoDB query error detected. Falling back to client-side search.",
+          );
+
           if (allTickets.length > 0 && searchToUse && searchToUse.trim()) {
             setUseClientSideSearch(true);
             setError("");
@@ -1043,7 +1059,8 @@ const AdminVendorSupport = () => {
                 return;
               }
             } catch (fallbackErr) {
-              }
+              console.error("Fallback fetch also failed:", fallbackErr);
+            }
           }
 
           errorMsg =
@@ -1124,6 +1141,7 @@ const AdminVendorSupport = () => {
         setError(response.data.message || "Failed to load ticket details");
       }
     } catch (err) {
+      console.error("Error fetching ticket details:", err);
       setError(err.response?.data?.message || "Failed to load ticket details");
     }
   };
@@ -1147,6 +1165,7 @@ const AdminVendorSupport = () => {
         setError(response.data.message || "Failed to send message");
       }
     } catch (err) {
+      console.error("Error sending message:", err);
       setError(
         err.response?.data?.error ||
           err.response?.data?.message ||
@@ -1180,6 +1199,7 @@ const AdminVendorSupport = () => {
         setError(response.data.message || "Failed to update status");
       }
     } catch (err) {
+      console.error("Error updating status:", err);
       setError(
         err.response?.data?.error ||
           err.response?.data?.message ||

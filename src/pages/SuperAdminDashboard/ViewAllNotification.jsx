@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Bell, X, Search, Send, Filter, Eye, Trash2 } from "lucide-react";
-import { showToast } from "../../utils/toast";
 
 const NotificationsPage = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -125,7 +124,7 @@ const NotificationsPage = () => {
     e.preventDefault();
 
     if (!selectedAudience || !formData.title || !formData.content) {
-      showToast.warning("Please fill in all required fields");
+      alert("Please fill in all required fields");
       return;
     }
 

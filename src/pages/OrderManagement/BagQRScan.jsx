@@ -105,11 +105,11 @@
 
 //   const handleAdd = () => {
 //     if (!selectedProduct) {
-//       showToast.warning("⚠️ Please select a product!");
+//       alert("⚠️ Please select a product!");
 //       return;
 //     }
 //     if (quantity < 1) {
-//       showToast.warning("⚠️ Quantity must be at least 1!");
+//       alert("⚠️ Quantity must be at least 1!");
 //       return;
 //     }
 //     onAddItem(selectedProduct, quantity);
@@ -582,7 +582,7 @@
 //           <div className="flex gap-3">
 //             <button
 //               onClick={() =>
-//                 showToast.info(`📥 Downloading QR Code: ${bagDetails.bagQRCode}`);
+//                 alert(`📥 Downloading QR Code: ${bagDetails.bagQRCode}`)
 //               }
 //               className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg flex items-center gap-2"
 //             >
@@ -1019,7 +1019,6 @@ import {
   X,
 } from "lucide-react";
 import { BASE_URL } from "../../api/api";
-import { showToast } from "../../utils/toast";
 
 // Stat Card Component
 export const StatCard = ({ icon, label, value, color, small = false }) => (
@@ -1105,7 +1104,7 @@ export const AddExtraItemModal = ({
         localStorage.getItem("token") || localStorage.getItem("authToken");
 
       if (!token) {
-        showToast.warning("⚠️ Authentication required. Please login again.");
+        alert("⚠️ Authentication required. Please login again.");
         return;
       }
 
@@ -1148,10 +1147,12 @@ export const AddExtraItemModal = ({
 
         setProducts(transformedProducts);
       } else {
+        console.error("Invalid API response format:", result);
         setProducts([]);
       }
     } catch (error) {
-      showToast.error(`Failed to load products: ${error.message}`);
+      console.error("Error fetching vendor products:", error);
+      alert(`Failed to load products: ${error.message}`);
       setProducts([]);
     } finally {
       setLoading(false);
@@ -1222,7 +1223,7 @@ export const AddExtraItemModal = ({
     );
 
     if (itemsToAdd.length === 0) {
-      showToast.warning("⚠️ Please add at least one product with quantity greater than 0!");
+      alert("⚠️ Please add at least one product with quantity greater than 0!");
       return;
     }
 
@@ -1233,13 +1234,13 @@ export const AddExtraItemModal = ({
         localStorage.getItem("token") || localStorage.getItem("authToken");
 
       if (!token) {
-        showToast.warning("⚠️ Authentication required. Please login again.");
+        alert("⚠️ Authentication required. Please login again.");
         return;
       }
 
       // Get MongoDB order ID
       if (!orderId) {
-        showToast.warning("⚠️ Order ID not found. Please refresh the page.");
+        alert("⚠️ Order ID not found. Please refresh the page.");
         return;
       }
 
@@ -1275,11 +1276,13 @@ export const AddExtraItemModal = ({
           
           // Validate productId
           if (!productId || typeof productId !== 'string' || productId.length < 10) {
+            console.error("Invalid productId:", productId);
             return null;
           }
           
           // Validate quantity (must be > 0)
           if (isNaN(quantity) || quantity <= 0) {
+            console.error("Invalid quantity for productId:", productId, "quantity:", quantity);
             return null;
           }
           
@@ -1299,11 +1302,12 @@ export const AddExtraItemModal = ({
       };
 
       // Log the request body to verify format
-      );
+      console.log("📤 API Request Body:", JSON.stringify(requestBody, null, 2));
 
       const apiUrl = `${BASE_URL}/api/checkout/vendor/order/${mongoOrderId}/items`;
 
-      );
+      console.log("📡 API URL:", apiUrl);
+      console.log("📤 Request Body:", JSON.stringify(requestBody, null, 2));
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -1315,16 +1319,25 @@ export const AddExtraItemModal = ({
         body: JSON.stringify(requestBody),
       });
 
+      console.log("📥 Response Status:", response.status);
+      console.log("📥 Response OK:", response.ok);
+
       const result = await response.json();
-      );
+      console.log("📥 Response Data:", JSON.stringify(result, null, 2));
 
       if (!response.ok || !result.success) {
         const errorMessage = result.message || result.error || `Failed to add items: ${response.status}`;
+        console.error("❌ API Error Details:", {
+          status: response.status,
+          statusText: response.statusText,
+          result: result,
+          message: errorMessage,
+        });
         throw new Error(errorMessage);
       }
 
-      showToast.success(
-        `✅ Items Added Successfully!\n\n${itemsToAdd.length} product(s); added to the order.`,
+      alert(
+        `✅ Items Added Successfully!\n\n${itemsToAdd.length} product(s) added to the order.`,
       );
 
       // Call onAddItem callback for each item (for local state update)
@@ -1340,7 +1353,8 @@ export const AddExtraItemModal = ({
       setSearchQuery("");
       onClose();
     } catch (error) {
-      showToast.error(`❌ Failed to add items: ${error.message}\n\nPlease try again.`);
+      console.error("Error adding items:", error);
+      alert(`❌ Failed to add items: ${error.message}\n\nPlease try again.`);
     } finally {
       setSubmitting(false);
     }
@@ -1901,7 +1915,7 @@ export const BagDetailsTab = ({ bagDetails, id, orderValue, totalItems }) => (
           <div className="flex gap-3">
             <button
               onClick={() =>
-                showToast.info(`📥 Downloading QR Code: ${bagDetails.bagQRCode}`);
+                alert(`📥 Downloading QR Code: ${bagDetails.bagQRCode}`)
               }
               className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg flex items-center gap-2"
             >

@@ -504,6 +504,8 @@ const Sidebar = () => {
       // Close mobile sidebar if open
       if (window.innerWidth < 768) setIsOpen(false);
     } catch (error) {
+      console.error("Logout error:", error);
+
       // Even if API fails, clear local storage and redirect
       localStorage.removeItem("token");
       localStorage.removeItem("authToken");

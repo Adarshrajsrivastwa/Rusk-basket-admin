@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import {
-import { showToast } from "../../utils/toast";
   User,
   Store,
   MapPin,
@@ -190,9 +189,10 @@ const VendorProfile = () => {
     const file = e.target.files[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
-        }
+        console.warn("Non-image file selected, preview may not be available");
+      }
       if (file.size > 5 * 1024 * 1024) {
-        showToast.info("Image size should be less than 5MB");
+        alert("Image size should be less than 5MB");
         return;
       }
       setProfileImage(file);
@@ -206,9 +206,10 @@ const VendorProfile = () => {
     const file = e.target.files[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
-        }
+        console.warn("Non-image file selected, preview may not be available");
+      }
       if (file.size > 5 * 1024 * 1024) {
-        showToast.info("Image size should be less than 5MB");
+        alert("Image size should be less than 5MB");
         return;
       }
       setStoreImage(file);
@@ -269,8 +270,14 @@ const VendorProfile = () => {
         formDataToSend.append("ifsc", formData.ifsc || "");
         formDataToSend.append("accountNumber", formData.accountNumber || "");
         formDataToSend.append("bankName", formData.bankName || "");
-        if (formData.serviceRadius)
-          formDataToSend.append("serviceRadius", formData.serviceRadius);
+        // Always include serviceRadius (default 5 km if not provided, min 0.1 km)
+        const serviceRadiusValue = formData.serviceRadius 
+          ? parseFloat(formData.serviceRadius) 
+          : (profileData?.serviceRadius || profileData?.storeInfo?.serviceRadius || 5);
+        if (isNaN(serviceRadiusValue) || serviceRadiusValue < 0.1) {
+          throw new Error("Service radius must be at least 0.1 km");
+        }
+        formDataToSend.append("serviceRadius", serviceRadiusValue.toString());
         if (formData.handlingChargePercentage)
           formDataToSend.append(
             "handlingChargePercentage",
@@ -305,8 +312,20 @@ const VendorProfile = () => {
         );
 
         const result = await response.json();
-        if (!response.ok || !result.success)
-          throw new Error(result.message || "Failed to update profile");
+        if (!response.ok || !result.success) {
+          // Log detailed error for debugging
+          console.error("Profile update error:", {
+            status: response.status,
+            statusText: response.statusText,
+            result: result,
+          });
+          throw new Error(
+            result.message || 
+            result.error || 
+            result.errors?.join?.(", ") || 
+            `Failed to update profile (${response.status})`
+          );
+        }
 
         if (result.success) {
           setProfileData(result.data);
@@ -339,12 +358,39 @@ const VendorProfile = () => {
             credentials: "include",
             headers,
             body: JSON.stringify({
-              ...formData,
-              fssaiNumber: formData.fssaiNumber || "",
+              // Only include fields that have values, avoid sending empty strings
+              ...(formData.vendorName && { vendorName: formData.vendorName.trim() }),
+              ...(formData.altContactNumber && { altContactNumber: formData.altContactNumber.trim() }),
+              ...(formData.email && { email: formData.email.trim() }),
+              ...(formData.gender && { gender: formData.gender }),
+              ...(formData.dateOfBirth && { dateOfBirth: formData.dateOfBirth }),
+              ...(formData.storeName && { storeName: formData.storeName.trim() }),
+              ...(formData.storeAddressLine1 && { storeAddressLine1: formData.storeAddressLine1.trim() }),
+              ...(formData.storeAddressLine2 && { storeAddressLine2: formData.storeAddressLine2.trim() }),
+              ...(formData.pinCode && { pinCode: formData.pinCode.trim() }),
+              ...(formData.latitude && { latitude: parseFloat(formData.latitude) }),
+              ...(formData.longitude && { longitude: parseFloat(formData.longitude) }),
+              ...(formData.ifsc && { ifsc: formData.ifsc.trim().toUpperCase() }),
+              ...(formData.accountNumber && { accountNumber: formData.accountNumber.trim() }),
+              ...(formData.bankName && { bankName: formData.bankName.trim() }),
+              // Ensure serviceRadius is always a valid number (default from existing or 5 km, min 0.1 km)
+              serviceRadius: (() => {
+                const sr = formData.serviceRadius 
+                  ? parseFloat(formData.serviceRadius) 
+                  : (profileData?.serviceRadius || profileData?.storeInfo?.serviceRadius || 5);
+                if (isNaN(sr) || sr < 0.1) {
+                  throw new Error("Service radius must be at least 0.1 km");
+                }
+                return sr;
+              })(),
+              ...(formData.handlingChargePercentage && {
+                handlingChargePercentage: parseFloat(formData.handlingChargePercentage),
+              }),
+              ...(formData.fssaiNumber && { fssaiNumber: formData.fssaiNumber.trim() }),
               deliveryChargePerKm:
                 formData.deliveryChargePerKm !== undefined &&
-                  formData.deliveryChargePerKm !== null &&
-                  formData.deliveryChargePerKm !== ""
+                formData.deliveryChargePerKm !== null &&
+                formData.deliveryChargePerKm !== ""
                   ? parseFloat(formData.deliveryChargePerKm) || 0
                   : 0,
             }),
@@ -352,8 +398,20 @@ const VendorProfile = () => {
         );
 
         const result = await response.json();
-        if (!response.ok || !result.success)
-          throw new Error(result.message || "Failed to update profile");
+        if (!response.ok || !result.success) {
+          // Log detailed error for debugging
+          console.error("Profile update error:", {
+            status: response.status,
+            statusText: response.statusText,
+            result: result,
+          });
+          throw new Error(
+            result.message || 
+            result.error || 
+            result.errors?.join?.(", ") || 
+            `Failed to update profile (${response.status})`
+          );
+        }
 
         if (result.success) {
           setProfileData(result.data);

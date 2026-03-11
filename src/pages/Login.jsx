@@ -34,7 +34,7 @@
 //     if (formData.username && formData.password) {
 //       navigate("/dashboard");
 //     } else {
-//       showToast.warning("Please enter credentials");
+//       alert("Please enter credentials");
 //     }
 //   };
 
@@ -841,7 +841,6 @@ import api from "../api/api";
 import axios from "axios";
 import { BASE_URL } from "../api/api";
 import {
-import { showToast } from "../utils/toast";
   Eye,
   EyeOff,
   Phone,

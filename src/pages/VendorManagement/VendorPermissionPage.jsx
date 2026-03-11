@@ -66,10 +66,10 @@
 //   };
 
 //   const handleSave = () => {
-//     showToast.info(
+//     alert(
 //       `Permissions for ${vendor?.name || id} (${
 //         vendor?.id
-//       }); saved successfully!`
+//       }) saved successfully!`
 //     );
 //   };
 
@@ -212,7 +212,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, CheckSquare, XSquare } from "lucide-react";
 import DashboardLayout from "../../components/DashboardLayout";
 import api from "../../api/api";
-import { showToast } from "../../utils/toast";
 
 const VendorPermissionPage = () => {
   const { id } = useParams(); // vendor ID from URL
@@ -236,8 +235,10 @@ const VendorPermissionPage = () => {
           setVendor(result.data);
         } else {
           setError(result.message || "Failed to fetch vendor data");
-          }
+          console.error("Failed to fetch vendor:", result.message);
+        }
       } catch (error) {
+        console.error("Error fetching vendor:", error);
         setError(error.response?.data?.message || "Error fetching vendor data");
       } finally {
         setLoading(false);
@@ -305,10 +306,10 @@ const VendorPermissionPage = () => {
   };
 
   const handleSave = () => {
-    showToast.info(
+    alert(
       `Permissions for ${vendor?.name || id} (${
         vendor?.id
-      }); saved successfully!\n\nCommission: ${
+      }) saved successfully!\n\nCommission: ${
         commission.type === "percentage"
           ? commission.value + "%"
           : "₹" + commission.value

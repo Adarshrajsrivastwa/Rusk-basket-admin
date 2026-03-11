@@ -3,7 +3,6 @@ import DashboardLayout from "../../components/DashboardLayout";
 import { Settings, IndianRupee, Percent, Calendar, Wallet } from "lucide-react";
 import api from "../../api/api";
 import { X } from "lucide-react";
-import { showToast } from "../../utils/toast";
 
 const VendorCommissionManagement = () => {
   const [vendors, setVendors] = useState([]);
@@ -51,9 +50,11 @@ const VendorCommissionManagement = () => {
           },
         );
       } else {
+        console.error("Failed to fetch vendors:", result.message);
         setVendors([]);
       }
     } catch (error) {
+      console.error("Error fetching vendors:", error);
       setVendors([]);
     } finally {
       setLoading(false);
@@ -122,17 +123,23 @@ const VendorCommissionManagement = () => {
       // Try endpoint 1: /api/admin/vendors/{id}/commission
       try {
         endpointUsed = `/api/admin/vendors/${selectedVendor.vendorId || selectedVendor._id}/commission`;
+        console.log("📍 Trying endpoint:", endpointUsed);
         response = await api.put(endpointUsed, payload);
-        } catch (firstError) {
+        console.log("✅ Endpoint SUCCESS!");
+      } catch (firstError) {
+        console.log("❌ Endpoint 1 FAILED");
         error = firstError;
 
         // Try endpoint 2: /api/vendor/{id}/commission (fallback)
         if (firstError.response?.status === 404) {
           try {
             endpointUsed = `/api/vendor/${selectedVendor.vendorId || selectedVendor._id}/commission`;
+            console.log("📍 Trying endpoint 2:", endpointUsed);
             response = await api.put(endpointUsed, payload);
+            console.log("✅ Endpoint 2 SUCCESS!");
             error = null;
           } catch (secondError) {
+            console.log("❌ Endpoint 2 FAILED");
             error = secondError;
           }
         }
@@ -145,24 +152,29 @@ const VendorCommissionManagement = () => {
       const result = response.data;
 
       if (result.success) {
-        showToast.success("Commission updated successfully!");
+        alert("Commission updated successfully!");
         setIsModalOpen(false);
         setSelectedVendor(null);
         fetchVendors(currentPage, 10); // Refresh vendors list
       } else {
-        showToast.error(result.message || "Failed to update commission");
+        alert(result.message || "Failed to update commission");
       }
     } catch (error) {
+      console.error("Error updating commission:", error);
+
       // More informative error message
       if (error.response?.status === 404) {
-        showToast.error(
-          `Commission endpoint not found. Please ensure the backend API endpoint is implemented: PUT /api/vendor/${selectedVendor._id}/commission. Error: ${error.response?.data?.message || "Endpoint not found"}`
+        alert(
+          "Commission endpoint not found. Please ensure the backend API endpoint is implemented:\n" +
+            `PUT /api/vendor/${selectedVendor._id}/commission\n\n` +
+            "Error: " +
+            (error.response?.data?.message || "Endpoint not found"),
         );
       } else {
-        showToast.error(
+        alert(
           error.response?.data?.message ||
             error.message ||
-            "Error updating commission. Please try again."
+            "Error updating commission. Please try again.",
         );
       }
     } finally {

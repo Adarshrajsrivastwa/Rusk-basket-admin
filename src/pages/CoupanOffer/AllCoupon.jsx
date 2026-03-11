@@ -4,7 +4,6 @@ import { Eye, Edit, Trash2 } from "lucide-react";
 import CreateOfferPopup from "../../components/CreateCoupon";
 import OfferViewModal from "../../pages/CoupanOffer/SingleOffer";
 import { BASE_URL } from "../../api/api";
-import { showToast } from "../../utils/toast";
 
 const API_URL = `${BASE_URL}/api/coupon`;
 
@@ -50,6 +49,7 @@ const AllOffer = () => {
         setOffers([]);
       }
     } catch (error) {
+      console.error("Error fetching offers:", error);
       setOffers([]);
     } finally {
       setLoading(false);
@@ -81,11 +81,11 @@ const AllOffer = () => {
       });
       const data = await response.json();
       if (data.success) {
-        showToast.success("Offer deleted successfully");
+        alert("Offer deleted successfully");
         fetchOffers();
-      } else showToast.error(data.message || "Failed to delete offer");
+      } else alert(data.message || "Failed to delete offer");
     } catch (error) {
-      showToast.info("Something went wrong while deleting");
+      alert("Something went wrong while deleting");
     }
   };
 
@@ -125,11 +125,11 @@ const AllOffer = () => {
       });
       const data = await response.json();
       if (data.success) {
-        showToast.info(`Offer status updated to ${newStatus}`);
+        alert(`Offer status updated to ${newStatus}`);
         fetchOffers();
-      } else showToast.error(data.message || "Failed to update offer");
+      } else alert(data.message || "Failed to update offer");
     } catch (error) {
-      showToast.info("Something went wrong");
+      alert("Something went wrong");
     }
   };
 

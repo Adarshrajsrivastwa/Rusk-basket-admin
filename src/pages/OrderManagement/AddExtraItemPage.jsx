@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import { BASE_URL } from "../../api/api";
 import { ArrowLeft, Search, Package, Plus, X } from "lucide-react";
-import { showToast } from "../../utils/toast";
 
 const AddExtraItemPage = () => {
   const { id } = useParams(); // Order ID from URL
@@ -27,7 +26,7 @@ const AddExtraItemPage = () => {
         localStorage.getItem("token") || localStorage.getItem("authToken");
 
       if (!token) {
-        showToast.warning("⚠️ Authentication required. Please login again.");
+        alert("⚠️ Authentication required. Please login again.");
         navigate("/login");
         return;
       }
@@ -63,10 +62,12 @@ const AddExtraItemPage = () => {
 
         setProducts(transformedProducts);
       } else {
+        console.error("Invalid API response format:", result);
         setProducts([]);
       }
     } catch (error) {
-      showToast.error(`Failed to load products: ${error.message}`);
+      console.error("Error fetching vendor products:", error);
+      alert(`Failed to load products: ${error.message}`);
       setProducts([]);
     } finally {
       setLoading(false);
@@ -122,7 +123,7 @@ const AddExtraItemPage = () => {
   const handleAddItems = async () => {
     const selectedItems = Object.keys(selectedProducts);
     if (selectedItems.length === 0) {
-      showToast.warning("⚠️ Please select at least one product!");
+      alert("⚠️ Please select at least one product!");
       return;
     }
 
@@ -133,7 +134,7 @@ const AddExtraItemPage = () => {
         localStorage.getItem("token") || localStorage.getItem("authToken");
 
       if (!token) {
-        showToast.warning("⚠️ Authentication required. Please login again.");
+        alert("⚠️ Authentication required. Please login again.");
         return;
       }
 
@@ -143,7 +144,7 @@ const AddExtraItemPage = () => {
       const orderId = id;
 
       if (!orderId) {
-        showToast.warning("⚠️ Order ID not found. Please go back and try again.");
+        alert("⚠️ Order ID not found. Please go back and try again.");
         return;
       }
 
@@ -194,14 +195,15 @@ const AddExtraItemPage = () => {
         throw new Error(result.message || `Failed to add items: ${response.status}`);
       }
 
-      showToast.success(
-        `✅ Items Added Successfully!\n\n${selectedItems.length} product(s); added to the order.`,
+      alert(
+        `✅ Items Added Successfully!\n\n${selectedItems.length} product(s) added to the order.`,
       );
 
       // Navigate back to bag QR scan page
       navigate(`/orders/${orderId}/bag-qr-scan`);
     } catch (error) {
-      showToast.error(`❌ Failed to add items: ${error.message}\n\nPlease try again.`);
+      console.error("Error adding items:", error);
+      alert(`❌ Failed to add items: ${error.message}\n\nPlease try again.`);
     } finally {
       setAddingItems(false);
     }

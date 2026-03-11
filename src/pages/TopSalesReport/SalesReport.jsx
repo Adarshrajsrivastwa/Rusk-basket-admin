@@ -47,7 +47,8 @@
 //         setFiltered(res.data.data || []);
 //       }
 //     } catch (err) {
-//       //       setError("Failed to load sales report. Please try again.");
+//       console.error(err);
+//       setError("Failed to load sales report. Please try again.");
 //     } finally {
 //       setLoading(false);
 //     }
@@ -460,6 +461,7 @@ const VendorSalesReport = () => {
         setFiltered(res.data.data || []);
       }
     } catch (err) {
+      console.error(err);
       setError("Failed to load sales report. Please try again.");
     } finally {
       setLoading(false);

@@ -54,11 +54,13 @@
 //     };
 
 //     if (!newCategory.name) {
-//       showToast.warning("Please enter a category name.");
+//       alert("Please enter a category name.");
 //       return;
 //     }
 
-//     //     // Reset form
+//     console.log("🟧 New Category Added:", newCategory);
+
+//     // Reset form
 //     setCategoryName("");
 //     setCategoryDesc("");
 //     setCategoryUpdate("");
@@ -179,7 +181,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { BASE_URL } from "../api/api";
-import { showToast } from "../utils/toast";
 
 const API_URL = `${BASE_URL}/api/category`;
 
@@ -253,7 +254,7 @@ const AddCategoryModal = ({
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      showToast.warning("Please upload a valid image");
+      alert("Please upload a valid image");
       return;
     }
 
@@ -269,12 +270,12 @@ const AddCategoryModal = ({
     e.preventDefault();
 
     if (!categoryName.trim()) {
-      showToast.info("Category name is required");
+      alert("Category name is required");
       return;
     }
 
     if (!categoryImage && !isEdit) {
-      showToast.info("Category image is required");
+      alert("Category image is required");
       return;
     }
 
@@ -318,7 +319,7 @@ const AddCategoryModal = ({
         throw new Error(data.message || "Failed to save category");
       }
 
-      showToast.success(`Category ${isEdit ? "updated" : "created"} successfully`);
+      alert(`Category ${isEdit ? "updated" : "created"} successfully`);
 
       // Call onSuccess with the response data
       if (onSuccess) {
@@ -328,7 +329,8 @@ const AddCategoryModal = ({
       resetForm();
       handleClose();
     } catch (err) {
-      showToast.info(err.message || "Something went wrong");
+      console.error(err);
+      alert(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }

@@ -42,6 +42,7 @@ const SingleProduct = () => {
 
         // Primary endpoint: /api/product/{id}
         try {
+          console.log("Fetching product with ID:", id);
           const response = await fetch(`${BASE_URL}/api/product/${id}`, {
             method: "GET",
             headers: headers,
@@ -52,15 +53,19 @@ const SingleProduct = () => {
             const data = await response.json();
             if (data.success && data.data) {
               foundProduct = data.data;
-              }
-          } else {
+              console.log("Found product via /api/product endpoint:", foundProduct);
             }
-        } catch (err) {
+          } else {
+            console.error("Product endpoint returned error:", response.status);
           }
+        } catch (err) {
+          console.error("Error fetching product:", err);
+        }
 
         // Fallback: Try admin endpoint if primary fails
         if (!foundProduct) {
           try {
+            console.log("Trying admin endpoint as fallback");
             const response = await fetch(
               `${BASE_URL}/api/admin/products/${id}`,
               {
@@ -74,10 +79,12 @@ const SingleProduct = () => {
               const data = await response.json();
               if (data.success && data.data) {
                 foundProduct = data.data;
-                }
+                console.log("Found product via admin endpoint:", foundProduct);
+              }
             }
           } catch (err) {
-            }
+            console.error("Admin endpoint error:", err);
+          }
         }
 
         // If product found, normalize and set it
@@ -134,11 +141,13 @@ const SingleProduct = () => {
           }
         } else {
           // Product not found
+          console.error("Product not found with ID:", id);
           setError(
             `Product not found with ID: ${id}. This product may have been deleted or the ID is incorrect.`,
           );
         }
       } catch (err) {
+        console.error("Error fetching product:", err);
         setError(err.message || "Error fetching product. Please try again.");
       } finally {
         setLoading(false);

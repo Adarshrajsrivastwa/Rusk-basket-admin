@@ -37,7 +37,8 @@
 //       const token = getAuthToken();
 
 //       if (!token) {
-//         //         showToast.warning("Please login to view products");
+//         console.error("No auth token found");
+//         alert("Please login to view products");
 //         setLoading(false);
 //         return;
 //       }
@@ -54,17 +55,28 @@
 //         credentials: "include",
 //       });
 
-//       //       if (!response.ok) {
+//       console.log("Fetch response status:", response.status);
+
+//       if (!response.ok) {
 //         const errorText = await response.text();
-//         //         throw new Error(`Failed to fetch products: ${response.status}`);
+//         console.error("Fetch error response:", errorText);
+//         throw new Error(`Failed to fetch products: ${response.status}`);
 //       }
 
 //       const result = await response.json();
 
-//       //       //       //       if (result.success && result.data && Array.isArray(result.data)) {
-//         //         // Transform API data to match component structure
+//       console.log("Fetched products raw result:", result);
+//       console.log("Result.success:", result.success);
+//       console.log("Result.data:", result.data);
+
+//       if (result.success && result.data && Array.isArray(result.data)) {
+//         console.log("Number of products fetched:", result.data.length);
+
+//         // Transform API data to match component structure
 //         const transformedProducts = result.data.map((product) => {
-//           //           // Extract vendor name from vendor object
+//           console.log("Processing product:", product._id, product.productName);
+
+//           // Extract vendor name from vendor object
 //           let vendorName = "Unknown Vendor";
 //           if (product.vendor) {
 //             if (typeof product.vendor === "string") {
@@ -167,14 +179,20 @@
 //           };
 //         });
 
-//         //         setProducts(transformedProducts);
+//         console.log("Transformed products:", transformedProducts);
+//         setProducts(transformedProducts);
 //       } else {
-//         //         //         //         );
+//         console.error("Invalid API response format:", result);
+//         console.log("Result.success:", result.success);
+//         console.log("Result.data exists:", !!result.data);
+//         console.log("Result.data is array:", Array.isArray(result.data));
 //         setProducts([]);
 //       }
 //     } catch (error) {
-//       //       //       // Show error message to user
-//       showToast.error("Failed to load products. Please check console for details.");
+//       console.error("Error fetching products:", error);
+//       console.error("Error details:", error.message);
+//       // Show error message to user
+//       alert("Failed to load products. Please check console for details.");
 //       setProducts([]);
 //     } finally {
 //       setLoading(false);
@@ -188,7 +206,8 @@
 
 //   // 🟢 Handle successful product addition
 //   const handleProductAdded = async (newProduct) => {
-//     //     // Add a small delay to ensure backend has processed
+//     console.log("New product added, refreshing list:", newProduct);
+//     // Add a small delay to ensure backend has processed
 //     setTimeout(() => {
 //       fetchProducts();
 //     }, 500);
@@ -196,7 +215,12 @@
 
 //   // 🟢 Handle Edit Product
 //   const handleEdit = (product) => {
-//     //     //     //     //     // Prepare product data for editing with proper structure
+//     console.log("Editing product:", product);
+//     console.log("Product ID:", product.id);
+//     console.log("Product category:", product.categoryObj);
+//     console.log("Product subCategory:", product.subCategoryObj);
+
+//     // Prepare product data for editing with proper structure
 //     const editProduct = {
 //       id: product.id,
 //       productId: product.productId,
@@ -224,14 +248,17 @@
 //       isActive: product.isActive,
 //     };
 
-//     //     setEditingProduct(editProduct);
+//     console.log("Edit product data prepared:", editProduct);
+
+//     setEditingProduct(editProduct);
 //     setIsEditMode(true);
 //     setIsModalOpen(true);
 //   };
 
 //   // 🟢 Handle successful product update
 //   const handleProductUpdated = async (updatedProduct) => {
-//     //     setIsEditMode(false);
+//     console.log("Product updated, refreshing list:", updatedProduct);
+//     setIsEditMode(false);
 //     setEditingProduct(null);
 //     // Add a small delay to ensure backend has processed
 //     setTimeout(() => {
@@ -288,17 +315,23 @@
 //           headers: headers,
 //         });
 
-//         //         if (response.ok) {
+//         console.log("Delete response status:", response.status);
+
+//         if (response.ok) {
 //           const result = await response.json();
-//           //           // Remove from local state
+//           console.log("Delete response:", result);
+
+//           // Remove from local state
 //           setProducts((prev) => prev.filter((p) => p.id !== id));
-//           showToast.success("Product deleted successfully!");
+//           alert("Product deleted successfully!");
 //         } else {
 //           const result = await response.json();
-//           //           showToast.error(result.message || "Failed to delete product");
+//           console.error("Delete error:", result);
+//           alert(result.message || "Failed to delete product");
 //         }
 //       } catch (error) {
-//         //         showToast.error("Failed to delete product. Please try again.");
+//         console.error("Error deleting product:", error);
+//         alert("Failed to delete product. Please try again.");
 //       }
 //     }
 //   };
@@ -331,13 +364,14 @@
 //                 : p,
 //             ),
 //           );
-//           showToast.success("Product approved successfully!");
+//           alert("Product approved successfully!");
 //         } else {
 //           const result = await response.json();
-//           showToast.error(result.message || "Failed to approve product");
+//           alert(result.message || "Failed to approve product");
 //         }
 //       } catch (error) {
-//         //         showToast.error("Failed to approve product. Please try again.");
+//         console.error("Error approving product:", error);
+//         alert("Failed to approve product. Please try again.");
 //       }
 //     }
 //   };
@@ -370,13 +404,14 @@
 //                 : p,
 //             ),
 //           );
-//           showToast.success("Product rejected successfully!");
+//           alert("Product rejected successfully!");
 //         } else {
 //           const result = await response.json();
-//           showToast.error(result.message || "Failed to reject product");
+//           alert(result.message || "Failed to reject product");
 //         }
 //       } catch (error) {
-//         //         showToast.error("Failed to reject product. Please try again.");
+//         console.error("Error rejecting product:", error);
+//         alert("Failed to reject product. Please try again.");
 //       }
 //     }
 //   };
@@ -765,7 +800,6 @@ import { useNavigate } from "react-router-dom";
 import JsBarcode from "jsbarcode";
 import QRCode from "qrcode";
 import { BASE_URL } from "../../api/api";
-import { showToast } from "../../utils/toast";
 
 // API Base URL - Make sure this matches your AddProduct component
 const API_BASE_URL = `${BASE_URL}/api`;
@@ -804,7 +838,8 @@ const AllProduct = () => {
       const token = getAuthToken();
 
       if (!token) {
-        showToast.error("Please login to view products");
+        console.error("No auth token found");
+        alert("Please login to view products");
         setLoading(false);
         return;
       }
@@ -821,16 +856,27 @@ const AllProduct = () => {
         credentials: "include",
       });
 
+      console.log("Fetch response status:", response.status);
+
       if (!response.ok) {
         const errorText = await response.text();
+        console.error("Fetch error response:", errorText);
         throw new Error(`Failed to fetch products: ${response.status}`);
       }
 
       const result = await response.json();
 
+      console.log("Fetched products raw result:", result);
+      console.log("Result.success:", result.success);
+      console.log("Result.data:", result.data);
+
       if (result.success && result.data && Array.isArray(result.data)) {
+        console.log("Number of products fetched:", result.data.length);
+
         // Transform API data to match component structure
         const transformedProducts = result.data.map((product) => {
+          console.log("Processing product:", product._id, product.productName);
+
           // Extract vendor name from vendor object
           let vendorName = "Unknown Vendor";
           if (product.vendor) {
@@ -934,14 +980,20 @@ const AllProduct = () => {
           };
         });
 
+        console.log("Transformed products:", transformedProducts);
         setProducts(transformedProducts);
       } else {
-        );
+        console.error("Invalid API response format:", result);
+        console.log("Result.success:", result.success);
+        console.log("Result.data exists:", !!result.data);
+        console.log("Result.data is array:", Array.isArray(result.data));
         setProducts([]);
       }
     } catch (error) {
+      console.error("Error fetching products:", error);
+      console.error("Error details:", error.message);
       // Show error message to user
-      showToast.error("Failed to load products. Please check console for details.");
+      alert("Failed to load products. Please check console for details.");
       setProducts([]);
     } finally {
       setLoading(false);
@@ -955,6 +1007,7 @@ const AllProduct = () => {
 
   // 🟢 Handle successful product addition
   const handleProductAdded = async (newProduct) => {
+    console.log("New product added, refreshing list:", newProduct);
     // Add a small delay to ensure backend has processed
     setTimeout(() => {
       fetchProducts();
@@ -963,6 +1016,11 @@ const AllProduct = () => {
 
   // 🟢 Handle Edit Product
   const handleEdit = (product) => {
+    console.log("Editing product:", product);
+    console.log("Product ID:", product.id);
+    console.log("Product category:", product.categoryObj);
+    console.log("Product subCategory:", product.subCategoryObj);
+
     // Prepare product data for editing with proper structure
     const editProduct = {
       id: product.id,
@@ -991,6 +1049,8 @@ const AllProduct = () => {
       isActive: product.isActive,
     };
 
+    console.log("Edit product data prepared:", editProduct);
+
     setEditingProduct(editProduct);
     setIsEditMode(true);
     setIsModalOpen(true);
@@ -998,6 +1058,7 @@ const AllProduct = () => {
 
   // 🟢 Handle successful product update
   const handleProductUpdated = async (updatedProduct) => {
+    console.log("Product updated, refreshing list:", updatedProduct);
     setIsEditMode(false);
     setEditingProduct(null);
     // Add a small delay to ensure backend has processed
@@ -1037,7 +1098,7 @@ const AllProduct = () => {
         product.productId || product.productNumber || product._id;
 
       if (!productId) {
-        showToast.error("Product ID not found!");
+        alert("Product ID not found!");
         return;
       }
 
@@ -1055,7 +1116,8 @@ const AllProduct = () => {
       setQrCodeDataUrl(qrDataUrl);
       setQrModalOpen(true);
     } catch (error) {
-      showToast.error("Failed to generate QR code. Please try again.");
+      console.error("Error generating QR code:", error);
+      alert("Failed to generate QR code. Please try again.");
     }
   };
 
@@ -1080,7 +1142,8 @@ const AllProduct = () => {
       link.href = canvas.toDataURL("image/png");
       link.click();
     } catch (error) {
-      showToast.error("Failed to generate QR code. Please try again.");
+      console.error("Error generating QR code:", error);
+      alert("Failed to generate QR code. Please try again.");
     }
   };
 
@@ -1123,17 +1186,23 @@ const AllProduct = () => {
           headers: headers,
         });
 
+        console.log("Delete response status:", response.status);
+
         if (response.ok) {
           const result = await response.json();
+          console.log("Delete response:", result);
+
           // Remove from local state
           setProducts((prev) => prev.filter((p) => p.id !== id));
-          showToast.success("Product deleted successfully!");
+          alert("Product deleted successfully!");
         } else {
           const result = await response.json();
-          showToast.error(result.message || "Failed to delete product");
+          console.error("Delete error:", result);
+          alert(result.message || "Failed to delete product");
         }
       } catch (error) {
-        showToast.error("Failed to delete product. Please try again.");
+        console.error("Error deleting product:", error);
+        alert("Failed to delete product. Please try again.");
       }
     }
   };
@@ -1166,13 +1235,14 @@ const AllProduct = () => {
                 : p,
             ),
           );
-          showToast.success("Product approved successfully!");
+          alert("Product approved successfully!");
         } else {
           const result = await response.json();
-          showToast.error(result.message || "Failed to approve product");
+          alert(result.message || "Failed to approve product");
         }
       } catch (error) {
-        showToast.error("Failed to approve product. Please try again.");
+        console.error("Error approving product:", error);
+        alert("Failed to approve product. Please try again.");
       }
     }
   };
@@ -1205,13 +1275,14 @@ const AllProduct = () => {
                 : p,
             ),
           );
-          showToast.success("Product rejected successfully!");
+          alert("Product rejected successfully!");
         } else {
           const result = await response.json();
-          showToast.error(result.message || "Failed to reject product");
+          alert(result.message || "Failed to reject product");
         }
       } catch (error) {
-        showToast.error("Failed to reject product. Please try again.");
+        console.error("Error rejecting product:", error);
+        alert("Failed to reject product. Please try again.");
       }
     }
   };
