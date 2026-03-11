@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Download, Eye } from "lucide-react";
 import { BASE_URL } from "../../api/api";
+import { showToast } from "../../utils/toast";
 
 const API_BASE_URL = `${BASE_URL}/api`;
 
@@ -32,7 +33,7 @@ const AllOrder = () => {
     try {
       const token = getAuthToken();
       if (!token) {
-        alert("Please login to view orders");
+        showToast.warning("Please login to view orders");
         setLoading(false);
         return;
       }
@@ -88,8 +89,7 @@ const AllOrder = () => {
         setTotalPages(1);
       }
     } catch (error) {
-      console.error("Error fetching orders:", error);
-      alert("Failed to load orders. Please check console for details.");
+      showToast.error("Failed to load orders. Please check console for details.");
       setOrders([]);
       setTotalOrders(0);
       setTotalPages(1);

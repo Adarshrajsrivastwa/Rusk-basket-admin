@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import { Plus, Pencil, Trash2, X, Loader2, Crop, Check, RotateCw } from "lucide-react";
 import { BASE_URL } from "../api/api";
+import { showToast } from "../utils/toast";
 
 const API_URL = `${BASE_URL}/api/banner`;
 
@@ -53,11 +54,10 @@ const BannerManagement = () => {
       if (result.success) {
         setBanners(result.data || []);
       } else {
-        alert("Failed to load banners");
+        showToast.error("Failed to load banners");
       }
     } catch (error) {
-      console.error("Error loading banners:", error);
-      alert("Failed to load banners. Check if backend is running.");
+      showToast.error("Failed to load banners. Check if backend is running.");
     } finally {
       setLoading(false);
     }
@@ -89,7 +89,7 @@ const BannerManagement = () => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file || !file.type.startsWith("image/")) {
-      alert("Please upload a valid image");
+      showToast.error("Please upload a valid image");
       return;
     }
     const reader = new FileReader();
@@ -350,11 +350,11 @@ const BannerManagement = () => {
   // ================= SUBMIT =================
   const handleSubmit = async () => {
     if (!formData.name.trim()) {
-      alert("Banner name is required");
+      showToast.error("Banner name is required");
       return;
     }
     if (!editingBanner && !formData.image) {
-      alert("Please select an image");
+      showToast.error("Please select an image");
       return;
     }
 
@@ -385,9 +385,9 @@ const BannerManagement = () => {
 
       setIsModalOpen(false);
       loadBanners();
-      alert(result.message || "Banner saved successfully");
+      showToast.success(result.message || "Banner saved successfully");
     } catch (error) {
-      alert(error.message || "Failed to save banner.");
+      showToast.error(error.message || "Failed to save banner.");
     } finally {
       setSubmitting(false);
     }
@@ -406,9 +406,9 @@ const BannerManagement = () => {
       if (!res.ok || !result.success)
         throw new Error(result.message || "Failed to delete banner");
       loadBanners();
-      alert(result.message || "Banner deleted successfully");
+      showToast.success(result.message || "Banner deleted successfully");
     } catch (error) {
-      alert(error.message || "Delete failed.");
+      showToast.error(error.message || "Delete failed.");
     }
   };
 

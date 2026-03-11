@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import api from "../../api/api";
+import { showToast } from "../../utils/toast";
 import {
   UserIcon,
   EnvelopeIcon,
@@ -93,7 +94,6 @@ const AdminProfile = () => {
           setError(result.message || "Failed to fetch profile data");
         }
       } catch (error) {
-        console.error("Error fetching profile:", error);
         setError(
           error.response?.data?.message ||
             error.message ||
@@ -121,7 +121,7 @@ const AdminProfile = () => {
     if (file) {
       // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert("File size should be less than 5MB");
+        showToast.error("File size should be less than 5MB");
         return;
       }
 
@@ -194,17 +194,9 @@ const AdminProfile = () => {
         
         // Add profile image - API only accepts "profileImage" field name
         formData.append("profileImage", profileImage);
-        
-        console.log("Uploading profile image:", {
-          fileName: profileImage.name,
-          fileSize: profileImage.size,
-          fileType: profileImage.type
-        });
 
         const response = await api.put("/api/admin/profile", formData);
         const result = response.data;
-        
-        console.log("Profile update response:", result);
         
         if (result.success) {
           setProfileData(result.data);
@@ -346,28 +338,20 @@ const AdminProfile = () => {
       }
       }
     } catch (error) {
-      console.error("Error updating profile:", error);
-      console.error("Error details:", {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-      });
-      
       const errorMessage = error.response?.data?.message || 
                           error.response?.data?.error ||
                           error.message ||
-                          "Error updating profile data. Please check console for details.";
+                          "Error updating profile data.";
       
       setError(errorMessage);
       
-      // Show alert for better visibility
+      // Show toast for better visibility
       if (error.response?.status === 413) {
-        alert("File too large! Please upload an image smaller than 5MB.");
+        showToast.error("File too large! Please upload an image smaller than 5MB.");
       } else if (error.response?.status === 400) {
-        alert("Invalid file format. Please upload a valid image file (JPG, PNG, etc.).");
+        showToast.error("Invalid file format. Please upload a valid image file (JPG, PNG, etc.).");
       } else if (error.response?.status === 500) {
-        alert("Server error. Please try again later.");
+        showToast.error("Server error. Please try again later.");
       }
     } finally {
       setIsSaving(false);

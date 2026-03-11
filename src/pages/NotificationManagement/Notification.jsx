@@ -90,7 +90,7 @@ const Notification = () => {
       [offer.id, offer.offerType, offer.code, offer.amount]
         .join(" ")
         .toLowerCase()
-        .includes(searchQuery.toLowerCase())
+        .includes(searchQuery.toLowerCase()),
     );
 
   const indexOfLast = currentPage * itemsPerPage;
@@ -223,8 +223,8 @@ const Notification = () => {
                       offer.status.toLowerCase() === "live"
                         ? "text-green-600"
                         : offer.status.toLowerCase() === "draft"
-                        ? "text-orange-500"
-                        : "text-gray-600"
+                          ? "text-orange-500"
+                          : "text-gray-600"
                     }`}
                   >
                     {offer.status}

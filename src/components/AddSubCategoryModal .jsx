@@ -58,7 +58,7 @@
 //     if (file) {
 //       // Validate file type
 //       if (!file.type.startsWith("image/")) {
-//         alert("Please upload an image file.");
+//         showToast.warning("Please upload an image file.");
 //         return;
 //       }
 
@@ -81,9 +81,7 @@
 //       subCategoryImage,
 //       imagePreview,
 //     };
-//     console.log("🟧 Sub Category Added:", formData);
-
-//     // Reset form
+//     //     // Reset form
 //     setCategory("");
 //     setSubCategoryName("");
 //     setSubCategoryDesc("");
@@ -262,10 +260,8 @@
 //       const data = await res.json();
 //       setCategories(data);
 //     } catch (error) {
-//       console.error("Error loading categories:", error);
-//       // Keep dummy data if API fails
-//       console.log("Using dummy category data");
-//     } finally {
+//       //       // Keep dummy data if API fails
+//       //     } finally {
 //       setLoadingCategories(false);
 //     }
 //   };
@@ -328,7 +324,7 @@
 //     if (!file) return;
 
 //     if (!file.type.startsWith("image/")) {
-//       alert("Please upload an image file.");
+//       showToast.warning("Please upload an image file.");
 //       return;
 //     }
 
@@ -357,17 +353,17 @@
 //     // Trim and validate category
 //     const categoryValue = category?.trim();
 //     if (!categoryValue || categoryValue === "") {
-//       alert("Please select a category");
+//       showToast.warning("Please select a category");
 //       return;
 //     }
 
 //     if (!subCategoryName.trim()) {
-//       alert("Please enter sub category name");
+//       showToast.warning("Please enter sub category name");
 //       return;
 //     }
 
 //     if (!editData && !subCategoryImage) {
-//       alert("Please upload an image");
+//       showToast.warning("Please upload an image");
 //       return;
 //     }
 
@@ -418,21 +414,14 @@
 //           const errorData = await res.json();
 //           errorMessage =
 //             errorData.message || errorData.error || JSON.stringify(errorData);
-//           console.error("API Error Response:", errorData);
-//         } catch (parseError) {
+//           //         } catch (parseError) {
 //           errorMessage = `HTTP ${res.status}: ${res.statusText}`;
-//           console.error("API Error:", errorMessage);
-//         }
+//           //         }
 //         throw new Error(errorMessage);
 //       }
 
 //       const data = await res.json();
-//       console.log(
-//         editData ? "✅ Sub Category Updated:" : "✅ Sub Category Added:",
-//         data
-//       );
-
-//       // Reset form
+//       //       // Reset form
 //       setCategory("");
 //       setSubCategoryName("");
 //       setSubCategoryDesc("");
@@ -442,8 +431,7 @@
 //       if (onSuccess) onSuccess();
 //       handleClose();
 //     } catch (error) {
-//       console.error("Error saving sub category:", error);
-//       alert(error.message || "Failed to save sub category");
+//       //       showToast.error(error.message || "Failed to save sub category");
 //     } finally {
 //       setSubmitting(false);
 //     }
@@ -496,8 +484,7 @@
 //               className="w-full border border-orange-400 rounded-sm px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500 bg-white"
 //               value={category}
 //               onChange={(e) => {
-//                 console.log("Selected category:", e.target.value);
-//                 setCategory(e.target.value);
+//                 //                 setCategory(e.target.value);
 //               }}
 //               disabled={loadingCategories || submitting}
 //             >
@@ -595,6 +582,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { BASE_URL } from "../api/api";
+import { showToast } from "../utils/toast";
 
 // ─── Helper: extract a valid 24-char hex ObjectId from any format ──────────
 const extractId = (id) => {
@@ -690,8 +678,7 @@ const AddSubCategoryModal = ({
       setCategories(normalized);
       return normalized; // return so we can use it in populateForm
     } catch (err) {
-      console.error("Error fetching categories:", err);
-      alert("Failed to load categories. Please try again.");
+      showToast.error("Failed to load categories. Please try again.");
       return [];
     } finally {
       setLoadingCategories(false);
@@ -788,11 +775,11 @@ const AddSubCategoryModal = ({
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Please upload an image file.");
+      showToast.warning("Please upload an image file.");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      alert("Image size should be less than 5MB");
+      showToast.info("Image size should be less than 5MB");
       return;
     }
 
@@ -807,17 +794,17 @@ const AddSubCategoryModal = ({
     e.preventDefault();
 
     if (!categoryId) {
-      alert("Please select a category");
+      showToast.warning("Please select a category");
       return;
     }
     if (!subCategoryName.trim()) {
-      alert("Please enter sub-category name");
+      showToast.warning("Please enter sub-category name");
       return;
     }
 
     // Image required only when adding; on edit the existing image can be kept
     if (!isEdit && !subCategoryImage) {
-      alert("Please upload an image");
+      showToast.warning("Please upload an image");
       return;
     }
 
@@ -826,7 +813,7 @@ const AddSubCategoryModal = ({
     try {
       const categoryIdStr = String(categoryId).trim();
       if (!/^[0-9a-fA-F]{24}$/.test(categoryIdStr)) {
-        alert("Please select a valid category.");
+        showToast.warning("Please select a valid category.");
         setLoading(false);
         return;
       }
@@ -885,16 +872,12 @@ const AddSubCategoryModal = ({
         );
       }
 
-      alert(`Sub-category ${isEdit ? "updated" : "created"} successfully!`);
+      showToast.success(`Sub-category ${isEdit ? "updated" : "created"} successfully!`);
       if (onSuccess) onSuccess(result.data);
       resetForm();
       handleClose();
     } catch (err) {
-      console.error(
-        `Error ${isEdit ? "updating" : "creating"} sub-category:`,
-        err,
-      );
-      alert(
+      showToast.error(
         err.message ||
           `Failed to ${isEdit ? "update" : "create"} sub-category. Please try again.`,
       );

@@ -427,13 +427,11 @@
 
 //         setProducts(transformedProducts);
 //       } else {
-//         console.error("Invalid API response format:", result);
-//         setProducts([]);
+//         //         setProducts([]);
 //       }
 //     } catch (error) {
-//       console.error("Error fetching products:", error);
-//       // Show error message to user
-//       alert("Failed to load products. Please try again later.");
+//       //       // Show error message to user
+//       showToast.error("Failed to load products. Please try again later.");
 //       setProducts([]);
 //     } finally {
 //       setLoading(false);
@@ -447,8 +445,7 @@
 
 //   // 🟢 Handle successful product addition
 //   const handleProductAdded = (newProduct) => {
-//     console.log("New product added:", newProduct);
-//     // Refresh the product list
+//     //     // Refresh the product list
 //     fetchProducts();
 //   };
 
@@ -488,14 +485,13 @@
 //         if (response.ok) {
 //           // Remove from local state
 //           setProducts((prev) => prev.filter((p) => p.id !== id));
-//           alert("Product deleted successfully!");
+//           showToast.success("Product deleted successfully!");
 //         } else {
 //           const result = await response.json();
-//           alert(result.message || "Failed to delete product");
+//           showToast.error(result.message || "Failed to delete product");
 //         }
 //       } catch (error) {
-//         console.error("Error deleting product:", error);
-//         alert("Failed to delete product. Please try again.");
+//         //         showToast.error("Failed to delete product. Please try again.");
 //       }
 //     }
 //   };
@@ -790,6 +786,7 @@ import { useNavigate } from "react-router-dom";
 import JsBarcode from "jsbarcode";
 import QRCode from "qrcode";
 import api from "../../api/api";
+import { showToast } from "../../utils/toast";
 
 const AllProduct = () => {
   const [activeTab, setActiveTab] = useState("all");
@@ -878,11 +875,10 @@ const AllProduct = () => {
         }
       }
     } catch (error) {
-      console.error("Error fetching products:", error);
       if (error.response?.status === 401) {
-        alert("Unauthorized. Please login again.");
+        showToast.warning("Unauthorized. Please login again.");
       } else {
-        alert("Failed to load products. Please try again later.");
+        showToast.error("Failed to load products. Please try again later.");
       }
       setProducts([]);
     } finally {
@@ -916,7 +912,7 @@ const AllProduct = () => {
       const productId =
         product.productNumber || product.productId || product._id;
       if (!productId) {
-        alert("Product ID not found!");
+        showToast.info("Product ID not found!");
         return;
       }
       const qrDataUrl = await QRCode.toDataURL(productId, {
@@ -928,8 +924,7 @@ const AllProduct = () => {
       setQrCodeDataUrl(qrDataUrl);
       setQrModalOpen(true);
     } catch (error) {
-      console.error("Error generating QR code:", error);
-      alert("Failed to generate QR code. Please try again.");
+      showToast.error("Failed to generate QR code. Please try again.");
     }
   };
 
@@ -950,12 +945,11 @@ const AllProduct = () => {
       try {
         const response = await api.delete(`/api/admin/products/${id}`);
         if (response.data.success) {
-          alert("Product deleted successfully!");
+          showToast.success("Product deleted successfully!");
           fetchProducts(currentPage);
         }
       } catch (error) {
-        console.error("Error deleting product:", error);
-        alert("Failed to delete product. Please try again.");
+        showToast.error("Failed to delete product. Please try again.");
       }
     }
   };
@@ -969,13 +963,11 @@ const AllProduct = () => {
           res.data?.data?.data || res.data?.data || res.data?.product || null;
         if (Array.isArray(rawProduct)) rawProduct = rawProduct[0];
       } catch (fetchErr) {
-        console.warn("Admin endpoint failed, trying fallback:", fetchErr);
         try {
           const fallback = await api.get(`/api/product/${productId}`);
           rawProduct = fallback.data?.data || fallback.data?.product || null;
         } catch (fallbackErr) {
-          console.error("Both endpoints failed:", fallbackErr);
-        }
+          }
       }
 
       if (!rawProduct) {
@@ -984,7 +976,7 @@ const AllProduct = () => {
         );
       }
       if (!rawProduct) {
-        alert("Product not found");
+        showToast.info("Product not found");
         return;
       }
 
@@ -1023,8 +1015,7 @@ const AllProduct = () => {
       setIsEditMode(true);
       setIsModalOpen(true);
     } catch (error) {
-      console.error("Error in handleEdit:", error);
-      alert("Failed to load product for editing");
+      showToast.error("Failed to load product for editing");
     }
   };
 

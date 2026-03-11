@@ -95,16 +95,9 @@ const AllOrder = () => {
           setOrders(transformedOrders);
           setPagination(data.pagination);
         } else {
-          console.error("========================================");
-          console.error("=== API ERROR ===");
-          console.error("API returned success: false");
-          console.error("Error Message:", data.message);
-          console.error("Full Error Data:", data);
-          console.error("========================================");
           throw new Error(data.message || "API returned success: false");
         }
       } catch (err) {
-        console.error("Error fetching orders:", err);
         setError(err.message);
 
         // If unauthorized, redirect to login
@@ -148,7 +141,6 @@ const AllOrder = () => {
 
   // Handle download invoice - navigate to invoice page
   const handleDownloadInvoice = (orderId) => {
-    console.log("Opening invoice for order:", orderId);
     // Navigate to invoice view page with orderId
     navigate(`/invoice/view/${orderId}`, {
       state: { orderId: orderId },
@@ -310,9 +302,9 @@ const AllOrder = () => {
         </div>
 
         <div className="mt-3 sm:mt-0">
-          <button className="bg-black hover:bg-gray-800 text-white w-44 sm:w-44 px-6 py-2 rounded-sm text-sm whitespace-nowrap">
+          {/* <button className="bg-black hover:bg-gray-800 text-white w-44 sm:w-44 px-6 py-2 rounded-sm text-sm whitespace-nowrap">
             Calendar
-          </button>
+          </button> */}
         </div>
       </div>
 

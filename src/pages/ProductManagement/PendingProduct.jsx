@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import JsBarcode from "jsbarcode";
 import AddProductModal from "../../components/AddProduct";
 import api from "../../api/api";
+import { showToast } from "../../utils/toast";
 
 const PendingProduct = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -52,11 +53,10 @@ const PendingProduct = () => {
         );
       }
     } catch (error) {
-      console.error("Error fetching pending products:", error);
       if (error.response?.status === 401) {
-        alert("Unauthorized. Please login again.");
+        showToast.warning("Unauthorized. Please login again.");
       } else {
-        alert("Failed to fetch pending products. Please try again.");
+        showToast.error("Failed to fetch pending products. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -74,12 +74,11 @@ const PendingProduct = () => {
     try {
       const response = await api.put(`/api/product/approve/${productId}`, {});
       if (response.data.success) {
-        alert("Product approved successfully!");
+        showToast.success("Product approved successfully!");
         fetchPendingProducts(currentPage);
       }
     } catch (error) {
-      console.error("Error approving product:", error);
-      alert(
+      showToast.error(
         error.response?.data?.message ||
           "Failed to approve product. Please try again.",
       );
@@ -97,12 +96,11 @@ const PendingProduct = () => {
         rejectionReason: reason || "No reason provided",
       });
       if (response.data.success) {
-        alert("Product rejected successfully!");
+        showToast.success("Product rejected successfully!");
         fetchPendingProducts(currentPage);
       }
     } catch (error) {
-      console.error("Error rejecting product:", error);
-      alert(
+      showToast.error(
         error.response?.data?.message ||
           "Failed to reject product. Please try again.",
       );
@@ -127,8 +125,7 @@ const PendingProduct = () => {
             if (fallbackResponse.data.success)
               product = fallbackResponse.data.data;
           } catch (fallbackError) {
-            console.error("Fallback endpoint also failed:", fallbackError);
-          }
+            }
         }
       }
 
@@ -158,11 +155,10 @@ const PendingProduct = () => {
         setIsEditMode(true);
         setIsModalOpen(true);
       } else {
-        alert("Product not found");
+        showToast.info("Product not found");
       }
     } catch (error) {
-      console.error("Error fetching product for edit:", error);
-      alert("Failed to load product for editing");
+      showToast.error("Failed to load product for editing");
     }
   };
 

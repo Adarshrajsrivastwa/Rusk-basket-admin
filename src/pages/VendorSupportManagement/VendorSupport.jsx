@@ -95,7 +95,6 @@ const VendorSupport = () => {
         setRecentOrders(recentDeliveredOrders);
       }
     } catch (err) {
-      console.error("Error fetching recent orders:", err);
       // Don't show error, just set empty array
       setRecentOrders([]);
     } finally {
@@ -131,7 +130,6 @@ const VendorSupport = () => {
         setError(response.data.message || "Failed to load tickets");
       }
     } catch (err) {
-      console.error("Error fetching tickets:", err);
       setError(
         err.response?.data?.message ||
           "Failed to load tickets. Please try again.",
@@ -156,7 +154,6 @@ const VendorSupport = () => {
         setError(response.data.message || "Failed to load ticket details");
       }
     } catch (err) {
-      console.error("Error fetching ticket details:", err);
       setError(err.response?.data?.message || "Failed to load ticket details");
     }
   };
@@ -192,7 +189,6 @@ const VendorSupport = () => {
         setError(response.data.message || "Failed to create ticket");
       }
     } catch (err) {
-      console.error("Error creating ticket:", err);
       setError(
         err.response?.data?.error ||
           err.response?.data?.message ||
@@ -224,7 +220,6 @@ const VendorSupport = () => {
         setError(response.data.message || "Failed to send message");
       }
     } catch (err) {
-      console.error("Error sending message:", err);
       setError(
         err.response?.data?.error ||
           err.response?.data?.message ||
@@ -291,7 +286,7 @@ const VendorSupport = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen p-0 ml-6">
+      <div className="min-h-screen p-0 mt-2 ml-6">
         <div className="max-w-8xl mx-auto">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">

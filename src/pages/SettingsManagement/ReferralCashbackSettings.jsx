@@ -54,7 +54,6 @@ const ReferralCashbackSettings = () => {
         });
       }
     } catch (error) {
-      console.error("Error fetching referral settings:", error);
       setErrorMessage("Failed to load referral settings");
     }
   };
@@ -81,7 +80,6 @@ const ReferralCashbackSettings = () => {
         });
       }
     } catch (error) {
-      console.error("Error fetching cashback settings:", error);
       setErrorMessage("Failed to load cashback settings");
     }
   };
@@ -129,7 +127,6 @@ const ReferralCashbackSettings = () => {
         );
       }
     } catch (error) {
-      console.error("Error updating referral settings:", error);
       setErrorMessage(
         error.response?.data?.message || "Failed to update referral settings",
       );
@@ -190,7 +187,6 @@ const ReferralCashbackSettings = () => {
         );
       }
     } catch (error) {
-      console.error("Error updating cashback settings:", error);
       setErrorMessage(
         error.response?.data?.message || "Failed to update cashback settings",
       );

@@ -48,7 +48,6 @@ const VendorLoginModal = ({ onClose }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validate()) {
-      console.log("Login credentials submitted:", formData);
       onClose();
     }
   };

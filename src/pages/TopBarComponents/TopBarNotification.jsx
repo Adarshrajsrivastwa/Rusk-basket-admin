@@ -28,7 +28,6 @@ const decodeToken = (token) => {
     );
     return JSON.parse(jsonPayload);
   } catch (error) {
-    console.error("Error decoding token:", error);
     return null;
   }
 };
@@ -115,76 +114,43 @@ const Notifications = () => {
       // Debug: Log token info in development
       if (process.env.NODE_ENV === "development" || true) {
         const decoded = decodeToken(token);
-        console.log("Token info:", {
-          hasToken: !!token,
-          tokenLength: token.length,
-          decoded: decoded,
-          decodedRole: decoded?.role,
-          decodedId: decoded?.id,
-          userRole: localStorage.getItem("userRole"),
+        ,
         });
         // Log full decoded token
         if (decoded) {
-          console.log("Full decoded token:", JSON.stringify(decoded, null, 2));
+          );
         }
       }
 
       let response;
-      console.log("========================================");
-      console.log("🔔 FETCHING NOTIFICATIONS:");
-      console.log("User Role from localStorage:", userRole);
-      console.log("========================================");
-
       if (userRole === "vendor") {
         // Fetch vendor notifications
-        console.log(
-          "📱 Fetching VENDOR notifications from: /api/vendor/notifications",
-        );
         response = await api.get("/api/vendor/notifications", {
           params: {
             page: 1,
             limit: 50,
           },
         });
-        console.log("✅ Vendor notifications response:", response.data);
-        console.log("Vendor notifications data:", response.data?.data);
-        console.log("Vendor notifications count:", response.data?.data?.length);
-      } else if (userRole === "admin") {
+        } else if (userRole === "admin") {
         // Fetch admin notifications (support tickets, etc.)
-        console.log(
-          "👤 Fetching ADMIN notifications from: /api/admin/notifications",
-        );
         response = await api.get("/api/admin/notifications", {
           params: {
             page: 1,
             limit: 50,
           },
         });
-        console.log("✅ Admin notifications response:", response.data);
-      } else {
-        console.error("❌ Unknown user role:", userRole);
-      }
-      console.log("========================================");
-
+        } else {
+        }
       if (response && response.data && response.data.success) {
-        console.log("========================================");
-        console.log("✅ NOTIFICATIONS FETCHED SUCCESSFULLY:");
-        console.log("Full response:", JSON.stringify(response.data, null, 2));
-        console.log("Notifications array:", response.data.data);
-        console.log("Notifications count:", response.data.data?.length || 0);
-        console.log("Unread count:", response.data.unreadCount);
-        console.log("First notification (if any):", response.data.data?.[0]);
-        console.log("========================================");
+        );
+        :", response.data.data?.[0]);
         setNotifications(response.data.data || []);
         setUnreadCount(response.data.unreadCount || 0);
         setError(null); // Clear any previous errors
       } else {
-        console.error("❌ Invalid response from server:", response?.data);
         setError("Invalid response from server. Please try again.");
       }
     } catch (error) {
-      console.error("Error fetching notifications:", error);
-
       // Handle different error types
       if (error.response) {
         // Server responded with error status
@@ -193,14 +159,6 @@ const Notifications = () => {
         const backendMessage = errorData.message || errorData.error || "";
 
         // Log full error response for debugging
-        console.log("Full error response:", {
-          status: status,
-          data: errorData,
-          message: backendMessage,
-          error: errorData.error,
-          debug: errorData.debug,
-        });
-
         if (status === 401) {
           setError(
             backendMessage || "Authentication required. Please login again.",
@@ -277,15 +235,10 @@ const Notifications = () => {
       }
 
       if (response && response.data && response.data.success) {
-        console.log("Unread count fetched:", response.data.unreadCount);
         setUnreadCount(response.data.unreadCount || 0);
       }
     } catch (error) {
-      console.error("Error fetching unread count:", error);
-      console.error("Error details:", {
-        status: error.response?.status,
-        message: error.response?.data?.message,
-        userRole: localStorage.getItem("userRole"),
+      ,
       });
       // Don't set error state for unread count, just log it
       setUnreadCount(0);
@@ -343,8 +296,7 @@ const Notifications = () => {
       // Refresh unread count from server to ensure accuracy
       await fetchUnreadCount();
     } catch (error) {
-      console.error("Error marking notification as read:", error);
-    }
+      }
   };
 
   // Mark all as read
@@ -363,7 +315,6 @@ const Notifications = () => {
       setUnreadCount(0);
       setError(null);
     } catch (error) {
-      console.error("Error marking all as read:", error);
       setError("Failed to mark all notifications as read");
     }
   };
@@ -389,7 +340,6 @@ const Notifications = () => {
       }
       setError(null);
     } catch (error) {
-      console.error("Error deleting notification:", error);
       setError("Failed to delete notification");
     }
   };
@@ -415,7 +365,6 @@ const Notifications = () => {
       setUnreadCount(0);
       setError(null);
     } catch (error) {
-      console.error("Error deleting all notifications:", error);
       setError("Failed to delete all notifications");
     }
   };

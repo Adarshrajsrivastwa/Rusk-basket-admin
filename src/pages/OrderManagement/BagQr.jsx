@@ -294,12 +294,10 @@
 //           const data = await response.json();
 //           if (data.success) {
 //             setOrderData(data.data);
-//             console.log("Order data fetched:", data.data);
-//           }
+//             //           }
 //         }
 //       } catch (error) {
-//         console.error("Error fetching order data:", error);
-//       }
+//         //       }
 //     };
 
 //     if (id) {
@@ -336,13 +334,7 @@
 //       const orderId = orderData?.orderNumber || id;
 
 //       // Log the request details for debugging
-//       console.log("Updating order status:", {
-//         orderId: orderId,
-//         status: status,
-//         url: `${BASE_URL}/api/checkout/vendor/order/${orderId}/status`,
-//       });
-
-//       const response = await fetch(
+//       //       const response = await fetch(
 //         `${BASE_URL}/api/checkout/vendor/order/${orderId}/status`,
 //         {
 //           method: "PUT",
@@ -355,22 +347,16 @@
 //       );
 
 //       // Log response for debugging
-//       console.log("Response status:", response.status);
-
-//       const data = await response.json();
-//       console.log("Response data:", data);
-
-//       if (!response.ok || !data.success) {
+//       //       const data = await response.json();
+//       //       if (!response.ok || !data.success) {
 //         throw new Error(
 //           data.message || `Failed to update order status: ${response.status}`,
 //         );
 //       }
 
-//       console.log("Order status updated successfully:", data);
-//       return { success: true, data: data.data };
+//       //       return { success: true, data: data.data };
 //     } catch (error) {
-//       console.error("Error updating order status:", error);
-//       alert(`Failed to update order status: ${error.message}`);
+//       //       showToast.error(`Failed to update order status: ${error.message}`);
 //       return { success: false, error: error.message };
 //     } finally {
 //       setIsUpdatingStatus(false);
@@ -400,7 +386,7 @@
 //     };
 //     setScanHistory([newScan, ...scanHistory]);
 
-//     alert(
+//     showToast.success(
 //       `✅ Extra Item Added!\n\n${product.name}\nQuantity: ${quantity}\n\nRemember to scan these items before sealing the bag.`,
 //     );
 //     setIsAddExtraItemModalOpen(false);
@@ -415,7 +401,7 @@
 //       )
 //     ) {
 //       setProducts(products.filter((p) => p.id !== productId));
-//       alert(`✅ Extra item removed successfully!`);
+//       showToast.success(`✅ Extra item removed successfully!`);
 //     }
 //   };
 
@@ -424,7 +410,7 @@
 //     const scannedCode = scanInput.trim().toUpperCase();
 
 //     if (!scannedCode) {
-//       alert("⚠️ Please enter or scan a QR code!");
+//       showToast.warning("⚠️ Please enter or scan a QR code!");
 //       return;
 //     }
 
@@ -435,7 +421,7 @@
 //     );
 
 //     if (productIndex === -1) {
-//       alert("❌ Invalid QR Code! This item is not in this bag.");
+//       showToast.error("❌ Invalid QR Code! This item is not in this bag.");
 //       setScanInput("");
 //       return;
 //     }
@@ -443,8 +429,8 @@
 //     const product = products[productIndex];
 
 //     if (product.scanned >= product.quantity) {
-//       alert(
-//         `⚠️ ${product.name}\nAlready fully scanned! (${product.scanned}/${product.quantity})`,
+//       showToast.warning(
+//         `⚠️ ${product.name}\nAlready fully scanned! (${product.scanned}/${product.quantity});`,
 //       );
 //       setScanInput("");
 //       return;
@@ -472,10 +458,10 @@
 //       });
 //     }
 
-//     alert(
+//     showToast.success(
 //       `✅ Item Scanned Successfully!\n${product.name}\nScanned: ${
 //         product.scanned + 1
-//       }/${product.quantity}${product.isExtra ? " (EXTRA ITEM)" : ""}`,
+//       }/${product.quantity}${product.isExtra ? " (EXTRA ITEM);" : ""}`,
 //     );
 //     setScanInput("");
 //     setIsScanModalOpen(false);
@@ -509,7 +495,7 @@
 //   // Handle Complete Packing & Seal Bag with API Integration
 //   const handleCompletePacking = async () => {
 //     if (!isPackingComplete) {
-//       alert("⚠️ Please scan all items before sealing the bag!");
+//       showToast.warning("⚠️ Please scan all items before sealing the bag!");
 //       return;
 //     }
 
@@ -520,7 +506,7 @@
 //     const result = await updateOrderStatus("ready");
 
 //     if (!result.success) {
-//       alert(
+//       showToast.error(
 //         `❌ Failed to update order status!\n\nError: ${result.error}\n\nPlease try again.`,
 //       );
 //       return;
@@ -541,7 +527,7 @@
 //         ? `\n\n📦 Includes ${extraItemsCount} extra item(s)`
 //         : "";
 
-//     alert(
+//     showToast.success(
 //       `✅ Bag Packed & Sealed Successfully!\n\nBag Number: ${bagNumber}\nQR Code: ${qrCode}${extraItemsText}\n\n🔄 Order status updated to "ready" in the system.\n\nBag is now ready for delivery partner assignment.`,
 //     );
 //   };
@@ -564,14 +550,14 @@
 //       setSelectedPartner(null);
 //       setAssignmentStatus("pending");
 //       setNextExtraId(1000);
-//       alert("🔄 Packing reset successfully!");
+//       showToast.success("🔄 Packing reset successfully!");
 //     }
 //   };
 
 //   // Handle Assign Delivery Partner
 //   const handleAssignPartner = () => {
 //     if (!bagDetails.sealed) {
-//       alert("⚠️ Please complete and seal the bag first!");
+//       showToast.warning("⚠️ Please complete and seal the bag first!");
 //       return;
 //     }
 //     setIsDeliveryModalOpen(true);
@@ -580,18 +566,18 @@
 //   // Handle Confirm Assignment
 //   const handleConfirmAssignment = () => {
 //     if (!selectedPartner) {
-//       alert("⚠️ Please select a delivery partner!");
+//       showToast.warning("⚠️ Please select a delivery partner!");
 //       return;
 //     }
 
 //     setAssignmentStatus("assigned");
 //     setIsDeliveryModalOpen(false);
 
-//     alert(
+//     showToast.success(
 //       `✅ Delivery Partner Assigned!\n\n` +
 //         `Partner: ${selectedPartner.name}\n` +
 //         `Phone: ${selectedPartner.phone}\n` +
-//         `Vehicle: ${selectedPartner.vehicle} (${selectedPartner.vehicleNo})\n` +
+//         `Vehicle: ${selectedPartner.vehicle} (${selectedPartner.vehicleNo});\n` +
 //         `Bag: ${bagDetails.bagNo}\n\n` +
 //         `The delivery partner will arrive at the hub shortly.`,
 //     );
@@ -600,7 +586,7 @@
 //   // Handle Mark as Picked Up
 //   const handleMarkPickedUp = () => {
 //     if (assignmentStatus !== "assigned") {
-//       alert("⚠️ Please assign a delivery partner first!");
+//       showToast.warning("⚠️ Please assign a delivery partner first!");
 //       return;
 //     }
 
@@ -608,7 +594,7 @@
 //       confirm(`🚚 Confirm that ${selectedPartner.name} has picked up the bag?`)
 //     ) {
 //       setAssignmentStatus("picked_up");
-//       alert(
+//       showToast.success(
 //         `✅ Bag Picked Up!\n\n` +
 //           `Bag ${bagDetails.bagNo} has been picked up by ${selectedPartner.name}.\n` +
 //           `The package is now out for delivery.`,
@@ -938,6 +924,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import { BASE_URL } from "../../api/api";
+import { showToast } from "../../utils/toast";
 import {
   Package,
   QrCode,
@@ -1222,7 +1209,7 @@ const BagQRScan = () => {
           setProducts(transformedProducts);
         }
       } catch (error) {
-        alert(`Failed to load order data: ${error.message}`);
+        showToast.error(`Failed to load order data: ${error.message}`);
       } finally {
         setLoading(false);
       }
@@ -1339,13 +1326,7 @@ const BagQRScan = () => {
       // Auto-generate PDF if status is updated to "order_placed"
       if (status && status.toLowerCase() === "order_placed" && data.data?.orderNumber) {
         try {
-          console.log("========================================");
-          console.log("📄 AUTO-GENERATING INVOICE PDF (from status update):");
-          console.log("Order Number:", data.data.orderNumber);
-          console.log("Status:", status);
-          console.log("API Endpoint:", `${BASE_URL}/api/invoice/order/${data.data.orderNumber}/generate-pdf`);
-          console.log("========================================");
-
+          :");
           const pdfResponse = await fetch(
             `${BASE_URL}/api/invoice/order/${data.data.orderNumber}/generate-pdf`,
             {
@@ -1358,12 +1339,9 @@ const BagQRScan = () => {
           const pdfResult = await pdfResponse.json();
 
           if (pdfResponse.ok && pdfResult.success) {
-            console.log("✅ Invoice PDF generated successfully:", pdfResult);
-          } else {
-            console.warn("⚠️ Failed to generate invoice PDF:", pdfResult.message || "Unknown error");
-          }
+            } else {
+            }
         } catch (pdfError) {
-          console.error("❌ Error generating invoice PDF:", pdfError);
           // Don't throw error, just log it - status update was successful
         }
       }
@@ -1384,7 +1362,7 @@ const BagQRScan = () => {
         localStorage.getItem("token") || localStorage.getItem("authToken");
 
       if (!token) {
-        alert("⚠️ Authentication required. Please login again.");
+        showToast.warning("Authentication required. Please login again.");
         return;
       }
 
@@ -1393,7 +1371,7 @@ const BagQRScan = () => {
       const orderId = orderData?._id || id;
       
       if (!orderId) {
-        alert("⚠️ Order ID not found. Please wait for order data to load or refresh the page.");
+        showToast.warning("Order ID not found. Please wait for order data to load or refresh the page.");
         return;
       }
 
@@ -1401,14 +1379,13 @@ const BagQRScan = () => {
       const productId = product.productId || product._id;
       
       if (!productId) {
-        alert("⚠️ Product ID not found. This product may not be available in the system.\n\nPlease select a product with a valid Product ID.");
-        console.error("Product object missing productId:", product);
+        showToast.warning("Product ID not found. This product may not be available in the system. Please select a product with a valid Product ID.");
         return;
       }
       
       // Validate productId format (should be MongoDB ObjectId)
       if (typeof productId !== 'string' || productId.length < 10) {
-        alert("⚠️ Invalid Product ID format. Please select a valid product.");
+        showToast.warning("Invalid Product ID format. Please select a valid product.");
         return;
       }
 
@@ -1468,14 +1445,12 @@ const BagQRScan = () => {
       };
       setScanHistory([newScan, ...scanHistory]);
 
-      alert(
-        `✅ Extra Item Added Successfully!\n\n${product.name}\nQuantity: ${quantity}\n\nRemember to scan these items before sealing the bag.`,
-      );
+      showToast.success(`Extra Item Added Successfully! ${product.name} - Quantity: ${quantity}. Remember to scan these items before sealing the bag.`);
       setIsAddExtraItemModalOpen(false);
 
       // Optionally refresh order data to get updated items
     } catch (error) {
-      alert(`❌ Failed to add extra item: ${error.message}\n\nPlease try again.`);
+      showToast.error(`Failed to add extra item: ${error.message}. Please try again.`);
     }
   };
 
@@ -1488,7 +1463,7 @@ const BagQRScan = () => {
       )
     ) {
       setProducts(products.filter((p) => p.id !== productId));
-      alert(`✅ Extra item removed successfully!`);
+      showToast.success("Extra item removed successfully!");
     }
   };
 
@@ -1497,7 +1472,7 @@ const BagQRScan = () => {
     const scannedCode = scanInput.trim().toUpperCase();
 
     if (!scannedCode) {
-      alert("⚠️ Please enter or scan a QR code!");
+      showToast.warning("Please enter or scan a QR code!");
       return;
     }
 
@@ -1513,7 +1488,7 @@ const BagQRScan = () => {
       );
 
       if (productIndex === -1) {
-        alert("❌ Invalid QR Code! This item is not in this order.");
+        showToast.error("Invalid QR Code! This item is not in this order.");
         setScanInput("");
         return;
       }
@@ -1521,9 +1496,7 @@ const BagQRScan = () => {
       const product = products[productIndex];
 
       if (product.scanned >= product.quantity) {
-        alert(
-          `⚠️ ${product.name}\nAlready fully scanned! (${product.scanned}/${product.quantity})`,
-        );
+        showToast.warning(`${product.name} - Already fully scanned! (${product.scanned}/${product.quantity})`);
         setScanInput("");
         return;
       }
@@ -1532,9 +1505,7 @@ const BagQRScan = () => {
       if (!product.isExtra && product.productId) {
         const scanResult = await scanQRCode(product.productId);
         if (!scanResult.success || !scanResult.exists) {
-          alert(
-            `❌ QR Scan verification failed: ${scanResult.error || "Product not found"}\n\nTrying manual update...`,
-          );
+          showToast.warning(`QR Scan verification failed: ${scanResult.error || "Product not found"}. Trying manual update...`);
         }
       }
 
@@ -1562,16 +1533,11 @@ const BagQRScan = () => {
         });
       }
 
-      alert(
-        `✅ Item Scanned Successfully!\n${product.name}\nScanned: ${
-          product.scanned + 1
-        }/${product.quantity}${product.isExtra ? " (EXTRA ITEM)" : ""}`,
-      );
+      showToast.success(`Item Scanned Successfully! ${product.name} - Scanned: ${product.scanned + 1}/${product.quantity}${product.isExtra ? " (EXTRA ITEM)" : ""}`);
       setScanInput("");
       setIsScanModalOpen(false);
     } catch (error) {
-      console.error("Error during scan:", error);
-      alert(`❌ Error during scan: ${error.message}`);
+      showToast.error(`Error during scan: ${error.message}`);
     } finally {
       setIsScanningItem(false);
     }
@@ -1589,8 +1555,7 @@ const BagQRScan = () => {
       if (!product.isExtra && product.productId) {
         const scanResult = await scanQRCode(product.productId);
         if (!scanResult.success) {
-          console.warn("API scan failed, updating locally anyway");
-        }
+          }
       }
 
       const updatedProducts = [...products];
@@ -1654,11 +1619,6 @@ const BagQRScan = () => {
   // Calculate distance and time using lat/long
   useEffect(() => {
     if (isDeliveryAmountModalOpen && orderData) {
-      console.log("========================================");
-      console.log("📍 CALCULATING DISTANCE AND TIME");
-      console.log("========================================");
-      console.log("Order Data:", orderData);
-      
       // Set initial loading state
       setDistance("Calculating...");
       setExpectedTime("Calculating...");
@@ -1672,12 +1632,11 @@ const BagQRScan = () => {
           const storeAddr = orderData.items[0].vendor.storeAddress;
           vendorLat = parseFloat(storeAddr.latitude || storeAddr.lat);
           vendorLng = parseFloat(storeAddr.longitude || storeAddr.lng || storeAddr.lon);
-          console.log("Vendor coordinates:", { vendorLat, vendorLng });
-        } else if (orderData.vendor?.storeAddress) {
+          } else if (orderData.vendor?.storeAddress) {
           const storeAddr = orderData.vendor.storeAddress;
           vendorLat = parseFloat(storeAddr.latitude || storeAddr.lat);
           vendorLng = parseFloat(storeAddr.longitude || storeAddr.lng || storeAddr.lon);
-          console.log("Vendor coordinates (alt path):", { vendorLat, vendorLng });
+          :", { vendorLat, vendorLng });
         }
         
         // Get shipping address latitude and longitude
@@ -1687,11 +1646,10 @@ const BagQRScan = () => {
         if (orderData.shippingAddress) {
           shippingLat = parseFloat(orderData.shippingAddress.latitude || orderData.shippingAddress.lat);
           shippingLng = parseFloat(orderData.shippingAddress.longitude || orderData.shippingAddress.lng || orderData.shippingAddress.lon);
-          console.log("Shipping coordinates:", { shippingLat, shippingLng });
-        } else if (orderData.deliveryAddress) {
+          } else if (orderData.deliveryAddress) {
           shippingLat = parseFloat(orderData.deliveryAddress.latitude || orderData.deliveryAddress.lat);
           shippingLng = parseFloat(orderData.deliveryAddress.longitude || orderData.deliveryAddress.lng || orderData.deliveryAddress.lon);
-          console.log("Delivery coordinates (alt path):", { shippingLat, shippingLng });
+          :", { shippingLat, shippingLng });
         }
 
         // Check if we have valid coordinates
@@ -1703,9 +1661,7 @@ const BagQRScan = () => {
           if (!hasValidVendorCoords) missingParts.push("vendor coordinates");
           if (!hasValidShippingCoords) missingParts.push("shipping coordinates");
           
-          console.error(`❌ Latitude/Longitude not available or invalid: Missing ${missingParts.join(" and ")}`);
-          console.error("Vendor:", { vendorLat, vendorLng });
-          console.error("Shipping:", { shippingLat, shippingLng });
+          }`);
           setDistance("N/A");
           setExpectedTime("N/A");
           return;
@@ -1718,21 +1674,15 @@ const BagQRScan = () => {
           shippingLat,
           shippingLng
         );
-        console.log("Calculated distance (km):", distanceInKm);
+        :", distanceInKm);
 
         // Format and set distance
         const formattedDistance = formatDistance(distanceInKm);
         setDistance(formattedDistance);
-        console.log("Formatted distance:", formattedDistance);
-
         // Calculate and set estimated time
         const estimatedTime = calculateEstimatedTime(distanceInKm);
         setExpectedTime(estimatedTime);
-        console.log("Estimated time:", estimatedTime);
-        console.log("✅ Distance and time calculated successfully");
-        console.log("========================================");
-      } catch (error) {
-        console.error("❌ Error calculating distance and time:", error);
+        } catch (error) {
         setDistance("N/A");
         setExpectedTime("N/A");
       }
@@ -1759,7 +1709,7 @@ const BagQRScan = () => {
   // Handle Complete Packing & Seal Bag - Show delivery amount input first
   const handleCompletePacking = () => {
     if (!isPackingComplete) {
-      alert("⚠️ Please scan all items before sealing the bag!");
+      showToast.warning("Please scan all items before sealing the bag!");
       return;
     }
     // Open delivery amount modal
@@ -1849,12 +1799,10 @@ const BagQRScan = () => {
           const result = await updateOrderStatus("ready");
 
           if (!result.success) {
-            console.error("Failed to update order status:", result.error);
             // Don't show alert, just log the error
           }
         } catch (error) {
-          console.error("Error updating order status:", error);
-        }
+          }
       }, 15000); // 15 seconds delay
 
       // Show waiting animation
@@ -1895,7 +1843,7 @@ const BagQRScan = () => {
       
       setIsUpdatingStatus(false);
     } catch (error) {
-      alert(`❌ Failed to seal bag: ${error.message}`);
+      showToast.error(`Failed to seal bag: ${error.message}`);
       setIsUpdatingStatus(false);
     }
   };
@@ -1923,14 +1871,14 @@ const BagQRScan = () => {
       setSelectedPartner(null);
       setAssignmentStatus("pending");
       setNextExtraId(1000);
-      alert("🔄 Packing reset successfully!");
+      showToast.success("Packing reset successfully!");
     }
   };
 
   // Handle Assign Delivery Partner
   const handleAssignPartner = () => {
     if (!bagDetails.sealed) {
-      alert("⚠️ Please complete and seal the bag first!");
+      showToast.warning("Please complete and seal the bag first!");
       return;
     }
     setIsDeliveryModalOpen(true);
@@ -1939,17 +1887,15 @@ const BagQRScan = () => {
   // Handle Confirm Assignment
   const handleConfirmAssignment = () => {
     if (!selectedPartner) {
-      alert("⚠️ Please select a delivery partner!");
+      showToast.warning("Please select a delivery partner!");
       return;
     }
 
     setAssignmentStatus("assigned");
     setIsDeliveryModalOpen(false);
 
-    alert(
-      `✅ Delivery Partner Assigned!\n\n` +
-        `Partner: ${selectedPartner.name}\n` +
-        `Phone: ${selectedPartner.phone}\n` +
+    showToast.success(
+      `Delivery Partner Assigned! Partner: ${selectedPartner.name}, Phone: ${selectedPartner.phone}`
         `Vehicle: ${selectedPartner.vehicle} (${selectedPartner.vehicleNo})\n` +
         `Bag: ${bagDetails.bagNo}\n\n` +
         `The delivery partner will arrive at the hub shortly.`,
@@ -1959,7 +1905,7 @@ const BagQRScan = () => {
   // Handle Mark as Picked Up
   const handleMarkPickedUp = () => {
     if (assignmentStatus !== "assigned") {
-      alert("⚠️ Please assign a delivery partner first!");
+      showToast.warning("Please assign a delivery partner first!");
       return;
     }
 
@@ -1969,10 +1915,8 @@ const BagQRScan = () => {
       )
     ) {
       setAssignmentStatus("picked_up");
-      alert(
-        `✅ Bag Picked Up!\n\n` +
-          `Bag ${bagDetails.bagNo} has been picked up by ${selectedPartner.name}.\n` +
-          `The package is now out for delivery.`,
+      showToast.success(
+        `Bag Picked Up! Bag ${bagDetails.bagNo} has been picked up by ${selectedPartner.name}. The package is now out for delivery.`
       );
     }
   };

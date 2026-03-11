@@ -3,6 +3,7 @@ import DashboardLayout from "../../components/DashboardLayout";
 import { useLocation, useParams } from "react-router-dom";
 import { BASE_URL } from "../../api/api";
 import {
+import { showToast } from "../../utils/toast";
   Download,
   Printer,
   ArrowLeft,
@@ -71,7 +72,12 @@ const InvoiceViewPage = () => {
 
         const result = await response.json();
 
-        if (result.success && result.data && Array.isArray(result.data) && result.data.length > 0) {
+        if (
+          result.success &&
+          result.data &&
+          Array.isArray(result.data) &&
+          result.data.length > 0
+        ) {
           // API returns an array, take the first invoice
           const apiInvoice = result.data[0];
 
@@ -79,20 +85,26 @@ const InvoiceViewPage = () => {
           const formatUserAddress = (shippingAddress) => {
             if (!shippingAddress) return "Address not available";
             const parts = [];
-            if (shippingAddress.addressLine1) parts.push(shippingAddress.addressLine1);
-            if (shippingAddress.addressLine2) parts.push(shippingAddress.addressLine2);
+            if (shippingAddress.addressLine1)
+              parts.push(shippingAddress.addressLine1);
+            if (shippingAddress.addressLine2)
+              parts.push(shippingAddress.addressLine2);
             if (shippingAddress.city) parts.push(shippingAddress.city);
             if (shippingAddress.state) parts.push(shippingAddress.state);
             if (shippingAddress.pinCode) parts.push(shippingAddress.pinCode);
-            return parts.length > 0 ? parts.join(", ") : "Address not available";
+            return parts.length > 0
+              ? parts.join(", ")
+              : "Address not available";
           };
 
           // Format vendor address from storeAddress object
           const formatVendorAddress = (storeAddress) => {
             if (!storeAddress) return "";
             const parts = [];
-            if (storeAddress.addressLine1) parts.push(storeAddress.addressLine1);
-            if (storeAddress.addressLine2) parts.push(storeAddress.addressLine2);
+            if (storeAddress.addressLine1)
+              parts.push(storeAddress.addressLine1);
+            if (storeAddress.addressLine2)
+              parts.push(storeAddress.addressLine2);
             if (storeAddress.city) parts.push(storeAddress.city);
             if (storeAddress.state) parts.push(storeAddress.state);
             if (storeAddress.pinCode) parts.push(storeAddress.pinCode);
@@ -110,9 +122,18 @@ const InvoiceViewPage = () => {
               apiInvoice.orderNumber || apiInvoice.order?.orderNumber || "N/A",
 
             // User details - check multiple possible fields
-            user: apiInvoice.user?.userName || apiInvoice.user?.name || apiInvoice.user?.fullName || "N/A",
-            userEmail: apiInvoice.user?.email || apiInvoice.user?.emailId || null,
-            userPhone: apiInvoice.user?.contactNumber || apiInvoice.user?.phone || apiInvoice.user?.mobile || "N/A",
+            user:
+              apiInvoice.user?.userName ||
+              apiInvoice.user?.name ||
+              apiInvoice.user?.fullName ||
+              "N/A",
+            userEmail:
+              apiInvoice.user?.email || apiInvoice.user?.emailId || null,
+            userPhone:
+              apiInvoice.user?.contactNumber ||
+              apiInvoice.user?.phone ||
+              apiInvoice.user?.mobile ||
+              "N/A",
             userAddress: formatUserAddress(apiInvoice.user?.shippingAddress),
             userId: apiInvoice.user?._id,
 
@@ -124,8 +145,13 @@ const InvoiceViewPage = () => {
               "N/A",
             vendorId: apiInvoice.vendor?._id,
             vendorAddress: formatVendorAddress(apiInvoice.vendor?.storeAddress),
-            vendorEmail: apiInvoice.vendor?.email || apiInvoice.vendor?.emailId || "",
-            vendorPhone: apiInvoice.vendor?.contactNumber || apiInvoice.vendor?.phone || apiInvoice.vendor?.mobile || "",
+            vendorEmail:
+              apiInvoice.vendor?.email || apiInvoice.vendor?.emailId || "",
+            vendorPhone:
+              apiInvoice.vendor?.contactNumber ||
+              apiInvoice.vendor?.phone ||
+              apiInvoice.vendor?.mobile ||
+              "",
 
             // Payment details
             payment: apiInvoice.payment?.method?.toUpperCase() || "COD",
@@ -138,7 +164,8 @@ const InvoiceViewPage = () => {
               sku: item.sku || item.product?.skus?.[0]?.sku || "N/A",
               hssn: item.hssn || item.product?.skuHsn || "N/A",
               description: item.description || item.productName || "N/A",
-              productName: item.productName || item.product?.productName || "N/A",
+              productName:
+                item.productName || item.product?.productName || "N/A",
               quantity: item.quantity || 0,
               unitPrice: item.unitPrice || 0,
               total: item.totalPrice || item.quantity * item.unitPrice || 0,
@@ -152,7 +179,11 @@ const InvoiceViewPage = () => {
             totalGst:
               apiInvoice.pricing?.totalGst || apiInvoice.pricing?.tax || 0,
             handlingCharges: apiInvoice.pricing?.handlingCharge || 0,
-            deliveryCharge: apiInvoice.pricing?.deliveryCharges || apiInvoice.pricing?.deliveryCharge || apiInvoice.order?.deliveryCharge || 0,
+            deliveryCharge:
+              apiInvoice.pricing?.deliveryCharges ||
+              apiInvoice.pricing?.deliveryCharge ||
+              apiInvoice.order?.deliveryCharge ||
+              0,
             discount: apiInvoice.pricing?.discount || 0,
             total: apiInvoice.pricing?.totalAmount || apiInvoice.amount || 0,
 
@@ -170,7 +201,6 @@ const InvoiceViewPage = () => {
           throw new Error("No invoice found for this order");
         }
       } catch (err) {
-        console.error("Error fetching invoice details:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -190,14 +220,14 @@ const InvoiceViewPage = () => {
 
   const handleDownload = async () => {
     if (!invoiceRef.current) {
-      alert("Invoice content not available for download");
+      showToast.info("Invoice content not available for download");
       return;
     }
 
     try {
       // Dynamic import for html2pdf.js to avoid build issues
       const html2pdf = (await import("html2pdf.js")).default;
-      
+
       const element = invoiceRef.current;
       const opt = {
         margin: [10, 10, 10, 10],
@@ -212,12 +242,10 @@ const InvoiceViewPage = () => {
         .from(element)
         .save()
         .catch((err) => {
-          console.error("Error generating PDF:", err);
-          alert("Failed to download invoice. Please try again.");
+          showToast.error("Failed to download invoice. Please try again.");
         });
     } catch (error) {
-      console.error("Error loading html2pdf:", error);
-      alert("Failed to load PDF generator. Please try again.");
+      showToast.error("Failed to load PDF generator. Please try again.");
     }
   };
 
@@ -411,7 +439,9 @@ const InvoiceViewPage = () => {
               </div>
 
               {/* Company and Customer Info */}
-              <div className={`grid gap-6 mb-8 ${invoice.user && invoice.user !== "N/A" ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"}`}>
+              <div
+                className={`grid gap-6 mb-8 ${invoice.user && invoice.user !== "N/A" ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"}`}
+              >
                 {/* Company Info */}
                 <div
                   className="bg-white rounded-sm p-6 border-2 shadow-md"
@@ -474,43 +504,46 @@ const InvoiceViewPage = () => {
                       </p>
                     </div>
                     {/* Vendor Info in Company Section if no user */}
-                    {(!invoice.user || invoice.user === "N/A") && invoice.vendor !== "N/A" && (
-                      <div
-                        className="mt-3 pt-3 border-t-2"
-                        style={{ borderColor: "#FF7B1D" }}
-                      >
-                        <p className="text-sm font-bold text-black mb-2">
-                          Vendor: {invoice.vendor}
-                        </p>
-                        {invoice.vendorEmail && invoice.vendorEmail.trim() !== "" && (
-                          <div className="flex items-start gap-2 text-xs text-black">
-                            <Mail
-                              className="w-3 h-3 mt-0.5"
-                              style={{ color: "#FF7B1D" }}
-                            />
-                            <span>{invoice.vendorEmail}</span>
-                          </div>
-                        )}
-                        {invoice.vendorPhone && (
-                          <div className="flex items-start gap-2 text-xs text-black">
-                            <Phone
-                              className="w-3 h-3 mt-0.5"
-                              style={{ color: "#FF7B1D" }}
-                            />
-                            <span>{invoice.vendorPhone}</span>
-                          </div>
-                        )}
-                        {invoice.vendorAddress && invoice.vendorAddress.trim() !== "" && (
-                          <div className="flex items-start gap-2 text-xs text-black">
-                            <MapPin
-                              className="w-3 h-3 mt-0.5"
-                              style={{ color: "#FF7B1D" }}
-                            />
-                            <span>{invoice.vendorAddress}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    {(!invoice.user || invoice.user === "N/A") &&
+                      invoice.vendor !== "N/A" && (
+                        <div
+                          className="mt-3 pt-3 border-t-2"
+                          style={{ borderColor: "#FF7B1D" }}
+                        >
+                          <p className="text-sm font-bold text-black mb-2">
+                            Vendor: {invoice.vendor}
+                          </p>
+                          {invoice.vendorEmail &&
+                            invoice.vendorEmail.trim() !== "" && (
+                              <div className="flex items-start gap-2 text-xs text-black">
+                                <Mail
+                                  className="w-3 h-3 mt-0.5"
+                                  style={{ color: "#FF7B1D" }}
+                                />
+                                <span>{invoice.vendorEmail}</span>
+                              </div>
+                            )}
+                          {invoice.vendorPhone && (
+                            <div className="flex items-start gap-2 text-xs text-black">
+                              <Phone
+                                className="w-3 h-3 mt-0.5"
+                                style={{ color: "#FF7B1D" }}
+                              />
+                              <span>{invoice.vendorPhone}</span>
+                            </div>
+                          )}
+                          {invoice.vendorAddress &&
+                            invoice.vendorAddress.trim() !== "" && (
+                              <div className="flex items-start gap-2 text-xs text-black">
+                                <MapPin
+                                  className="w-3 h-3 mt-0.5"
+                                  style={{ color: "#FF7B1D" }}
+                                />
+                                <span>{invoice.vendorAddress}</span>
+                              </div>
+                            )}
+                        </div>
+                      )}
                   </div>
                 </div>
 
@@ -533,15 +566,17 @@ const InvoiceViewPage = () => {
                       <p className="text-xl font-bold text-black">
                         {invoice.user}
                       </p>
-                      {invoice.userEmail && invoice.userEmail.trim() !== "" && invoice.userEmail !== "N/A" && (
-                        <div className="flex items-start gap-2 text-sm text-black">
-                          <Mail
-                            className="w-4 h-4 mt-0.5"
-                            style={{ color: "#FF7B1D" }}
-                          />
-                          <span>{invoice.userEmail}</span>
-                        </div>
-                      )}
+                      {invoice.userEmail &&
+                        invoice.userEmail.trim() !== "" &&
+                        invoice.userEmail !== "N/A" && (
+                          <div className="flex items-start gap-2 text-sm text-black">
+                            <Mail
+                              className="w-4 h-4 mt-0.5"
+                              style={{ color: "#FF7B1D" }}
+                            />
+                            <span>{invoice.userEmail}</span>
+                          </div>
+                        )}
                       {invoice.userPhone && invoice.userPhone !== "N/A" && (
                         <div className="flex items-start gap-2 text-sm text-black">
                           <Phone
@@ -551,15 +586,17 @@ const InvoiceViewPage = () => {
                           <span>{invoice.userPhone}</span>
                         </div>
                       )}
-                      {invoice.userAddress && invoice.userAddress.trim() !== "" && invoice.userAddress !== "Address not available" && (
-                        <div className="flex items-start gap-2 text-sm text-black">
-                          <MapPin
-                            className="w-4 h-4 mt-0.5"
-                            style={{ color: "#FF7B1D" }}
-                          />
-                          <span>{invoice.userAddress}</span>
-                        </div>
-                      )}
+                      {invoice.userAddress &&
+                        invoice.userAddress.trim() !== "" &&
+                        invoice.userAddress !== "Address not available" && (
+                          <div className="flex items-start gap-2 text-sm text-black">
+                            <MapPin
+                              className="w-4 h-4 mt-0.5"
+                              style={{ color: "#FF7B1D" }}
+                            />
+                            <span>{invoice.userAddress}</span>
+                          </div>
+                        )}
                       {invoice.vendor !== "N/A" && (
                         <div
                           className="mt-3 pt-3 border-t-2"
@@ -568,15 +605,16 @@ const InvoiceViewPage = () => {
                           <p className="text-sm font-bold text-black mb-2">
                             Vendor: {invoice.vendor}
                           </p>
-                          {invoice.vendorEmail && invoice.vendorEmail.trim() !== "" && (
-                            <div className="flex items-start gap-2 text-xs text-black">
-                              <Mail
-                                className="w-3 h-3 mt-0.5"
-                                style={{ color: "#FF7B1D" }}
-                              />
-                              <span>{invoice.vendorEmail}</span>
-                            </div>
-                          )}
+                          {invoice.vendorEmail &&
+                            invoice.vendorEmail.trim() !== "" && (
+                              <div className="flex items-start gap-2 text-xs text-black">
+                                <Mail
+                                  className="w-3 h-3 mt-0.5"
+                                  style={{ color: "#FF7B1D" }}
+                                />
+                                <span>{invoice.vendorEmail}</span>
+                              </div>
+                            )}
                           {invoice.vendorPhone && (
                             <div className="flex items-start gap-2 text-xs text-black">
                               <Phone
@@ -586,15 +624,16 @@ const InvoiceViewPage = () => {
                               <span>{invoice.vendorPhone}</span>
                             </div>
                           )}
-                          {invoice.vendorAddress && invoice.vendorAddress.trim() !== "" && (
-                            <div className="flex items-start gap-2 text-xs text-black">
-                              <MapPin
-                                className="w-3 h-3 mt-0.5"
-                                style={{ color: "#FF7B1D" }}
-                              />
-                              <span>{invoice.vendorAddress}</span>
-                            </div>
-                          )}
+                          {invoice.vendorAddress &&
+                            invoice.vendorAddress.trim() !== "" && (
+                              <div className="flex items-start gap-2 text-xs text-black">
+                                <MapPin
+                                  className="w-3 h-3 mt-0.5"
+                                  style={{ color: "#FF7B1D" }}
+                                />
+                                <span>{invoice.vendorAddress}</span>
+                              </div>
+                            )}
                         </div>
                       )}
                     </div>

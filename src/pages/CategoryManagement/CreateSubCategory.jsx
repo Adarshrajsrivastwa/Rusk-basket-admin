@@ -397,6 +397,7 @@ import { Eye, Edit, Trash2 } from "lucide-react";
 import AddSubCategoryModal from "../../components/AddSubCategoryModal ";
 import { BASE_URL } from "../../api/api";
 import { useNavigate } from "react-router-dom";
+import { showToast } from "../../utils/toast";
 
 const CreateSubCategory = () => {
   const [activeTab, setActiveTab] = useState("all");
@@ -437,8 +438,6 @@ const CreateSubCategory = () => {
       }
 
       const data = await response.json();
-      console.log("Fetched sub-categories:", data);
-
       // Transform API data to match our table structure
       const transformedData = (data.data || []).map((item) => ({
         id: item._id,
@@ -455,8 +454,7 @@ const CreateSubCategory = () => {
 
       setSubCategories(transformedData);
     } catch (err) {
-      console.error("Error fetching sub-categories:", err);
-      alert("Failed to load sub-categories. Please try again.");
+      showToast.error("Failed to load sub-categories. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -491,7 +489,6 @@ const CreateSubCategory = () => {
   // Listen for subcategory creation events from modal
   useEffect(() => {
     const handleSubCategoryCreated = () => {
-      console.log("SubCategory created - refreshing list...");
       fetchSubCategories();
     };
 
@@ -537,13 +534,12 @@ const CreateSubCategory = () => {
 
         // Remove from local state
         setSubCategories((prev) => prev.filter((item) => item.id !== id));
-        alert("Sub-category deleted successfully!");
+        showToast.success("Sub-category deleted successfully!");
 
         // Trigger event to refresh category page counts
         window.dispatchEvent(new CustomEvent("subcategoryDeleted"));
       } catch (err) {
-        console.error("Error deleting sub-category:", err);
-        alert("Failed to delete sub-category. Please try again.");
+        showToast.error("Failed to delete sub-category. Please try again.");
       }
     }
   };
@@ -582,8 +578,7 @@ const CreateSubCategory = () => {
       // Open edit modal
       setIsEditModalOpen(true);
     } catch (err) {
-      console.error("Error fetching sub-category details:", err);
-      alert("Failed to load sub-category details. Please try again.");
+      showToast.error("Failed to load sub-category details. Please try again.");
     }
   };
 

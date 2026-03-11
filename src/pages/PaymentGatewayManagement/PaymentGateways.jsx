@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { BASE_URL } from "../../api/api";
 import api from "../../api/api";
+import { showToast } from "../../utils/toast";
 
 const API_URL = `${BASE_URL}/api/payment-gateway`;
 
@@ -56,11 +57,10 @@ const PaymentGatewayManagement = () => {
       if (response.data.success) {
         setGateways(response.data.data || []);
       } else {
-        alert("Failed to load payment gateways");
+        showToast.error("Failed to load payment gateways");
       }
     } catch (error) {
-      console.error("Error loading gateways:", error);
-      alert("Failed to load payment gateways. Check if backend is running.");
+      showToast.error("Failed to load payment gateways. Check if backend is running.");
     } finally {
       setLoading(false);
     }
@@ -154,27 +154,28 @@ const PaymentGatewayManagement = () => {
       );
       if (response.data.success) {
         loadGateways();
-        alert("Gateway status updated successfully");
+        showToast.success("Gateway status updated successfully");
       } else {
-        alert("Failed to update gateway status");
+        showToast.error("Failed to update gateway status");
       }
     } catch (error) {
-      console.error("Error toggling gateway:", error);
-      alert("Failed to update gateway status");
+      showToast.error("Failed to update gateway status");
     }
   };
 
   // ================= SUBMIT =================
   const handleSubmit = async () => {
     if (!formData.name.trim() || !formData.displayName.trim()) {
-      alert("Name and Display Name are required");
+      showToast.info("Name and Display Name are required");
       return;
     }
 
     if (
-      !["cashfree", "razorpay", "phonepay"].includes(formData.name.toLowerCase())
+      !["cashfree", "razorpay", "phonepay"].includes(
+        formData.name.toLowerCase(),
+      )
     ) {
-      alert("Gateway name must be one of: cashfree, razorpay, phonepay");
+      showToast.info("Gateway name must be one of: cashfree, razorpay, phonepay");
       return;
     }
 
@@ -204,13 +205,12 @@ const PaymentGatewayManagement = () => {
       if (response.data.success) {
         setIsModalOpen(false);
         loadGateways();
-        alert(response.data.message || "Gateway saved successfully");
+        showToast.success(response.data.message || "Gateway saved successfully");
       } else {
         throw new Error(response.data.message || "Failed to save gateway");
       }
     } catch (error) {
-      console.error("Error saving gateway:", error);
-      alert(
+      showToast.error(
         error.response?.data?.message ||
           error.message ||
           "Failed to save gateway",
@@ -231,13 +231,12 @@ const PaymentGatewayManagement = () => {
       const response = await api.delete(`/api/payment-gateway/${id}`);
       if (response.data.success) {
         loadGateways();
-        alert(response.data.message || "Gateway deleted successfully");
+        showToast.success(response.data.message || "Gateway deleted successfully");
       } else {
         throw new Error(response.data.message || "Failed to delete gateway");
       }
     } catch (error) {
-      console.error("Error deleting gateway:", error);
-      alert(error.response?.data?.message || "Delete failed");
+      showToast.error(error.response?.data?.message || "Delete failed");
     }
   };
 
@@ -257,7 +256,7 @@ const PaymentGatewayManagement = () => {
   // ================= TEST CREDENTIALS =================
   const handleTestCredentials = async (isTest = false) => {
     if (!formData.name) {
-      alert("Please select a gateway first");
+      showToast.warning("Please select a gateway first");
       return;
     }
 
@@ -271,7 +270,7 @@ const PaymentGatewayManagement = () => {
         !credentialsToTest?.razorpayKeyId ||
         !credentialsToTest?.razorpayKeySecret
       ) {
-        alert("Please enter both Key ID and Key Secret");
+        showToast.warning("Please enter both Key ID and Key Secret");
         return;
       }
     } else if (formData.name === "phonepay") {
@@ -279,7 +278,7 @@ const PaymentGatewayManagement = () => {
         !credentialsToTest?.phonepayMerchantId ||
         !credentialsToTest?.phonepaySaltKey
       ) {
-        alert("Please enter Merchant ID and Salt Key");
+        showToast.warning("Please enter Merchant ID and Salt Key");
         return;
       }
     } else if (formData.name === "cashfree") {
@@ -287,7 +286,7 @@ const PaymentGatewayManagement = () => {
         !credentialsToTest?.cashfreeAppId ||
         !credentialsToTest?.cashfreeSecretKey
       ) {
-        alert("Please enter App ID and Secret Key");
+        showToast.warning("Please enter App ID and Secret Key");
         return;
       }
     }
@@ -320,7 +319,6 @@ const PaymentGatewayManagement = () => {
         }));
       }
     } catch (error) {
-      console.error("Error testing credentials:", error);
       setTestResult((prev) => ({
         ...prev,
         [isTest ? "test" : "live"]: {
@@ -339,7 +337,7 @@ const PaymentGatewayManagement = () => {
   // ================= UI =================
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-0 p-0 ml-6">
+      <div className="min-h-screen bg-gray-0 p-0 mt-2 ml-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
@@ -903,7 +901,8 @@ const PaymentGatewayManagement = () => {
                                   }
                                   placeholder="YOUR_PRODUCTION_SECRET_KEY"
                                   value={
-                                    formData.credentials?.cashfreeSecretKey || ""
+                                    formData.credentials?.cashfreeSecretKey ||
+                                    ""
                                   }
                                   onChange={(e) =>
                                     updateCredentials(

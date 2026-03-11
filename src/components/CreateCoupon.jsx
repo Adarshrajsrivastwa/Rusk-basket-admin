@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { BASE_URL } from "../api/api";
+import { showToast } from "../utils/toast";
 
 export default function CreateOfferPopup({
   isOpen,
@@ -146,7 +147,7 @@ export default function CreateOfferPopup({
         );
       }
 
-      alert(
+      showToast.success(
         data.message || `Coupon ${isEdit ? "updated" : "created"} successfully`
       );
 
@@ -174,7 +175,6 @@ export default function CreateOfferPopup({
 
       onClose();
     } catch (err) {
-      console.error(err);
       setError(err.message || "Something went wrong");
     } finally {
       setLoading(false);
@@ -409,7 +409,7 @@ export default function CreateOfferPopup({
               <button
                 type="button"
                 className="bg-orange-500 text-white px-3 py-1 rounded-sm text-sm"
-                onClick={() => console.log("Searching:", formData.searchTerm)}
+                onClick={() => }
               >
                 Search
               </button>

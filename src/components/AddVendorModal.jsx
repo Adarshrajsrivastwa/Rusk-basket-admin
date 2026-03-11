@@ -711,14 +711,14 @@
 //             storeLat: position.coords.latitude.toFixed(6),
 //             storeLong: position.coords.longitude.toFixed(6),
 //           }));
-//           alert("Location fetched successfully!");
+//           showToast.success("Location fetched successfully!");
 //         },
 //         () => {
-//           alert("Unable to fetch location. Please enter manually.");
+//           showToast.warning("Unable to fetch location. Please enter manually.");
 //         }
 //       );
 //     } else {
-//       alert("Geolocation is not supported by this browser.");
+//       showToast.info("Geolocation is not supported by this browser.");
 //     }
 //   };
 
@@ -830,10 +830,10 @@
 //   const handleVerifyOtp = () => {
 //     const enteredOtp = otp.join("");
 //     if (enteredOtp.length === 4) {
-//       alert("Vendor added successfully!");
+//       showToast.success("Vendor added successfully!");
 //       onClose();
 //     } else {
-//       alert("Please enter complete OTP");
+//       showToast.warning("Please enter complete OTP");
 //     }
 //   };
 
@@ -1441,6 +1441,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import api from "../api/api";
+import { showToast } from "../utils/toast";
 
 const AddVendorModal = ({
   isOpen,
@@ -1482,6 +1483,7 @@ const AddVendorModal = ({
     bankName: "",
     cancelCheque: null,
     handlingChargePercentage: "20",
+    serviceRadius: "5",
   };
 
   const [formData, setFormData] = useState(emptyForm);
@@ -1547,6 +1549,9 @@ const AddVendorModal = ({
         handlingChargePercentage: vendorData.handlingChargePercentage
           ? String(vendorData.handlingChargePercentage)
           : "20",
+        serviceRadius: vendorData.serviceRadius
+          ? String(vendorData.serviceRadius)
+          : "5",
       });
     } else {
       setFormData({ ...emptyForm });
@@ -1703,7 +1708,7 @@ const AddVendorModal = ({
 
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
-      alert("Geolocation not supported.");
+      showToast.info("Geolocation not supported.");
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -1714,9 +1719,9 @@ const AddVendorModal = ({
           markerInstanceRef.current.setLatLng(p);
           mapInstanceRef.current.setView(p, 15);
         }
-        alert("Location fetched successfully!");
+        showToast.success("Location fetched successfully!");
       },
-      () => alert("Unable to fetch location. Please use map to select."),
+      () => showToast.warning("Unable to fetch location. Please use map to select.");,
     );
   };
 
@@ -1773,6 +1778,11 @@ const AddVendorModal = ({
       if (isNaN(p) || p < 0 || p > 100)
         e.handlingChargePercentage = "Must be 0–100";
     }
+    if (formData.serviceRadius && formData.serviceRadius.trim()) {
+      const sr = parseFloat(formData.serviceRadius);
+      if (isNaN(sr) || sr < 0.1)
+        e.serviceRadius = "Service radius must be at least 0.1 km";
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -1811,6 +1821,11 @@ const AddVendorModal = ({
     if (formData.age) fd.append("age", s(formData.age));
     fd.append("storeName", s(formData.storeName));
     fd.append("handlingChargePercentage", s(formData.handlingChargePercentage));
+    // Service radius: send default 5 if empty (backend also defaults to 5, but sending explicitly)
+    const serviceRadius = formData.serviceRadius && formData.serviceRadius.trim() 
+      ? parseFloat(formData.serviceRadius) 
+      : 5;
+    fd.append("serviceRadius", serviceRadius);
     fd.append("storeAddressLine1", s(formData.storeAddress1));
     if (formData.storeAddress2)
       fd.append("storeAddressLine2", s(formData.storeAddress2));
@@ -1894,6 +1909,9 @@ const AddVendorModal = ({
           handlingChargePercentage: parseFloat(
             formData.handlingChargePercentage,
           ),
+          ...(formData.serviceRadius && formData.serviceRadius.trim() && {
+            serviceRadius: parseFloat(formData.serviceRadius),
+          }),
           storeAddressLine1: formData.storeAddress1.trim(),
           ...(formData.storeAddress2 && {
             storeAddressLine2: formData.storeAddress2.trim(),
@@ -2349,6 +2367,29 @@ const AddVendorModal = ({
                     {errors.handlingChargePercentage}
                   </p>
                 )}
+              </div>
+              <div>
+                <label className="block text-sm text-gray-700 font-bold mb-1">
+                  Service Radius (km)
+                </label>
+                <input
+                  id="serviceRadius"
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  value={formData.serviceRadius}
+                  onChange={handleInputChange}
+                  placeholder="5.0"
+                  className={inputCls("serviceRadius")}
+                />
+                {errors.serviceRadius && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.serviceRadius}
+                  </p>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Minimum: 0.1 km (Default: 5 km if not provided)
+                </p>
               </div>
             </div>
 

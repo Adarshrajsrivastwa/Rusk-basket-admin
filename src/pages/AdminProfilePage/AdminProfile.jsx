@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import api from "../../api/api";
 import {
+import { showToast } from "../../utils/toast";
   UserIcon,
   EnvelopeIcon,
   PhoneIcon,
@@ -206,7 +207,6 @@ const AdminProfile = () => {
           setError(result.message || "Failed to fetch profile data");
         }
       } catch (error) {
-        console.error("Error fetching profile:", error);
         setError(
           error.response?.data?.message ||
           error.message ||
@@ -233,7 +233,7 @@ const AdminProfile = () => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        alert("File size should be less than 5MB");
+        showToast.info("File size should be less than 5MB");
         return;
       }
       setProfileImage(file);
@@ -256,7 +256,7 @@ const AdminProfile = () => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        alert("File size should be less than 5MB");
+        showToast.info("File size should be less than 5MB");
         return;
       }
       setCompanyLogo(file);
@@ -383,7 +383,6 @@ const AdminProfile = () => {
         }
       }
     } catch (error) {
-      console.error("Error updating profile:", error);
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.error ||
@@ -391,13 +390,13 @@ const AdminProfile = () => {
         "Error updating profile data. Please check console for details.";
       setError(errorMessage);
       if (error.response?.status === 413)
-        alert("File too large! Please upload an image smaller than 5MB.");
+        showToast.warning("File too large! Please upload an image smaller than 5MB.");
       else if (error.response?.status === 400)
-        alert(
+        showToast.warning(
           "Invalid request or file. Please check your data and try again.",
         );
       else if (error.response?.status === 500)
-        alert("Server error. Please try again later.");
+        showToast.error("Server error. Please try again later.");
     } finally {
       setIsSaving(false);
     }

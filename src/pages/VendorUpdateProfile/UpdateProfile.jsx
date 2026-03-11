@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import {
+import { showToast } from "../../utils/toast";
   User,
   Store,
   MapPin,
@@ -189,10 +190,9 @@ const VendorProfile = () => {
     const file = e.target.files[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
-        console.warn("Non-image file selected, preview may not be available");
-      }
+        }
       if (file.size > 5 * 1024 * 1024) {
-        alert("Image size should be less than 5MB");
+        showToast.info("Image size should be less than 5MB");
         return;
       }
       setProfileImage(file);
@@ -206,10 +206,9 @@ const VendorProfile = () => {
     const file = e.target.files[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
-        console.warn("Non-image file selected, preview may not be available");
-      }
+        }
       if (file.size > 5 * 1024 * 1024) {
-        alert("Image size should be less than 5MB");
+        showToast.info("Image size should be less than 5MB");
         return;
       }
       setStoreImage(file);

@@ -1,3 +1,4 @@
+import { showToast } from "./toast";
 /**
  * Payment Utility Functions
  * Handles payment URL processing and formatting
@@ -12,7 +13,6 @@
  */
 export const getPaymentUrl = (paymentResponse) => {
   if (!paymentResponse) {
-    console.error("Payment response is required");
     return null;
   }
 
@@ -45,8 +45,7 @@ export const openPaymentUrl = (paymentResponse) => {
   if (url) {
     window.open(url, "_blank", "noopener,noreferrer");
   } else {
-    console.error("Unable to generate payment URL");
-    alert("Payment URL is not available");
+    showToast.info("Payment URL is not available");
   }
 };
 
@@ -58,7 +57,6 @@ export const openPaymentUrl = (paymentResponse) => {
 export const copyPaymentUrl = async (paymentResponse) => {
   const url = getPaymentUrl(paymentResponse);
   if (!url) {
-    console.error("Unable to generate payment URL");
     return false;
   }
 
@@ -66,7 +64,6 @@ export const copyPaymentUrl = async (paymentResponse) => {
     await navigator.clipboard.writeText(url);
     return true;
   } catch (err) {
-    console.error("Failed to copy URL to clipboard:", err);
     // Fallback: create temporary textarea and copy
     const textarea = document.createElement("textarea");
     textarea.value = url;

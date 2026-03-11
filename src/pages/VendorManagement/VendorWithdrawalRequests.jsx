@@ -40,46 +40,25 @@
 //         params.vendorId = vendorIdFilter;
 //       }
 
-//       console.log("========================================");
-//       console.log("📥 FETCHING VENDOR WITHDRAWAL REQUESTS:");
-//       console.log("API Endpoint: /api/admin/vendors/withdrawal-requests");
-//       console.log("Params:", params);
-//       console.log("========================================");
-
-//       const response = await api.get(
+//       //       //       //       //       //       const response = await api.get(
 //         "/api/admin/vendors/withdrawal-requests",
 //         { params }
 //       );
 
-//       console.log("========================================");
-//       console.log("✅ RESPONSE RECEIVED:");
-//       console.log("Status:", response.status);
-//       console.log("Full response:", response.data);
-//       console.log("========================================");
-
-//       const result = response.data;
+//       //       //       //       //       //       const result = response.data;
 
 //       if (result.success) {
 //         const requestsData = result.data || [];
-//         console.log("========================================");
-//         console.log("📋 REQUESTS DATA:");
-//         console.log("Total requests:", requestsData.length);
-//         if (requestsData.length > 0) {
-//           console.log("First request structure:", requestsData[0]);
-//           console.log("First request keys:", Object.keys(requestsData[0]));
-//           console.log("First request _id:", requestsData[0]._id);
-//           console.log("First request requestId:", requestsData[0].requestId);
-//         }
-//         console.log("========================================");
-//         setRequests(requestsData);
+//         //         //         //         if (requestsData.length > 0) {
+//           //           );
+//           //           //         }
+//         //         setRequests(requestsData);
 //       } else {
 //         setError(result.message || "Failed to fetch withdrawal requests");
 //         setRequests([]);
 //       }
 //     } catch (error) {
-//       console.error("Error fetching withdrawal requests:", error);
-
-//       // Check for backend routing issue
+//       //       // Check for backend routing issue
 //       if (error.response?.status === 500) {
 //         const errorData = error.response?.data;
 //         if (typeof errorData === 'string' && errorData.includes('Cast to ObjectId failed')) {
@@ -115,8 +94,7 @@
 //   const handleApprove = async (requestId) => {
 //     // Validate requestId
 //     if (!requestId || requestId === "undefined") {
-//       console.error("Invalid requestId:", requestId);
-//       setError("Invalid request ID. Please refresh the page and try again.");
+//       //       setError("Invalid request ID. Please refresh the page and try again.");
 //       return;
 //     }
 
@@ -133,24 +111,11 @@
 //       setError(null);
 //       setSuccess(null);
 
-//       console.log("========================================");
-//       console.log("✅ APPROVING WITHDRAWAL REQUEST:");
-//       console.log("Request ID:", requestId);
-//       console.log("API Endpoint: /api/admin/vendors/withdrawal-requests/" + requestId + "/approve");
-//       console.log("Method: PUT");
-//       console.log("========================================");
-
-//       const response = await api.put(
+//       //       //       //       //       //       //       const response = await api.put(
 //         `/api/admin/vendors/withdrawal-requests/${requestId}/approve`
 //       );
 
-//       console.log("========================================");
-//       console.log("✅ APPROVE RESPONSE:");
-//       console.log("Status:", response.status);
-//       console.log("Response:", response.data);
-//       console.log("========================================");
-
-//       const result = response.data;
+//       //       //       //       //       //       const result = response.data;
 
 //       if (result.success) {
 //         setSuccess("Withdrawal request approved successfully!");
@@ -160,8 +125,7 @@
 //         setError(result.message || "Failed to approve request");
 //       }
 //     } catch (error) {
-//       console.error("Error approving request:", error);
-//       setError(
+//       //       setError(
 //         error.response?.data?.message || "Error approving withdrawal request"
 //       );
 //     } finally {
@@ -173,8 +137,7 @@
 //   const handleReject = async (requestId) => {
 //     // Validate requestId
 //     if (!requestId || requestId === "undefined") {
-//       console.error("Invalid requestId:", requestId);
-//       setError("Invalid request ID. Please refresh the page and try again.");
+//       //       setError("Invalid request ID. Please refresh the page and try again.");
 //       return;
 //     }
 
@@ -191,24 +154,11 @@
 //       setError(null);
 //       setSuccess(null);
 
-//       console.log("========================================");
-//       console.log("❌ REJECTING WITHDRAWAL REQUEST:");
-//       console.log("Request ID:", requestId);
-//       console.log("API Endpoint: /api/admin/vendors/withdrawal-requests/" + requestId + "/reject");
-//       console.log("Method: PUT");
-//       console.log("========================================");
-
-//       const response = await api.put(
+//       //       //       //       //       //       //       const response = await api.put(
 //         `/api/admin/vendors/withdrawal-requests/${requestId}/reject`
 //       );
 
-//       console.log("========================================");
-//       console.log("❌ REJECT RESPONSE:");
-//       console.log("Status:", response.status);
-//       console.log("Response:", response.data);
-//       console.log("========================================");
-
-//       const result = response.data;
+//       //       //       //       //       //       const result = response.data;
 
 //       if (result.success) {
 //         setSuccess("Withdrawal request rejected successfully!");
@@ -218,8 +168,7 @@
 //         setError(result.message || "Failed to reject request");
 //       }
 //     } catch (error) {
-//       console.error("Error rejecting request:", error);
-//       setError(
+//       //       setError(
 //         error.response?.data?.message || "Error rejecting withdrawal request"
 //       );
 //     } finally {
@@ -463,8 +412,7 @@
 
 //                 // Ensure request has valid ID
 //                 if (!requestId) {
-//                   console.warn("Request missing both _id and requestId:", request);
-//                   return null;
+//                   //                   return null;
 //                 }
 
 //                 return (
@@ -508,8 +456,7 @@
 //                               if (requestId) {
 //                                 handleApprove(requestId);
 //                               } else {
-//                                 console.error("Cannot approve: requestId is undefined", request);
-//                                 setError("Invalid request ID. Please refresh the page.");
+//                                 //                                 setError("Invalid request ID. Please refresh the page.");
 //                               }
 //                             }}
 //                             disabled={actionLoading === requestId || !requestId}
@@ -528,8 +475,7 @@
 //                               if (requestId) {
 //                                 handleReject(requestId);
 //                               } else {
-//                                 console.error("Cannot reject: requestId is undefined", request);
-//                                 setError("Invalid request ID. Please refresh the page.");
+//                                 //                                 setError("Invalid request ID. Please refresh the page.");
 //                               }
 //                             }}
 //                             disabled={actionLoading === requestId || !requestId}
@@ -606,44 +552,23 @@ const AdminVendorWithdrawalRequests = () => {
         params.status = statusFilter;
       }
 
-      console.log("========================================");
-      console.log("📥 FETCHING VENDOR WITHDRAWAL REQUESTS:");
-      console.log("API Endpoint: /api/admin/vendors/withdrawal-requests");
-      console.log("Params:", params);
-      console.log("========================================");
-
       const response = await api.get("/api/admin/vendors/withdrawal-requests", {
         params,
       });
-
-      console.log("========================================");
-      console.log("✅ RESPONSE RECEIVED:");
-      console.log("Status:", response.status);
-      console.log("Full response:", response.data);
-      console.log("========================================");
 
       const result = response.data;
 
       if (result.success) {
         const requestsData = result.data || [];
-        console.log("========================================");
-        console.log("📋 REQUESTS DATA:");
-        console.log("Total requests:", requestsData.length);
         if (requestsData.length > 0) {
-          console.log("First request structure:", requestsData[0]);
-          console.log("First request keys:", Object.keys(requestsData[0]));
-          console.log("First request _id:", requestsData[0]._id);
-          console.log("First request requestId:", requestsData[0].requestId);
-        }
-        console.log("========================================");
+          );
+          }
         setRequests(requestsData);
       } else {
         setError(result.message || "Failed to fetch withdrawal requests");
         setRequests([]);
       }
     } catch (error) {
-      console.error("Error fetching withdrawal requests:", error);
-
       // Check for backend routing issue
       if (error.response?.status === 500) {
         const errorData = error.response?.data;
@@ -683,7 +608,6 @@ const AdminVendorWithdrawalRequests = () => {
   const handleApprove = async (requestId) => {
     // Validate requestId
     if (!requestId || requestId === "undefined") {
-      console.error("Invalid requestId:", requestId);
       setError("Invalid request ID. Please refresh the page and try again.");
       return;
     }
@@ -701,26 +625,9 @@ const AdminVendorWithdrawalRequests = () => {
       setError(null);
       setSuccess(null);
 
-      console.log("========================================");
-      console.log("✅ APPROVING WITHDRAWAL REQUEST:");
-      console.log("Request ID:", requestId);
-      console.log(
-        "API Endpoint: /api/admin/vendors/withdrawal-requests/" +
-          requestId +
-          "/approve",
-      );
-      console.log("Method: PUT");
-      console.log("========================================");
-
       const response = await api.put(
         `/api/admin/vendors/withdrawal-requests/${requestId}/approve`,
       );
-
-      console.log("========================================");
-      console.log("✅ APPROVE RESPONSE:");
-      console.log("Status:", response.status);
-      console.log("Response:", response.data);
-      console.log("========================================");
 
       const result = response.data;
 
@@ -732,7 +639,6 @@ const AdminVendorWithdrawalRequests = () => {
         setError(result.message || "Failed to approve request");
       }
     } catch (error) {
-      console.error("Error approving request:", error);
       setError(
         error.response?.data?.message || "Error approving withdrawal request",
       );
@@ -745,7 +651,6 @@ const AdminVendorWithdrawalRequests = () => {
   const handleReject = async (requestId) => {
     // Validate requestId
     if (!requestId || requestId === "undefined") {
-      console.error("Invalid requestId:", requestId);
       setError("Invalid request ID. Please refresh the page and try again.");
       return;
     }
@@ -763,26 +668,9 @@ const AdminVendorWithdrawalRequests = () => {
       setError(null);
       setSuccess(null);
 
-      console.log("========================================");
-      console.log("❌ REJECTING WITHDRAWAL REQUEST:");
-      console.log("Request ID:", requestId);
-      console.log(
-        "API Endpoint: /api/admin/vendors/withdrawal-requests/" +
-          requestId +
-          "/reject",
-      );
-      console.log("Method: PUT");
-      console.log("========================================");
-
       const response = await api.put(
         `/api/admin/vendors/withdrawal-requests/${requestId}/reject`,
       );
-
-      console.log("========================================");
-      console.log("❌ REJECT RESPONSE:");
-      console.log("Status:", response.status);
-      console.log("Response:", response.data);
-      console.log("========================================");
 
       const result = response.data;
 
@@ -794,7 +682,6 @@ const AdminVendorWithdrawalRequests = () => {
         setError(result.message || "Failed to reject request");
       }
     } catch (error) {
-      console.error("Error rejecting request:", error);
       setError(
         error.response?.data?.message || "Error rejecting withdrawal request",
       );
@@ -1027,10 +914,6 @@ const AdminVendorWithdrawalRequests = () => {
 
                 // Ensure request has valid ID
                 if (!requestId) {
-                  console.warn(
-                    "Request missing both _id and requestId:",
-                    request,
-                  );
                   return null;
                 }
 
@@ -1085,7 +968,6 @@ const AdminVendorWithdrawalRequests = () => {
                             if (vendorId) {
                               navigate(`/vendor/${vendorId}`);
                             } else {
-                              console.error("Vendor ID not found in request:", request);
                               setError("Vendor ID not found. Cannot navigate to vendor page.");
                             }
                           }}
@@ -1103,10 +985,6 @@ const AdminVendorWithdrawalRequests = () => {
                                 if (requestId) {
                                   handleApprove(requestId);
                                 } else {
-                                  console.error(
-                                    "Cannot approve: requestId is undefined",
-                                    request,
-                                  );
                                   setError(
                                     "Invalid request ID. Please refresh the page.",
                                   );
@@ -1130,10 +1008,6 @@ const AdminVendorWithdrawalRequests = () => {
                                 if (requestId) {
                                   handleReject(requestId);
                                 } else {
-                                  console.error(
-                                    "Cannot reject: requestId is undefined",
-                                    request,
-                                  );
                                   setError(
                                     "Invalid request ID. Please refresh the page.",
                                   );

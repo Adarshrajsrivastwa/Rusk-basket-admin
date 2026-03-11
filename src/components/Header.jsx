@@ -49,8 +49,7 @@
 //       if (isDev &&
 //           error.response?.status !== 401 &&
 //           error.response?.status !== 403) {
-//         console.warn("Error fetching vendor profile:", error.message);
-//       }
+//         //       }
 //       // Don't show error to user for profile fetch, just log it
 //       // The profile will show default values if fetch fails
 //     } finally {
@@ -73,24 +72,16 @@
 //       }
 
 //       const response = await api.get("/api/admin/profile");
-//       console.log("========================================");
-//       console.log("👤 ADMIN PROFILE RESPONSE:");
-//       console.log("Full response:", response.data);
-//       if (response.data && response.data.success) {
-//         console.log("Admin profile data:", response.data.data);
-//         console.log("Profile image:", response.data.data?.profileImage);
-//         console.log("Profile image URL:", response.data.data?.profileImage?.url);
-//         setAdminProfile(response.data.data);
+//       //       //       //       if (response.data && response.data.success) {
+//         //         //         //         setAdminProfile(response.data.data);
 //       }
-//       console.log("========================================");
-//     } catch (error) {
+//       //     } catch (error) {
 //       // Only log if it's not a network error or 401/403 (expected when not logged in)
 //       const isDev = import.meta.env.DEV || process.env.NODE_ENV === 'development';
 //       if (isDev &&
 //           error.response?.status !== 401 &&
 //           error.response?.status !== 403) {
-//         console.warn("Error fetching admin profile:", error.message);
-//       }
+//         //       }
 //       // Don't show error to user for profile fetch, just log it
 //       // The profile will show default values if fetch fails
 //     } finally {
@@ -155,8 +146,7 @@
 //           error.response?.status !== 401 &&
 //           error.response?.status !== 403 &&
 //           error.response?.status !== 404) {
-//         console.warn("Error fetching unread count:", error.message);
-//       }
+//         //       }
 //       // Don't show error to user, just set count to 0
 //       setUnreadCount(0);
 //     }
@@ -253,39 +243,27 @@
 //       }
 //     }
 //     if (userRole === "admin" && adminProfile) {
-//       console.log("========================================");
-//       console.log("🖼️ GETTING ADMIN PROFILE PHOTO:");
-//       console.log("Admin profile:", adminProfile);
-//       console.log("Profile image:", adminProfile.profileImage);
-//       console.log("Profile image type:", typeof adminProfile.profileImage);
-//       console.log("========================================");
-
-//       // Check for profileImage
+//       //       //       //       //       //       //       // Check for profileImage
 //       if (adminProfile.profileImage) {
 //         // Handle both array and object formats
 //         if (Array.isArray(adminProfile.profileImage) && adminProfile.profileImage.length > 0) {
 //           const imageUrl = adminProfile.profileImage[0].url || adminProfile.profileImage[0];
-//           console.log("✅ Found image in array format:", imageUrl);
-//           return imageUrl;
+//           //           return imageUrl;
 //         }
 //         // If it's a string URL
 //         if (typeof adminProfile.profileImage === 'string') {
-//           console.log("✅ Found image as string:", adminProfile.profileImage);
-//           return adminProfile.profileImage;
+//           //           return adminProfile.profileImage;
 //         }
 //         // If it's an object with url property
 //         if (adminProfile.profileImage.url) {
-//           console.log("✅ Found image URL:", adminProfile.profileImage.url);
-//           return adminProfile.profileImage.url;
+//           //           return adminProfile.profileImage.url;
 //         }
 //       } else {
-//         console.log("❌ No profileImage found in adminProfile");
-//       }
+//         //       }
 //     }
 //     // Default avatar
 //     const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName())}&background=FF7B1D&color=fff&size=128`;
-//     console.log("🔄 Using default avatar:", defaultAvatar);
-//     return defaultAvatar;
+//     //     return defaultAvatar;
 //   };
 
 //   return (
@@ -338,11 +316,10 @@
 //               alt={getUserName()}
 //               className="w-8 h-8 rounded-full border-2 border-gray-600 cursor-pointer object-cover"
 //               onError={(e) => {
-//                 console.error("❌ Image failed to load:", e.target.src);
-//                 e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName())}&background=FF7B1D&color=fff&size=128`;
+//                 //                 e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName())}&background=FF7B1D&color=fff&size=128`;
 //               }}
 //               onLoad={() => {
-//                 console.log("✅ Profile image loaded successfully:", getUserPhoto());
+//                 );
 //               }}
 //             />
 //             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-[#343d46] rounded-full" />
@@ -357,11 +334,10 @@
 //                     alt={getUserName()}
 //                     className="w-12 h-12 rounded-full border-2 border-orange-200 object-cover"
 //                     onError={(e) => {
-//                       console.error("❌ Dropdown image failed to load:", e.target.src);
-//                       e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName())}&background=FF7B1D&color=fff&size=128`;
+//                       //                       e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName())}&background=FF7B1D&color=fff&size=128`;
 //                     }}
 //                     onLoad={() => {
-//                       console.log("✅ Dropdown profile image loaded successfully:", getUserPhoto());
+//                       );
 //                     }}
 //                   />
 //                   <div className="flex-1 min-w-0">
@@ -555,8 +531,7 @@ const Header = () => {
         setVendorProfile(response.data.data);
       }
     } catch (error) {
-      console.error("Error fetching vendor profile:", error);
-    } finally {
+      } finally {
       setLoadingProfile(false);
     }
   }, [userRole]);
@@ -580,8 +555,7 @@ const Header = () => {
         setAdminProfile(response.data.data);
       }
     } catch (error) {
-      console.error("Error fetching admin profile:", error);
-    } finally {
+      } finally {
       setLoadingProfile(false);
     }
   }, [userRole]);
@@ -919,7 +893,6 @@ const Header = () => {
         setUnreadCount(response.data.unreadCount || 0);
       }
     } catch (error) {
-      console.error("Error fetching unread count:", error);
       setUnreadCount(0);
     }
   };
@@ -1168,13 +1141,11 @@ const Header = () => {
                             });
                           }
                         } catch (apiError) {
-                          console.error("Logout API error:", apiError);
                           // Continue with logout even if API fails
                         }
                       }
                     } catch (error) {
-                      console.error("Logout error:", error);
-                    } finally {
+                      } finally {
                       // Clear storage and navigate
                       localStorage.clear();
                       sessionStorage.clear();

@@ -66,7 +66,6 @@ const VendorDailyOffers = () => {
         setError(response.data.message || "Failed to load offers");
       }
     } catch (err) {
-      console.error("Error fetching offers:", err);
       setError(
         err.response?.data?.message ||
           "Failed to load offers. Please try again.",
@@ -235,14 +234,10 @@ const VendorDailyOffers = () => {
         }
       }
 
-      console.log("Updating offer with payload:", payload);
-
       const response = await api.put(
         `/api/vendor/daily-offers/${selectedProduct._id}`,
         payload,
       );
-
-      console.log("Update response:", response.data);
 
       if (response.data.success) {
         setError(""); // Clear errors
@@ -257,8 +252,6 @@ const VendorDailyOffers = () => {
         );
       }
     } catch (err) {
-      console.error("Error updating offer:", err);
-      console.error("Error response:", err.response?.data);
       setError(
         err.response?.data?.error ||
           err.response?.data?.message ||
@@ -313,14 +306,10 @@ const VendorDailyOffers = () => {
         payload.offerDiscountPercentage = product.offerDiscountPercentage || 10;
       }
 
-      console.log("Toggling daily offer with payload:", payload);
-
       const response = await api.put(
         `/api/vendor/daily-offers/${product._id}`,
         payload,
       );
-
-      console.log("Toggle response:", response.data);
 
       if (response.data.success) {
         setError(""); // Clear any previous errors
@@ -346,8 +335,6 @@ const VendorDailyOffers = () => {
         );
       }
     } catch (err) {
-      console.error("Error toggling offer:", err);
-      console.error("Error response:", err.response?.data);
       setError(
         err.response?.data?.error ||
           err.response?.data?.message ||

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { BASE_URL } from "../../api/api";
+import { showToast } from "../../utils/toast";
 
 const API_BASE_URL = `${BASE_URL}/api`;
 
@@ -38,7 +39,6 @@ const EditSubCategoryModal = ({
     if (subCategory) {
       // Normalize category ID to string
       const categoryId = subCategory.category?._id?.toString() || subCategory.category?._id || subCategory.category || "";
-      console.log("Setting form data - Category ID:", categoryId, "Type:", typeof categoryId);
       setFormData({
         name: subCategory.name || "",
         category: categoryId,
@@ -119,7 +119,6 @@ const EditSubCategoryModal = ({
               value={formData.category}
               onChange={(e) => {
                 const selectedValue = e.target.value;
-                console.log("Category selected in edit - Value:", selectedValue);
                 setFormData({ ...formData, category: selectedValue });
               }}
               className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#FF7B1D] text-black"
@@ -143,18 +142,13 @@ const EditSubCategoryModal = ({
                   
                   // If it's still "[object Object]", use index
                   if (String(catId) === '[object Object]' || !catId) {
-                    console.warn(`Edit modal - Invalid ID for category ${catName}, using index`);
                     catId = String(index);
                   }
                   
                   // Ensure it's a string
                   const finalId = String(catId);
                   
-                  console.log(`Edit modal - Rendering option ${index + 1}:`, { 
-                    name: catName, 
-                    id: finalId,
-                    idType: typeof finalId,
-                    isValid: /^[0-9a-fA-F]{24}$/.test(finalId) || finalId === String(index)
+                  || finalId === String(index)
                   });
                   
                   return (
@@ -414,8 +408,7 @@ const SubCategoryView = () => {
       });
       const result = await response.json();
 
-      console.log("=== EDIT MODAL - CATEGORIES API RESPONSE ===");
-      console.log("Full response:", JSON.stringify(result, null, 2));
+      );
 
       // Try multiple possible response structures
       let categoriesList = [];
@@ -431,11 +424,7 @@ const SubCategoryView = () => {
         categoriesList = result;
       }
       
-      console.log("Edit modal - Extracted categories list:", categoriesList);
-      console.log("Edit modal - Number of categories:", categoriesList.length);
-      
       if (categoriesList.length === 0) {
-        console.error("Edit modal - No categories found!");
         setCategories([]);
         return;
       }
@@ -482,7 +471,6 @@ const SubCategoryView = () => {
                   }
                 }
               } catch (e) {
-                console.error('Edit modal - Error converting _id:', e);
                 catId = String(index);
               }
             }
@@ -509,20 +497,12 @@ const SubCategoryView = () => {
         
         // Ensure catId is a valid string (not "[object Object]")
         if (catId === '[object Object]' || !catId || catId === 'undefined' || catId === 'null') {
-          console.warn(`Edit modal - Invalid category ID for ${cat.name}, using index:`, catId);
           catId = String(index);
         }
         
         const catName = cat.name || cat.categoryName || cat.category || `Category ${index + 1}`;
         
-        console.log(`Edit modal - Category ${index + 1}:`, {
-          name: catName,
-          id: catId,
-          idType: typeof catId,
-          _idRaw: cat._id,
-          _idType: typeof cat._id,
-          _idIsObject: typeof cat._id === 'object',
-          _idKeys: typeof cat._id === 'object' ? Object.keys(cat._id || {}) : 'N/A'
+        : 'N/A'
         });
         
         return {
@@ -532,12 +512,8 @@ const SubCategoryView = () => {
         };
       });
       
-      console.log("Edit modal - Normalized categories:", normalizedCategories);
-      console.log("Edit modal - Setting categories state with", normalizedCategories.length, "items");
-      
       setCategories(normalizedCategories);
     } catch (err) {
-      console.error("Edit modal - Error fetching categories:", err);
       setCategories([]);
     } finally {
       setLoadingCategories(false);
@@ -553,12 +529,11 @@ const SubCategoryView = () => {
       // Validate category ID before sending
       const categoryValue = formDataToSend.get('category');
       if (categoryValue && !/^[0-9a-fA-F]{24}$/.test(categoryValue)) {
-        alert("Please select a valid category. The selected category ID is not in the correct format.");
+        showToast.warning("Please select a valid category. The selected category ID is not in the correct format.");
         return;
       }
 
-      console.log("Updating subcategory with form data:", {
-        name: formDataToSend.get('name'),
+      ,
         category: categoryValue,
         description: formDataToSend.get('description'),
         isActive: formDataToSend.get('isActive'),
@@ -574,28 +549,25 @@ const SubCategoryView = () => {
       });
       
       const result = await response.json();
-      console.log("Update response:", result);
-
       if (!response.ok) {
         // Handle validation errors from express-validator
         if (result.errors && Array.isArray(result.errors) && result.errors.length > 0) {
           const errorMessages = result.errors.map(err => err.msg || err.message).join('\n');
-          alert(errorMessages || "Validation failed. Please check your input.");
+          showToast.error(errorMessages || "Validation failed. Please check your input.");
         } else {
-          alert(result.message || result.error || "Failed to update subcategory");
+          showToast.error(result.message || result.error || "Failed to update subcategory");
         }
         return;
       }
 
       if (result.success) {
-        alert("Sub Category updated successfully!");
+        showToast.success("Sub Category updated successfully!");
         fetchSubCategory(); // Refresh data
       } else {
-        alert(result.message || "Failed to update subcategory");
+        showToast.error(result.message || "Failed to update subcategory");
       }
     } catch (err) {
-      console.error("Error updating subcategory:", err);
-      alert("Error updating subcategory: " + err.message);
+      showToast.error("Error updating subcategory: " + err.message);
     }
   };
 
@@ -614,21 +586,21 @@ const SubCategoryView = () => {
       const result = await response.json();
 
       if (!response.ok) {
-        alert(result.message || "Failed to delete subcategory");
+        showToast.error(result.message || "Failed to delete subcategory");
         setDeleting(false);
         return;
       }
 
       if (result.success) {
-        alert(`Sub Category "${subCategory.name}" deleted successfully!`);
+        showToast.success(`Sub Category "${subCategory.name}" deleted successfully!`);
         setIsDeleteModalOpen(false);
         navigate("/category/create-sub");
       } else {
-        alert(result.message || "Failed to delete subcategory");
+        showToast.error(result.message || "Failed to delete subcategory");
         setDeleting(false);
       }
     } catch (err) {
-      alert("Error deleting subcategory: " + err.message);
+      showToast.error("Error deleting subcategory: " + err.message);
       setDeleting(false);
     }
   };

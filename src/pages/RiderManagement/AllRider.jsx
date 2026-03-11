@@ -20,6 +20,9 @@
 //   CheckSquare,
 //   Loader2,
 // } from "lucide-react";
+// import { BASE_URL } from "../../api/api";
+
+// const API_BASE_URL = `${BASE_URL}/api/rider`;
 
 // const RiderManagement = () => {
 //   const [riders, setRiders] = useState([]);
@@ -91,9 +94,9 @@
 
 //       if (!response.ok) {
 //         if (response.status === 401) {
-//           alert("Unauthorized. Please login again.");
+//           showToast.warning("Unauthorized. Please login again.");
 //         } else {
-//           alert(result.message || "Failed to fetch rider details");
+//           showToast.error(result.message || "Failed to fetch rider details");
 //         }
 //         return;
 //       }
@@ -101,17 +104,17 @@
 //       if (result.success) {
 //         setSelectedRider(result.data);
 //       } else {
-//         alert("Failed to fetch rider details");
+//         showToast.error("Failed to fetch rider details");
 //       }
 //     } catch (err) {
-//       alert("Error fetching rider details: " + err.message);
+//       showToast.error("Error fetching rider details: " + err.message);
 //     }
 //   };
 
 //   const handleAction = async (riderId, action) => {
 //     try {
 //       setActionLoading(true);
-//       const endpoint = action === "approved" ? "approve" : "suspend";
+//       const endpoint = action === "approved" ? "approve" : "reject";
 
 //       const response = await fetch(`${API_BASE_URL}/${riderId}/${endpoint}`, {
 //         method: "PUT",
@@ -123,26 +126,26 @@
 
 //       if (!response.ok) {
 //         if (response.status === 401) {
-//           alert("Unauthorized. Please login again.");
+//           showToast.warning("Unauthorized. Please login again.");
 //         } else {
-//           alert(result.message || "Action failed");
+//           showToast.error(result.message || "Action failed");
 //         }
 //         return;
 //       }
 
 //       if (result.success) {
-//         alert(
+//         showToast.success(
 //           `Rider ${
-//             action === "approved" ? "Approved" : "Suspended"
-//           } Successfully!`
+//             action === "approved" ? "Approved" : "Rejected"
+//           } Successfully!`,
 //         );
 //         setSelectedRider(null);
 //         fetchRiders(); // Refresh the list
 //       } else {
-//         alert(result.message || "Action failed");
+//         showToast.error(result.message || "Action failed");
 //       }
 //     } catch (err) {
-//       alert("Error performing action: " + err.message);
+//       showToast.error("Error performing action: " + err.message);
 //     } finally {
 //       setActionLoading(false);
 //     }
@@ -177,9 +180,8 @@
 //       case "approved":
 //         return "Approved";
 //       case "rejected":
-//         return "Rejected";
 //       case "suspended":
-//         return "Suspended";
+//         return "Rejected";
 //       default:
 //         return "Pending Review";
 //     }
@@ -190,7 +192,8 @@
 //     pending: riders.filter((r) => r.approvalStatus === "pending").length,
 //     approved: riders.filter((r) => r.approvalStatus === "approved").length,
 //     rejected: riders.filter(
-//       (r) => r.approvalStatus === "rejected" || r.approvalStatus === "suspended"
+//       (r) =>
+//         r.approvalStatus === "rejected" || r.approvalStatus === "suspended",
 //     ).length,
 //   };
 
@@ -236,10 +239,10 @@
 
 //   return (
 //     <DashboardLayout>
-//       <div className="min-h-screen ml-6 p-0">
+//       <div className="min-h-screen mt-2 ml-6 p-0">
 //         <div className="max-w-7xl mx-auto">
 //           {/* Header Section */}
-//           <div className="bg-white rounded-sm shadow-lg p-8 mb-6 border-l-4 border-[#FF7B1D]">
+//           <div className="bg-white rounded-sm shadow-lg p-2 mb-6 border-l-4 border-[#FF7B1D]">
 //             <div className="flex items-center justify-between">
 //               <div>
 //                 <h1 className="text-4xl font-bold text-gray-900 mb-2">
@@ -314,7 +317,7 @@
 //               <div className="flex items-center justify-between">
 //                 <div>
 //                   <p className="text-gray-600 text-sm font-medium mb-1">
-//                     Rejected/Suspended
+//                     Rejected
 //                   </p>
 //                   <p className="text-3xl font-bold text-gray-900">
 //                     {stats.rejected}
@@ -394,7 +397,7 @@
 //                             </h3>
 //                             <span
 //                               className={`px-4 py-1.5 rounded-full text-sm font-semibold ${getStatusColor(
-//                                 rider.approvalStatus
+//                                 rider.approvalStatus,
 //                               )}`}
 //                             >
 //                               {getStatusText(rider.approvalStatus)}
@@ -674,7 +677,7 @@
 //                           className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
 //                           onClick={() =>
 //                             setImageModal(
-//                               selectedRider.documents.aadharCard.photo.url
+//                               selectedRider.documents.aadharCard.photo.url,
 //                             )
 //                           }
 //                         />
@@ -692,7 +695,7 @@
 //                           className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
 //                           onClick={() =>
 //                             setImageModal(
-//                               selectedRider.documents.panCard.front.url
+//                               selectedRider.documents.panCard.front.url,
 //                             )
 //                           }
 //                         />
@@ -710,7 +713,7 @@
 //                           className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
 //                           onClick={() =>
 //                             setImageModal(
-//                               selectedRider.documents.panCard.back.url
+//                               selectedRider.documents.panCard.back.url,
 //                             )
 //                           }
 //                         />
@@ -728,7 +731,7 @@
 //                           className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
 //                           onClick={() =>
 //                             setImageModal(
-//                               selectedRider.documents.drivingLicense.front.url
+//                               selectedRider.documents.drivingLicense.front.url,
 //                             )
 //                           }
 //                         />
@@ -746,7 +749,7 @@
 //                           className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
 //                           onClick={() =>
 //                             setImageModal(
-//                               selectedRider.documents.drivingLicense.back.url
+//                               selectedRider.documents.drivingLicense.back.url,
 //                             )
 //                           }
 //                         />
@@ -826,7 +829,8 @@
 //                         className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
 //                         onClick={() =>
 //                           setImageModal(
-//                             selectedRider.documents.bankDetails.cancelCheque.url
+//                             selectedRider.documents.bankDetails.cancelCheque
+//                               .url,
 //                           )
 //                         }
 //                       />
@@ -887,7 +891,7 @@
 //                       ) : (
 //                         <XCircle size={24} />
 //                       )}
-//                       Suspend Application
+//                       Reject Application
 //                     </button>
 //                     <button
 //                       onClick={() =>
@@ -910,7 +914,7 @@
 //                   <div className="pt-6 border-t-2 border-gray-200">
 //                     <div
 //                       className={`text-center py-4 rounded-xl font-semibold text-lg ${getStatusColor(
-//                         selectedRider.approvalStatus
+//                         selectedRider.approvalStatus,
 //                       )}`}
 //                     >
 //                       ✓ Application{" "}
@@ -991,6 +995,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { BASE_URL } from "../../api/api";
+import { showToast } from "../../utils/toast";
 
 const API_BASE_URL = `${BASE_URL}/api/rider`;
 
@@ -1003,20 +1008,14 @@ const RiderManagement = () => {
   const [imageModal, setImageModal] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Get authorization headers
   const getAuthHeaders = () => {
     const token =
       localStorage.getItem("token") || localStorage.getItem("authToken");
-    const headers = {
-      "Content-Type": "application/json",
-    };
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
     return headers;
   };
 
-  // Fetch all riders on component mount
   useEffect(() => {
     fetchRiders();
   }, []);
@@ -1031,21 +1030,16 @@ const RiderManagement = () => {
         headers: getAuthHeaders(),
       });
       const result = await response.json();
-
       if (!response.ok) {
-        if (response.status === 401) {
-          setError("Unauthorized. Please login again.");
-        } else {
-          setError(result.message || "Failed to fetch riders");
-        }
+        setError(
+          response.status === 401
+            ? "Unauthorized. Please login again."
+            : result.message || "Failed to fetch riders",
+        );
         return;
       }
-
-      if (result.success) {
-        setRiders(result.data);
-      } else {
-        setError("Failed to fetch riders");
-      }
+      if (result.success) setRiders(result.data);
+      else setError("Failed to fetch riders");
     } catch (err) {
       setError("Error connecting to server: " + err.message);
     } finally {
@@ -1061,23 +1055,18 @@ const RiderManagement = () => {
         headers: getAuthHeaders(),
       });
       const result = await response.json();
-
       if (!response.ok) {
-        if (response.status === 401) {
-          alert("Unauthorized. Please login again.");
-        } else {
-          alert(result.message || "Failed to fetch rider details");
-        }
+        showToast.error(
+          response.status === 401
+            ? "Unauthorized. Please login again."
+            : result.message || "Failed to fetch rider details",
+        );
         return;
       }
-
-      if (result.success) {
-        setSelectedRider(result.data);
-      } else {
-        alert("Failed to fetch rider details");
-      }
+      if (result.success) setSelectedRider(result.data);
+      else showToast.error("Failed to fetch rider details");
     } catch (err) {
-      alert("Error fetching rider details: " + err.message);
+      showToast.error("Error fetching rider details: " + err.message);
     }
   };
 
@@ -1085,37 +1074,31 @@ const RiderManagement = () => {
     try {
       setActionLoading(true);
       const endpoint = action === "approved" ? "approve" : "reject";
-
       const response = await fetch(`${API_BASE_URL}/${riderId}/${endpoint}`, {
         method: "PUT",
         credentials: "include",
         headers: getAuthHeaders(),
       });
-
       const result = await response.json();
-
       if (!response.ok) {
-        if (response.status === 401) {
-          alert("Unauthorized. Please login again.");
-        } else {
-          alert(result.message || "Action failed");
-        }
+        showToast.error(
+          response.status === 401
+            ? "Unauthorized. Please login again."
+            : result.message || "Action failed",
+        );
         return;
       }
-
       if (result.success) {
-        alert(
-          `Rider ${
-            action === "approved" ? "Approved" : "Rejected"
-          } Successfully!`,
+        showToast.success(
+          `Rider ${action === "approved" ? "Approved" : "Rejected"} Successfully!`,
         );
         setSelectedRider(null);
-        fetchRiders(); // Refresh the list
+        fetchRiders();
       } else {
-        alert(result.message || "Action failed");
+        showToast.error(result.message || "Action failed");
       }
     } catch (err) {
-      alert("Error performing action: " + err.message);
+      showToast.error("Error performing action: " + err.message);
     } finally {
       setActionLoading(false);
     }
@@ -1141,7 +1124,7 @@ const RiderManagement = () => {
       case "suspended":
         return "bg-red-50 text-red-700 border border-red-200";
       default:
-        return "bg-amber-50 text-amber-700 border border-amber-200";
+        return "bg-yellow-50 text-yellow-700 border border-yellow-200";
     }
   };
 
@@ -1192,12 +1175,12 @@ const RiderManagement = () => {
     return (
       <DashboardLayout>
         <div className="min-h-screen ml-6 p-0 flex items-center justify-center">
-          <div className="text-center bg-white rounded-lg shadow-lg p-8">
+          <div className="text-center bg-white rounded-sm shadow-lg p-8">
             <AlertCircle className="text-red-500 mx-auto mb-4" size={48} />
             <p className="text-red-600 text-lg font-semibold mb-4">{error}</p>
             <button
               onClick={fetchRiders}
-              className="px-6 py-3 bg-[#FF7B1D] text-white rounded-lg hover:bg-[#FF9B4D] transition"
+              className="px-6 py-3 bg-[#FF7B1D] hover:bg-orange-600 text-white rounded-sm transition-colors font-semibold"
             >
               Retry
             </button>
@@ -1223,7 +1206,7 @@ const RiderManagement = () => {
                 </p>
               </div>
               <div className="hidden md:block">
-                <div className="bg-gradient-to-br from-[#FF7B1D] to-[#FF9B4D] text-white p-6 rounded-xl shadow-lg">
+                <div className="bg-[#FF7B1D] text-white p-6 rounded-sm shadow-lg">
                   <div className="text-center">
                     <p className="text-sm opacity-90">Total Applications</p>
                     <p className="text-4xl font-bold">{stats.total}</p>
@@ -1245,13 +1228,13 @@ const RiderManagement = () => {
                     {stats.total}
                   </p>
                 </div>
-                <div className="bg-[#FF7B1D] bg-opacity-10 p-3 rounded-lg">
+                <div className="bg-orange-50 p-3 rounded-sm">
                   <User className="text-[#FF7B1D]" size={24} />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-sm shadow-md p-6 border-t-4 border-amber-500 hover:shadow-xl transition-shadow">
+            <div className="bg-white rounded-sm shadow-md p-6 border-t-4 border-yellow-500 hover:shadow-xl transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm font-medium mb-1">
@@ -1261,8 +1244,8 @@ const RiderManagement = () => {
                     {stats.pending}
                   </p>
                 </div>
-                <div className="bg-amber-100 p-3 rounded-lg">
-                  <Clock className="text-amber-600" size={24} />
+                <div className="bg-yellow-50 p-3 rounded-sm">
+                  <Clock className="text-yellow-600" size={24} />
                 </div>
               </div>
             </div>
@@ -1277,7 +1260,7 @@ const RiderManagement = () => {
                     {stats.approved}
                   </p>
                 </div>
-                <div className="bg-green-100 p-3 rounded-lg">
+                <div className="bg-green-50 p-3 rounded-sm">
                   <CheckCircle className="text-green-600" size={24} />
                 </div>
               </div>
@@ -1293,56 +1276,34 @@ const RiderManagement = () => {
                     {stats.rejected}
                   </p>
                 </div>
-                <div className="bg-red-100 p-3 rounded-lg">
+                <div className="bg-red-50 p-3 rounded-sm">
                   <XCircle className="text-red-600" size={24} />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Filter Tabs */}
+          {/* Filter Tabs — AllProduct style */}
           <div className="bg-white rounded-sm shadow-md p-4 mb-6">
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={() => setFilter("all")}
-                className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                  filter === "all"
-                    ? "bg-[#FF7B1D] text-white shadow-lg scale-105"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                All Applications ({stats.total})
-              </button>
-              <button
-                onClick={() => setFilter("pending")}
-                className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                  filter === "pending"
-                    ? "bg-amber-500 text-white shadow-lg scale-105"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                Pending ({stats.pending})
-              </button>
-              <button
-                onClick={() => setFilter("approved")}
-                className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                  filter === "approved"
-                    ? "bg-green-600 text-white shadow-lg scale-105"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                Approved ({stats.approved})
-              </button>
-              <button
-                onClick={() => setFilter("rejected")}
-                className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                  filter === "rejected"
-                    ? "bg-red-600 text-white shadow-lg scale-105"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                Rejected ({stats.rejected})
-              </button>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { key: "all", label: `All Applications (${stats.total})` },
+                { key: "pending", label: `Pending (${stats.pending})` },
+                { key: "approved", label: `Approved (${stats.approved})` },
+                { key: "rejected", label: `Rejected (${stats.rejected})` },
+              ].map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setFilter(tab.key)}
+                  className={`px-4 py-1.5 border rounded text-sm font-semibold whitespace-nowrap transition-colors ${
+                    filter === tab.key
+                      ? "bg-[#FF7B1D] text-white border-[#FF7B1D]"
+                      : "border-gray-400 text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -1357,7 +1318,7 @@ const RiderManagement = () => {
                   <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
                     <div className="flex-1 w-full">
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="bg-[#FF7B1D] bg-opacity-10 p-3 rounded-full">
+                        <div className="bg-orange-50 p-3 rounded-sm">
                           <User className="text-[#FF7B1D]" size={24} />
                         </div>
                         <div className="flex-1">
@@ -1366,9 +1327,7 @@ const RiderManagement = () => {
                               {rider.fullName}
                             </h3>
                             <span
-                              className={`px-4 py-1.5 rounded-full text-sm font-semibold ${getStatusColor(
-                                rider.approvalStatus,
-                              )}`}
+                              className={`px-4 py-1.5 rounded-sm text-sm font-semibold ${getStatusColor(rider.approvalStatus)}`}
                             >
                               {getStatusText(rider.approvalStatus)}
                             </span>
@@ -1386,11 +1345,10 @@ const RiderManagement = () => {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-lg">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-orange-50 p-4 rounded-sm border border-orange-100">
                         <div>
                           <p className="text-xs text-gray-500 font-semibold mb-1 flex items-center gap-1">
-                            <Calendar size={14} />
-                            Applied Date
+                            <Calendar size={14} /> Applied Date
                           </p>
                           <p className="text-gray-900 font-medium">
                             {formatDate(rider.createdAt)}
@@ -1398,8 +1356,7 @@ const RiderManagement = () => {
                         </div>
                         <div>
                           <p className="text-xs text-gray-500 font-semibold mb-1 flex items-center gap-1">
-                            <User size={14} />
-                            Age
+                            <User size={14} /> Age
                           </p>
                           <p className="text-gray-900 font-medium">
                             {rider.age || "N/A"} Years
@@ -1415,8 +1372,7 @@ const RiderManagement = () => {
                         </div>
                         <div>
                           <p className="text-xs text-gray-500 font-semibold mb-1 flex items-center gap-1">
-                            <Car size={14} />
-                            Vehicle Type
+                            <Car size={14} /> Vehicle Type
                           </p>
                           <p className="text-gray-900 font-medium">
                             {rider.workDetails?.vehicleType || "N/A"}
@@ -1426,7 +1382,7 @@ const RiderManagement = () => {
 
                       {rider.approvalStatus === "approved" && (
                         <div className="mt-4 flex gap-4 text-sm">
-                          <div className="bg-green-50 px-4 py-2 rounded-lg border border-green-200">
+                          <div className="bg-green-50 px-4 py-2 rounded-sm border border-green-200">
                             <span className="text-green-700 font-semibold">
                               Approved on: {formatDate(rider.approvedAt)}
                             </span>
@@ -1437,7 +1393,7 @@ const RiderManagement = () => {
 
                     <button
                       onClick={() => fetchRiderDetails(rider._id)}
-                      className="w-full lg:w-auto px-6 py-3 bg-gradient-to-r from-[#FF7B1D] to-[#FF9B4D] text-white rounded-lg hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 font-semibold"
+                      className="w-full lg:w-auto px-6 py-3 bg-[#FF7B1D] hover:bg-orange-600 text-white rounded-sm transition-colors flex items-center justify-center gap-2 font-semibold"
                     >
                       <Eye size={20} />
                       View Full Details
@@ -1463,7 +1419,7 @@ const RiderManagement = () => {
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 overflow-y-auto">
             <div className="bg-white rounded-sm max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
               {/* Modal Header */}
-              <div className="sticky top-0 bg-gradient-to-r from-[#FF7B1D] to-[#FF9B4D] text-white p-6 flex justify-between items-center rounded-t-2xl shadow-lg z-10">
+              <div className="sticky top-0 bg-[#FF7B1D] text-white p-6 flex justify-between items-center rounded-t-sm shadow-lg z-10">
                 <div>
                   <h2 className="text-3xl font-bold">
                     Rider Application Details
@@ -1474,7 +1430,7 @@ const RiderManagement = () => {
                 </div>
                 <button
                   onClick={() => setSelectedRider(null)}
-                  className="text-white hover:bg-white hover:bg-opacity-20 rounded-full w-10 h-10 flex items-center justify-center text-3xl transition"
+                  className="text-white hover:bg-white/20 rounded-sm w-10 h-10 flex items-center justify-center text-3xl transition"
                 >
                   ×
                 </button>
@@ -1484,7 +1440,7 @@ const RiderManagement = () => {
                 {/* Personal Information */}
                 <div className="mb-8">
                   <div className="flex items-center gap-3 mb-6 pb-3 border-b-2 border-[#FF7B1D]">
-                    <div className="bg-[#FF7B1D] bg-opacity-10 p-3 rounded-lg">
+                    <div className="bg-orange-50 p-3 rounded-sm">
                       <User className="text-[#FF7B1D]" size={24} />
                     </div>
                     <h3 className="text-2xl font-bold text-gray-900">
@@ -1492,7 +1448,7 @@ const RiderManagement = () => {
                     </h3>
                   </div>
                   <div className="grid md:grid-cols-2 gap-6">
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="bg-orange-50 p-4 rounded-sm border border-orange-100">
                       <p className="text-sm text-gray-500 font-semibold mb-1">
                         Full Name
                       </p>
@@ -1500,7 +1456,7 @@ const RiderManagement = () => {
                         {selectedRider.fullName}
                       </p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="bg-orange-50 p-4 rounded-sm border border-orange-100">
                       <p className="text-sm text-gray-500 font-semibold mb-1">
                         Date of Birth (Age)
                       </p>
@@ -1509,7 +1465,7 @@ const RiderManagement = () => {
                         {selectedRider.age} years)
                       </p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="bg-orange-50 p-4 rounded-sm border border-orange-100">
                       <p className="text-sm text-gray-500 font-semibold mb-1">
                         Blood Group
                       </p>
@@ -1517,10 +1473,9 @@ const RiderManagement = () => {
                         {selectedRider.bloodGroup || "N/A"}
                       </p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="bg-orange-50 p-4 rounded-sm border border-orange-100">
                       <p className="text-sm text-gray-500 font-semibold mb-1 flex items-center gap-1">
-                        <Phone size={16} />
-                        Mobile Number
+                        <Phone size={16} /> Mobile Number
                       </p>
                       <p className="text-gray-900 font-medium">
                         {selectedRider.mobileNumber}
@@ -1531,16 +1486,15 @@ const RiderManagement = () => {
                         )}
                       </p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="bg-orange-50 p-4 rounded-sm border border-orange-100">
                       <p className="text-sm text-gray-500 font-semibold mb-1 flex items-center gap-1">
-                        <Phone size={16} />
-                        WhatsApp Number
+                        <Phone size={16} /> WhatsApp Number
                       </p>
                       <p className="text-gray-900 font-medium">
                         {selectedRider.whatsappNumber || "N/A"}
                       </p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="bg-orange-50 p-4 rounded-sm border border-orange-100">
                       <p className="text-sm text-gray-500 font-semibold mb-1">
                         Father's Name
                       </p>
@@ -1548,7 +1502,7 @@ const RiderManagement = () => {
                         {selectedRider.fathersName || "N/A"}
                       </p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="bg-orange-50 p-4 rounded-sm border border-orange-100">
                       <p className="text-sm text-gray-500 font-semibold mb-1">
                         Mother's Name
                       </p>
@@ -1556,7 +1510,7 @@ const RiderManagement = () => {
                         {selectedRider.mothersName || "N/A"}
                       </p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="bg-orange-50 p-4 rounded-sm border border-orange-100">
                       <p className="text-sm text-gray-500 font-semibold mb-1">
                         Emergency Contact
                       </p>
@@ -1571,10 +1525,9 @@ const RiderManagement = () => {
                           "N/A"}
                       </p>
                     </div>
-                    <div className="md:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="md:col-span-2 bg-orange-50 p-4 rounded-sm border border-orange-100">
                       <p className="text-sm text-gray-500 font-semibold mb-1 flex items-center gap-1">
-                        <MapPin size={16} />
-                        Current Address
+                        <MapPin size={16} /> Current Address
                       </p>
                       <p className="text-gray-900 font-medium">
                         {selectedRider.currentAddress?.line1},{" "}
@@ -1585,7 +1538,7 @@ const RiderManagement = () => {
                         {selectedRider.currentAddress?.pinCode}
                       </p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="bg-orange-50 p-4 rounded-sm border border-orange-100">
                       <p className="text-sm text-gray-500 font-semibold mb-1">
                         Languages
                       </p>
@@ -1599,7 +1552,7 @@ const RiderManagement = () => {
                 {/* Identity Documents */}
                 <div className="mb-8">
                   <div className="flex items-center gap-3 mb-6 pb-3 border-b-2 border-[#FF7B1D]">
-                    <div className="bg-[#FF7B1D] bg-opacity-10 p-3 rounded-lg">
+                    <div className="bg-orange-50 p-3 rounded-sm">
                       <FileText className="text-[#FF7B1D]" size={24} />
                     </div>
                     <h3 className="text-2xl font-bold text-gray-900">
@@ -1607,7 +1560,7 @@ const RiderManagement = () => {
                     </h3>
                   </div>
                   <div className="grid md:grid-cols-2 gap-6 mb-6">
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="bg-orange-50 p-4 rounded-sm border border-orange-100">
                       <p className="text-sm text-gray-500 font-semibold mb-1">
                         Aadhaar Number
                       </p>
@@ -1616,122 +1569,64 @@ const RiderManagement = () => {
                       </p>
                     </div>
                   </div>
-
-                  {/* Document Images */}
                   <div className="grid md:grid-cols-2 gap-6">
-                    {selectedRider.documents?.profile?.url && (
-                      <div className="bg-white border-2 border-gray-200 rounded-xl p-3 hover:border-[#FF7B1D] transition">
-                        <p className="text-sm text-gray-700 font-semibold mb-3 flex items-center gap-2">
-                          <User size={16} />
-                          Profile Photo
-                        </p>
-                        <img
-                          src={selectedRider.documents.profile.url}
-                          alt="Profile"
-                          className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
-                          onClick={() =>
-                            setImageModal(selectedRider.documents.profile.url)
-                          }
-                        />
-                      </div>
-                    )}
-                    {selectedRider.documents?.aadharCard?.photo?.url && (
-                      <div className="bg-white border-2 border-gray-200 rounded-xl p-3 hover:border-[#FF7B1D] transition">
-                        <p className="text-sm text-gray-700 font-semibold mb-3 flex items-center gap-2">
-                          <Shield size={16} />
-                          Aadhaar Card
-                        </p>
-                        <img
-                          src={selectedRider.documents.aadharCard.photo.url}
-                          alt="Aadhaar"
-                          className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
-                          onClick={() =>
-                            setImageModal(
-                              selectedRider.documents.aadharCard.photo.url,
-                            )
-                          }
-                        />
-                      </div>
-                    )}
-                    {selectedRider.documents?.panCard?.front?.url && (
-                      <div className="bg-white border-2 border-gray-200 rounded-xl p-3 hover:border-[#FF7B1D] transition">
-                        <p className="text-sm text-gray-700 font-semibold mb-3 flex items-center gap-2">
-                          <CreditCard size={16} />
-                          PAN Card (Front)
-                        </p>
-                        <img
-                          src={selectedRider.documents.panCard.front.url}
-                          alt="PAN Front"
-                          className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
-                          onClick={() =>
-                            setImageModal(
-                              selectedRider.documents.panCard.front.url,
-                            )
-                          }
-                        />
-                      </div>
-                    )}
-                    {selectedRider.documents?.panCard?.back?.url && (
-                      <div className="bg-white border-2 border-gray-200 rounded-xl p-3 hover:border-[#FF7B1D] transition">
-                        <p className="text-sm text-gray-700 font-semibold mb-3 flex items-center gap-2">
-                          <CreditCard size={16} />
-                          PAN Card (Back)
-                        </p>
-                        <img
-                          src={selectedRider.documents.panCard.back.url}
-                          alt="PAN Back"
-                          className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
-                          onClick={() =>
-                            setImageModal(
-                              selectedRider.documents.panCard.back.url,
-                            )
-                          }
-                        />
-                      </div>
-                    )}
-                    {selectedRider.documents?.drivingLicense?.front?.url && (
-                      <div className="bg-white border-2 border-gray-200 rounded-xl p-3 hover:border-[#FF7B1D] transition">
-                        <p className="text-sm text-gray-700 font-semibold mb-3 flex items-center gap-2">
-                          <FileText size={16} />
-                          Driving License (Front)
-                        </p>
-                        <img
-                          src={selectedRider.documents.drivingLicense.front.url}
-                          alt="DL Front"
-                          className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
-                          onClick={() =>
-                            setImageModal(
-                              selectedRider.documents.drivingLicense.front.url,
-                            )
-                          }
-                        />
-                      </div>
-                    )}
-                    {selectedRider.documents?.drivingLicense?.back?.url && (
-                      <div className="bg-white border-2 border-gray-200 rounded-xl p-3 hover:border-[#FF7B1D] transition">
-                        <p className="text-sm text-gray-700 font-semibold mb-3 flex items-center gap-2">
-                          <FileText size={16} />
-                          Driving License (Back)
-                        </p>
-                        <img
-                          src={selectedRider.documents.drivingLicense.back.url}
-                          alt="DL Back"
-                          className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
-                          onClick={() =>
-                            setImageModal(
-                              selectedRider.documents.drivingLicense.back.url,
-                            )
-                          }
-                        />
-                      </div>
-                    )}
+                    {[
+                      {
+                        label: "Profile Photo",
+                        icon: User,
+                        url: selectedRider.documents?.profile?.url,
+                      },
+                      {
+                        label: "Aadhaar Card",
+                        icon: Shield,
+                        url: selectedRider.documents?.aadharCard?.photo?.url,
+                      },
+                      {
+                        label: "PAN Card (Front)",
+                        icon: CreditCard,
+                        url: selectedRider.documents?.panCard?.front?.url,
+                      },
+                      {
+                        label: "PAN Card (Back)",
+                        icon: CreditCard,
+                        url: selectedRider.documents?.panCard?.back?.url,
+                      },
+                      {
+                        label: "Driving License (Front)",
+                        icon: FileText,
+                        url: selectedRider.documents?.drivingLicense?.front
+                          ?.url,
+                      },
+                      {
+                        label: "Driving License (Back)",
+                        icon: FileText,
+                        url: selectedRider.documents?.drivingLicense?.back?.url,
+                      },
+                    ]
+                      .filter((d) => d.url)
+                      .map(({ label, icon: Icon, url }) => (
+                        <div
+                          key={label}
+                          className="bg-white border-2 border-orange-100 rounded-sm p-3 hover:border-[#FF7B1D] transition"
+                        >
+                          <p className="text-sm text-gray-700 font-semibold mb-3 flex items-center gap-2">
+                            <Icon size={16} /> {label}
+                          </p>
+                          <img
+                            src={url}
+                            alt={label}
+                            className="w-full h-48 object-cover rounded-sm cursor-pointer hover:opacity-80 transition shadow-md"
+                            onClick={() => setImageModal(url)}
+                          />
+                        </div>
+                      ))}
                   </div>
                 </div>
 
                 {/* Bank Details */}
                 <div className="mb-8">
                   <div className="flex items-center gap-3 mb-6 pb-3 border-b-2 border-[#FF7B1D]">
-                    <div className="bg-[#FF7B1D] bg-opacity-10 p-3 rounded-lg">
+                    <div className="bg-orange-50 p-3 rounded-sm">
                       <CreditCard className="text-[#FF7B1D]" size={24} />
                     </div>
                     <h3 className="text-2xl font-bold text-gray-900">
@@ -1739,7 +1634,7 @@ const RiderManagement = () => {
                     </h3>
                   </div>
                   <div className="grid md:grid-cols-2 gap-6 mb-6">
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="bg-orange-50 p-4 rounded-sm border border-orange-100">
                       <p className="text-sm text-gray-500 font-semibold mb-1">
                         Account Holder Name
                       </p>
@@ -1748,7 +1643,7 @@ const RiderManagement = () => {
                           ?.accountHolderName || "N/A"}
                       </p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="bg-orange-50 p-4 rounded-sm border border-orange-100">
                       <p className="text-sm text-gray-500 font-semibold mb-1">
                         Account Number
                       </p>
@@ -1757,7 +1652,7 @@ const RiderManagement = () => {
                           "N/A"}
                       </p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="bg-orange-50 p-4 rounded-sm border border-orange-100">
                       <p className="text-sm text-gray-500 font-semibold mb-1">
                         IFSC Code
                       </p>
@@ -1765,7 +1660,7 @@ const RiderManagement = () => {
                         {selectedRider.documents?.bankDetails?.ifsc || "N/A"}
                       </p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="bg-orange-50 p-4 rounded-sm border border-orange-100">
                       <p className="text-sm text-gray-500 font-semibold mb-1">
                         Bank Name
                       </p>
@@ -1774,7 +1669,7 @@ const RiderManagement = () => {
                           "N/A"}
                       </p>
                     </div>
-                    <div className="md:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="md:col-span-2 bg-orange-50 p-4 rounded-sm border border-orange-100">
                       <p className="text-sm text-gray-500 font-semibold mb-1">
                         Branch Name
                       </p>
@@ -1784,19 +1679,17 @@ const RiderManagement = () => {
                       </p>
                     </div>
                   </div>
-
                   {selectedRider.documents?.bankDetails?.cancelCheque?.url && (
-                    <div className="bg-white border-2 border-gray-200 rounded-xl p-3 hover:border-[#FF7B1D] transition">
+                    <div className="bg-white border-2 border-orange-100 rounded-sm p-3 hover:border-[#FF7B1D] transition">
                       <p className="text-sm text-gray-700 font-semibold mb-3 flex items-center gap-2">
-                        <FileText size={16} />
-                        Cancelled Cheque
+                        <FileText size={16} /> Cancelled Cheque
                       </p>
                       <img
                         src={
                           selectedRider.documents.bankDetails.cancelCheque.url
                         }
                         alt="Cancelled Cheque"
-                        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
+                        className="w-full h-48 object-cover rounded-sm cursor-pointer hover:opacity-80 transition shadow-md"
                         onClick={() =>
                           setImageModal(
                             selectedRider.documents.bankDetails.cancelCheque
@@ -1811,7 +1704,7 @@ const RiderManagement = () => {
                 {/* Work Details */}
                 <div className="mb-8">
                   <div className="flex items-center gap-3 mb-6 pb-3 border-b-2 border-[#FF7B1D]">
-                    <div className="bg-[#FF7B1D] bg-opacity-10 p-3 rounded-lg">
+                    <div className="bg-orange-50 p-3 rounded-sm">
                       <Car className="text-[#FF7B1D]" size={24} />
                     </div>
                     <h3 className="text-2xl font-bold text-gray-900">
@@ -1819,7 +1712,7 @@ const RiderManagement = () => {
                     </h3>
                   </div>
                   <div className="grid md:grid-cols-3 gap-6">
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="bg-orange-50 p-4 rounded-sm border border-orange-100">
                       <p className="text-sm text-gray-500 font-semibold mb-1">
                         Vehicle Type
                       </p>
@@ -1827,7 +1720,7 @@ const RiderManagement = () => {
                         {selectedRider.workDetails?.vehicleType || "N/A"}
                       </p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="bg-orange-50 p-4 rounded-sm border border-orange-100">
                       <p className="text-sm text-gray-500 font-semibold mb-1">
                         Experience
                       </p>
@@ -1835,7 +1728,7 @@ const RiderManagement = () => {
                         {selectedRider.workDetails?.experience || "N/A"}
                       </p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="bg-orange-50 p-4 rounded-sm border border-orange-100">
                       <p className="text-sm text-gray-500 font-semibold mb-1">
                         Preferred Shift
                       </p>
@@ -1854,7 +1747,7 @@ const RiderManagement = () => {
                         handleAction(selectedRider._id, "rejected")
                       }
                       disabled={actionLoading}
-                      className="px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-3 font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-8 py-4 bg-red-600 hover:bg-red-700 text-white rounded-sm transition-colors flex items-center justify-center gap-3 font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {actionLoading ? (
                         <Loader2 className="animate-spin" size={24} />
@@ -1868,7 +1761,7 @@ const RiderManagement = () => {
                         handleAction(selectedRider._id, "approved")
                       }
                       disabled={actionLoading}
-                      className="px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-3 font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-8 py-4 bg-green-700 hover:bg-green-800 text-white rounded-sm transition-colors flex items-center justify-center gap-3 font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {actionLoading ? (
                         <Loader2 className="animate-spin" size={24} />
@@ -1883,9 +1776,7 @@ const RiderManagement = () => {
                 {selectedRider.approvalStatus !== "pending" && (
                   <div className="pt-6 border-t-2 border-gray-200">
                     <div
-                      className={`text-center py-4 rounded-xl font-semibold text-lg ${getStatusColor(
-                        selectedRider.approvalStatus,
-                      )}`}
+                      className={`text-center py-4 rounded-sm font-semibold text-lg ${getStatusColor(selectedRider.approvalStatus)}`}
                     >
                       ✓ Application{" "}
                       {getStatusText(selectedRider.approvalStatus)}
@@ -1899,7 +1790,7 @@ const RiderManagement = () => {
                       )}
                     </div>
                     {selectedRider.rejectionReason && (
-                      <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="mt-4 bg-red-50 border border-red-200 rounded-sm p-4">
                         <p className="text-sm text-red-700 font-semibold mb-1">
                           Rejection Reason:
                         </p>
@@ -1925,7 +1816,7 @@ const RiderManagement = () => {
               <img
                 src={imageModal}
                 alt="Document"
-                className="max-w-full max-h-[90vh] object-contain mx-auto rounded-lg shadow-2xl"
+                className="max-w-full max-h-[90vh] object-contain mx-auto rounded-sm shadow-2xl"
               />
               <button
                 onClick={() => setImageModal(null)}
