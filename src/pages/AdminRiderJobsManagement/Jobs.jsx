@@ -288,14 +288,14 @@ const RiderJobPostManagement = () => {
       jobTitle: job.jobTitle,
       joiningBonus: job.joiningBonus,
       onboardingFee: job.onboardingFee,
-      vendorId: job.vendor._id,
-      line1: job.location.line1,
-      line2: job.location.line2,
-      pinCode: job.location.pinCode,
-      city: job.location.city,
-      state: job.location.state,
-      latitude: job.location.latitude,
-      longitude: job.location.longitude,
+      vendorId: job.vendor?._id || job.postedBy?._id || "",
+      line1: job.location?.line1 || "",
+      line2: job.location?.line2 || "",
+      pinCode: job.location?.pinCode || "",
+      city: job.location?.city || "",
+      state: job.location?.state || "",
+      latitude: job.location?.latitude || "",
+      longitude: job.location?.longitude || "",
     });
     setIsEditModalOpen(true);
   };
@@ -856,12 +856,29 @@ const RiderJobPostManagement = () => {
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-2 mb-3 p-2 bg-blue-50 rounded-lg w-fit">
-                            <Users className="text-blue-600" size={16} />
-                            <span className="text-sm font-semibold text-gray-700">
-                              {job.vendor.storeName}
-                            </span>
-                          </div>
+                          {(job.vendor?.vendorName || job.vendor?.storeName || job.postedBy?.vendorName || job.postedBy?.name) && (
+                            <div className="flex items-center gap-2 mb-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                              <Users className="text-blue-600" size={16} />
+                              <div className="flex flex-col">
+                                <span className="text-xs text-gray-500 font-medium">Posted for Vendor:</span>
+                                <span className="text-sm font-semibold text-gray-700">
+                                  {(() => {
+                                    const vendorName = job.vendor?.vendorName || job.postedBy?.vendorName || job.postedBy?.name || "";
+                                    const storeName = job.vendor?.storeName || "";
+                                    
+                                    if (vendorName && storeName) {
+                                      return `${vendorName} (${storeName})`;
+                                    } else if (vendorName) {
+                                      return vendorName;
+                                    } else if (storeName) {
+                                      return storeName;
+                                    }
+                                    return "";
+                                  })()}
+                                </span>
+                              </div>
+                            </div>
+                          )}
 
                           <p className="text-sm text-gray-600 mb-4">
                             Posted by:{" "}

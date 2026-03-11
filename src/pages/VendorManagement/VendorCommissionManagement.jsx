@@ -483,6 +483,9 @@ const VendorCommissionManagement = () => {
                   <p className="mt-1 text-xs text-gray-500">
                     Example: 10% means 10% of order value
                   </p>
+                  <p className="mt-1 text-xs text-orange-600 font-medium">
+                    ⚠️ Commission depends upon total transaction amount
+                  </p>
                 </div>
               )}
 
@@ -559,6 +562,9 @@ const VendorCommissionManagement = () => {
                   </div>
                   <p className="text-xs text-gray-500">
                     Example: 5% + ₹20 means 5% of order value plus ₹20 per order
+                  </p>
+                  <p className="mt-1 text-xs text-orange-600 font-medium">
+                    ⚠️ Percentage commission depends upon total transaction amount
                   </p>
                 </div>
               )}

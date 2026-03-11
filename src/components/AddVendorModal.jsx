@@ -1737,7 +1737,26 @@ const AddVendorModal = ({
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
       e.email = "Invalid email";
     if (!formData.gender) e.gender = "Select gender";
-    if (!formData.dob) e.dob = "Date of birth required";
+    if (!formData.dob) {
+      e.dob = "Date of birth required";
+    } else {
+      // Calculate age from date of birth
+      const birthDate = new Date(formData.dob);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (
+        monthDiff < 0 ||
+        (monthDiff === 0 && today.getDate() < birthDate.getDate())
+      ) {
+        age--;
+      }
+      
+      // Validate age must be at least 18
+      if (age < 18) {
+        e.dob = "Age must be at least 18 years";
+      }
+    }
     if (!formData.storeName.trim()) e.storeName = "Store name required";
     if (!formData.storeAddress1.trim()) e.storeAddress1 = "Address required";
     if (!formData.pinCode.trim()) e.pinCode = "PIN code required";
