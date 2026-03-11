@@ -973,7 +973,7 @@
 //   );
 // }
 import React, { useState, useEffect, useRef } from "react";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Check } from "lucide-react";
 import api from "../api/api";
 
 export default function AddProductPopup({
@@ -1013,6 +1013,20 @@ export default function AddProductPopup({
   const [error, setError] = useState("");
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [subCategoriesLoading, setSubCategoriesLoading] = useState(false);
+
+  // Crop modal state
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [cropImage, setCropImage] = useState(null);
+  const [cropArea, setCropArea] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeHandle, setResizeHandle] = useState(null);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const cropContainerRef = useRef(null);
+  const cropBoxRef = useRef(null);
+  const imageRef = useRef(null);
+  const pendingImageIndex = useRef(null); // Track which image slot we're cropping
 
   // FIX: This ref prevents the category→subCategory and productType→unit
   // side-effect useEffects from firing during edit initialization, which
@@ -1317,17 +1331,220 @@ export default function AddProductPopup({
     const remainingSlots = 6 - totalImages;
 
     if (files.length > 0) {
-      const filesToAdd = files.slice(0, remainingSlots);
-      setFormData((prev) => ({
-        ...prev,
-        images: [...prev.images, ...filesToAdd],
-      }));
-      if (files.length > remainingSlots) {
-        alert(
-          `Only ${remainingSlots} more image(s) can be added. Maximum is 6 images.`,
-        );
+      const file = files[0]; // Process one at a time for cropping
+      if (!file.type.startsWith("image/")) {
+        alert("Please upload a valid image file.");
+        return;
       }
+      
+      // Open crop modal for first file
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCropImage(reader.result);
+        pendingImageIndex.current = formData.images.length; // Track which slot
+        setShowCropModal(true);
+      };
+      reader.readAsDataURL(file);
+      
+      // Reset file input
+      e.target.value = "";
     }
+  };
+
+  // ================= INITIALIZE CROP AREA (1:1) =================
+  useEffect(() => {
+    if (showCropModal && cropImage && cropContainerRef.current) {
+      const container = cropContainerRef.current;
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+      
+      // 1:1 aspect ratio (square)
+      const aspectRatio = 1;
+      let cropSize = Math.min(containerWidth * 0.8, containerHeight * 0.8, 500);
+      
+      const x = (containerWidth - cropSize) / 2;
+      const y = (containerHeight - cropSize) / 2;
+      
+      setCropArea({ x, y, width: cropSize, height: cropSize });
+      
+      // Load image to get actual dimensions
+      const img = new Image();
+      img.onload = () => {
+        // Image loaded
+      };
+      img.src = cropImage;
+    }
+  }, [showCropModal, cropImage]);
+
+  // ================= HANDLE CROP BOX DRAG & RESIZE =================
+  const handleMouseDown = (e) => {
+    if (e.target.classList.contains('resize-handle')) {
+      const handle = e.target.dataset.handle;
+      setIsResizing(true);
+      setResizeHandle(handle);
+      setResizeStart({
+        x: e.clientX,
+        y: e.clientY,
+        width: cropArea.width,
+        height: cropArea.height,
+        cropX: cropArea.x,
+        cropY: cropArea.y,
+      });
+      e.stopPropagation();
+      return;
+    }
+    
+    if (e.target === cropBoxRef.current || cropBoxRef.current?.contains(e.target)) {
+      setIsDragging(true);
+      setDragStart({
+        x: e.clientX - cropArea.x,
+        y: e.clientY - cropArea.y,
+      });
+    }
+  };
+
+  const handleMouseMove = (e) => {
+    if (!cropContainerRef.current) return;
+    
+    const container = cropContainerRef.current;
+    const rect = container.getBoundingClientRect();
+    const aspectRatio = 1; // 1:1
+    
+    // Handle resize
+    if (isResizing && resizeHandle) {
+      const deltaX = e.clientX - resizeStart.x;
+      const deltaY = e.clientY - resizeStart.y;
+      
+      let newSize = resizeStart.width;
+      let newX = resizeStart.cropX;
+      let newY = resizeStart.cropY;
+      
+      // Calculate resize based on handle position (for square, all corners work similarly)
+      if (resizeHandle === 'se' || resizeHandle === 'sw' || resizeHandle === 'ne' || resizeHandle === 'nw') {
+        const scale = Math.max(
+          Math.abs(resizeStart.width + deltaX) / resizeStart.width,
+          Math.abs(resizeStart.height + deltaY) / resizeStart.height
+        );
+        newSize = resizeStart.width * scale;
+        
+        // Adjust position based on corner
+        if (resizeHandle === 'sw' || resizeHandle === 'nw') {
+          newX = resizeStart.cropX + resizeStart.width - newSize;
+        }
+        if (resizeHandle === 'ne' || resizeHandle === 'nw') {
+          newY = resizeStart.cropY + resizeStart.height - newSize;
+        }
+      }
+      
+      // Constrain to container bounds
+      const maxSize = Math.min(container.clientWidth, container.clientHeight);
+      const minSize = 100;
+      
+      if (newSize > maxSize) newSize = maxSize;
+      if (newSize < minSize) newSize = minSize;
+      
+      // Adjust position if resizing from left or top
+      if (resizeHandle === 'sw' || resizeHandle === 'nw') {
+        newX = Math.max(0, Math.min(newX, container.clientWidth - newSize));
+      }
+      if (resizeHandle === 'ne' || resizeHandle === 'nw') {
+        newY = Math.max(0, Math.min(newY, container.clientHeight - newSize));
+      }
+      
+      // Ensure crop box stays within bounds
+      if (newX + newSize > container.clientWidth) {
+        newX = container.clientWidth - newSize;
+      }
+      if (newY + newSize > container.clientHeight) {
+        newY = container.clientHeight - newSize;
+      }
+      
+      setCropArea({
+        x: Math.max(0, newX),
+        y: Math.max(0, newY),
+        width: newSize,
+        height: newSize,
+      });
+      return;
+    }
+    
+    // Handle drag
+    if (isDragging) {
+      const newX = e.clientX - rect.left - dragStart.x;
+      const newY = e.clientY - rect.top - dragStart.y;
+      
+      const maxX = container.clientWidth - cropArea.width;
+      const maxY = container.clientHeight - cropArea.height;
+      
+      setCropArea({
+        ...cropArea,
+        x: Math.max(0, Math.min(newX, maxX)),
+        y: Math.max(0, Math.min(newY, maxY)),
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setIsResizing(false);
+    setResizeHandle(null);
+  };
+
+  // ================= APPLY CROP =================
+  const applyCrop = () => {
+    if (!cropImage || !imageRef.current) return;
+    
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      
+      // Calculate scale factor
+      const container = cropContainerRef.current;
+      const scaleX = img.width / container.clientWidth;
+      const scaleY = img.height / container.clientHeight;
+      
+      // Calculate actual crop coordinates
+      const cropX = (cropArea.x * scaleX);
+      const cropY = (cropArea.y * scaleY);
+      const cropSize = (cropArea.width * scaleX);
+      
+      // Set canvas size to 1:1 ratio (e.g., 1000x1000)
+      const outputSize = 1000;
+      canvas.width = outputSize;
+      canvas.height = outputSize;
+      
+      // Draw cropped and scaled image
+      ctx.drawImage(
+        img,
+        cropX, cropY, cropSize, cropSize,
+        0, 0, outputSize, outputSize
+      );
+      
+      // Convert to blob and add to form data
+      canvas.toBlob((blob) => {
+        const file = new File([blob], "product.jpg", { type: "image/jpeg" });
+        
+        // Add to images array at the tracked index
+        setFormData((prev) => {
+          const newImages = [...prev.images];
+          newImages[pendingImageIndex.current] = file;
+          return { ...prev, images: newImages };
+        });
+        
+        setShowCropModal(false);
+        setCropImage(null);
+        pendingImageIndex.current = null;
+      }, "image/jpeg", 0.9);
+    };
+    img.src = cropImage;
+  };
+
+  // ================= CANCEL CROP =================
+  const cancelCrop = () => {
+    setShowCropModal(false);
+    setCropImage(null);
+    pendingImageIndex.current = null;
   };
 
   const removeNewImage = (index) => {
@@ -1631,6 +1848,9 @@ export default function AddProductPopup({
                 <label className="block font-semibold mb-1">
                   Upload Images ({totalImages}/6)
                 </label>
+                <p className="text-xs text-orange-600 font-medium mb-2 bg-orange-50 border border-orange-200 rounded-sm px-2 py-1">
+                  ⚠️ Only 1:1 (Square) ratio allowed - Images will be automatically cropped
+                </p>
                 <div className="border border-orange-400 rounded-sm h-[250px] sm:h-[280px] lg:h-[330px] overflow-y-auto p-2">
                   <div className="grid grid-cols-2 gap-2">
                     {formData.existingImages.map((img, index) => (
@@ -1988,6 +2208,146 @@ export default function AddProductPopup({
           </div>
         </div>
       </div>
+
+      {/* CROP MODAL - 1:1 Aspect Ratio */}
+      {showCropModal && (
+        <div 
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black bg-opacity-75"
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          <div className="relative bg-white w-full max-w-4xl p-6 rounded-lg shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800">
+                Crop Product Image (1:1 Aspect Ratio - Square)
+              </h3>
+              <button
+                onClick={cancelCrop}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div 
+              ref={cropContainerRef}
+              className="relative w-full bg-gray-900 rounded-lg overflow-hidden"
+              style={{ height: "500px", position: "relative" }}
+              onMouseDown={handleMouseDown}
+            >
+              <img
+                ref={imageRef}
+                src={cropImage}
+                alt="Crop"
+                className="w-full h-full object-contain"
+              />
+              
+              {/* Overlay */}
+              <div className="absolute inset-0">
+                <div 
+                  className="absolute bg-black bg-opacity-50"
+                  style={{
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: `${cropArea.y}px`,
+                  }}
+                />
+                <div 
+                  className="absolute bg-black bg-opacity-50"
+                  style={{
+                    top: `${cropArea.y + cropArea.height}px`,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                  }}
+                />
+                <div 
+                  className="absolute bg-black bg-opacity-50"
+                  style={{
+                    top: `${cropArea.y}px`,
+                    left: 0,
+                    width: `${cropArea.x}px`,
+                    height: `${cropArea.height}px`,
+                  }}
+                />
+                <div 
+                  className="absolute bg-black bg-opacity-50"
+                  style={{
+                    top: `${cropArea.y}px`,
+                    right: 0,
+                    width: `${cropContainerRef.current ? cropContainerRef.current.clientWidth - cropArea.x - cropArea.width : 0}px`,
+                    height: `${cropArea.height}px`,
+                  }}
+                />
+              </div>
+              
+              {/* Crop Box */}
+              <div
+                ref={cropBoxRef}
+                className="absolute border-2 border-white cursor-move"
+                style={{
+                  left: `${cropArea.x}px`,
+                  top: `${cropArea.y}px`,
+                  width: `${cropArea.width}px`,
+                  height: `${cropArea.height}px`,
+                  boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.5)",
+                }}
+              >
+                {/* Resize handles - Top Left */}
+                <div 
+                  className="resize-handle absolute -top-2 -left-2 w-6 h-6 bg-white border-2 border-blue-500 rounded-full cursor-nwse-resize hover:bg-blue-100 transition-colors"
+                  data-handle="nw"
+                  title="Resize (1:1)"
+                />
+                
+                {/* Resize handles - Top Right */}
+                <div 
+                  className="resize-handle absolute -top-2 -right-2 w-6 h-6 bg-white border-2 border-blue-500 rounded-full cursor-nesw-resize hover:bg-blue-100 transition-colors"
+                  data-handle="ne"
+                  title="Resize (1:1)"
+                />
+                
+                {/* Resize handles - Bottom Left */}
+                <div 
+                  className="resize-handle absolute -bottom-2 -left-2 w-6 h-6 bg-white border-2 border-blue-500 rounded-full cursor-nesw-resize hover:bg-blue-100 transition-colors"
+                  data-handle="sw"
+                  title="Resize (1:1)"
+                />
+                
+                {/* Resize handles - Bottom Right */}
+                <div 
+                  className="resize-handle absolute -bottom-2 -right-2 w-6 h-6 bg-white border-2 border-blue-500 rounded-full cursor-nwse-resize hover:bg-blue-100 transition-colors"
+                  data-handle="se"
+                  title="Resize (1:1)"
+                />
+                
+                {/* Aspect ratio indicator */}
+                <div className="absolute -bottom-8 left-0 right-0 text-center text-white text-sm font-semibold bg-black bg-opacity-50 px-2 py-1 rounded">
+                  1:1 Square (Drag corners to resize)
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={cancelCrop}
+                className="px-5 py-2 bg-gray-200 text-gray-700 rounded-sm hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={applyCrop}
+                className="px-5 py-2 bg-orange-500 text-white rounded-sm hover:bg-orange-600 transition-colors flex items-center gap-2"
+              >
+                <Check size={16} />
+                Apply Crop
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

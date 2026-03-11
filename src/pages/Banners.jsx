@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import DashboardLayout from "../components/DashboardLayout";
-import { Plus, Pencil, Trash2, X, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Loader2, Crop, Check, RotateCw } from "lucide-react";
 import { BASE_URL } from "../api/api";
 
 const API_URL = `${BASE_URL}/api/banner`;
@@ -19,6 +19,18 @@ const BannerManagement = () => {
     image: null,
     imagePreview: null,
   });
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [cropImage, setCropImage] = useState(null);
+  const [cropArea, setCropArea] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeHandle, setResizeHandle] = useState(null); // 'nw', 'ne', 'sw', 'se'
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const cropContainerRef = useRef(null);
+  const cropBoxRef = useRef(null);
+  const imageRef = useRef(null);
 
   const getAuthHeaders = () => {
     const token =
@@ -82,13 +94,257 @@ const BannerManagement = () => {
     }
     const reader = new FileReader();
     reader.onloadend = () => {
-      setFormData((prev) => ({
-        ...prev,
-        image: file,
-        imagePreview: reader.result,
-      }));
+      setCropImage(reader.result);
+      setShowCropModal(true);
     };
     reader.readAsDataURL(file);
+  };
+
+  // ================= INITIALIZE CROP AREA (16:9) =================
+  useEffect(() => {
+    if (showCropModal && cropImage && cropContainerRef.current) {
+      const container = cropContainerRef.current;
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+      
+      // 16:9 aspect ratio
+      const aspectRatio = 16 / 9;
+      let cropWidth = Math.min(containerWidth * 0.8, 600);
+      let cropHeight = cropWidth / aspectRatio;
+      
+      if (cropHeight > containerHeight * 0.8) {
+        cropHeight = containerHeight * 0.8;
+        cropWidth = cropHeight * aspectRatio;
+      }
+      
+      const x = (containerWidth - cropWidth) / 2;
+      const y = (containerHeight - cropHeight) / 2;
+      
+      setCropArea({ x, y, width: cropWidth, height: cropHeight });
+      
+      // Load image to get actual dimensions
+      const img = new Image();
+      img.onload = () => {
+        setImageSize({ width: img.width, height: img.height });
+      };
+      img.src = cropImage;
+    }
+  }, [showCropModal, cropImage]);
+
+  // ================= HANDLE CROP BOX DRAG =================
+  const handleMouseDown = (e) => {
+    // Check if clicking on resize handle
+    if (e.target.classList.contains('resize-handle')) {
+      const handle = e.target.dataset.handle;
+      setIsResizing(true);
+      setResizeHandle(handle);
+      setResizeStart({
+        x: e.clientX,
+        y: e.clientY,
+        width: cropArea.width,
+        height: cropArea.height,
+        cropX: cropArea.x,
+        cropY: cropArea.y,
+      });
+      e.stopPropagation();
+      return;
+    }
+    
+    // Otherwise, drag the crop box
+    if (e.target === cropBoxRef.current || cropBoxRef.current?.contains(e.target)) {
+      setIsDragging(true);
+      setDragStart({
+        x: e.clientX - cropArea.x,
+        y: e.clientY - cropArea.y,
+      });
+    }
+  };
+
+  const handleMouseMove = (e) => {
+    if (!cropContainerRef.current) return;
+    
+    const container = cropContainerRef.current;
+    const rect = container.getBoundingClientRect();
+    const aspectRatio = 16 / 9;
+    
+    // Handle resize
+    if (isResizing && resizeHandle) {
+      const deltaX = e.clientX - resizeStart.x;
+      const deltaY = e.clientY - resizeStart.y;
+      
+      let newWidth = resizeStart.width;
+      let newHeight = resizeStart.height;
+      let newX = resizeStart.cropX;
+      let newY = resizeStart.cropY;
+      
+      // Calculate resize based on handle position
+      if (resizeHandle === 'se') {
+        // Bottom-right: increase/decrease both width and height
+        const scale = Math.max(
+          (resizeStart.width + deltaX) / resizeStart.width,
+          (resizeStart.height + deltaY) / resizeStart.height
+        );
+        newWidth = resizeStart.width * scale;
+        newHeight = newWidth / aspectRatio;
+      } else if (resizeHandle === 'sw') {
+        // Bottom-left: resize from left
+        const scale = Math.max(
+          (resizeStart.width - deltaX) / resizeStart.width,
+          (resizeStart.height + deltaY) / resizeStart.height
+        );
+        newWidth = resizeStart.width * scale;
+        newHeight = newWidth / aspectRatio;
+        newX = resizeStart.cropX + resizeStart.width - newWidth;
+      } else if (resizeHandle === 'ne') {
+        // Top-right: resize from top
+        const scale = Math.max(
+          (resizeStart.width + deltaX) / resizeStart.width,
+          (resizeStart.height - deltaY) / resizeStart.height
+        );
+        newWidth = resizeStart.width * scale;
+        newHeight = newWidth / aspectRatio;
+        newY = resizeStart.cropY + resizeStart.height - newHeight;
+      } else if (resizeHandle === 'nw') {
+        // Top-left: resize from top-left
+        const scale = Math.max(
+          (resizeStart.width - deltaX) / resizeStart.width,
+          (resizeStart.height - deltaY) / resizeStart.height
+        );
+        newWidth = resizeStart.width * scale;
+        newHeight = newWidth / aspectRatio;
+        newX = resizeStart.cropX + resizeStart.width - newWidth;
+        newY = resizeStart.cropY + resizeStart.height - newHeight;
+      }
+      
+      // Constrain to container bounds
+      const maxWidth = container.clientWidth;
+      const maxHeight = container.clientHeight;
+      const minSize = 100; // Minimum crop size
+      
+      if (newWidth > maxWidth) {
+        newWidth = maxWidth;
+        newHeight = newWidth / aspectRatio;
+      }
+      if (newHeight > maxHeight) {
+        newHeight = maxHeight;
+        newWidth = newHeight * aspectRatio;
+      }
+      if (newWidth < minSize) {
+        newWidth = minSize;
+        newHeight = newWidth / aspectRatio;
+      }
+      if (newHeight < minSize) {
+        newHeight = minSize;
+        newWidth = newHeight * aspectRatio;
+      }
+      
+      // Adjust position if resizing from left or top
+      if (resizeHandle === 'sw' || resizeHandle === 'nw') {
+        newX = Math.max(0, Math.min(newX, container.clientWidth - newWidth));
+      }
+      if (resizeHandle === 'ne' || resizeHandle === 'nw') {
+        newY = Math.max(0, Math.min(newY, container.clientHeight - newHeight));
+      }
+      
+      // Ensure crop box stays within bounds
+      if (newX + newWidth > container.clientWidth) {
+        newX = container.clientWidth - newWidth;
+      }
+      if (newY + newHeight > container.clientHeight) {
+        newY = container.clientHeight - newHeight;
+      }
+      
+      setCropArea({
+        x: Math.max(0, newX),
+        y: Math.max(0, newY),
+        width: newWidth,
+        height: newHeight,
+      });
+      return;
+    }
+    
+    // Handle drag
+    if (isDragging) {
+      const newX = e.clientX - rect.left - dragStart.x;
+      const newY = e.clientY - rect.top - dragStart.y;
+      
+      // Keep crop area within container bounds
+      const maxX = container.clientWidth - cropArea.width;
+      const maxY = container.clientHeight - cropArea.height;
+      
+      setCropArea({
+        ...cropArea,
+        x: Math.max(0, Math.min(newX, maxX)),
+        y: Math.max(0, Math.min(newY, maxY)),
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setIsResizing(false);
+    setResizeHandle(null);
+  };
+
+  // ================= APPLY CROP =================
+  const applyCrop = () => {
+    if (!cropImage || !imageRef.current) return;
+    
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      
+      // Calculate scale factor
+      const container = cropContainerRef.current;
+      const scaleX = img.width / container.clientWidth;
+      const scaleY = img.height / container.clientHeight;
+      
+      // Calculate actual crop coordinates
+      const cropX = (cropArea.x * scaleX);
+      const cropY = (cropArea.y * scaleY);
+      const cropWidth = (cropArea.width * scaleX);
+      const cropHeight = (cropArea.height * scaleY);
+      
+      // Set canvas size to 16:9 ratio (e.g., 1920x1080)
+      const outputWidth = 1920;
+      const outputHeight = 1080;
+      canvas.width = outputWidth;
+      canvas.height = outputHeight;
+      
+      // Draw cropped and scaled image
+      ctx.drawImage(
+        img,
+        cropX, cropY, cropWidth, cropHeight,
+        0, 0, outputWidth, outputHeight
+      );
+      
+      // Convert to blob and update form data
+      canvas.toBlob((blob) => {
+        const file = new File([blob], "banner.jpg", { type: "image/jpeg" });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFormData((prev) => ({
+            ...prev,
+            image: file,
+            imagePreview: reader.result,
+          }));
+          setShowCropModal(false);
+          setCropImage(null);
+        };
+        reader.readAsDataURL(blob);
+      }, "image/jpeg", 0.9);
+    };
+    img.src = cropImage;
+  };
+
+  // ================= CANCEL CROP =================
+  const cancelCrop = () => {
+    setShowCropModal(false);
+    setCropImage(null);
+    // Reset file input
+    const fileInput = document.querySelector('input[type="file"]');
+    if (fileInput) fileInput.value = "";
   };
 
   // ================= SUBMIT =================
@@ -310,6 +566,146 @@ const BannerManagement = () => {
           )}
         </div>
 
+        {/* CROP MODAL */}
+        {showCropModal && (
+          <div 
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black bg-opacity-75"
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          >
+            <div className="relative bg-white w-full max-w-4xl p-6 rounded-lg shadow-2xl">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-gray-800">
+                  Crop Banner Image (16:9 Aspect Ratio)
+                </h3>
+                <button
+                  onClick={cancelCrop}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              
+              <div 
+                ref={cropContainerRef}
+                className="relative w-full bg-gray-900 rounded-lg overflow-hidden"
+                style={{ height: "500px", position: "relative" }}
+                onMouseDown={handleMouseDown}
+              >
+                <img
+                  ref={imageRef}
+                  src={cropImage}
+                  alt="Crop"
+                  className="w-full h-full object-contain"
+                />
+                
+                {/* Overlay */}
+                <div className="absolute inset-0">
+                  <div 
+                    className="absolute bg-black bg-opacity-50"
+                    style={{
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: `${cropArea.y}px`,
+                    }}
+                  />
+                  <div 
+                    className="absolute bg-black bg-opacity-50"
+                    style={{
+                      top: `${cropArea.y + cropArea.height}px`,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                    }}
+                  />
+                  <div 
+                    className="absolute bg-black bg-opacity-50"
+                    style={{
+                      top: `${cropArea.y}px`,
+                      left: 0,
+                      width: `${cropArea.x}px`,
+                      height: `${cropArea.height}px`,
+                    }}
+                  />
+                  <div 
+                    className="absolute bg-black bg-opacity-50"
+                    style={{
+                      top: `${cropArea.y}px`,
+                      right: 0,
+                      width: `${cropContainerRef.current ? cropContainerRef.current.clientWidth - cropArea.x - cropArea.width : 0}px`,
+                      height: `${cropArea.height}px`,
+                    }}
+                  />
+                </div>
+                
+                {/* Crop Box */}
+                <div
+                  ref={cropBoxRef}
+                  className="absolute border-2 border-white cursor-move"
+                  style={{
+                    left: `${cropArea.x}px`,
+                    top: `${cropArea.y}px`,
+                    width: `${cropArea.width}px`,
+                    height: `${cropArea.height}px`,
+                    boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.5)",
+                  }}
+                >
+                  {/* Resize handles - Top Left */}
+                  <div 
+                    className="resize-handle absolute -top-2 -left-2 w-6 h-6 bg-white border-2 border-blue-500 rounded-full cursor-nwse-resize hover:bg-blue-100 transition-colors"
+                    data-handle="nw"
+                    title="Resize (16:9)"
+                  />
+                  
+                  {/* Resize handles - Top Right */}
+                  <div 
+                    className="resize-handle absolute -top-2 -right-2 w-6 h-6 bg-white border-2 border-blue-500 rounded-full cursor-nesw-resize hover:bg-blue-100 transition-colors"
+                    data-handle="ne"
+                    title="Resize (16:9)"
+                  />
+                  
+                  {/* Resize handles - Bottom Left */}
+                  <div 
+                    className="resize-handle absolute -bottom-2 -left-2 w-6 h-6 bg-white border-2 border-blue-500 rounded-full cursor-nesw-resize hover:bg-blue-100 transition-colors"
+                    data-handle="sw"
+                    title="Resize (16:9)"
+                  />
+                  
+                  {/* Resize handles - Bottom Right */}
+                  <div 
+                    className="resize-handle absolute -bottom-2 -right-2 w-6 h-6 bg-white border-2 border-blue-500 rounded-full cursor-nwse-resize hover:bg-blue-100 transition-colors"
+                    data-handle="se"
+                    title="Resize (16:9)"
+                  />
+                  
+                  {/* Aspect ratio indicator */}
+                  <div className="absolute -bottom-8 left-0 right-0 text-center text-white text-sm font-semibold bg-black bg-opacity-50 px-2 py-1 rounded">
+                    16:9 (Drag corners to resize)
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  onClick={cancelCrop}
+                  className="px-5 py-2 bg-gray-200 text-gray-700 rounded-sm hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={applyCrop}
+                  className="px-5 py-2 bg-orange-500 text-white rounded-sm hover:bg-orange-600 transition-colors flex items-center gap-2"
+                >
+                  <Check size={16} />
+                  Apply Crop
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* MODAL */}
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -361,16 +757,16 @@ const BannerManagement = () => {
                   />
                 </div>
 
-                {/* ✅ Modal preview also shows full image */}
+                {/* ✅ Modal preview also shows full image with 16:9 aspect ratio */}
                 {formData.imagePreview && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Preview
+                      Preview (16:9 Aspect Ratio)
                     </label>
-                    <div className="w-full bg-gray-100 rounded-lg flex items-center justify-center">
+                    <div className="w-full bg-gray-100 rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
                       <img
                         src={formData.imagePreview}
-                        className="w-full h-auto object-contain rounded-lg border border-gray-300"
+                        className="w-full h-full object-cover rounded-lg border border-gray-300"
                         alt="Preview"
                       />
                     </div>
