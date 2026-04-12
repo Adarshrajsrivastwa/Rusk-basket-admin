@@ -4,6 +4,69 @@ import DashboardLayout from "../../components/DashboardLayout";
 import { Download, Eye } from "lucide-react";
 import { BASE_URL } from "../../api/api";
 
+const EARTH_RADIUS_KM = 6371;
+
+function parseGeoCoord(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const n = typeof value === "number" ? value : parseFloat(String(value).trim());
+  return Number.isFinite(n) ? n : null;
+}
+
+function haversineDistanceKm(lat1, lon1, lat2, lon2) {
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return EARTH_RADIUS_KM * c;
+}
+
+function formatDistanceKm(km) {
+  if (!Number.isFinite(km) || km < 0) return "—";
+  if (km < 1) return `${Math.round(km * 1000)} m`;
+  return `${km.toFixed(2)} km`;
+}
+
+/** Store → customer straight-line distance (same coords as BagQr). */
+function computeOrderListDistance(order) {
+  const storeAddr = order.items?.[0]?.vendor?.storeAddress;
+  const ship = order.shippingAddress;
+
+  const vLat = parseGeoCoord(storeAddr?.latitude ?? storeAddr?.lat);
+  const vLng = parseGeoCoord(
+    storeAddr?.longitude ?? storeAddr?.lng ?? storeAddr?.lon,
+  );
+  const sLat = parseGeoCoord(ship?.latitude ?? ship?.lat);
+  const sLng = parseGeoCoord(ship?.longitude ?? ship?.lng ?? ship?.lon);
+
+  if (
+    vLat != null &&
+    vLng != null &&
+    sLat != null &&
+    sLng != null
+  ) {
+    return formatDistanceKm(haversineDistanceKm(vLat, vLng, sLat, sLng));
+  }
+
+  const raw =
+    order.distance ??
+    order.deliveryDistance ??
+    order.shippingAddress?.distance;
+  if (raw === null || raw === undefined || raw === "") return "—";
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    return formatDistanceKm(raw);
+  }
+  const str = String(raw).trim();
+  if (/km/i.test(str) || /m\b/i.test(str)) return str;
+  const num = parseFloat(str.replace(/[^\d.]/g, ""));
+  if (!Number.isFinite(num)) return "—";
+  return formatDistanceKm(num);
+}
+
 const AllOrder = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -87,6 +150,7 @@ const AllOrder = () => {
               pricing: order.pricing,
               notes: order.notes,
               _id: order._id,
+              distanceDisplay: computeOrderListDistance(order),
             };
 
             return transformed;
@@ -239,7 +303,7 @@ const AllOrder = () => {
           key={idx}
           className="animate-pulse border-b border-gray-200 bg-white"
         >
-          {Array.from({ length: 8 }).map((__, j) => (
+          {Array.from({ length: 9 }).map((__, j) => (
             <td key={j} className="p-3">
               <div className="h-4 bg-gray-200 rounded w-[80%]" />
             </td>
@@ -254,7 +318,7 @@ const AllOrder = () => {
     <tbody>
       <tr>
         <td
-          colSpan="8"
+          colSpan="9"
           className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
         >
           {error ? (
@@ -326,6 +390,7 @@ const AllOrder = () => {
               <th className="p-3 text-left">Date</th>
               <th className="p-3 text-left">User Name</th>
               <th className="p-3 text-left">Cart Value</th>
+              <th className="p-3 text-left">Distance</th>
               <th className="p-3 text-left">Payment Status</th>
               <th className="p-3 text-left">Status</th>
               <th className="p-3 pr-6 text-right">Action</th>
@@ -356,6 +421,9 @@ const AllOrder = () => {
                     <td className="p-3">{order.date}</td>
                     <td className="p-3">{order.user}</td>
                     <td className="p-3">₹{order.cartValue}</td>
+                    <td className="p-3 whitespace-nowrap">
+                      {order.distanceDisplay}
+                    </td>
                     <td className="p-3">{order.payment}</td>
                     <td className={`p-3 ${statusColor}`}>{formattedStatus}</td>
                     <td className="p-3 pr-6">
