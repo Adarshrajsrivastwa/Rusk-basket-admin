@@ -667,37 +667,61 @@ const sections = [
   },
 ];
 
+/* helper — which section does a given path belong to? */
+function getSectionForPath(pathname, search) {
+  const activeItem = pathname + search;
+  for (const sec of sections) {
+    if (!sec.items) continue;
+    for (const item of sec.items) {
+      if (item.path && activeItem.startsWith(item.path.split("?")[0]))
+        return sec.id;
+      if (item.subItems) {
+        for (const sub of item.subItems) {
+          if (activeItem.startsWith(sub.path.split("?")[0])) return sec.id;
+        }
+      }
+    }
+  }
+  if (pathname === "/dashboard") return "dashboard";
+  return null;
+}
+
 /* ─── Sidebar ────────────────────────────────────────────────────── */
 export default function Sidebar({ onPanelChange }) {
-  const [activeSection, setActiveSection] = useState(null);
+  // which rail icon is highlighted (follows route)
+  const [activeSectionId, setActiveSectionId] = useState(null);
+  // which section's panel is currently OPEN (null = closed)
+  const [openSectionId, setOpenSectionId] = useState(null);
+
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showAddVendorModal, setShowAddVendorModal] = useState(false);
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
   const activeItem = location.pathname + location.search;
 
-  const panelOpen =
-    !!activeSection && !sections.find((s) => s.id === activeSection)?.direct;
+  const panelOpen = !!openSectionId || isClosing;
 
+  /* keep parent informed */
   useEffect(() => {
     onPanelChange?.(panelOpen);
   }, [panelOpen]);
 
+  /* sync active rail icon with current route */
   useEffect(() => {
+    const secId = getSectionForPath(location.pathname, location.search);
+    if (secId) setActiveSectionId(secId);
+
+    // also keep open dropdown in sync when panel is open
     for (const sec of sections) {
       if (!sec.items) continue;
       for (const item of sec.items) {
-        if (item.path && activeItem.startsWith(item.path.split("?")[0])) {
-          setActiveSection(sec.id);
-          return;
-        }
         if (item.subItems) {
           for (const sub of item.subItems) {
             if (activeItem.startsWith(sub.path.split("?")[0])) {
-              setActiveSection(sec.id);
               setOpenDropdown(item.name);
               return;
             }
@@ -707,13 +731,25 @@ export default function Sidebar({ onPanelChange }) {
     }
   }, [location.pathname, location.search]);
 
-  const handleSection = (sec) => {
+  /* clicking a rail icon */
+  const handleRailClick = (sec) => {
     if (sec.direct) {
       navigate(sec.direct);
-      setActiveSection(null);
+      setOpenSectionId(null);
       return;
     }
-    setActiveSection((p) => (p === sec.id ? null : sec.id));
+    // toggle panel open/close for this section
+    setOpenSectionId((prev) => (prev === sec.id ? null : sec.id));
+  };
+
+  /* soft close — slide out first, then navigate after animation */
+  const closePanel = (cb) => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setOpenSectionId(null);
+      setIsClosing(false);
+      cb?.();
+    }, 260);
   };
 
   const handleLogout = async (e) => {
@@ -739,7 +775,7 @@ export default function Sidebar({ onPanelChange }) {
     }
   };
 
-  const cur = sections.find((s) => s.id === activeSection);
+  const cur = sections.find((s) => s.id === openSectionId);
 
   return (
     <>
@@ -771,7 +807,6 @@ export default function Sidebar({ onPanelChange }) {
             linear-gradient(180deg, #091022 0%, #060d1a 60%, #050b16 100%);
         }
 
-        /* Logo */
         .rb-logo {
           width: var(--rail-w); height: 64px; flex-shrink: 0;
           display: flex; align-items: center; justify-content: center;
@@ -809,7 +844,6 @@ export default function Sidebar({ onPanelChange }) {
           background: linear-gradient(90deg, transparent, rgba(255,123,29,0.35), transparent);
         }
 
-        /* Icons list */
         .rb-icons {
           flex: 1; width: 100%; display: flex; flex-direction: column;
           align-items: center; gap: 2px; padding: 10px 0; overflow-y: auto;
@@ -824,7 +858,6 @@ export default function Sidebar({ onPanelChange }) {
           background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
         }
 
-        /* Icon button */
         .rb-icon-btn {
           position: relative; width: 46px; height: 46px; border-radius: 14px;
           display: flex; align-items: center; justify-content: center;
@@ -837,13 +870,17 @@ export default function Sidebar({ onPanelChange }) {
           color: var(--text-bright);
           transform: scale(1.08);
         }
+        /* active = route matches this section */
         .rb-icon-btn.rb-active {
           color: var(--accent);
           background: var(--accent-soft);
           box-shadow: inset 0 0 0 1px rgba(255,123,29,0.15);
         }
+        /* panel is open for this section (but route may differ) */
+        .rb-icon-btn.rb-panel-open-icon {
+          background: rgba(255,255,255,0.06);
+        }
 
-        /* Active indicator pill */
         .rb-pill {
           position: absolute; left: 0; top: 50%; transform: translateY(-50%);
           width: 3px; height: 0; border-radius: 0 3px 3px 0;
@@ -854,7 +891,6 @@ export default function Sidebar({ onPanelChange }) {
         }
         .rb-icon-btn.rb-active .rb-pill { height: 22px; opacity: 1; }
 
-        /* Tooltip */
         .rb-tip {
           position: absolute; left: calc(100% + 13px); top: 50%;
           transform: translateY(-50%) translateX(-6px);
@@ -873,10 +909,7 @@ export default function Sidebar({ onPanelChange }) {
           transform: translateY(-50%);
           border: 5px solid transparent; border-right-color: #0d1a30;
         }
-        .rb-icon-btn:hover .rb-tip {
-          opacity: 1;
-          transform: translateY(-50%) translateX(0);
-        }
+        .rb-icon-btn:hover .rb-tip { opacity: 1; transform: translateY(-50%) translateX(0); }
 
         /* ══════════════ PANEL ══════════════ */
         .rb-panel {
@@ -892,7 +925,6 @@ export default function Sidebar({ onPanelChange }) {
             radial-gradient(ellipse 80% 30% at 20% 100%, rgba(56,189,248,0.04) 0%, transparent 60%),
             linear-gradient(180deg, #0c1528 0%, #081020 50%, #060c18 100%);
         }
-        /* Right edge accent line */
         .rb-panel::after {
           content: ''; position: absolute; top: 0; right: -1px; width: 1px; height: 100%;
           background: linear-gradient(180deg,
@@ -903,11 +935,9 @@ export default function Sidebar({ onPanelChange }) {
           );
           pointer-events: none;
         }
-
         .rb-panel.rb-panel-closed { transform: translateX(-110%); opacity: 0; pointer-events: none; }
         .rb-panel.rb-panel-open   { transform: translateX(0); opacity: 1; }
 
-        /* Panel header */
         .rb-panel-head {
           height: 64px; display: flex; align-items: center;
           justify-content: space-between; padding: 0 14px 0 18px;
@@ -918,7 +948,6 @@ export default function Sidebar({ onPanelChange }) {
         .rb-title-icon {
           width: 26px; height: 26px; border-radius: 8px;
           display: flex; align-items: center; justify-content: center;
-          font-size: 10px;
         }
         .rb-panel-label {
           font-size: 10px; font-weight: 700;
@@ -939,14 +968,12 @@ export default function Sidebar({ onPanelChange }) {
           color: #ef4444;
         }
 
-        /* Panel scroll */
         .rb-panel-scroll { flex: 1; overflow-y: auto; padding: 10px 10px 24px; }
         .rb-panel-scroll::-webkit-scrollbar { width: 2px; }
         .rb-panel-scroll::-webkit-scrollbar-thumb {
           background: rgba(255,123,29,0.2); border-radius: 4px;
         }
 
-        /* Nav row */
         .rb-nav {
           width: 100%; display: flex; align-items: center;
           justify-content: space-between;
@@ -971,7 +998,6 @@ export default function Sidebar({ onPanelChange }) {
         }
         .rb-nav-l { display: flex; align-items: center; gap: 9px; }
 
-        /* Sub list */
         .rb-sub {
           overflow: hidden;
           transition: max-height 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.22s;
@@ -1008,7 +1034,6 @@ export default function Sidebar({ onPanelChange }) {
           flex-shrink: 0;
         }
 
-        /* Dim */
         .rb-dim {
           position: fixed; inset: 0 0 0 var(--rail-w); z-index: 53;
           background: rgba(3,8,20,0.65); backdrop-filter: blur(4px);
@@ -1033,17 +1058,20 @@ export default function Sidebar({ onPanelChange }) {
             .filter((s) => s.id !== "additional")
             .map((sec) => {
               const Icon = sec.icon;
-              const isActive = activeSection === sec.id;
+              // icon is "active" if current route belongs to this section
+              const isRouteActive = activeSectionId === sec.id;
+              // icon shows open-panel style if its panel is currently slid open
+              const isPanelOpen = openSectionId === sec.id;
               return (
                 <button
                   key={sec.id}
-                  className={`rb-icon-btn ${isActive ? "rb-active" : ""}`}
-                  onClick={() => handleSection(sec)}
+                  className={`rb-icon-btn ${isRouteActive ? "rb-active" : ""} ${isPanelOpen && !isRouteActive ? "rb-panel-open-icon" : ""}`}
+                  onClick={() => handleRailClick(sec)}
                 >
                   <div
                     className="rb-pill"
                     style={
-                      isActive
+                      isRouteActive
                         ? {
                             background: sec.color,
                             boxShadow: `0 0 10px ${sec.color}99`,
@@ -1051,7 +1079,10 @@ export default function Sidebar({ onPanelChange }) {
                         : {}
                     }
                   />
-                  <Icon size={18} color={isActive ? sec.color : undefined} />
+                  <Icon
+                    size={18}
+                    color={isRouteActive ? sec.color : undefined}
+                  />
                   <span className="rb-tip">{sec.label}</span>
                 </button>
               );
@@ -1064,17 +1095,18 @@ export default function Sidebar({ onPanelChange }) {
             .filter((s) => s.id === "additional")
             .map((sec) => {
               const Icon = sec.icon;
-              const isActive = activeSection === sec.id;
+              const isRouteActive = activeSectionId === sec.id;
+              const isPanelOpen = openSectionId === sec.id;
               return (
                 <button
                   key={sec.id}
-                  className={`rb-icon-btn ${isActive ? "rb-active" : ""}`}
-                  onClick={() => handleSection(sec)}
+                  className={`rb-icon-btn ${isRouteActive ? "rb-active" : ""} ${isPanelOpen && !isRouteActive ? "rb-panel-open-icon" : ""}`}
+                  onClick={() => handleRailClick(sec)}
                 >
                   <div
                     className="rb-pill"
                     style={
-                      isActive
+                      isRouteActive
                         ? {
                             background: sec.color,
                             boxShadow: `0 0 10px ${sec.color}99`,
@@ -1082,7 +1114,10 @@ export default function Sidebar({ onPanelChange }) {
                         : {}
                     }
                   />
-                  <Icon size={18} color={isActive ? sec.color : undefined} />
+                  <Icon
+                    size={18}
+                    color={isRouteActive ? sec.color : undefined}
+                  />
                   <span className="rb-tip">{sec.label}</span>
                 </button>
               );
@@ -1092,7 +1127,7 @@ export default function Sidebar({ onPanelChange }) {
 
       {/* ── Slide Panel ── */}
       <div
-        className={`rb rb-panel ${panelOpen ? "rb-panel-open" : "rb-panel-closed"}`}
+        className={`rb rb-panel ${openSectionId && !isClosing ? "rb-panel-open" : "rb-panel-closed"}`}
       >
         {cur && (
           <>
@@ -1110,10 +1145,7 @@ export default function Sidebar({ onPanelChange }) {
                 </div>
                 <span className="rb-panel-label">{cur.label}</span>
               </div>
-              <button
-                className="rb-close"
-                onClick={() => setActiveSection(null)}
-              >
+              <button className="rb-close" onClick={closePanel}>
                 <X size={13} />
               </button>
             </div>
@@ -1134,6 +1166,10 @@ export default function Sidebar({ onPanelChange }) {
                       key={item.name}
                       to={item.path}
                       className={`rb-nav ${directActive ? "rb-nav-active" : ""}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        closePanel(() => navigate(item.path));
+                      }}
                     >
                       <div className="rb-nav-l">
                         <Icon size={14} />
@@ -1193,6 +1229,7 @@ export default function Sidebar({ onPanelChange }) {
                                 onClick={(e) => {
                                   e.preventDefault();
                                   setShowAddVendorModal(true);
+                                  closePanel(); /* ← close panel on modal open too */
                                 }}
                               >
                                 {SubIcon && <SubIcon size={11} />}
@@ -1206,6 +1243,10 @@ export default function Sidebar({ onPanelChange }) {
                             <Link
                               to={sub.path}
                               className={`rb-sub-a ${subActive ? "rb-sub-active" : ""}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                closePanel(() => navigate(sub.path));
+                              }}
                             >
                               {SubIcon && <SubIcon size={11} />}
                               {sub.name}
@@ -1222,9 +1263,7 @@ export default function Sidebar({ onPanelChange }) {
         )}
       </div>
 
-      {panelOpen && (
-        <div className="rb-dim" onClick={() => setActiveSection(null)} />
-      )}
+      {panelOpen && <div className="rb-dim" onClick={closePanel} />}
 
       <AddVendorModal
         isOpen={showAddVendorModal}

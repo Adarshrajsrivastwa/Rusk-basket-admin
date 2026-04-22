@@ -1,13 +1,6 @@
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
-import {
-  Loader2,
-  Save,
-  ToggleLeft,
-  ToggleRight,
-  Users,
-  Gift,
-} from "lucide-react";
+import { Loader2, Save, Users, Gift } from "lucide-react";
 import api from "../../api/api";
 
 const ReferralCashbackSettings = () => {
@@ -17,7 +10,6 @@ const ReferralCashbackSettings = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Referral Settings State
   const [referralSettings, setReferralSettings] = useState({
     userReferrerAmount: 0,
     userRefereeAmount: 0,
@@ -26,7 +18,6 @@ const ReferralCashbackSettings = () => {
     isActive: true,
   });
 
-  // Cashback Settings State
   const [cashbackSettings, setCashbackSettings] = useState({
     cashbackPercentage: 0,
     minimumOrderAmount: 0,
@@ -37,7 +28,6 @@ const ReferralCashbackSettings = () => {
     isActive: true,
   });
 
-  // Fetch Referral Settings
   const fetchReferralSettings = async () => {
     try {
       const response = await api.get("/api/admin/referral-settings");
@@ -54,12 +44,10 @@ const ReferralCashbackSettings = () => {
         });
       }
     } catch (error) {
-      console.error("Error fetching referral settings:", error);
       setErrorMessage("Failed to load referral settings");
     }
   };
 
-  // Fetch Cashback Settings
   const fetchCashbackSettings = async () => {
     try {
       const response = await api.get("/api/admin/cashback-settings");
@@ -81,41 +69,33 @@ const ReferralCashbackSettings = () => {
         });
       }
     } catch (error) {
-      console.error("Error fetching cashback settings:", error);
       setErrorMessage("Failed to load cashback settings");
     }
   };
 
-  // Load all settings on component mount
   useEffect(() => {
     const loadSettings = async () => {
       setLoading(true);
-      setErrorMessage("");
       await Promise.all([fetchReferralSettings(), fetchCashbackSettings()]);
       setLoading(false);
     };
     loadSettings();
   }, []);
 
-  // Update Referral Settings
   const handleUpdateReferralSettings = async () => {
     setSaving(true);
     setSuccessMessage("");
     setErrorMessage("");
-
     try {
-      // Validate inputs
       if (
         referralSettings.userReferrerAmount < 0 ||
         referralSettings.userRefereeAmount < 0 ||
         referralSettings.riderReferrerAmount < 0 ||
         referralSettings.riderRefereeAmount < 0
       ) {
-        setErrorMessage("All amounts must be greater than or equal to 0");
-        setSaving(false);
+        setErrorMessage("All amounts must be >= 0");
         return;
       }
-
       const response = await api.put(
         "/api/admin/referral-settings",
         referralSettings,
@@ -129,7 +109,6 @@ const ReferralCashbackSettings = () => {
         );
       }
     } catch (error) {
-      console.error("Error updating referral settings:", error);
       setErrorMessage(
         error.response?.data?.message || "Failed to update referral settings",
       );
@@ -138,23 +117,18 @@ const ReferralCashbackSettings = () => {
     }
   };
 
-  // Update Cashback Settings
   const handleUpdateCashbackSettings = async () => {
     setSaving(true);
     setSuccessMessage("");
     setErrorMessage("");
-
     try {
-      // Validate inputs
       if (
         cashbackSettings.cashbackPercentage < 0 ||
         cashbackSettings.cashbackPercentage > 100
       ) {
         setErrorMessage("Cashback percentage must be between 0 and 100");
-        setSaving(false);
         return;
       }
-
       if (
         cashbackSettings.maxCashbackUsagePercentage < 0 ||
         cashbackSettings.maxCashbackUsagePercentage > 100
@@ -162,21 +136,8 @@ const ReferralCashbackSettings = () => {
         setErrorMessage(
           "Max cashback usage percentage must be between 0 and 100",
         );
-        setSaving(false);
         return;
       }
-
-      if (
-        cashbackSettings.minimumOrderAmount < 0 ||
-        cashbackSettings.maximumCashbackPerOrder < 0 ||
-        cashbackSettings.minimumCashbackToUse < 0 ||
-        cashbackSettings.maxCashbackUsageAmount < 0
-      ) {
-        setErrorMessage("All amounts must be greater than or equal to 0");
-        setSaving(false);
-        return;
-      }
-
       const response = await api.put(
         "/api/admin/cashback-settings",
         cashbackSettings,
@@ -190,7 +151,6 @@ const ReferralCashbackSettings = () => {
         );
       }
     } catch (error) {
-      console.error("Error updating cashback settings:", error);
       setErrorMessage(
         error.response?.data?.message || "Failed to update cashback settings",
       );
@@ -199,7 +159,6 @@ const ReferralCashbackSettings = () => {
     }
   };
 
-  // Input change handlers
   const handleReferralChange = (field, value) => {
     setReferralSettings((prev) => ({
       ...prev,
@@ -214,456 +173,387 @@ const ReferralCashbackSettings = () => {
     }));
   };
 
+  const StatusBadge = ({ isActive }) => (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ring-1 ${
+        isActive
+          ? "bg-emerald-50 text-emerald-700 border-emerald-200 ring-emerald-100"
+          : "bg-gray-50 text-gray-500 border-gray-200 ring-gray-100"
+      }`}
+    >
+      <span
+        className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-emerald-500" : "bg-gray-400"}`}
+      />
+      {isActive ? "Active" : "Inactive"}
+    </span>
+  );
+
+  const FieldInput = ({ label, hint, value, onChange, ...props }) => (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-xs font-semibold text-gray-700">
+        {label} <span className="text-gray-400 font-normal">{hint}</span>
+      </label>
+      <input
+        type="number"
+        value={value}
+        onChange={onChange}
+        className="border border-gray-200 px-3 py-2 rounded-lg text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#FF7B1D] focus:border-[#FF7B1D] h-9 transition-all"
+        {...props}
+      />
+    </div>
+  );
+
+  const ToggleSwitch = ({ isActive, onClick }) => (
+    <button onClick={onClick} className="flex items-center gap-2.5">
+      <div
+        className={`w-11 h-6 rounded-full relative transition-colors duration-200 ${
+          isActive ? "bg-emerald-500" : "bg-gray-300"
+        }`}
+      >
+        <div
+          className={`w-4.5 h-4.5 bg-white rounded-full absolute top-[3px] transition-all duration-200 shadow ${
+            isActive ? "left-[23px]" : "left-[3px]"
+          }`}
+          style={{ width: 18, height: 18 }}
+        />
+      </div>
+      <span
+        className={`text-xs font-semibold ${isActive ? "text-emerald-600" : "text-gray-400"}`}
+      >
+        {isActive ? "Active" : "Inactive"}
+      </span>
+    </button>
+  );
+
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
             <Loader2
-              className="animate-spin text-[#F26422] mx-auto mb-4"
-              size={40}
+              className="animate-spin text-[#FF7B1D] mx-auto mb-3"
+              size={36}
             />
-            <p className="text-gray-600">Loading settings...</p>
+            <p className="text-sm text-gray-400 font-medium">
+              Loading settings...
+            </p>
           </div>
         </div>
       </DashboardLayout>
     );
   }
 
+  const tabs = [
+    { key: "referral", label: "Referral settings", icon: <Users size={14} /> },
+    { key: "cashback", label: "Cashback settings", icon: <Gift size={14} /> },
+  ];
+
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-0 p-0 ml-6">
-        <div className="max-w-5xl mx-auto">
-          {/* Header */}
+      <style>{`
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeSlideIn 0.25s ease forwards; }
+      `}</style>
 
-          {/* Success/Error Messages */}
-          {successMessage && (
-            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
-              {successMessage}
-            </div>
-          )}
-          {errorMessage && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              {errorMessage}
-            </div>
-          )}
-
-          {/* Tabs */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 mt-8">
-            <div className="flex border-b border-gray-200">
+      <div className="px-1 mt-3">
+        {/* Toolbar */}
+        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+          {/* Tab Pills */}
+          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
+            {tabs.map((tab) => (
               <button
+                key={tab.key}
                 onClick={() => {
-                  setActiveTab("referral");
+                  setActiveTab(tab.key);
                   setSuccessMessage("");
                   setErrorMessage("");
                 }}
-                className={`flex-1 px-6 py-4 font-semibold transition-colors ${
-                  activeTab === "referral"
-                    ? "text-[#F26422] border-b-2 border-[#F26422] bg-orange-50"
-                    : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
+                  activeTab === tab.key
+                    ? "bg-white text-[#FF7B1D] shadow-sm shadow-orange-100"
+                    : "text-gray-500 hover:text-gray-700"
                 }`}
               >
-                <div className="flex items-center justify-center gap-2">
-                  <Users size={20} />
-                  <span>Referral Settings</span>
-                </div>
+                {tab.icon}
+                {tab.label}
               </button>
-              <button
-                onClick={() => {
-                  setActiveTab("cashback");
-                  setSuccessMessage("");
-                  setErrorMessage("");
-                }}
-                className={`flex-1 px-6 py-4 font-semibold transition-colors ${
-                  activeTab === "cashback"
-                    ? "text-[#F26422] border-b-2 border-[#F26422] bg-orange-50"
-                    : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-                }`}
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <Gift size={20} />
-                  <span>Cashback Settings</span>
-                </div>
-              </button>
-            </div>
+            ))}
+          </div>
+        </div>
 
-            {/* Referral Settings Tab */}
+        {/* Messages */}
+        {successMessage && (
+          <div className="mb-3 px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-xs font-medium">
+            {successMessage}
+          </div>
+        )}
+        {errorMessage && (
+          <div className="mb-3 px-4 py-2.5 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-medium">
+            {errorMessage}
+          </div>
+        )}
+
+        {/* Card */}
+        <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+          {/* Card Header */}
+          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+              <span className="text-sm font-semibold text-gray-700">
+                {activeTab === "referral"
+                  ? "Referral program settings"
+                  : "Cashback program settings"}
+              </span>
+            </div>
+            <StatusBadge
+              isActive={
+                activeTab === "referral"
+                  ? referralSettings.isActive
+                  : cashbackSettings.isActive
+              }
+            />
+          </div>
+
+          {/* Orange Column Headers */}
+          {activeTab === "referral" && (
+            <div className="grid grid-cols-4 gap-4 px-5 py-2.5 bg-gradient-to-r from-[#FF7B1D] to-orange-400">
+              {[
+                "User referrer (₹)",
+                "User referee (₹)",
+                "Rider referrer (₹)",
+                "Rider referee (₹)",
+              ].map((h) => (
+                <span
+                  key={h}
+                  className="text-xs font-bold text-white uppercase tracking-wider opacity-90"
+                >
+                  {h}
+                </span>
+              ))}
+            </div>
+          )}
+          {activeTab === "cashback" && (
+            <div className="grid grid-cols-3 gap-4 px-5 py-2.5 bg-gradient-to-r from-[#FF7B1D] to-orange-400">
+              {["Earning rules", "Limits", "Usage rules"].map((h) => (
+                <span
+                  key={h}
+                  className="text-xs font-bold text-white uppercase tracking-wider opacity-90"
+                >
+                  {h}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Form Body */}
+          <div className="p-5 fade-in">
             {activeTab === "referral" && (
-              <div className="p-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-6">
-                  Referral Program Settings
-                </h2>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FieldInput
+                    label="User referrer amount"
+                    hint="— amount given to user who refers"
+                    value={referralSettings.userReferrerAmount}
+                    min="0"
+                    step="0.01"
+                    onChange={(e) =>
+                      handleReferralChange("userReferrerAmount", e.target.value)
+                    }
+                  />
+                  <FieldInput
+                    label="User referee amount"
+                    hint="— amount given to referred user"
+                    value={referralSettings.userRefereeAmount}
+                    min="0"
+                    step="0.01"
+                    onChange={(e) =>
+                      handleReferralChange("userRefereeAmount", e.target.value)
+                    }
+                  />
+                  <FieldInput
+                    label="Rider referrer amount"
+                    hint="— amount given to rider who refers"
+                    value={referralSettings.riderReferrerAmount}
+                    min="0"
+                    step="0.01"
+                    onChange={(e) =>
+                      handleReferralChange(
+                        "riderReferrerAmount",
+                        e.target.value,
+                      )
+                    }
+                  />
+                  <FieldInput
+                    label="Rider referee amount"
+                    hint="— amount given to referred rider"
+                    value={referralSettings.riderRefereeAmount}
+                    min="0"
+                    step="0.01"
+                    onChange={(e) =>
+                      handleReferralChange("riderRefereeAmount", e.target.value)
+                    }
+                  />
+                </div>
 
-                <div className="space-y-6">
-                  {/* User Referrer Amount */}
+                <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      User Referrer Amount (₹)
-                      <span className="text-gray-500 ml-1">
-                        - Amount given to user who refers
-                      </span>
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={referralSettings.userReferrerAmount}
-                      onChange={(e) =>
-                        handleReferralChange(
-                          "userReferrerAmount",
-                          e.target.value,
-                        )
-                      }
-                      className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
-                      placeholder="Enter amount"
-                    />
+                    <p className="text-xs font-semibold text-gray-700 mb-0.5">
+                      Referral program status
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Enable or disable the referral program
+                    </p>
                   </div>
+                  <ToggleSwitch
+                    isActive={referralSettings.isActive}
+                    onClick={() =>
+                      handleReferralChange(
+                        "isActive",
+                        !referralSettings.isActive,
+                      )
+                    }
+                  />
+                </div>
 
-                  {/* User Referee Amount */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      User Referee Amount (₹)
-                      <span className="text-gray-500 ml-1">
-                        - Amount given to user who is referred
-                      </span>
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={referralSettings.userRefereeAmount}
-                      onChange={(e) =>
-                        handleReferralChange(
-                          "userRefereeAmount",
-                          e.target.value,
-                        )
-                      }
-                      className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
-                      placeholder="Enter amount"
-                    />
-                  </div>
-
-                  {/* Rider Referrer Amount */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Rider Referrer Amount (₹)
-                      <span className="text-gray-500 ml-1">
-                        - Amount given to rider who refers
-                      </span>
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={referralSettings.riderReferrerAmount}
-                      onChange={(e) =>
-                        handleReferralChange(
-                          "riderReferrerAmount",
-                          e.target.value,
-                        )
-                      }
-                      className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
-                      placeholder="Enter amount"
-                    />
-                  </div>
-
-                  {/* Rider Referee Amount */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Rider Referee Amount (₹)
-                      <span className="text-gray-500 ml-1">
-                        - Amount given to rider who is referred
-                      </span>
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={referralSettings.riderRefereeAmount}
-                      onChange={(e) =>
-                        handleReferralChange(
-                          "riderRefereeAmount",
-                          e.target.value,
-                        )
-                      }
-                      className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
-                      placeholder="Enter amount"
-                    />
-                  </div>
-
-                  {/* Active Toggle */}
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Referral Program Status
-                      </label>
-                      <p className="text-xs text-gray-500">
-                        Enable or disable the referral program
-                      </p>
-                    </div>
-                    <button
-                      onClick={() =>
-                        handleReferralChange(
-                          "isActive",
-                          !referralSettings.isActive,
-                        )
-                      }
-                      className="flex items-center gap-2"
-                    >
-                      {referralSettings.isActive ? (
-                        <ToggleRight className="text-[#247606]" size={32} />
-                      ) : (
-                        <ToggleLeft className="text-gray-400" size={32} />
-                      )}
-                      <span
-                        className={`font-semibold ${
-                          referralSettings.isActive
-                            ? "text-[#247606]"
-                            : "text-gray-500"
-                        }`}
-                      >
-                        {referralSettings.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </button>
-                  </div>
-
-                  {/* Save Button */}
-                  <div className="flex justify-end pt-4 border-t">
-                    <button
-                      onClick={handleUpdateReferralSettings}
-                      disabled={saving}
-                      className="bg-[#F26422] text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {saving ? (
-                        <>
-                          <Loader2 className="animate-spin" size={18} />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save size={18} />
-                          Save Referral Settings
-                        </>
-                      )}
-                    </button>
-                  </div>
+                <div className="flex justify-end pt-3 border-t border-gray-100">
+                  <button
+                    onClick={handleUpdateReferralSettings}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-5 py-2 bg-[#FF7B1D] text-white text-xs font-semibold rounded-xl hover:bg-orange-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="animate-spin" size={14} />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={14} />
+                        Save referral settings
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             )}
 
-            {/* Cashback Settings Tab */}
             {activeTab === "cashback" && (
-              <div className="p-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-6">
-                  Cashback Program Settings
-                </h2>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FieldInput
+                    label="Cashback percentage"
+                    hint="— % of order amount (0–100)"
+                    value={cashbackSettings.cashbackPercentage}
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    onChange={(e) =>
+                      handleCashbackChange("cashbackPercentage", e.target.value)
+                    }
+                  />
+                  <FieldInput
+                    label="Minimum order amount"
+                    hint="— minimum to earn cashback (₹)"
+                    value={cashbackSettings.minimumOrderAmount}
+                    min="0"
+                    step="0.01"
+                    onChange={(e) =>
+                      handleCashbackChange("minimumOrderAmount", e.target.value)
+                    }
+                  />
+                  <FieldInput
+                    label="Maximum cashback per order"
+                    hint="— 0 = no limit (₹)"
+                    value={cashbackSettings.maximumCashbackPerOrder}
+                    min="0"
+                    step="0.01"
+                    onChange={(e) =>
+                      handleCashbackChange(
+                        "maximumCashbackPerOrder",
+                        e.target.value,
+                      )
+                    }
+                  />
+                  <FieldInput
+                    label="Minimum cashback to use"
+                    hint="— minimum balance to redeem (₹)"
+                    value={cashbackSettings.minimumCashbackToUse}
+                    min="0"
+                    step="0.01"
+                    onChange={(e) =>
+                      handleCashbackChange(
+                        "minimumCashbackToUse",
+                        e.target.value,
+                      )
+                    }
+                  />
+                  <FieldInput
+                    label="Max cashback usage %"
+                    hint="— max % of order via cashback"
+                    value={cashbackSettings.maxCashbackUsagePercentage}
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    onChange={(e) =>
+                      handleCashbackChange(
+                        "maxCashbackUsagePercentage",
+                        e.target.value,
+                      )
+                    }
+                  />
+                  <FieldInput
+                    label="Max cashback usage amount"
+                    hint="— max per order, 0 = no limit (₹)"
+                    value={cashbackSettings.maxCashbackUsageAmount}
+                    min="0"
+                    step="0.01"
+                    onChange={(e) =>
+                      handleCashbackChange(
+                        "maxCashbackUsageAmount",
+                        e.target.value,
+                      )
+                    }
+                  />
+                </div>
 
-                <div className="space-y-6">
-                  {/* Cashback Percentage */}
+                <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Cashback Percentage (%)
-                      <span className="text-gray-500 ml-1">
-                        - Percentage of order amount given as cashback (0-100)
-                      </span>
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      value={cashbackSettings.cashbackPercentage}
-                      onChange={(e) =>
-                        handleCashbackChange(
-                          "cashbackPercentage",
-                          e.target.value,
-                        )
-                      }
-                      className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
-                      placeholder="Enter percentage (0-100)"
-                    />
+                    <p className="text-xs font-semibold text-gray-700 mb-0.5">
+                      Cashback program status
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Enable or disable the cashback program
+                    </p>
                   </div>
+                  <ToggleSwitch
+                    isActive={cashbackSettings.isActive}
+                    onClick={() =>
+                      handleCashbackChange(
+                        "isActive",
+                        !cashbackSettings.isActive,
+                      )
+                    }
+                  />
+                </div>
 
-                  {/* Minimum Order Amount */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Minimum Order Amount (₹)
-                      <span className="text-gray-500 ml-1">
-                        - Minimum order amount to earn cashback
-                      </span>
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={cashbackSettings.minimumOrderAmount}
-                      onChange={(e) =>
-                        handleCashbackChange(
-                          "minimumOrderAmount",
-                          e.target.value,
-                        )
-                      }
-                      className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
-                      placeholder="Enter minimum order amount"
-                    />
-                  </div>
-
-                  {/* Maximum Cashback Per Order */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Maximum Cashback Per Order (₹)
-                      <span className="text-gray-500 ml-1">
-                        - Maximum cashback that can be earned per order (0 = no
-                        limit)
-                      </span>
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={cashbackSettings.maximumCashbackPerOrder}
-                      onChange={(e) =>
-                        handleCashbackChange(
-                          "maximumCashbackPerOrder",
-                          e.target.value,
-                        )
-                      }
-                      className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
-                      placeholder="Enter maximum cashback (0 for no limit)"
-                    />
-                  </div>
-
-                  {/* Minimum Cashback To Use */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Minimum Cashback To Use (₹)
-                      <span className="text-gray-500 ml-1">
-                        - Minimum cashback balance required to use cashback
-                      </span>
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={cashbackSettings.minimumCashbackToUse}
-                      onChange={(e) =>
-                        handleCashbackChange(
-                          "minimumCashbackToUse",
-                          e.target.value,
-                        )
-                      }
-                      className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
-                      placeholder="Enter minimum cashback to use"
-                    />
-                  </div>
-
-                  {/* Max Cashback Usage Percentage */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Max Cashback Usage Percentage (%)
-                      <span className="text-gray-500 ml-1">
-                        - Maximum percentage of order amount that can be paid
-                        using cashback (0-100)
-                      </span>
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      value={cashbackSettings.maxCashbackUsagePercentage}
-                      onChange={(e) =>
-                        handleCashbackChange(
-                          "maxCashbackUsagePercentage",
-                          e.target.value,
-                        )
-                      }
-                      className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
-                      placeholder="Enter percentage (0-100)"
-                    />
-                  </div>
-
-                  {/* Max Cashback Usage Amount */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Max Cashback Usage Amount (₹)
-                      <span className="text-gray-500 ml-1">
-                        - Maximum cashback amount that can be used per order (0
-                        = no limit)
-                      </span>
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={cashbackSettings.maxCashbackUsageAmount}
-                      onChange={(e) =>
-                        handleCashbackChange(
-                          "maxCashbackUsageAmount",
-                          e.target.value,
-                        )
-                      }
-                      className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F26422]"
-                      placeholder="Enter maximum usage amount (0 for no limit)"
-                    />
-                  </div>
-
-                  {/* Active Toggle */}
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Cashback Program Status
-                      </label>
-                      <p className="text-xs text-gray-500">
-                        Enable or disable the cashback program
-                      </p>
-                    </div>
-                    <button
-                      onClick={() =>
-                        handleCashbackChange(
-                          "isActive",
-                          !cashbackSettings.isActive,
-                        )
-                      }
-                      className="flex items-center gap-2"
-                    >
-                      {cashbackSettings.isActive ? (
-                        <ToggleRight className="text-[#247606]" size={32} />
-                      ) : (
-                        <ToggleLeft className="text-gray-400" size={32} />
-                      )}
-                      <span
-                        className={`font-semibold ${
-                          cashbackSettings.isActive
-                            ? "text-[#247606]"
-                            : "text-gray-500"
-                        }`}
-                      >
-                        {cashbackSettings.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </button>
-                  </div>
-
-                  {/* Save Button */}
-                  <div className="flex justify-end pt-4 border-t">
-                    <button
-                      onClick={handleUpdateCashbackSettings}
-                      disabled={saving}
-                      className="bg-[#F26422] text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {saving ? (
-                        <>
-                          <Loader2 className="animate-spin" size={18} />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save size={18} />
-                          Save Cashback Settings
-                        </>
-                      )}
-                    </button>
-                  </div>
+                <div className="flex justify-end pt-3 border-t border-gray-100">
+                  <button
+                    onClick={handleUpdateCashbackSettings}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-5 py-2 bg-[#FF7B1D] text-white text-xs font-semibold rounded-xl hover:bg-orange-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="animate-spin" size={14} />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={14} />
+                        Save cashback settings
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             )}

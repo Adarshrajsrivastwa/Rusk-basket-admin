@@ -1,571 +1,3 @@
-// import React, { useState, useEffect } from "react";
-// import DashboardLayout from "../../components/DashboardLayout";
-// import api from "../../api/api";
-// import {
-//   DollarSign,
-//   CheckCircle,
-//   XCircle,
-//   Search,
-//   Filter,
-//   Calendar,
-//   User,
-//   AlertCircle,
-//   Loader2,
-//   Store,
-// } from "lucide-react";
-
-// const AdminVendorWithdrawalRequests = () => {
-//   const [requests, setRequests] = useState([]);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState(null);
-//   const [success, setSuccess] = useState(null);
-//   const [actionLoading, setActionLoading] = useState(null);
-
-//   // Filters
-//   const [statusFilter, setStatusFilter] = useState("all");
-//   const [vendorIdFilter, setVendorIdFilter] = useState("");
-//   const [searchQuery, setSearchQuery] = useState("");
-
-//   // Fetch withdrawal requests
-//   const fetchRequests = async () => {
-//     try {
-//       setLoading(true);
-//       setError(null);
-
-//       const params = {};
-//       if (statusFilter !== "all") {
-//         params.status = statusFilter;
-//       }
-//       if (vendorIdFilter) {
-//         params.vendorId = vendorIdFilter;
-//       }
-
-//       console.log("========================================");
-//       console.log("📥 FETCHING VENDOR WITHDRAWAL REQUESTS:");
-//       console.log("API Endpoint: /api/admin/vendors/withdrawal-requests");
-//       console.log("Params:", params);
-//       console.log("========================================");
-
-//       const response = await api.get(
-//         "/api/admin/vendors/withdrawal-requests",
-//         { params }
-//       );
-
-//       console.log("========================================");
-//       console.log("✅ RESPONSE RECEIVED:");
-//       console.log("Status:", response.status);
-//       console.log("Full response:", response.data);
-//       console.log("========================================");
-
-//       const result = response.data;
-
-//       if (result.success) {
-//         const requestsData = result.data || [];
-//         console.log("========================================");
-//         console.log("📋 REQUESTS DATA:");
-//         console.log("Total requests:", requestsData.length);
-//         if (requestsData.length > 0) {
-//           console.log("First request structure:", requestsData[0]);
-//           console.log("First request keys:", Object.keys(requestsData[0]));
-//           console.log("First request _id:", requestsData[0]._id);
-//           console.log("First request requestId:", requestsData[0].requestId);
-//         }
-//         console.log("========================================");
-//         setRequests(requestsData);
-//       } else {
-//         setError(result.message || "Failed to fetch withdrawal requests");
-//         setRequests([]);
-//       }
-//     } catch (error) {
-//       console.error("Error fetching withdrawal requests:", error);
-
-//       // Check for backend routing issue
-//       if (error.response?.status === 500) {
-//         const errorData = error.response?.data;
-//         if (typeof errorData === 'string' && errorData.includes('Cast to ObjectId failed')) {
-//           setError(
-//             "⚠️ Backend routing issue detected. " +
-//             "The route '/api/admin/vendors/withdrawal-requests' is being matched by '/api/admin/vendors/:vendorId'. " +
-//             "Please ensure the withdrawal-requests route is defined BEFORE the :vendorId route in your backend routes file."
-//           );
-//         } else {
-//           setError(
-//             error.response?.data?.message ||
-//             "Server error occurred. Please check backend logs."
-//           );
-//         }
-//       } else {
-//         setError(
-//           error.response?.data?.message ||
-//           "Error fetching withdrawal requests. Please try again."
-//         );
-//       }
-//       setRequests([]);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   // Fetch requests on mount and when filters change
-//   useEffect(() => {
-//     fetchRequests();
-//   }, [statusFilter, vendorIdFilter]);
-
-//   // Handle approve request
-//   const handleApprove = async (requestId) => {
-//     // Validate requestId
-//     if (!requestId || requestId === "undefined") {
-//       console.error("Invalid requestId:", requestId);
-//       setError("Invalid request ID. Please refresh the page and try again.");
-//       return;
-//     }
-
-//     if (
-//       !window.confirm(
-//         "Are you sure you want to approve this withdrawal request?"
-//       )
-//     ) {
-//       return;
-//     }
-
-//     try {
-//       setActionLoading(requestId);
-//       setError(null);
-//       setSuccess(null);
-
-//       console.log("========================================");
-//       console.log("✅ APPROVING WITHDRAWAL REQUEST:");
-//       console.log("Request ID:", requestId);
-//       console.log("API Endpoint: /api/admin/vendors/withdrawal-requests/" + requestId + "/approve");
-//       console.log("Method: PUT");
-//       console.log("========================================");
-
-//       const response = await api.put(
-//         `/api/admin/vendors/withdrawal-requests/${requestId}/approve`
-//       );
-
-//       console.log("========================================");
-//       console.log("✅ APPROVE RESPONSE:");
-//       console.log("Status:", response.status);
-//       console.log("Response:", response.data);
-//       console.log("========================================");
-
-//       const result = response.data;
-
-//       if (result.success) {
-//         setSuccess("Withdrawal request approved successfully!");
-//         fetchRequests();
-//         setTimeout(() => setSuccess(null), 3000);
-//       } else {
-//         setError(result.message || "Failed to approve request");
-//       }
-//     } catch (error) {
-//       console.error("Error approving request:", error);
-//       setError(
-//         error.response?.data?.message || "Error approving withdrawal request"
-//       );
-//     } finally {
-//       setActionLoading(null);
-//     }
-//   };
-
-//   // Handle reject request
-//   const handleReject = async (requestId) => {
-//     // Validate requestId
-//     if (!requestId || requestId === "undefined") {
-//       console.error("Invalid requestId:", requestId);
-//       setError("Invalid request ID. Please refresh the page and try again.");
-//       return;
-//     }
-
-//     if (
-//       !window.confirm(
-//         "Are you sure you want to reject this withdrawal request?"
-//       )
-//     ) {
-//       return;
-//     }
-
-//     try {
-//       setActionLoading(requestId);
-//       setError(null);
-//       setSuccess(null);
-
-//       console.log("========================================");
-//       console.log("❌ REJECTING WITHDRAWAL REQUEST:");
-//       console.log("Request ID:", requestId);
-//       console.log("API Endpoint: /api/admin/vendors/withdrawal-requests/" + requestId + "/reject");
-//       console.log("Method: PUT");
-//       console.log("========================================");
-
-//       const response = await api.put(
-//         `/api/admin/vendors/withdrawal-requests/${requestId}/reject`
-//       );
-
-//       console.log("========================================");
-//       console.log("❌ REJECT RESPONSE:");
-//       console.log("Status:", response.status);
-//       console.log("Response:", response.data);
-//       console.log("========================================");
-
-//       const result = response.data;
-
-//       if (result.success) {
-//         setSuccess("Withdrawal request rejected successfully!");
-//         fetchRequests();
-//         setTimeout(() => setSuccess(null), 3000);
-//       } else {
-//         setError(result.message || "Failed to reject request");
-//       }
-//     } catch (error) {
-//       console.error("Error rejecting request:", error);
-//       setError(
-//         error.response?.data?.message || "Error rejecting withdrawal request"
-//       );
-//     } finally {
-//       setActionLoading(null);
-//     }
-//   };
-
-//   // Format date
-//   const formatDate = (dateString) => {
-//     if (!dateString) return "N/A";
-//     const date = new Date(dateString);
-//     return date.toLocaleDateString("en-IN", {
-//       day: "numeric",
-//       month: "short",
-//       year: "numeric",
-//       hour: "2-digit",
-//       minute: "2-digit",
-//     });
-//   };
-
-//   // Format currency
-//   const formatCurrency = (amount) => {
-//     return `₹${parseFloat(amount || 0).toLocaleString("en-IN")}`;
-//   };
-
-//   // Get status color
-//   const getStatusColor = (status) => {
-//     switch (status?.toLowerCase()) {
-//       case "approved":
-//         return "bg-green-100 text-green-800 border-green-300";
-//       case "rejected":
-//         return "bg-red-100 text-red-800 border-red-300";
-//       case "pending":
-//         return "bg-yellow-100 text-yellow-800 border-yellow-300";
-//       default:
-//         return "bg-gray-100 text-gray-800 border-gray-300";
-//     }
-//   };
-
-//   // Filter requests by search query
-//   const filteredRequests = requests.filter((request) => {
-//     if (searchQuery) {
-//       const searchLower = searchQuery.toLowerCase();
-//       const requestId = request._id || request.requestId;
-//       return (
-//         request.vendor?.storeName?.toLowerCase().includes(searchLower) ||
-//         request.vendor?.vendorName?.toLowerCase().includes(searchLower) ||
-//         request.vendor?.mobile?.toLowerCase().includes(searchLower) ||
-//         request.vendor?.contactNumber?.toLowerCase().includes(searchLower) ||
-//         request.vendor?._id?.toLowerCase().includes(searchLower) ||
-//         request.vendor?.vendorId?.toLowerCase().includes(searchLower) ||
-//         requestId?.toLowerCase().includes(searchLower) ||
-//         request.amount?.toString().includes(searchLower)
-//       );
-//     }
-//     return true;
-//   });
-
-//   // Skeleton Loader
-//   const TableSkeleton = () => (
-//     <tbody>
-//       {Array.from({ length: 8 }).map((_, i) => (
-//         <tr
-//           key={i}
-//           className="border-b border-gray-200 animate-pulse bg-white rounded-sm"
-//         >
-//           {Array.from({ length: 7 }).map((__, j) => (
-//             <td key={j} className="p-3">
-//               <div className="h-4 bg-gray-200 rounded w-[80%]" />
-//             </td>
-//           ))}
-//         </tr>
-//       ))}
-//     </tbody>
-//   );
-
-//   // Empty State
-//   const EmptyState = () => (
-//     <tbody>
-//       <tr>
-//         <td
-//           colSpan="7"
-//           className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
-//         >
-//           No withdrawal requests found.
-//         </td>
-//       </tr>
-//     </tbody>
-//   );
-
-//   return (
-//     <DashboardLayout>
-//       {/* Success/Error Messages */}
-//       {success && (
-//         <div className="mb-4 mx-4 bg-green-50 border-l-4 border-green-500 text-green-700 px-6 py-4 rounded-xl flex items-center gap-3 shadow-md">
-//           <CheckCircle size={24} />
-//           <span className="font-medium">{success}</span>
-//         </div>
-//       )}
-//       {error && (
-//         <div className="mb-4 mx-4 bg-red-50 border-l-4 border-red-500 text-red-700 px-6 py-4 rounded-xl flex items-center gap-3 shadow-md">
-//           <AlertCircle size={24} />
-//           <span className="font-medium">{error}</span>
-//         </div>
-//       )}
-
-//       {/* Header */}
-//       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-0 mb-2">
-//         <div>
-//           <h1 className="text-2xl font-bold text-gray-800">
-//             Vendor Withdrawal Requests
-//           </h1>
-//           <p className="text-sm text-gray-600 mt-1">
-//             Manage vendor withdrawal requests
-//           </p>
-//         </div>
-//       </div>
-
-//       {/* Filters and Search */}
-//       <div className="flex flex-col lg:flex-row lg:items-center gap-3 pl-4 max-w-[99%] mx-auto mb-4">
-//         {/* Status Filter */}
-//         <div className="flex gap-2 items-center overflow-x-auto pb-2 lg:pb-0">
-//           {["all", "pending", "approved", "rejected"].map((status) => (
-//             <button
-//               key={status}
-//               onClick={() => setStatusFilter(status)}
-//               className={`px-4 py-1 border rounded text-xs sm:text-sm whitespace-nowrap transition-colors ${
-//                 statusFilter === status
-//                   ? "bg-[#FF7B1D] text-white border-orange-500"
-//                   : "border-gray-400 text-gray-600 hover:bg-gray-100"
-//               }`}
-//             >
-//               {status === "all"
-//                 ? "All"
-//                 : status.charAt(0).toUpperCase() + status.slice(1)}
-//             </button>
-//           ))}
-//         </div>
-
-//         {/* Vendor ID Filter */}
-//         <div className="flex items-center gap-2">
-//           <Filter size={18} className="text-gray-600" />
-//           <input
-//             type="text"
-//             placeholder="Filter by Vendor ID"
-//             value={vendorIdFilter}
-//             onChange={(e) => setVendorIdFilter(e.target.value)}
-//             className="px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-//           />
-//         </div>
-
-//         {/* Search */}
-//         <div className="flex items-center border border-black rounded overflow-hidden h-9 w-full max-w-full sm:max-w-[400px]">
-//           <input
-//             type="text"
-//             placeholder="Search by Vendor Name, Store, Mobile, ID..."
-//             className="flex-1 px-3 sm:px-4 text-sm text-gray-800 focus:outline-none h-full"
-//             value={searchQuery}
-//             onChange={(e) => setSearchQuery(e.target.value)}
-//           />
-//           <button className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-sm px-3 sm:px-6 h-full transition-colors">
-//             <Search size={18} />
-//           </button>
-//         </div>
-//       </div>
-
-//       {/* Stats Cards */}
-//       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 pl-4 max-w-[99%] mx-auto">
-//         <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-//           <div className="flex items-center justify-between">
-//             <div>
-//               <p className="text-sm text-gray-600">Total Requests</p>
-//               <p className="text-2xl font-bold text-gray-800 mt-1">
-//                 {requests.length}
-//               </p>
-//             </div>
-//             <DollarSign className="text-orange-500" size={32} />
-//           </div>
-//         </div>
-//         <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-//           <div className="flex items-center justify-between">
-//             <div>
-//               <p className="text-sm text-gray-600">Pending</p>
-//               <p className="text-2xl font-bold text-yellow-600 mt-1">
-//                 {requests.filter((r) => r.status === "pending").length}
-//               </p>
-//             </div>
-//             <AlertCircle className="text-yellow-500" size={32} />
-//           </div>
-//         </div>
-//         <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-//           <div className="flex items-center justify-between">
-//             <div>
-//               <p className="text-sm text-gray-600">Approved</p>
-//               <p className="text-2xl font-bold text-green-600 mt-1">
-//                 {requests.filter((r) => r.status === "approved").length}
-//               </p>
-//             </div>
-//             <CheckCircle className="text-green-500" size={32} />
-//           </div>
-//         </div>
-//         <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-//           <div className="flex items-center justify-between">
-//             <div>
-//               <p className="text-sm text-gray-600">Rejected</p>
-//               <p className="text-2xl font-bold text-red-600 mt-1">
-//                 {requests.filter((r) => r.status === "rejected").length}
-//               </p>
-//             </div>
-//             <XCircle className="text-red-500" size={32} />
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* Table */}
-//       <div className="bg-white rounded-sm shadow-sm overflow-x-auto pl-4 max-w-[99%] mx-auto">
-//         <table className="w-full text-sm">
-//           <thead>
-//             <tr className="bg-[#FF7B1D] text-black">
-//               <th className="p-3 text-left">S.N</th>
-//               <th className="p-3 text-left">Request ID</th>
-//               <th className="p-3 text-left">Vendor Name</th>
-//               <th className="p-3 text-left">Store Name</th>
-//               <th className="p-3 text-left">Vendor Mobile</th>
-//               <th className="p-3 text-left">Request Amount</th>
-//               <th className="p-3 text-left">Status</th>
-//               <th className="p-3 text-left">Request Date</th>
-//               <th className="p-3 pr-6 text-right">Action</th>
-//             </tr>
-//           </thead>
-
-//           {loading ? (
-//             <TableSkeleton />
-//           ) : filteredRequests.length === 0 ? (
-//             <EmptyState />
-//           ) : (
-//             <tbody>
-//               {filteredRequests.map((request, idx) => {
-//                 // Use requestId if _id is not available (API returns requestId)
-//                 const requestId = request._id || request.requestId;
-
-//                 // Ensure request has valid ID
-//                 if (!requestId) {
-//                   console.warn("Request missing both _id and requestId:", request);
-//                   return null;
-//                 }
-
-//                 return (
-//                 <tr
-//                   key={requestId || `request-${idx}`}
-//                   className="bg-white shadow-sm hover:bg-gray-50 transition border-b-4 border-gray-200"
-//                 >
-//                   <td className="p-3">{idx + 1}</td>
-//                   <td className="p-3 font-mono text-xs">
-//                     {requestId?.slice(-8) || "N/A"}
-//                   </td>
-//                   <td className="p-3 font-medium">
-//                     {request.vendor?.vendorName || "N/A"}
-//                   </td>
-//                   <td className="p-3">{request.vendor?.storeName || "N/A"}</td>
-//                   <td className="p-3">{request.vendor?.mobile || request.vendor?.contactNumber || "N/A"}</td>
-//                   <td className="p-3 font-semibold text-green-600">
-//                     {formatCurrency(request.amount)}
-//                   </td>
-//                   <td className="p-3">
-//                     <span
-//                       className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(
-//                         request.status
-//                       )}`}
-//                     >
-//                       {request.status
-//                         ? request.status.charAt(0).toUpperCase() +
-//                           request.status.slice(1)
-//                         : "Pending"}
-//                     </span>
-//                   </td>
-//                   <td className="p-3 text-gray-600">
-//                     {formatDate(request.createdAt)}
-//                   </td>
-//                   <td className="p-3 text-right">
-//                     <div className="flex justify-end gap-2">
-//                       {request.status === "pending" && requestId && (
-//                         <>
-//                           <button
-//                             onClick={() => {
-//                               if (requestId) {
-//                                 handleApprove(requestId);
-//                               } else {
-//                                 console.error("Cannot approve: requestId is undefined", request);
-//                                 setError("Invalid request ID. Please refresh the page.");
-//                               }
-//                             }}
-//                             disabled={actionLoading === requestId || !requestId}
-//                             className="px-3 py-1.5 bg-green-500 text-white rounded text-xs hover:bg-green-600 transition-colors flex items-center gap-1 disabled:opacity-50"
-//                             title="Approve"
-//                           >
-//                             {actionLoading === requestId ? (
-//                               <Loader2 size={14} className="animate-spin" />
-//                             ) : (
-//                               <CheckCircle size={14} />
-//                             )}
-//                             Approve
-//                           </button>
-//                           <button
-//                             onClick={() => {
-//                               if (requestId) {
-//                                 handleReject(requestId);
-//                               } else {
-//                                 console.error("Cannot reject: requestId is undefined", request);
-//                                 setError("Invalid request ID. Please refresh the page.");
-//                               }
-//                             }}
-//                             disabled={actionLoading === requestId || !requestId}
-//                             className="px-3 py-1.5 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors flex items-center gap-1 disabled:opacity-50"
-//                             title="Reject"
-//                           >
-//                             {actionLoading === requestId ? (
-//                               <Loader2 size={14} className="animate-spin" />
-//                             ) : (
-//                               <XCircle size={14} />
-//                             )}
-//                             Reject
-//                           </button>
-//                         </>
-//                       )}
-//                       {request.status !== "pending" && (
-//                         <span className="text-gray-400 text-xs">
-//                           {request.status === "approved"
-//                             ? "Approved"
-//                             : "Rejected"}
-//                         </span>
-//                       )}
-//                     </div>
-//                   </td>
-//                 </tr>
-//                 );
-//               })}
-//             </tbody>
-//           )}
-//         </table>
-//       </div>
-//     </DashboardLayout>
-//   );
-// };
-
-// export default AdminVendorWithdrawalRequests;
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
@@ -574,13 +6,12 @@ import {
   DollarSign,
   CheckCircle,
   XCircle,
-  Search,
-  Calendar,
-  User,
   AlertCircle,
   Loader2,
-  Store,
   Eye,
+  Wallet,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 const AdminVendorWithdrawalRequests = () => {
@@ -590,61 +21,27 @@ const AdminVendorWithdrawalRequests = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
-
-  // Filters
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch withdrawal requests
   const fetchRequests = async () => {
     try {
       setLoading(true);
       setError(null);
-
       const params = {};
-      if (statusFilter !== "all") {
-        params.status = statusFilter;
-      }
-
-      console.log("========================================");
-      console.log("📥 FETCHING VENDOR WITHDRAWAL REQUESTS:");
-      console.log("API Endpoint: /api/admin/vendors/withdrawal-requests");
-      console.log("Params:", params);
-      console.log("========================================");
-
+      if (statusFilter !== "all") params.status = statusFilter;
       const response = await api.get("/api/admin/vendors/withdrawal-requests", {
         params,
       });
-
-      console.log("========================================");
-      console.log("✅ RESPONSE RECEIVED:");
-      console.log("Status:", response.status);
-      console.log("Full response:", response.data);
-      console.log("========================================");
-
       const result = response.data;
-
       if (result.success) {
-        const requestsData = result.data || [];
-        console.log("========================================");
-        console.log("📋 REQUESTS DATA:");
-        console.log("Total requests:", requestsData.length);
-        if (requestsData.length > 0) {
-          console.log("First request structure:", requestsData[0]);
-          console.log("First request keys:", Object.keys(requestsData[0]));
-          console.log("First request _id:", requestsData[0]._id);
-          console.log("First request requestId:", requestsData[0].requestId);
-        }
-        console.log("========================================");
-        setRequests(requestsData);
+        setRequests(result.data || []);
       } else {
         setError(result.message || "Failed to fetch withdrawal requests");
         setRequests([]);
       }
     } catch (error) {
       console.error("Error fetching withdrawal requests:", error);
-
-      // Check for backend routing issue
       if (error.response?.status === 500) {
         const errorData = error.response?.data;
         if (
@@ -652,20 +49,15 @@ const AdminVendorWithdrawalRequests = () => {
           errorData.includes("Cast to ObjectId failed")
         ) {
           setError(
-            "⚠️ Backend routing issue detected. " +
-              "The route '/api/admin/vendors/withdrawal-requests' is being matched by '/api/admin/vendors/:vendorId'. " +
-              "Please ensure the withdrawal-requests route is defined BEFORE the :vendorId route in your backend routes file.",
+            "⚠️ Backend routing issue detected. Ensure withdrawal-requests route is defined BEFORE the :vendorId route.",
           );
         } else {
-          setError(
-            error.response?.data?.message ||
-              "Server error occurred. Please check backend logs.",
-          );
+          setError(error.response?.data?.message || "Server error occurred.");
         }
       } else {
         setError(
           error.response?.data?.message ||
-            "Error fetching withdrawal requests. Please try again.",
+            "Error fetching withdrawal requests.",
         );
       }
       setRequests([]);
@@ -674,140 +66,67 @@ const AdminVendorWithdrawalRequests = () => {
     }
   };
 
-  // Fetch requests on mount and when filters change
   useEffect(() => {
     fetchRequests();
   }, [statusFilter]);
 
-  // Handle approve request
   const handleApprove = async (requestId) => {
-    // Validate requestId
     if (!requestId || requestId === "undefined") {
-      console.error("Invalid requestId:", requestId);
-      setError("Invalid request ID. Please refresh the page and try again.");
+      setError("Invalid request ID.");
       return;
     }
-
-    if (
-      !window.confirm(
-        "Are you sure you want to approve this withdrawal request?",
-      )
-    ) {
-      return;
-    }
-
+    if (!window.confirm("Approve this withdrawal request?")) return;
     try {
       setActionLoading(requestId);
       setError(null);
       setSuccess(null);
-
-      console.log("========================================");
-      console.log("✅ APPROVING WITHDRAWAL REQUEST:");
-      console.log("Request ID:", requestId);
-      console.log(
-        "API Endpoint: /api/admin/vendors/withdrawal-requests/" +
-          requestId +
-          "/approve",
-      );
-      console.log("Method: PUT");
-      console.log("========================================");
-
       const response = await api.put(
         `/api/admin/vendors/withdrawal-requests/${requestId}/approve`,
       );
-
-      console.log("========================================");
-      console.log("✅ APPROVE RESPONSE:");
-      console.log("Status:", response.status);
-      console.log("Response:", response.data);
-      console.log("========================================");
-
-      const result = response.data;
-
-      if (result.success) {
+      if (response.data.success) {
         setSuccess("Withdrawal request approved successfully!");
         fetchRequests();
         setTimeout(() => setSuccess(null), 3000);
       } else {
-        setError(result.message || "Failed to approve request");
+        setError(response.data.message || "Failed to approve");
       }
     } catch (error) {
-      console.error("Error approving request:", error);
-      setError(
-        error.response?.data?.message || "Error approving withdrawal request",
-      );
+      setError(error.response?.data?.message || "Error approving request");
     } finally {
       setActionLoading(null);
     }
   };
 
-  // Handle reject request
   const handleReject = async (requestId) => {
-    // Validate requestId
     if (!requestId || requestId === "undefined") {
-      console.error("Invalid requestId:", requestId);
-      setError("Invalid request ID. Please refresh the page and try again.");
+      setError("Invalid request ID.");
       return;
     }
-
-    if (
-      !window.confirm(
-        "Are you sure you want to reject this withdrawal request?",
-      )
-    ) {
-      return;
-    }
-
+    if (!window.confirm("Reject this withdrawal request?")) return;
     try {
       setActionLoading(requestId);
       setError(null);
       setSuccess(null);
-
-      console.log("========================================");
-      console.log("❌ REJECTING WITHDRAWAL REQUEST:");
-      console.log("Request ID:", requestId);
-      console.log(
-        "API Endpoint: /api/admin/vendors/withdrawal-requests/" +
-          requestId +
-          "/reject",
-      );
-      console.log("Method: PUT");
-      console.log("========================================");
-
       const response = await api.put(
         `/api/admin/vendors/withdrawal-requests/${requestId}/reject`,
       );
-
-      console.log("========================================");
-      console.log("❌ REJECT RESPONSE:");
-      console.log("Status:", response.status);
-      console.log("Response:", response.data);
-      console.log("========================================");
-
-      const result = response.data;
-
-      if (result.success) {
+      if (response.data.success) {
         setSuccess("Withdrawal request rejected successfully!");
         fetchRequests();
         setTimeout(() => setSuccess(null), 3000);
       } else {
-        setError(result.message || "Failed to reject request");
+        setError(response.data.message || "Failed to reject");
       }
     } catch (error) {
-      console.error("Error rejecting request:", error);
-      setError(
-        error.response?.data?.message || "Error rejecting withdrawal request",
-      );
+      setError(error.response?.data?.message || "Error rejecting request");
     } finally {
       setActionLoading(null);
     }
   };
 
-  // Format date
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-IN", {
+    return new Date(dateString).toLocaleDateString("en-IN", {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -816,55 +135,104 @@ const AdminVendorWithdrawalRequests = () => {
     });
   };
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    return `₹${parseFloat(amount || 0).toLocaleString("en-IN")}`;
-  };
+  const formatCurrency = (amount) =>
+    `₹${parseFloat(amount || 0).toLocaleString("en-IN")}`;
 
-  // Get status color
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "approved":
-        return "bg-green-100 text-green-800 border-green-300";
-      case "rejected":
-        return "bg-red-100 text-red-800 border-red-300";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-300";
-    }
-  };
-
-  // Filter requests by search query
   const filteredRequests = requests.filter((request) => {
-    if (searchQuery) {
-      const searchLower = searchQuery.toLowerCase();
-      const requestId = request._id || request.requestId;
-      return (
-        request.vendor?.storeName?.toLowerCase().includes(searchLower) ||
-        request.vendor?.vendorName?.toLowerCase().includes(searchLower) ||
-        request.vendor?.mobile?.toLowerCase().includes(searchLower) ||
-        request.vendor?.contactNumber?.toLowerCase().includes(searchLower) ||
-        request.vendor?._id?.toLowerCase().includes(searchLower) ||
-        request.vendor?.vendorId?.toLowerCase().includes(searchLower) ||
-        requestId?.toLowerCase().includes(searchLower) ||
-        request.amount?.toString().includes(searchLower)
-      );
-    }
-    return true;
+    if (!searchQuery) return true;
+    const s = searchQuery.toLowerCase();
+    const requestId = request._id || request.requestId;
+    return (
+      request.vendor?.storeName?.toLowerCase().includes(s) ||
+      request.vendor?.vendorName?.toLowerCase().includes(s) ||
+      request.vendor?.mobile?.toLowerCase().includes(s) ||
+      request.vendor?.contactNumber?.toLowerCase().includes(s) ||
+      request.vendor?._id?.toLowerCase().includes(s) ||
+      requestId?.toLowerCase().includes(s) ||
+      request.amount?.toString().includes(s)
+    );
   });
 
-  // Skeleton Loader
+  const statCards = [
+    {
+      label: "Total Requests",
+      value: requests.length,
+      icon: DollarSign,
+      color: "orange",
+      iconColor: "text-orange-500",
+      bg: "bg-orange-50",
+      ring: "ring-orange-100",
+      border: "border-orange-200",
+    },
+    {
+      label: "Pending",
+      value: requests.filter((r) => r.status === "pending").length,
+      icon: AlertCircle,
+      color: "amber",
+      iconColor: "text-amber-500",
+      bg: "bg-amber-50",
+      ring: "ring-amber-100",
+      border: "border-amber-200",
+      textColor: "text-amber-600",
+    },
+    {
+      label: "Approved",
+      value: requests.filter((r) => r.status === "approved").length,
+      icon: CheckCircle,
+      color: "emerald",
+      iconColor: "text-emerald-500",
+      bg: "bg-emerald-50",
+      ring: "ring-emerald-100",
+      border: "border-emerald-200",
+      textColor: "text-emerald-600",
+    },
+    {
+      label: "Rejected",
+      value: requests.filter((r) => r.status === "rejected").length,
+      icon: XCircle,
+      color: "red",
+      iconColor: "text-red-400",
+      bg: "bg-red-50",
+      ring: "ring-red-100",
+      border: "border-red-200",
+      textColor: "text-red-600",
+    },
+  ];
+
+  const StatusBadge = ({ status }) => {
+    const s = (status || "pending").toLowerCase();
+    const styles = {
+      approved:
+        "bg-emerald-50 text-emerald-700 border-emerald-200 ring-emerald-100",
+      rejected: "bg-red-50 text-red-700 border-red-200 ring-red-100",
+      pending: "bg-amber-50 text-amber-700 border-amber-200 ring-amber-100",
+    };
+    const dots = {
+      approved: "bg-emerald-500",
+      rejected: "bg-red-500",
+      pending: "bg-amber-500",
+    };
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ring-1 ${styles[s] || "bg-gray-50 text-gray-600 border-gray-200 ring-gray-100"}`}
+      >
+        <span
+          className={`w-1.5 h-1.5 rounded-full ${dots[s] || "bg-gray-400"}`}
+        />
+        {s.charAt(0).toUpperCase() + s.slice(1)}
+      </span>
+    );
+  };
+
   const TableSkeleton = () => (
     <tbody>
-      {Array.from({ length: 8 }).map((_, i) => (
-        <tr
-          key={i}
-          className="border-b border-gray-200 animate-pulse bg-white rounded-sm"
-        >
+      {Array.from({ length: 8 }).map((_, idx) => (
+        <tr key={idx} className="border-b border-gray-100">
           {Array.from({ length: 9 }).map((__, j) => (
-            <td key={j} className="p-3">
-              <div className="h-4 bg-gray-200 rounded w-[80%]" />
+            <td key={j} className="px-4 py-3.5">
+              <div
+                className={`h-3.5 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full animate-pulse ${j === 1 ? "w-24" : j === 8 ? "w-20 ml-auto" : "w-[70%]"}`}
+              />
             </td>
           ))}
         </tr>
@@ -872,304 +240,312 @@ const AdminVendorWithdrawalRequests = () => {
     </tbody>
   );
 
-  // Empty State
   const EmptyState = () => (
     <tbody>
       <tr>
-        <td
-          colSpan="9"
-          className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
-        >
-          No withdrawal requests found.
+        <td colSpan="9" className="py-20 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center">
+              <Wallet className="w-8 h-8 text-orange-300" />
+            </div>
+            <p className="text-gray-400 text-sm font-medium">
+              No withdrawal requests found
+            </p>
+            <p className="text-gray-300 text-xs">
+              Try adjusting your filters or search query
+            </p>
+          </div>
         </td>
       </tr>
     </tbody>
   );
 
+  const tabs = [
+    { key: "all", label: "All" },
+    { key: "pending", label: "Pending" },
+    { key: "approved", label: "Approved" },
+    { key: "rejected", label: "Rejected" },
+  ];
+
   return (
     <DashboardLayout>
-      {/* Success/Error Messages */}
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .row-animate { animation: fadeSlideIn 0.25s ease forwards; }
+        .action-btn {
+          width: 30px; height: 30px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 8px; transition: all 0.18s ease;
+        }
+        .action-btn:hover { transform: translateY(-1px); }
+      `}</style>
+
+      {/* ── Toast Messages ── */}
       {success && (
-        <div className="mb-4 mx-4 bg-green-50 border-l-4 border-green-500 text-green-700 px-6 py-4 rounded-xl flex items-center gap-3 shadow-md">
-          <CheckCircle size={24} />
-          <span className="font-medium">{success}</span>
+        <div className="mb-3 mx-1 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-2xl flex items-center gap-3 shadow-sm">
+          <CheckCircle className="w-4 h-4 shrink-0" />
+          <span className="text-sm font-medium">{success}</span>
         </div>
       )}
       {error && (
-        <div className="mb-4 mx-4 bg-red-50 border-l-4 border-red-500 text-red-700 px-6 py-4 rounded-xl flex items-center gap-3 shadow-md">
-          <AlertCircle size={24} />
-          <span className="font-medium">{error}</span>
+        <div className="mb-3 mx-1 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl flex items-center gap-3 shadow-sm">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span className="text-sm font-medium">{error}</span>
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-0 mb-2">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Vendor Withdrawal Requests
-          </h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Manage vendor withdrawal requests
-          </p>
-        </div>
+      {/* ── Stat Cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 px-1 mt-3 mb-4">
+        {statCards.map(
+          ({
+            label,
+            value,
+            icon: Icon,
+            iconColor,
+            bg,
+            ring,
+            border,
+            textColor,
+          }) => (
+            <div
+              key={label}
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3.5 flex items-center justify-between"
+            >
+              <div>
+                <p className="text-xs text-gray-400 font-medium">{label}</p>
+                <p
+                  className={`text-2xl font-bold mt-0.5 ${textColor || "text-gray-800"}`}
+                >
+                  {value}
+                </p>
+              </div>
+              <div
+                className={`w-10 h-10 rounded-xl ${bg} border ${border} ring-1 ${ring} flex items-center justify-center`}
+              >
+                <Icon className={`w-5 h-5 ${iconColor}`} />
+              </div>
+            </div>
+          ),
+        )}
       </div>
 
-      {/* Filters and Search */}
-      <div className="flex flex-col lg:flex-row lg:items-center gap-3 pl-4 max-w-[99%] mx-auto mb-4">
-        {/* Status Filter */}
-        <div className="flex gap-2 items-center overflow-x-auto pb-2 lg:pb-0">
-          {["all", "pending", "approved", "rejected"].map((status) => (
+      {/* ── Toolbar ── */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 w-full px-1 mb-3">
+        {/* Tab Pills */}
+        <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+          {tabs.map((tab) => (
             <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`px-4 py-1 border rounded text-xs sm:text-sm whitespace-nowrap transition-colors ${
-                statusFilter === status
-                  ? "bg-[#FF7B1D] text-white border-orange-500"
-                  : "border-gray-400 text-gray-600 hover:bg-gray-100"
+              key={tab.key}
+              onClick={() => setStatusFilter(tab.key)}
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
+                statusFilter === tab.key
+                  ? "bg-white text-[#FF7B1D] shadow-sm shadow-orange-100"
+                  : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              {status === "all"
-                ? "All"
-                : status.charAt(0).toUpperCase() + status.slice(1)}
+              {tab.label}
             </button>
           ))}
         </div>
 
         {/* Search */}
-        <div className="flex items-center border border-black rounded overflow-hidden h-9 w-full max-w-full sm:max-w-[400px]">
+        <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden h-[38px] w-full lg:w-[420px] shadow-sm bg-white">
           <input
             type="text"
-            placeholder="Search by Vendor Name, Store, Mobile, ID..."
-            className="flex-1 px-3 sm:px-4 text-sm text-gray-800 focus:outline-none h-full"
+            placeholder="Search by vendor name, store, mobile, ID..."
+            className="flex-1 px-4 text-sm text-gray-700 focus:outline-none h-full placeholder:text-gray-400"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <button className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-sm px-3 sm:px-6 h-full transition-colors">
-            <Search size={18} />
+          <button className="bg-[#FF7B1D] hover:bg-orange-500 text-white text-sm font-medium px-5 h-full transition-colors">
+            Search
           </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 pl-4 max-w-[99%] mx-auto">
-        <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Requests</p>
-              <p className="text-2xl font-bold text-gray-800 mt-1">
-                {requests.length}
-              </p>
-            </div>
-            <DollarSign className="text-orange-500" size={32} />
+      {/* ── Table Card ── */}
+      <div className="mx-1 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+        {/* Card Header */}
+        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+            <span className="text-sm font-semibold text-gray-700">
+              Withdrawal Requests
+            </span>
           </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600 mt-1">
-                {requests.filter((r) => r.status === "pending").length}
-              </p>
-            </div>
-            <AlertCircle className="text-yellow-500" size={32} />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Approved</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">
-                {requests.filter((r) => r.status === "approved").length}
-              </p>
-            </div>
-            <CheckCircle className="text-green-500" size={32} />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Rejected</p>
-              <p className="text-2xl font-bold text-red-600 mt-1">
-                {requests.filter((r) => r.status === "rejected").length}
-              </p>
-            </div>
-            <XCircle className="text-red-500" size={32} />
-          </div>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-sm shadow-sm overflow-x-auto pl-4 max-w-[99%] mx-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-[#FF7B1D] text-black">
-              <th className="p-3 text-left">S.N</th>
-              <th className="p-3 text-left">Request ID</th>
-              <th className="p-3 text-left">Vendor Name</th>
-              <th className="p-3 text-left">Store Name</th>
-              <th className="p-3 text-left">Vendor Mobile</th>
-              <th className="p-3 text-left">Request Amount</th>
-              <th className="p-3 text-left">Status</th>
-              <th className="p-3 text-left">Request Date</th>
-              <th className="p-3 pr-6 text-right">Action</th>
-            </tr>
-          </thead>
-
-          {loading ? (
-            <TableSkeleton />
-          ) : filteredRequests.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <tbody>
-              {filteredRequests.map((request, idx) => {
-                // Use requestId if _id is not available (API returns requestId)
-                const requestId = request._id || request.requestId;
-
-                // Ensure request has valid ID
-                if (!requestId) {
-                  console.warn(
-                    "Request missing both _id and requestId:",
-                    request,
-                  );
-                  return null;
-                }
-
-                return (
-                  <tr
-                    key={requestId || `request-${idx}`}
-                    className="bg-white shadow-sm hover:bg-gray-50 transition border-b-4 border-gray-200"
-                  >
-                    <td className="p-3">{idx + 1}</td>
-                    <td className="p-3 font-mono text-xs">
-                      {requestId?.slice(-8) || "N/A"}
-                    </td>
-                    <td className="p-3 font-medium">
-                      {request.vendor?.vendorName || "N/A"}
-                    </td>
-                    <td className="p-3">
-                      {request.vendor?.storeName || "N/A"}
-                    </td>
-                    <td className="p-3">
-                      {request.vendor?.mobile ||
-                        request.vendor?.contactNumber ||
-                        "N/A"}
-                    </td>
-                    <td className="p-3 font-semibold text-green-600">
-                      {formatCurrency(request.amount)}
-                    </td>
-                    <td className="p-3">
-                      <span
-                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(
-                          request.status,
-                        )}`}
-                      >
-                        {request.status
-                          ? request.status.charAt(0).toUpperCase() +
-                            request.status.slice(1)
-                          : "Pending"}
-                      </span>
-                    </td>
-                    <td className="p-3 text-gray-600">
-                      {formatDate(request.createdAt)}
-                    </td>
-                    <td className="p-3 text-right">
-                      <div className="flex justify-end gap-2 items-center">
-                        {/* Eye Icon - Clickable to view vendor */}
-                        <button
-                          onClick={() => {
-                            // Get vendor ID from request
-                            const vendorId = request.vendor?._id || 
-                                          request.vendorId || 
-                                          request.vendor?.vendorId;
-                            
-                            if (vendorId) {
-                              navigate(`/vendor/${vendorId}`);
-                            } else {
-                              console.error("Vendor ID not found in request:", request);
-                              setError("Vendor ID not found. Cannot navigate to vendor page.");
-                            }
-                          }}
-                          className="text-[#FF7B1D] p-1 hover:text-orange-600 transition-colors cursor-pointer"
-                          title="View Vendor Details"
-                        >
-                          <Eye size={20} />
-                        </button>
-
-                        {/* Approve/Reject buttons - Only for pending requests */}
-                        {request.status === "pending" && requestId && (
-                          <>
-                            <button
-                              onClick={() => {
-                                if (requestId) {
-                                  handleApprove(requestId);
-                                } else {
-                                  console.error(
-                                    "Cannot approve: requestId is undefined",
-                                    request,
-                                  );
-                                  setError(
-                                    "Invalid request ID. Please refresh the page.",
-                                  );
-                                }
-                              }}
-                              disabled={
-                                actionLoading === requestId || !requestId
-                              }
-                              className="px-3 py-1.5 bg-green-500 text-white rounded text-xs hover:bg-green-600 transition-colors flex items-center gap-1 disabled:opacity-50"
-                              title="Approve"
-                            >
-                              {actionLoading === requestId ? (
-                                <Loader2 size={14} className="animate-spin" />
-                              ) : (
-                                <CheckCircle size={14} />
-                              )}
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (requestId) {
-                                  handleReject(requestId);
-                                } else {
-                                  console.error(
-                                    "Cannot reject: requestId is undefined",
-                                    request,
-                                  );
-                                  setError(
-                                    "Invalid request ID. Please refresh the page.",
-                                  );
-                                }
-                              }}
-                              disabled={
-                                actionLoading === requestId || !requestId
-                              }
-                              className="px-3 py-1.5 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors flex items-center gap-1 disabled:opacity-50"
-                              title="Reject"
-                            >
-                              {actionLoading === requestId ? (
-                                <Loader2 size={14} className="animate-spin" />
-                              ) : (
-                                <XCircle size={14} />
-                              )}
-                              Reject
-                            </button>
-                          </>
-                        )}
-                        {request.status !== "pending" && (
-                          <span className="text-gray-400 text-xs">
-                            {request.status === "approved"
-                              ? "Approved"
-                              : "Rejected"}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
+          {!loading && (
+            <span className="text-xs text-gray-400 font-medium">
+              {filteredRequests.length} of {requests.length} requests
+            </span>
           )}
-        </table>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gradient-to-r from-[#FF7B1D] to-orange-400">
+                {[
+                  "S.N",
+                  "Request ID",
+                  "Vendor Name",
+                  "Store Name",
+                  "Mobile",
+                  "Amount",
+                  "Status",
+                  "Date",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className="px-4 py-3.5 text-left text-xs font-bold text-white tracking-wider uppercase opacity-90"
+                  >
+                    {h}
+                  </th>
+                ))}
+                <th className="px-4 py-3.5 text-right text-xs font-bold text-white tracking-wider uppercase opacity-90 pr-5">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+
+            {loading ? (
+              <TableSkeleton />
+            ) : filteredRequests.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <tbody>
+                {filteredRequests.map((request, idx) => {
+                  const requestId = request._id || request.requestId;
+                  if (!requestId) return null;
+                  return (
+                    <tr
+                      key={requestId}
+                      className="row-animate border-b border-gray-50 hover:bg-orange-50/40 transition-colors duration-150 group"
+                      style={{ animationDelay: `${idx * 30}ms` }}
+                    >
+                      {/* S.N */}
+                      <td className="px-4 py-3.5">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">
+                          {idx + 1}
+                        </span>
+                      </td>
+
+                      {/* Request ID */}
+                      <td className="px-4 py-3.5">
+                        <span className="font-mono text-xs bg-gray-50 border border-gray-200 px-2 py-1 rounded-md text-gray-600 group-hover:border-orange-200 group-hover:bg-orange-50 transition-colors">
+                          …{requestId?.slice(-8) || "N/A"}
+                        </span>
+                      </td>
+
+                      {/* Vendor Name */}
+                      <td className="px-4 py-3.5">
+                        <span className="text-sm font-medium text-gray-800">
+                          {request.vendor?.vendorName || "N/A"}
+                        </span>
+                      </td>
+
+                      {/* Store Name */}
+                      <td className="px-4 py-3.5">
+                        <span className="inline-block bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full border border-blue-100">
+                          {request.vendor?.storeName || "N/A"}
+                        </span>
+                      </td>
+
+                      {/* Mobile */}
+                      <td className="px-4 py-3.5 text-gray-500 text-xs">
+                        {request.vendor?.mobile ||
+                          request.vendor?.contactNumber ||
+                          "N/A"}
+                      </td>
+
+                      {/* Amount */}
+                      <td className="px-4 py-3.5">
+                        <span className="inline-flex items-center gap-1 text-sm font-bold text-emerald-700">
+                          {formatCurrency(request.amount)}
+                        </span>
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-4 py-3.5">
+                        <StatusBadge status={request.status} />
+                      </td>
+
+                      {/* Date */}
+                      <td className="px-4 py-3.5 text-gray-400 text-xs">
+                        {formatDate(request.createdAt)}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-4 py-3.5 pr-5">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* View */}
+                          <button
+                            onClick={() => {
+                              const vendorId =
+                                request.vendor?._id ||
+                                request.vendorId ||
+                                request.vendor?.vendorId;
+                              if (vendorId) navigate(`/vendor/${vendorId}`);
+                              else setError("Vendor ID not found.");
+                            }}
+                            className="action-btn bg-orange-50 text-orange-500 hover:bg-orange-100 hover:text-orange-700"
+                            title="View Vendor"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Approve / Reject — only pending */}
+                          {request.status === "pending" && requestId && (
+                            <>
+                              <button
+                                onClick={() => handleApprove(requestId)}
+                                disabled={actionLoading === requestId}
+                                className="action-btn bg-emerald-50 text-emerald-500 hover:bg-emerald-100 hover:text-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                                title="Approve"
+                              >
+                                {actionLoading === requestId ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleReject(requestId)}
+                                disabled={actionLoading === requestId}
+                                className="action-btn bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                                title="Reject"
+                              >
+                                {actionLoading === requestId ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <XCircle className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            </>
+                          )}
+
+                          {request.status !== "pending" && (
+                            <span className="text-[11px] text-gray-300 italic px-1">
+                              {request.status === "approved"
+                                ? "Approved"
+                                : "Rejected"}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            )}
+          </table>
+        </div>
       </div>
+
+      {/* ── Bottom spacing ── */}
+      <div className="mb-6" />
     </DashboardLayout>
   );
 };

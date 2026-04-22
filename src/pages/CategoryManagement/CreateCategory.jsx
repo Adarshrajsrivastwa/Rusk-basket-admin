@@ -1,378 +1,13 @@
-// import React, { useState, useEffect } from "react";
-// import DashboardLayout from "../../components/DashboardLayout";
-// import { Eye, Edit, Trash2 } from "lucide-react";
-// import AddCategoryModal from "../../components/AddCategoryModal";
-// import { useNavigate } from "react-router-dom";
-
-// const CreateCategory = () => {
-//   const [activeTab, setActiveTab] = useState("all");
-//   const [isModalOpen, setIsModalOpen] = useState(false);
-//   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-//   const [currentPage, setCurrentPage] = useState(1);
-//   const [loading, setLoading] = useState(true);
-//   const [searchQuery, setSearchQuery] = useState("");
-//   const navigate = useNavigate();
-//   const itemsPerPage = 7;
-
-//   const [categories, setCategories] = useState([]);
-
-//   useEffect(() => {
-//     setLoading(true);
-//     const timer = setTimeout(() => {
-//       setCategories([
-//         {
-//           id: "CT101",
-//           image: "https://i.pravatar.cc/50",
-//           category: "Electronics",
-//           products: "120",
-//           subCategory: "15",
-//           status: "Active",
-//         },
-//         {
-//           id: "CT102",
-//           image: "https://i.pravatar.cc/50",
-//           category: "Fashion",
-//           products: "80",
-//           subCategory: "12",
-//           status: "Inactive",
-//         },
-//         {
-//           id: "CT103",
-//           image: "https://i.pravatar.cc/50",
-//           category: "Kitchen",
-//           products: "95",
-//           subCategory: "18",
-//           status: "Active",
-//         },
-//         {
-//           id: "CT104",
-//           image: "https://i.pravatar.cc/50",
-//           category: "Beauty",
-//           products: "60",
-//           subCategory: "9",
-//           status: "Active",
-//         },
-//         {
-//           id: "CT105",
-//           image: "https://i.pravatar.cc/50",
-//           category: "Sports",
-//           products: "50",
-//           subCategory: "10",
-//           status: "Inactive",
-//         },
-//         {
-//           id: "CT106",
-//           image: "https://i.pravatar.cc/50",
-//           category: "Toys",
-//           products: "35",
-//           subCategory: "7",
-//           status: "Active",
-//         },
-//         {
-//           id: "CT107",
-//           image: "https://i.pravatar.cc/50",
-//           category: "Books",
-//           products: "42",
-//           subCategory: "5",
-//           status: "Active",
-//         },
-//         {
-//           id: "CT108",
-//           image: "https://i.pravatar.cc/50",
-//           category: "Automotive",
-//           products: "28",
-//           subCategory: "6",
-//           status: "Inactive",
-//         },
-//         {
-//           id: "CT109",
-//           image: "https://i.pravatar.cc/50",
-//           category: "Health",
-//           products: "70",
-//           subCategory: "10",
-//           status: "Active",
-//         },
-//       ]);
-//       setLoading(false);
-//     }, 300);
-
-//     return () => clearTimeout(timer);
-//   }, []);
-
-//   const statusColors = {
-//     Active: "text-green-600 font-semibold",
-//     Inactive: "text-gray-600 font-semibold",
-//   };
-
-//   const handleDelete = (id) => {
-//     if (window.confirm("Are you sure you want to delete this category?")) {
-//       setCategories((prev) => prev.filter((cat) => cat.id !== id));
-//     }
-//   };
-
-//   // Handler for viewing category details
-//   const handleViewCategory = (categoryId) => {
-//     navigate(`/category/view/${categoryId}`);
-//   };
-
-//   // Filter + Search
-//   const filteredCategories = categories
-//     .filter((cat) => {
-//       if (activeTab === "active") return cat.status === "Active";
-//       if (activeTab === "inactive") return cat.status === "Inactive";
-//       return true;
-//     })
-//     .filter((cat) =>
-//       [cat.category, cat.id, cat.products, cat.subCategory]
-//         .join(" ")
-//         .toLowerCase()
-//         .includes(searchQuery.toLowerCase())
-//     );
-
-//   // Pagination
-//   const indexOfLast = currentPage * itemsPerPage;
-//   const indexOfFirst = indexOfLast - itemsPerPage;
-//   const currentCategories = filteredCategories.slice(indexOfFirst, indexOfLast);
-//   const totalPages = Math.ceil(filteredCategories.length / itemsPerPage);
-
-//   // Skeleton Loader
-//   const TableSkeleton = () => (
-//     <tbody>
-//       {Array.from({ length: itemsPerPage }).map((_, idx) => (
-//         <tr
-//           key={idx}
-//           className="animate-pulse border-b-4 border-gray-200 bg-white shadow-sm rounded-sm"
-//         >
-//           {Array.from({ length: 7 }).map((__, j) => (
-//             <td key={j} className="p-3 text-center">
-//               <div
-//                 className={`bg-gray-300 rounded ${
-//                   j === 1
-//                     ? "h-8 w-8 rounded-full mx-auto"
-//                     : "h-4 w-[80%] mx-auto"
-//                 }`}
-//               />
-//             </td>
-//           ))}
-//         </tr>
-//       ))}
-//     </tbody>
-//   );
-
-//   // Empty State
-//   const EmptyState = () => (
-//     <tbody>
-//       <tr>
-//         <td
-//           colSpan="7"
-//           className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
-//         >
-//           No categories found.
-//         </td>
-//       </tr>
-//     </tbody>
-//   );
-
-//   return (
-//     <DashboardLayout>
-//       {/* Top Bar */}
-//       <div className="flex flex-col md:flex-row md:items-center pl-4 md:justify-between gap-3 max-w-[99%] mx-auto mt-0 mb-2">
-//         <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
-//           {/* Tabs */}
-//           <div className="flex gap-4 items-center overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0">
-//             {["all", "active", "inactive"].map((tab) => (
-//               <button
-//                 key={tab}
-//                 onClick={() => {
-//                   setActiveTab(tab);
-//                   setCurrentPage(1);
-//                 }}
-//                 className={`w-24 sm:w-28 px-4 py-1 border rounded text-xs sm:text-sm whitespace-nowrap ${
-//                   activeTab === tab
-//                     ? "bg-[#FF7B1D] text-white border-orange-500"
-//                     : "border-gray-400 text-gray-600 hover:bg-gray-100"
-//                 }`}
-//               >
-//                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
-//               </button>
-//             ))}
-//           </div>
-
-//           {/* Search */}
-//           <div className="flex items-center border border-black rounded overflow-hidden h-9 w-full max-w-full sm:max-w-[450px] mt-2 sm:mt-0">
-//             <input
-//               type="text"
-//               placeholder="Search Category by Name, ID..."
-//               className="flex-1 px-3 sm:px-4 text-sm text-gray-800 focus:outline-none h-full"
-//               value={searchQuery}
-//               onChange={(e) => setSearchQuery(e.target.value)}
-//             />
-//             <button className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-sm px-3 sm:px-6 h-full">
-//               Search
-//             </button>
-//           </div>
-//         </div>
-
-//         {/* Add Button */}
-//         <div className="w-full md:w-auto flex justify-start md:justify-end mt-2 md:mt-0">
-//           <button
-//             onClick={() => setIsModalOpen(true)}
-//             className="bg-black text-white w-52 sm:w-60 px-4 sm:px-5 py-2 rounded-sm shadow hover:bg-orange-600 text-xs sm:text-sm flex items-center justify-center whitespace-nowrap"
-//           >
-//             + Add Category
-//           </button>
-//         </div>
-//       </div>
-
-//       {/* Table */}
-//       <div className="bg-white rounded-sm shadow-sm overflow-x-auto pl-4 max-w-[99%] mx-auto">
-//         <table className="w-full text-sm">
-//           <thead>
-//             <tr className="bg-[#FF7B1D] text-black">
-//               <th className="p-3 text-center">S.N</th>
-//               <th className="p-3 text-center">Image</th>
-//               <th className="p-3 text-center">Category</th>
-//               <th className="p-3 text-center">Products</th>
-//               <th className="p-3 text-center">Sub Categories</th>
-//               <th className="p-3 text-center">Status</th>
-//               <th className="p-3 pr-6 text-right">Action</th>
-//             </tr>
-//           </thead>
-
-//           {loading ? (
-//             <TableSkeleton />
-//           ) : filteredCategories.length === 0 ? (
-//             <EmptyState />
-//           ) : (
-//             <tbody>
-//               {currentCategories.map((cat, idx) => (
-//                 <tr
-//                   key={cat.id}
-//                   className="bg-white shadow-sm rounded-sm hover:bg-gray-50 transition border-b-4 border-gray-200"
-//                 >
-//                   <td className="p-3 text-center">{indexOfFirst + idx + 1}</td>
-//                   <td className="p-3 text-center">
-//                     <img
-//                       src={cat.image}
-//                       alt={cat.category}
-//                       className="h-8 w-8 rounded-full object-cover mx-auto"
-//                     />
-//                   </td>
-//                   <td className="p-3 text-center">{cat.category}</td>
-//                   <td className="p-3 text-center">{cat.products}</td>
-//                   <td className="p-3 text-center">{cat.subCategory}</td>
-//                   <td className={`p-3 text-center ${statusColors[cat.status]}`}>
-//                     {cat.status}
-//                   </td>
-//                   <td className="p-3 text-right">
-//                     <div className="flex justify-end gap-2">
-//                       <button
-//                         onClick={() => setIsEditModalOpen(true)}
-//                         className="text-orange-600 hover:text-blue-700"
-//                         title="Edit Category"
-//                       >
-//                         <Edit className="w-4 h-4" />
-//                       </button>
-//                       <button
-//                         onClick={() => handleDelete(cat.id)}
-//                         className="text-orange-600 hover:text-red-600"
-//                         title="Delete Category"
-//                       >
-//                         <Trash2 className="w-4 h-4" />
-//                       </button>
-//                       <button
-//                         onClick={() => handleViewCategory(cat.id)}
-//                         className="text-orange-600 hover:text-green-700"
-//                         title="View Category Details"
-//                       >
-//                         <Eye className="w-4 h-4" />
-//                       </button>
-//                     </div>
-//                   </td>
-//                 </tr>
-//               ))}
-//             </tbody>
-//           )}
-//         </table>
-//       </div>
-
-//       {/* Pagination */}
-//       {!loading && filteredCategories.length > 0 && (
-//         <div className="flex justify-end pl-8 items-center gap-6 mt-8 max-w-[95%] mx-auto">
-//           <button
-//             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-//             className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600"
-//           >
-//             Back
-//           </button>
-
-//           <div className="flex items-center gap-2 text-sm text-black font-medium">
-//             {(() => {
-//               const pages = [];
-//               const visiblePages = new Set([
-//                 1,
-//                 2,
-//                 totalPages - 1,
-//                 totalPages,
-//                 currentPage - 1,
-//                 currentPage,
-//                 currentPage + 1,
-//               ]);
-//               for (let i = 1; i <= totalPages; i++) {
-//                 if (visiblePages.has(i)) pages.push(i);
-//                 else if (pages[pages.length - 1] !== "...") pages.push("...");
-//               }
-//               return pages.map((page, idx) =>
-//                 page === "..." ? (
-//                   <span key={idx} className="px-1 text-black select-none">
-//                     ...
-//                   </span>
-//                 ) : (
-//                   <button
-//                     key={page}
-//                     onClick={() => setCurrentPage(page)}
-//                     className={`px-1 ${
-//                       currentPage === page
-//                         ? "text-orange-600 font-semibold"
-//                         : ""
-//                     }`}
-//                   >
-//                     {page}
-//                   </button>
-//                 )
-//               );
-//             })()}
-//           </div>
-
-//           <button
-//             onClick={() =>
-//               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-//             }
-//             className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800"
-//           >
-//             Next
-//           </button>
-//         </div>
-//       )}
-
-//       {/* Modals */}
-//       <AddCategoryModal
-//         isOpen={isModalOpen}
-//         onClose={() => setIsModalOpen(false)}
-//       />
-//       <AddCategoryModal
-//         isOpen={isEditModalOpen}
-//         onClose={() => setIsEditModalOpen(false)}
-//         isEdit={true}
-//       />
-//     </DashboardLayout>
-//   );
-// };
-
-// export default CreateCategory;
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
-import { Eye, Edit, Trash2 } from "lucide-react";
+import {
+  Eye,
+  Edit,
+  Trash2,
+  Layers,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import AddCategoryModal from "../../components/AddCategoryModal";
 import { useNavigate } from "react-router-dom";
 import { BASE_URL } from "../../api/api";
@@ -394,37 +29,28 @@ const CreateCategory = () => {
 
   const [categories, setCategories] = useState([]);
 
-  // Fetch categories from API
   const fetchCategories = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Get token from localStorage
       const token =
         localStorage.getItem("token") || localStorage.getItem("authToken");
-
       const headers = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
+      if (token) headers["Authorization"] = `Bearer ${token}`;
 
       const response = await fetch(API_GET_ALL, {
         method: "GET",
         credentials: "include",
-        headers: headers,
+        headers,
       });
 
-      if (!response.ok) {
+      if (!response.ok)
         throw new Error(`HTTP error! status: ${response.status}`);
-      }
 
       const data = await response.json();
-
-      if (!data.success) {
+      if (!data.success)
         throw new Error(data.message || "Failed to fetch categories");
-      }
 
-      // Transform API data to match component structure
       const transformedCategories = data.data.map((cat) => ({
         id: cat._id,
         image: cat.image?.url || null,
@@ -446,44 +72,24 @@ const CreateCategory = () => {
 
   useEffect(() => {
     fetchCategories();
-
-    // Set up interval to refresh data every 30 seconds
-    const refreshInterval = setInterval(() => {
-      fetchCategories();
-    }, 30000); // 30 seconds
-
-    // Cleanup interval on component unmount
+    const refreshInterval = setInterval(() => fetchCategories(), 30000);
     return () => clearInterval(refreshInterval);
   }, []);
 
-  // Add visibility change listener to refetch when tab becomes visible
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        fetchCategories();
-      }
+      if (document.visibilityState === "visible") fetchCategories();
     };
-
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
-  // Listen for subcategory creation/deletion events
   useEffect(() => {
-    const handleSubCategoryCreated = () => {
-      fetchCategories();
-    };
-
-    const handleSubCategoryDeleted = () => {
-      fetchCategories();
-    };
-
-    // Add event listeners
+    const handleSubCategoryCreated = () => fetchCategories();
+    const handleSubCategoryDeleted = () => fetchCategories();
     window.addEventListener("subcategoryCreated", handleSubCategoryCreated);
     window.addEventListener("subcategoryDeleted", handleSubCategoryDeleted);
-
-    // Cleanup
     return () => {
       window.removeEventListener(
         "subcategoryCreated",
@@ -496,58 +102,40 @@ const CreateCategory = () => {
     };
   }, []);
 
-  const statusColors = {
-    Active: "text-green-600 font-semibold",
-    Inactive: "text-gray-600 font-semibold",
-  };
-
-  // Delete category
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this category?")) {
       try {
         const token =
           localStorage.getItem("token") || localStorage.getItem("authToken");
-
-        const headers = {
-          "Content-Type": "application/json",
-        };
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
+        const headers = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
 
         const response = await fetch(`${API_DELETE}/${id}`, {
           method: "DELETE",
           credentials: "include",
-          headers: headers,
+          headers,
         });
 
         const data = await response.json();
-
-        if (!response.ok || !data.success) {
+        if (!response.ok || !data.success)
           throw new Error(data.message || "Failed to delete category");
-        }
 
         setCategories((prev) => prev.filter((cat) => cat.id !== id));
         alert("Category deleted successfully!");
       } catch (err) {
-        console.error("Error deleting category:", err);
         alert(err.message || "Failed to delete category. Please try again.");
       }
     }
   };
 
-  // Handler for viewing category details
-  const handleViewCategory = (categoryId) => {
+  const handleViewCategory = (categoryId) =>
     navigate(`/category/view/${categoryId}`);
-  };
 
-  // Handler for editing category
   const handleEditCategory = (category) => {
     setEditingCategory(category);
     setIsEditModalOpen(true);
   };
 
-  // Handler for successful add/edit
   const handleCategorySuccess = () => {
     fetchCategories();
     setIsModalOpen(false);
@@ -575,21 +163,39 @@ const CreateCategory = () => {
   const currentCategories = filteredCategories.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(filteredCategories.length / itemsPerPage);
 
-  // Skeleton Loader
+  // ── Sub-components ──
+
+  const StatusBadge = ({ status }) => {
+    const isActive = status === "Active";
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+          isActive
+            ? "bg-emerald-50 text-emerald-700 border border-emerald-200 ring-1 ring-emerald-100"
+            : "bg-gray-50 text-gray-500 border border-gray-200 ring-1 ring-gray-100"
+        }`}
+      >
+        <span
+          className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-emerald-500" : "bg-gray-400"}`}
+        />
+        {status}
+      </span>
+    );
+  };
+
   const TableSkeleton = () => (
     <tbody>
       {Array.from({ length: itemsPerPage }).map((_, idx) => (
-        <tr
-          key={idx}
-          className="animate-pulse border-b-4 border-gray-200 bg-white shadow-sm rounded-sm"
-        >
+        <tr key={idx} className="border-b border-gray-100">
           {Array.from({ length: 7 }).map((__, j) => (
-            <td key={j} className="p-3 text-center">
+            <td key={j} className="px-4 py-3.5">
               <div
-                className={`bg-gray-300 rounded ${
+                className={`h-3.5 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full animate-pulse ${
                   j === 1
-                    ? "h-8 w-8 rounded-full mx-auto"
-                    : "h-4 w-[80%] mx-auto"
+                    ? "w-8 h-8 rounded-full mx-auto"
+                    : j === 6
+                      ? "w-16 ml-auto"
+                      : "w-[70%] mx-auto"
                 }`}
               />
             </td>
@@ -599,232 +205,338 @@ const CreateCategory = () => {
     </tbody>
   );
 
-  // Empty State
   const EmptyState = () => (
     <tbody>
       <tr>
-        <td
-          colSpan="7"
-          className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
-        >
+        <td colSpan="7" className="py-20 text-center">
           {error ? (
-            <div className="flex flex-col items-center gap-2">
-              <p className="text-red-600">Error: {error}</p>
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center">
+                <Layers className="w-8 h-8 text-red-300" />
+              </div>
+              <p className="text-red-500 text-sm font-medium">Error: {error}</p>
               <button
                 onClick={fetchCategories}
-                className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600"
+                className="px-5 py-2 bg-[#FF7B1D] text-white rounded-xl text-xs font-semibold hover:bg-orange-500 transition"
               >
                 Retry
               </button>
             </div>
           ) : (
-            "No categories found."
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center">
+                <Layers className="w-8 h-8 text-orange-300" />
+              </div>
+              <p className="text-gray-400 text-sm font-medium">
+                No categories found
+              </p>
+              <p className="text-gray-300 text-xs">
+                Try adjusting your filters or search query
+              </p>
+            </div>
           )}
         </td>
       </tr>
     </tbody>
   );
 
+  const tabs = [
+    { key: "all", label: "All" },
+    { key: "active", label: "Active" },
+    { key: "inactive", label: "Inactive" },
+  ];
+
   return (
     <DashboardLayout>
-      {/* Top Bar */}
-      <div className="flex flex-col md:flex-row md:items-center pl-4 md:justify-between gap-3 max-w-[99%] mx-auto mt-2 mb-2">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
-          {/* Tabs */}
-          <div className="flex gap-4 items-center overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0">
-            {["all", "active", "inactive"].map((tab) => (
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .row-animate { animation: fadeSlideIn 0.25s ease forwards; }
+        .action-btn {
+          width: 30px; height: 30px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 8px;
+          transition: all 0.18s ease;
+        }
+        .action-btn:hover { transform: translateY(-1px); }
+      `}</style>
+
+      {/* ── Toolbar ── */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 w-full max-w-full mx-auto px-1 mt-3 mb-3">
+        {/* LEFT: Tabs */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
+            {tabs.map((tab) => (
               <button
-                key={tab}
+                key={tab.key}
                 onClick={() => {
-                  setActiveTab(tab);
+                  setActiveTab(tab.key);
                   setCurrentPage(1);
                 }}
-                className={`w-24 sm:w-28 px-4 py-1 border rounded text-xs sm:text-sm whitespace-nowrap ${
-                  activeTab === tab
-                    ? "bg-[#FF7B1D] text-white border-orange-500"
-                    : "border-gray-400 text-gray-600 hover:bg-gray-100"
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
+                  activeTab === tab.key
+                    ? "bg-white text-[#FF7B1D] shadow-sm shadow-orange-100"
+                    : "text-gray-500 hover:text-gray-700"
                 }`}
               >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {tab.label}
               </button>
             ))}
           </div>
+        </div>
 
-          {/* Search */}
-          <div className="flex items-center border border-black rounded overflow-hidden h-9 w-full max-w-full sm:max-w-[450px] mt-2 sm:mt-0">
+        {/* RIGHT: Search + Add Button */}
+        <div className="flex items-center gap-2 w-full lg:w-auto">
+          <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden h-[38px] flex-1 lg:w-[320px] shadow-sm bg-white">
             <input
               type="text"
-              placeholder="Search Category by Name, ID..."
-              className="flex-1 px-3 sm:px-4 text-sm text-gray-800 focus:outline-none h-full"
+              placeholder="Search category by name, ID..."
+              className="flex-1 px-4 text-sm text-gray-700 focus:outline-none h-full placeholder:text-gray-400"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <button className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-sm px-3 sm:px-6 h-full">
+            <button className="bg-[#FF7B1D] hover:bg-orange-500 text-white text-sm font-medium px-5 h-full transition-colors">
               Search
             </button>
           </div>
-        </div>
 
-        {/* Add Button & Refresh */}
-        <div className="w-full md:w-auto flex justify-start md:justify-end gap-2 mt-2 md:mt-0">
           <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-black text-white w-52 sm:w-60 px-4 sm:px-5 py-2 rounded-sm shadow hover:bg-orange-600 text-xs sm:text-sm flex items-center justify-center whitespace-nowrap"
+            className="bg-black hover:bg-[#FF7B1D] text-white text-xs font-semibold px-5 h-[38px] rounded-xl shadow-sm transition-colors whitespace-nowrap"
           >
             + Add Category
           </button>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-sm shadow-sm overflow-x-auto pl-4 max-w-[99%] mx-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-[#FF7B1D] text-black">
-              <th className="p-3 text-center">S.N</th>
-              <th className="p-3 text-center">Image</th>
-              <th className="p-3 text-center">Category</th>
-              <th className="p-3 text-center">Products</th>
-              <th className="p-3 text-center">Sub Categories</th>
-              <th className="p-3 text-center">Status</th>
-              <th className="p-3 pr-6 text-right">Action</th>
-            </tr>
-          </thead>
-
-          {loading ? (
-            <TableSkeleton />
-          ) : filteredCategories.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <tbody>
-              {currentCategories.map((cat, idx) => (
-                <tr
-                  key={cat.id}
-                  className="bg-white shadow-sm rounded-sm hover:bg-gray-50 transition border-b-4 border-gray-200"
-                >
-                  <td className="p-3 text-center">{indexOfFirst + idx + 1}</td>
-                  <td className="p-3 text-center">
-                    {cat.image ? (
-                      <img
-                        src={cat.image}
-                        alt={cat.category}
-                        className="h-8 w-8 rounded-full object-cover mx-auto"
-                        onError={(e) => {
-                          e.target.style.display = "none";
-                        }}
-                      />
-                    ) : (
-                      <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center mx-auto text-orange-600 font-semibold text-xs">
-                        {cat.category.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                  </td>
-                  <td className="p-3 text-center">{cat.category}</td>
-                  <td className="p-3 text-center">{cat.products}</td>
-                  <td className="p-3 text-center">{cat.subCategory}</td>
-                  <td className={`p-3 text-center ${statusColors[cat.status]}`}>
-                    {cat.status}
-                  </td>
-                  <td className="p-3 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => handleEditCategory(cat)}
-                        className="text-orange-600 hover:text-blue-700"
-                        title="Edit Category"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(cat.id)}
-                        className="text-orange-600 hover:text-red-600"
-                        title="Delete Category"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleViewCategory(cat.id)}
-                        className="text-orange-600 hover:text-green-700"
-                        title="View Category Details"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+      {/* ── Table Card ── */}
+      <div className="mx-1 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+        {/* Card Header */}
+        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+            <span className="text-sm font-semibold text-gray-700">
+              Category List
+            </span>
+          </div>
+          {!loading && (
+            <span className="text-xs text-gray-400 font-medium">
+              {filteredCategories.length} of {categories.length} categories
+            </span>
           )}
-        </table>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm table-fixed">
+            <colgroup>
+              <col style={{ width: "8%" }} /> {/* S.N */}
+              <col style={{ width: "12%" }} /> {/* Image */}
+              <col style={{ width: "25%" }} /> {/* Category */}
+              <col style={{ width: "15%" }} /> {/* Products */}
+              <col style={{ width: "18%" }} /> {/* Sub Categories */}
+              <col style={{ width: "12%" }} /> {/* Status */}
+              <col style={{ width: "10%" }} /> {/* Actions */}
+            </colgroup>
+            <thead>
+              <tr className="bg-gradient-to-r from-[#FF7B1D] to-orange-400">
+                <th className="px-4 py-3.5 text-center text-xs font-bold text-white tracking-wider uppercase opacity-90">
+                  S.N
+                </th>
+                <th className="px-4 py-3.5 text-center text-xs font-bold text-white tracking-wider uppercase opacity-90">
+                  Image
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-bold text-white tracking-wider uppercase opacity-90">
+                  Category
+                </th>
+                <th className="px-4 py-3.5 text-center text-xs font-bold text-white tracking-wider uppercase opacity-90">
+                  Products
+                </th>
+                <th className="px-4 py-3.5 text-center text-xs font-bold text-white tracking-wider uppercase opacity-90">
+                  Sub Categories
+                </th>
+                <th className="px-4 py-3.5 text-center text-xs font-bold text-white tracking-wider uppercase opacity-90">
+                  Status
+                </th>
+                <th className="px-4 py-3.5 text-center text-xs font-bold text-white tracking-wider uppercase opacity-90">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+
+            {loading ? (
+              <TableSkeleton />
+            ) : filteredCategories.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <tbody>
+                {currentCategories.map((cat, idx) => (
+                  <tr
+                    key={cat.id}
+                    className="row-animate border-b border-gray-50 hover:bg-orange-50/40 transition-colors duration-150 group"
+                    style={{ animationDelay: `${idx * 30}ms` }}
+                  >
+                    {/* S.N */}
+                    <td className="px-4 py-3.5 text-center">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">
+                        {indexOfFirst + idx + 1}
+                      </span>
+                    </td>
+
+                    {/* Image */}
+                    <td className="px-4 py-3.5 text-center">
+                      {cat.image ? (
+                        <img
+                          src={cat.image}
+                          alt={cat.category}
+                          className="h-9 w-9 rounded-full object-cover border-2 border-orange-100 shadow-sm mx-auto"
+                          onError={(e) => {
+                            e.target.style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center text-xs font-bold text-orange-600 shadow-sm mx-auto">
+                          {cat.category.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Category */}
+                    <td className="px-4 py-3.5">
+                      <span className="text-sm font-semibold text-gray-800">
+                        {cat.category}
+                      </span>
+                    </td>
+
+                    {/* Products */}
+                    <td className="px-4 py-3.5 text-center">
+                      <span className="inline-block bg-purple-50 text-purple-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-purple-100">
+                        {cat.products}
+                      </span>
+                    </td>
+
+                    {/* Sub Categories */}
+                    <td className="px-4 py-3.5 text-center">
+                      <span className="inline-block bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-blue-100">
+                        {cat.subCategory} subcategories
+                      </span>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-4 py-3.5 text-center">
+                      <StatusBadge status={cat.status} />
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => handleEditCategory(cat)}
+                          className="action-btn bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-700"
+                          title="Edit Category"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(cat.id)}
+                          className="action-btn bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600"
+                          title="Delete Category"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleViewCategory(cat.id)}
+                          className="action-btn bg-emerald-50 text-emerald-500 hover:bg-emerald-100 hover:text-emerald-700"
+                          title="View Category Details"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            )}
+          </table>
+        </div>
       </div>
 
-      {/* Pagination */}
+      {/* ── Pagination ── */}
       {!loading && filteredCategories.length > 0 && (
-        <div className="flex justify-end pl-8 items-center gap-6 mt-8 max-w-[95%] mx-auto">
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600"
-            disabled={currentPage === 1}
-          >
-            Back
-          </button>
+        <div className="flex items-center justify-between px-1 mt-5 mb-6">
+          <p className="text-xs text-gray-400 font-medium">
+            Page{" "}
+            <span className="text-gray-600 font-semibold">{currentPage}</span>{" "}
+            of <span className="text-gray-600 font-semibold">{totalPages}</span>
+          </p>
 
-          <div className="flex items-center gap-2 text-sm text-black font-medium">
-            {(() => {
-              const pages = [];
-              const visiblePages = new Set([
-                1,
-                2,
-                totalPages - 1,
-                totalPages,
-                currentPage - 1,
-                currentPage,
-                currentPage + 1,
-              ]);
-              for (let i = 1; i <= totalPages; i++) {
-                if (visiblePages.has(i)) pages.push(i);
-                else if (pages[pages.length - 1] !== "...") pages.push("...");
-              }
-              return pages.map((page, idx) =>
-                page === "..." ? (
-                  <span key={idx} className="px-1 text-black select-none">
-                    ...
-                  </span>
-                ) : (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-1 ${
-                      currentPage === page
-                        ? "text-orange-600 font-semibold"
-                        : ""
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ),
-              );
-            })()}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" /> Prev
+            </button>
+
+            <div className="flex items-center gap-1">
+              {(() => {
+                const pages = [];
+                const visiblePages = new Set([
+                  1,
+                  2,
+                  totalPages - 1,
+                  totalPages,
+                  currentPage - 1,
+                  currentPage,
+                  currentPage + 1,
+                ]);
+                for (let i = 1; i <= totalPages; i++) {
+                  if (visiblePages.has(i)) pages.push(i);
+                  else if (pages[pages.length - 1] !== "...") pages.push("...");
+                }
+                return pages.map((page, idx) =>
+                  page === "..." ? (
+                    <span key={idx} className="px-1 text-gray-400 text-xs">
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-xl text-xs font-semibold transition-all ${
+                        currentPage === page
+                          ? "bg-[#FF7B1D] text-white shadow-sm shadow-orange-200"
+                          : "bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ),
+                );
+              })()}
+            </div>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              Next <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
-
-          <button
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
-            className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800"
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </button>
         </div>
       )}
 
-      {/* Modals */}
+      {/* ── Modals ── */}
       <AddCategoryModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleCategorySuccess}
       />
       <AddCategoryModal
+        key={editingCategory?.id || "cat-edit"}
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);

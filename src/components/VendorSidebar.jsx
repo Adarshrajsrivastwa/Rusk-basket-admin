@@ -489,8 +489,32 @@ const sections = [
   },
 ];
 
+/* helper — which section does a given path belong to? */
+function getSectionForPath(pathname, search) {
+  const activeItem = pathname + search;
+  for (const sec of sections) {
+    if (!sec.items) continue;
+    for (const item of sec.items) {
+      if (item.path && activeItem.startsWith(item.path.split("?")[0]))
+        return sec.id;
+      if (item.subItems) {
+        for (const sub of item.subItems) {
+          if (activeItem.startsWith(sub.path.split("?")[0])) return sec.id;
+        }
+      }
+    }
+  }
+  if (pathname === "/vendor/dashboard") return "dashboard";
+  return null;
+}
+
 export default function VendorSidebar() {
-  const [activeSection, setActiveSection] = useState(null);
+  // which rail icon is highlighted (follows route)
+  const [activeSectionId, setActiveSectionId] = useState(null);
+  // which section's panel is currently open
+  const [openSectionId, setOpenSectionId] = useState(null);
+  const [isClosing, setIsClosing] = useState(false);
+
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -499,21 +523,19 @@ export default function VendorSidebar() {
   const navigate = useNavigate();
   const activeItem = location.pathname + location.search;
 
-  const panelOpen =
-    !!activeSection && !sections.find((s) => s.id === activeSection)?.direct;
+  const panelOpen = !!openSectionId || isClosing;
 
+  /* sync active rail icon with current route */
   useEffect(() => {
+    const secId = getSectionForPath(location.pathname, location.search);
+    if (secId) setActiveSectionId(secId);
+
     for (const sec of sections) {
       if (!sec.items) continue;
       for (const item of sec.items) {
-        if (item.path && activeItem.startsWith(item.path.split("?")[0])) {
-          setActiveSection(sec.id);
-          return;
-        }
         if (item.subItems) {
           for (const sub of item.subItems) {
             if (activeItem.startsWith(sub.path.split("?")[0])) {
-              setActiveSection(sec.id);
               setOpenDropdown(item.name);
               return;
             }
@@ -523,13 +545,24 @@ export default function VendorSidebar() {
     }
   }, [location.pathname, location.search]);
 
-  const handleSection = (sec) => {
+  /* clicking a rail icon */
+  const handleRailClick = (sec) => {
     if (sec.direct) {
       navigate(sec.direct);
-      setActiveSection(null);
+      setOpenSectionId(null);
       return;
     }
-    setActiveSection((p) => (p === sec.id ? null : sec.id));
+    setOpenSectionId((prev) => (prev === sec.id ? null : sec.id));
+  };
+
+  /* soft close — animate out first, then navigate */
+  const closePanel = (cb) => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setOpenSectionId(null);
+      setIsClosing(false);
+      cb?.();
+    }, 260);
   };
 
   const handleLogout = async (e) => {
@@ -553,7 +586,7 @@ export default function VendorSidebar() {
     }
   };
 
-  const cur = sections.find((s) => s.id === activeSection);
+  const cur = sections.find((s) => s.id === openSectionId);
 
   return (
     <>
@@ -565,7 +598,6 @@ export default function VendorSidebar() {
           --vb-accent: #FF7B1D;
           --vb-accent-glow: rgba(255,123,29,0.4);
           --vb-accent-soft: rgba(255,123,29,0.12);
-          --vb-border: rgba(255,255,255,0.06);
           --vb-text-dim: #3d5070;
           --vb-text-mid: #6b80a0;
           --vb-text-bright: #c0d0e8;
@@ -585,7 +617,6 @@ export default function VendorSidebar() {
             linear-gradient(180deg, #091022 0%, #060d1a 60%, #050b16 100%);
         }
 
-        /* Logo */
         .vb-logo {
           width: var(--vb-rail-w); height: 64px; flex-shrink: 0;
           display: flex; align-items: center; justify-content: center;
@@ -623,7 +654,6 @@ export default function VendorSidebar() {
           background: linear-gradient(90deg, transparent, rgba(255,123,29,0.35), transparent);
         }
 
-        /* Icons list */
         .vb-icons {
           flex: 1; width: 100%; display: flex; flex-direction: column;
           align-items: center; gap: 2px; padding: 10px 0; overflow-y: auto;
@@ -638,7 +668,6 @@ export default function VendorSidebar() {
           background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
         }
 
-        /* Icon button */
         .vb-icon-btn {
           position: relative; width: 46px; height: 46px; border-radius: 14px;
           display: flex; align-items: center; justify-content: center;
@@ -656,8 +685,10 @@ export default function VendorSidebar() {
           background: var(--vb-accent-soft);
           box-shadow: inset 0 0 0 1px rgba(255,123,29,0.15);
         }
+        .vb-icon-btn.vb-panel-open-icon {
+          background: rgba(255,255,255,0.06);
+        }
 
-        /* Active pill */
         .vb-pill {
           position: absolute; left: 0; top: 50%; transform: translateY(-50%);
           width: 3px; height: 0; border-radius: 0 3px 3px 0;
@@ -668,7 +699,6 @@ export default function VendorSidebar() {
         }
         .vb-icon-btn.vb-active .vb-pill { height: 22px; opacity: 1; }
 
-        /* Tooltip */
         .vb-tip {
           position: absolute; left: calc(100% + 13px); top: 50%;
           transform: translateY(-50%) translateX(-6px);
@@ -687,10 +717,7 @@ export default function VendorSidebar() {
           transform: translateY(-50%);
           border: 5px solid transparent; border-right-color: #0d1a30;
         }
-        .vb-icon-btn:hover .vb-tip {
-          opacity: 1;
-          transform: translateY(-50%) translateX(0);
-        }
+        .vb-icon-btn:hover .vb-tip { opacity: 1; transform: translateY(-50%) translateX(0); }
 
         /* ══════════════ PANEL ══════════════ */
         .vb-panel {
@@ -709,29 +736,23 @@ export default function VendorSidebar() {
         .vb-panel::after {
           content: ''; position: absolute; top: 0; right: -1px; width: 1px; height: 100%;
           background: linear-gradient(180deg,
-            transparent 0%,
-            rgba(255,123,29,0.2) 25%,
-            rgba(255,123,29,0.1) 75%,
-            transparent 100%
+            transparent 0%, rgba(255,123,29,0.2) 25%,
+            rgba(255,123,29,0.1) 75%, transparent 100%
           );
           pointer-events: none;
         }
-
         .vb-panel.vb-panel-closed { transform: translateX(-110%); opacity: 0; pointer-events: none; }
         .vb-panel.vb-panel-open   { transform: translateX(0); opacity: 1; }
 
-        /* Panel header */
         .vb-panel-head {
           height: 64px; display: flex; align-items: center;
           justify-content: space-between; padding: 0 14px 0 18px;
-          border-bottom: 1px solid rgba(255,255,255,0.05);
-          flex-shrink: 0;
+          border-bottom: 1px solid rgba(255,255,255,0.05); flex-shrink: 0;
         }
         .vb-panel-title { display: flex; align-items: center; gap: 10px; }
         .vb-title-icon {
           width: 26px; height: 26px; border-radius: 8px;
           display: flex; align-items: center; justify-content: center;
-          font-size: 10px;
         }
         .vb-panel-label {
           font-size: 10px; font-weight: 700;
@@ -752,14 +773,12 @@ export default function VendorSidebar() {
           color: #ef4444;
         }
 
-        /* Panel scroll */
         .vb-panel-scroll { flex: 1; overflow-y: auto; padding: 10px 10px 24px; }
         .vb-panel-scroll::-webkit-scrollbar { width: 2px; }
         .vb-panel-scroll::-webkit-scrollbar-thumb {
           background: rgba(255,123,29,0.2); border-radius: 4px;
         }
 
-        /* Nav row */
         .vb-nav {
           width: 100%; display: flex; align-items: center;
           justify-content: space-between;
@@ -778,13 +797,11 @@ export default function VendorSidebar() {
         .vb-nav.vb-nav-active {
           background: rgba(255,123,29,0.1);
           border-color: rgba(255,123,29,0.2);
-          color: #FF7B1D;
-          font-weight: 700;
+          color: #FF7B1D; font-weight: 700;
           box-shadow: 0 2px 12px rgba(255,123,29,0.1);
         }
         .vb-nav-l { display: flex; align-items: center; gap: 9px; }
 
-        /* Sub list */
         .vb-sub {
           overflow: hidden;
           transition: max-height 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.22s;
@@ -809,10 +826,7 @@ export default function VendorSidebar() {
           background: rgba(255,123,29,0.07);
           padding-left: 14px;
         }
-        .vb-sub-a.vb-sub-active {
-          color: #FF7B1D;
-          font-weight: 600;
-        }
+        .vb-sub-a.vb-sub-active { color: #FF7B1D; font-weight: 600; }
         .vb-sub-a.vb-sub-active::before {
           content: '';
           display: inline-block; width: 5px; height: 5px;
@@ -821,7 +835,6 @@ export default function VendorSidebar() {
           flex-shrink: 0;
         }
 
-        /* Dim overlay */
         .vb-dim {
           position: fixed; inset: 0 0 0 var(--vb-rail-w); z-index: 53;
           background: rgba(3,8,20,0.65); backdrop-filter: blur(4px);
@@ -846,17 +859,18 @@ export default function VendorSidebar() {
             .filter((s) => s.id !== "settings")
             .map((sec) => {
               const Icon = sec.icon;
-              const isActive = activeSection === sec.id;
+              const isRouteActive = activeSectionId === sec.id;
+              const isPanelOpen = openSectionId === sec.id;
               return (
                 <button
                   key={sec.id}
-                  className={`vb-icon-btn ${isActive ? "vb-active" : ""}`}
-                  onClick={() => handleSection(sec)}
+                  className={`vb-icon-btn ${isRouteActive ? "vb-active" : ""} ${isPanelOpen && !isRouteActive ? "vb-panel-open-icon" : ""}`}
+                  onClick={() => handleRailClick(sec)}
                 >
                   <div
                     className="vb-pill"
                     style={
-                      isActive
+                      isRouteActive
                         ? {
                             background: sec.color,
                             boxShadow: `0 0 10px ${sec.color}99`,
@@ -864,7 +878,10 @@ export default function VendorSidebar() {
                         : {}
                     }
                   />
-                  <Icon size={18} color={isActive ? sec.color : undefined} />
+                  <Icon
+                    size={18}
+                    color={isRouteActive ? sec.color : undefined}
+                  />
                   <span className="vb-tip">{sec.label}</span>
                 </button>
               );
@@ -877,17 +894,18 @@ export default function VendorSidebar() {
             .filter((s) => s.id === "settings")
             .map((sec) => {
               const Icon = sec.icon;
-              const isActive = activeSection === sec.id;
+              const isRouteActive = activeSectionId === sec.id;
+              const isPanelOpen = openSectionId === sec.id;
               return (
                 <button
                   key={sec.id}
-                  className={`vb-icon-btn ${isActive ? "vb-active" : ""}`}
-                  onClick={() => handleSection(sec)}
+                  className={`vb-icon-btn ${isRouteActive ? "vb-active" : ""} ${isPanelOpen && !isRouteActive ? "vb-panel-open-icon" : ""}`}
+                  onClick={() => handleRailClick(sec)}
                 >
                   <div
                     className="vb-pill"
                     style={
-                      isActive
+                      isRouteActive
                         ? {
                             background: sec.color,
                             boxShadow: `0 0 10px ${sec.color}99`,
@@ -895,7 +913,10 @@ export default function VendorSidebar() {
                         : {}
                     }
                   />
-                  <Icon size={18} color={isActive ? sec.color : undefined} />
+                  <Icon
+                    size={18}
+                    color={isRouteActive ? sec.color : undefined}
+                  />
                   <span className="vb-tip">{sec.label}</span>
                 </button>
               );
@@ -905,7 +926,7 @@ export default function VendorSidebar() {
 
       {/* ── Slide Panel ── */}
       <div
-        className={`vb vb-panel ${panelOpen ? "vb-panel-open" : "vb-panel-closed"}`}
+        className={`vb vb-panel ${openSectionId && !isClosing ? "vb-panel-open" : "vb-panel-closed"}`}
       >
         {cur && (
           <>
@@ -923,10 +944,7 @@ export default function VendorSidebar() {
                 </div>
                 <span className="vb-panel-label">{cur.label}</span>
               </div>
-              <button
-                className="vb-close"
-                onClick={() => setActiveSection(null)}
-              >
+              <button className="vb-close" onClick={() => closePanel()}>
                 <X size={13} />
               </button>
             </div>
@@ -947,6 +965,10 @@ export default function VendorSidebar() {
                       key={item.name}
                       to={item.path}
                       className={`vb-nav ${directActive ? "vb-nav-active" : ""}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        closePanel(() => navigate(item.path));
+                      }}
                     >
                       <div className="vb-nav-l">
                         <Icon size={14} />
@@ -1003,6 +1025,10 @@ export default function VendorSidebar() {
                             <Link
                               to={sub.path}
                               className={`vb-sub-a ${subActive ? "vb-sub-active" : ""}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                closePanel(() => navigate(sub.path));
+                              }}
                             >
                               {SubIcon && <SubIcon size={11} />}
                               {sub.name}
@@ -1019,9 +1045,7 @@ export default function VendorSidebar() {
         )}
       </div>
 
-      {panelOpen && (
-        <div className="vb-dim" onClick={() => setActiveSection(null)} />
-      )}
+      {panelOpen && <div className="vb-dim" onClick={() => closePanel()} />}
 
       <AddProductPopup
         isOpen={showAddProductModal}

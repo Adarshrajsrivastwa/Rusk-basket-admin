@@ -1,381 +1,14 @@
-// import React, { useState, useEffect } from "react";
-// import DashboardLayout from "../../components/DashboardLayout";
-// import { Eye, Edit, Trash2, Settings } from "lucide-react";
-// import AddVendorModal from "../../components/AddVendorModal";
-// import { useNavigate } from "react-router-dom";
-
-// const AllVendor = () => {
-//   const [activeTab, setActiveTab] = useState("all");
-//   const [isModalOpen, setIsModalOpen] = useState(false);
-//   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-//   const [selectedVendor, setSelectedVendor] = useState(null); // ✅ store vendor for edit/view
-//   const [currentPage, setCurrentPage] = useState(1);
-//   const [searchQuery, setSearchQuery] = useState("");
-//   const [loading, setLoading] = useState(true);
-//   const navigate = useNavigate();
-//   const itemsPerPage = 8;
-
-//   const [vendors, setVendors] = useState([]);
-
-//   // Simulate loading (replace with API later)
-//   useEffect(() => {
-//     setLoading(true);
-//     const timer = setTimeout(() => {
-//       setVendors([
-//         {
-//           id: "NO101",
-//           name: "Manish Kumar",
-//           city: "Noida",
-//           pincode: "201301",
-//           contact: "6203689042",
-//           status: "Approved",
-//         },
-//         {
-//           id: "NO102",
-//           name: "Anita Verma",
-//           city: "Gurgaon",
-//           pincode: "122001",
-//           contact: "9123456780",
-//           status: "Suspended",
-//         },
-//         {
-//           id: "NO103",
-//           name: "Suresh Yadav",
-//           city: "Noida",
-//           pincode: "201301",
-//           contact: "9988776655",
-//           status: "Approved",
-//         },
-//         {
-//           id: "NO104",
-//           name: "Amit Kumar",
-//           city: "Ghaziabad",
-//           pincode: "201002",
-//           contact: "9234567890",
-//           status: "Approved",
-//         },
-//         {
-//           id: "NO105",
-//           name: "Neha Sharma",
-//           city: "Noida",
-//           pincode: "201301",
-//           contact: "9876123450",
-//           status: "Suspended",
-//         },
-//         {
-//           id: "NO106",
-//           name: "Rakesh Gupta",
-//           city: "Delhi",
-//           pincode: "110003",
-//           contact: "9123456701",
-//           status: "Approved",
-//         },
-//         {
-//           id: "NO107",
-//           name: "Vikram Singh",
-//           city: "Noida",
-//           pincode: "201304",
-//           contact: "9876543211",
-//           status: "Approved",
-//         },
-//         {
-//           id: "NO108",
-//           name: "Ankita Verma",
-//           city: "Delhi",
-//           pincode: "110004",
-//           contact: "9123456702",
-//           status: "Suspended",
-//         },
-//       ]);
-//       setLoading(false);
-//     }, 400);
-//     return () => clearTimeout(timer);
-//   }, []);
-
-//   const statusColors = {
-//     Approved: "text-green-600 font-semibold",
-//     Suspended: "text-gray-600 font-semibold",
-//   };
-
-//   // ✅ Delete Functionality
-//   const handleDelete = (id) => {
-//     if (window.confirm("Are you sure you want to delete this vendor?")) {
-//       setVendors((prev) => prev.filter((vendor) => vendor.id !== id));
-//     }
-//   };
-
-//   // ✅ Edit Functionality
-//   const handleEdit = (vendor) => {
-//     setSelectedVendor(vendor);
-//     setIsEditModalOpen(true);
-//   };
-
-//   // ✅ View Functionality
-//   const handleView = (vendor) => {
-//     navigate(`/vendor/${vendor.id}`, { state: { vendor } });
-//   };
-
-//   // ✅ Filter and Pagination Logic
-//   const filteredVendors = vendors
-//     .filter((vendor) => {
-//       if (activeTab === "active") return vendor.status === "Approved";
-//       if (activeTab === "suspended") return vendor.status === "Suspended";
-//       return true;
-//     })
-//     .filter((vendor) =>
-//       [vendor.name, vendor.id, vendor.city, vendor.pincode, vendor.contact]
-//         .join(" ")
-//         .toLowerCase()
-//         .includes(searchQuery.toLowerCase())
-//     );
-
-//   const indexOfLastVendor = currentPage * itemsPerPage;
-//   const indexOfFirstVendor = indexOfLastVendor - itemsPerPage;
-//   const currentVendors = filteredVendors.slice(
-//     indexOfFirstVendor,
-//     indexOfLastVendor
-//   );
-//   const totalPages = Math.ceil(filteredVendors.length / itemsPerPage);
-
-//   // ✅ Skeleton Loader
-//   const TableSkeleton = () => (
-//     <tbody>
-//       {Array.from({ length: itemsPerPage }).map((_, i) => (
-//         <tr
-//           key={i}
-//           className="border-b border-gray-200 animate-pulse bg-white rounded-sm"
-//         >
-//           {Array.from({ length: 8 }).map((__, j) => (
-//             <td key={j} className="p-3">
-//               <div className="h-4 bg-gray-200 rounded w-[80%]" />
-//             </td>
-//           ))}
-//         </tr>
-//       ))}
-//     </tbody>
-//   );
-
-//   // ✅ Empty State
-//   const EmptyState = () => (
-//     <tbody>
-//       <tr>
-//         <td
-//           colSpan="8"
-//           className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
-//         >
-//           No vendors found.
-//         </td>
-//       </tr>
-//     </tbody>
-//   );
-
-//   return (
-//     <DashboardLayout>
-//       {/* Top Bar */}
-//       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-0 mb-2">
-//         <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
-//           {/* Tabs */}
-//           <div className="flex gap-4 items-center overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0">
-//             {["all", "active", "suspended"].map((tab) => (
-//               <button
-//                 key={tab}
-//                 onClick={() => {
-//                   setActiveTab(tab);
-//                   setCurrentPage(1);
-//                 }}
-//                 className={`px-4 py-1 border rounded text-xs sm:text-sm whitespace-nowrap ${
-//                   activeTab === tab
-//                     ? "bg-[#FF7B1D] text-white border-orange-500"
-//                     : "border-gray-400 text-gray-600 hover:bg-gray-100"
-//                 }`}
-//               >
-//                 {tab === "all"
-//                   ? "All Vendor"
-//                   : tab === "active"
-//                   ? "Active"
-//                   : "Suspended"}
-//               </button>
-//             ))}
-//           </div>
-
-//           {/* Search */}
-//           <div className="flex items-center border border-black rounded overflow-hidden h-9 w-full max-w-full sm:max-w-[450px] mt-2 sm:mt-0">
-//             <input
-//               type="text"
-//               placeholder="Search Vendor by Name, ID..."
-//               className="flex-1 px-3 sm:px-4 text-sm text-gray-800 focus:outline-none h-full"
-//               value={searchQuery}
-//               onChange={(e) => setSearchQuery(e.target.value)}
-//             />
-//             <button className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-sm px-3 sm:px-6 h-full">
-//               Search
-//             </button>
-//           </div>
-//         </div>
-
-//         {/* Add Vendor Button */}
-//         <div className="w-full md:w-auto flex justify-start md:justify-end mt-2 md:mt-0">
-//           <button
-//             onClick={() => setIsModalOpen(true)}
-//             className="bg-black text-white w-52 sm:w-60 px-4 sm:px-5 py-2 rounded-sm shadow hover:bg-orange-600 text-xs sm:text-sm flex items-center justify-center whitespace-nowrap"
-//           >
-//             + Add Vendor
-//           </button>
-//         </div>
-//       </div>
-
-//       {/* Table */}
-//       <div className="bg-white rounded-sm shadow-sm overflow-x-auto pl-4 max-w-[99%] mx-auto">
-//         <table className="w-full text-sm">
-//           <thead>
-//             <tr className="bg-[#FF7B1D] text-black">
-//               <th className="p-3 text-left">S.N</th>
-//               <th className="p-3 text-left">Vendor ID</th>
-//               <th className="p-3 text-left">Authorized Name</th>
-//               <th className="p-3 text-left">City</th>
-//               <th className="p-3 text-left">Pin Code</th>
-//               <th className="p-3 text-left">Contact Number</th>
-//               <th className="p-3 text-left">Status</th>
-//               <th className="p-3 pr-6 text-right">Action</th>
-//             </tr>
-//           </thead>
-
-//           {loading ? (
-//             <TableSkeleton />
-//           ) : filteredVendors.length === 0 ? (
-//             <EmptyState />
-//           ) : (
-//             <tbody>
-//               {currentVendors.map((vendor, idx) => (
-//                 <tr
-//                   key={vendor.id}
-//                   className="bg-white shadow-sm hover:bg-gray-50 transition border-b-4 border-gray-200"
-//                 >
-//                   <td className="p-3">{indexOfFirstVendor + idx + 1}</td>
-//                   <td className="p-3">{vendor.id}</td>
-//                   <td className="p-3">{vendor.name}</td>
-//                   <td className="p-3">{vendor.city}</td>
-//                   <td className="p-3">{vendor.pincode}</td>
-//                   <td className="p-3">{vendor.contact}</td>
-//                   <td className={`p-3 ${statusColors[vendor.status]}`}>
-//                     {vendor.status === "Approved" ? "Active" : "Suspended"}
-//                   </td>
-//                   <td className="p-3 text-right">
-//                     <div className="flex justify-end gap-3 text-orange-600">
-//                       <button
-//                         onClick={() => handleEdit(vendor)}
-//                         className="hover:text-blue-700"
-//                       >
-//                         <Edit className="w-4 h-4" />
-//                       </button>
-//                       <button
-//                         onClick={() => handleDelete(vendor.id)}
-//                         className="hover:text-red-700"
-//                       >
-//                         <Trash2 className="w-4 h-4" />
-//                       </button>
-//                       <button
-//                         onClick={() => handleView(vendor)}
-//                         className="hover:text-green-700"
-//                       >
-//                         <Eye className="w-4 h-4" />
-//                       </button>
-//                       <button
-//                         onClick={() =>
-//                           navigate(`/vendors/${vendor.id}/settings`)
-//                         }
-//                         className="hover:text-blue-700"
-//                         title="Settings"
-//                       >
-//                         <Settings className="w-4 h-4" />
-//                       </button>
-//                     </div>
-//                   </td>
-//                 </tr>
-//               ))}
-//             </tbody>
-//           )}
-//         </table>
-//       </div>
-
-//       {/* Pagination */}
-//       {!loading && filteredVendors.length > 0 && (
-//         <div className="flex justify-end items-center gap-6 mt-8 max-w-[95%] mx-auto">
-//           <button
-//             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-//             className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600"
-//           >
-//             Back
-//           </button>
-//           <div className="flex items-center gap-2 text-sm text-black font-medium">
-//             {(() => {
-//               const pages = [];
-//               const visiblePages = new Set([
-//                 1,
-//                 2,
-//                 totalPages - 1,
-//                 totalPages,
-//                 currentPage - 1,
-//                 currentPage,
-//                 currentPage + 1,
-//               ]);
-//               for (let i = 1; i <= totalPages; i++) {
-//                 if (visiblePages.has(i)) pages.push(i);
-//                 else if (pages[pages.length - 1] !== "...") pages.push("...");
-//               }
-//               return pages.map((page, idx) =>
-//                 page === "..." ? (
-//                   <span key={idx} className="px-1 text-black select-none">
-//                     ...
-//                   </span>
-//                 ) : (
-//                   <button
-//                     key={page}
-//                     onClick={() => setCurrentPage(page)}
-//                     className={`px-1 ${
-//                       currentPage === page
-//                         ? "text-orange-600 font-semibold"
-//                         : ""
-//                     }`}
-//                   >
-//                     {page}
-//                   </button>
-//                 )
-//               );
-//             })()}
-//           </div>
-//           <button
-//             onClick={() =>
-//               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-//             }
-//             className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800"
-//           >
-//             Next
-//           </button>
-//         </div>
-//       )}
-
-//       {/* ✅ Add Vendor Modal */}
-//       <AddVendorModal
-//         isOpen={isModalOpen}
-//         onClose={() => setIsModalOpen(false)}
-//       />
-
-//       {/* ✅ Edit Vendor Modal (with data pre-filled) */}
-//       <AddVendorModal
-//         isOpen={isEditModalOpen}
-//         onClose={() => setIsEditModalOpen(false)}
-//         isEdit={true}
-//         vendorData={selectedVendor}
-//       />
-//     </DashboardLayout>
-//   );
-// };
-
-// export default AllVendor;
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
-import { Eye, Edit, Trash2 } from "lucide-react";
+import {
+  Eye,
+  Edit,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Users,
+} from "lucide-react";
 import AddVendorModal from "../../components/AddVendorModal";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/api";
@@ -395,7 +28,6 @@ const AllVendor = () => {
   const itemsPerPage = 10;
   const navigate = useNavigate();
 
-  // Fetch vendors from API
   const fetchVendors = async (page = 1) => {
     try {
       setLoading(true);
@@ -429,25 +61,13 @@ const AllVendor = () => {
 
   const refreshVendors = () => fetchVendors(currentPage);
 
-  const statusColors = {
-    true: "text-green-600 font-semibold",
-    false: "text-gray-600 font-semibold",
-  };
-
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this vendor?")) {
       try {
         const response = await api.delete(`/api/vendor/${id}`);
-        const result = response.data;
-        if (result.success) {
-          alert("Vendor deleted successfully");
-          refreshVendors();
-        } else {
-          alert(result.message || "Failed to delete vendor");
-        }
+        if (response.data.success) refreshVendors();
       } catch (error) {
         console.error("Error deleting vendor:", error);
-        alert(error.response?.data?.message || "Error deleting vendor");
       }
     }
   };
@@ -457,37 +77,38 @@ const AllVendor = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleView = (vendor) => {
+  const handleView = (vendor) =>
     navigate(`/vendor/${vendor._id}`, { state: { vendor } });
-  };
 
   const filteredVendors = vendors.filter((vendor) => {
     if (activeTab === "active" && !vendor.isActive) return false;
     if (activeTab === "suspended" && vendor.isActive) return false;
     if (searchQuery) {
-      const searchLower = searchQuery.toLowerCase();
+      const s = searchQuery.toLowerCase();
       return (
-        vendor.vendorName?.toLowerCase().includes(searchLower) ||
-        vendor.storeId?.toLowerCase().includes(searchLower) ||
-        vendor.storeName?.toLowerCase().includes(searchLower) ||
-        vendor.contactNumber?.toLowerCase().includes(searchLower) ||
-        vendor.storeAddress?.city?.toLowerCase().includes(searchLower) ||
-        vendor.storeAddress?.pinCode?.toLowerCase().includes(searchLower)
+        vendor.vendorName?.toLowerCase().includes(s) ||
+        vendor.storeId?.toLowerCase().includes(s) ||
+        vendor.storeName?.toLowerCase().includes(s) ||
+        vendor.contactNumber?.toLowerCase().includes(s) ||
+        vendor.storeAddress?.city?.toLowerCase().includes(s) ||
+        vendor.storeAddress?.pinCode?.toLowerCase().includes(s)
       );
     }
     return true;
   });
 
+  // ── Skeleton ──
   const TableSkeleton = () => (
     <tbody>
-      {Array.from({ length: itemsPerPage }).map((_, i) => (
-        <tr
-          key={i}
-          className="border-b border-gray-200 animate-pulse bg-white rounded-sm"
-        >
+      {Array.from({ length: itemsPerPage }).map((_, idx) => (
+        <tr key={idx} className="border-b border-gray-100">
           {Array.from({ length: 9 }).map((__, j) => (
-            <td key={j} className="p-3">
-              <div className="h-4 bg-gray-200 rounded w-[80%]" />
+            <td key={j} className="px-4 py-3.5">
+              <div
+                className={`h-3.5 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full animate-pulse ${
+                  j === 1 ? "w-24" : j === 8 ? "w-16 ml-auto" : "w-[70%]"
+                }`}
+              />
             </td>
           ))}
         </tr>
@@ -495,219 +116,319 @@ const AllVendor = () => {
     </tbody>
   );
 
+  // ── Empty State ──
   const EmptyState = () => (
     <tbody>
       <tr>
-        <td
-          colSpan="9"
-          className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
-        >
-          No vendors found.
+        <td colSpan="9" className="py-20 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center">
+              <Users className="w-8 h-8 text-orange-300" />
+            </div>
+            <p className="text-gray-400 text-sm font-medium">
+              No vendors found
+            </p>
+            <p className="text-gray-300 text-xs">
+              Try adjusting your filters or search query
+            </p>
+          </div>
         </td>
       </tr>
     </tbody>
   );
 
+  const tabs = [
+    { key: "all", label: "All" },
+    { key: "active", label: "Active" },
+    { key: "suspended", label: "Suspended" },
+  ];
+
   return (
     <DashboardLayout>
-      {/* Top Bar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-2 mb-2">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
-          {/* Tabs */}
-          <div className="flex gap-4 items-center overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0">
-            {["all", "active", "suspended"].map((tab) => (
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .row-animate { animation: fadeSlideIn 0.25s ease forwards; }
+        .action-btn {
+          width: 30px; height: 30px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 8px;
+          transition: all 0.18s ease;
+        }
+        .action-btn:hover { transform: translateY(-1px); }
+      `}</style>
+
+      {/* ── Toolbar ── */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 w-full max-w-full mx-auto px-1 mt-3 mb-3">
+        {/* LEFT: Tab Pills */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
+            {tabs.map((tab) => (
               <button
-                key={tab}
+                key={tab.key}
                 onClick={() => {
-                  setActiveTab(tab);
+                  setActiveTab(tab.key);
                   setCurrentPage(1);
                 }}
-                className={`px-4 py-1 border rounded text-xs sm:text-sm whitespace-nowrap transition-colors ${
-                  activeTab === tab
-                    ? "bg-[#FF7B1D] text-white border-orange-500"
-                    : "border-gray-400 text-gray-600 hover:bg-gray-100"
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
+                  activeTab === tab.key
+                    ? "bg-white text-[#FF7B1D] shadow-sm shadow-orange-100"
+                    : "text-gray-500 hover:text-gray-700"
                 }`}
               >
-                {tab === "all"
-                  ? "All Vendor"
-                  : tab === "active"
-                    ? "Active"
-                    : "Suspended"}
+                {tab.label}
               </button>
             ))}
           </div>
+        </div>
 
-          {/* Search */}
-          <div className="flex items-center border border-black rounded overflow-hidden h-9 w-full max-w-full sm:max-w-[450px] mt-2 sm:mt-0">
+        {/* RIGHT: Search + Add */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden h-[38px] w-full lg:w-[340px] shadow-sm bg-white">
             <input
               type="text"
-              placeholder="Search Vendor by Name, ID..."
-              className="flex-1 px-3 sm:px-4 text-sm text-gray-800 focus:outline-none h-full"
+              placeholder="Search by name, ID, city..."
+              className="flex-1 px-4 text-sm text-gray-700 focus:outline-none h-full placeholder:text-gray-400"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <button className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-sm px-3 sm:px-6 h-full transition-colors">
+            <button className="bg-[#FF7B1D] hover:bg-orange-500 text-white text-sm font-medium px-5 h-full transition-colors">
               Search
             </button>
           </div>
-        </div>
 
-        {/* Add Vendor Button */}
-        <div className="w-full md:w-auto flex justify-start md:justify-end mt-2 md:mt-0">
           <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-black text-white w-52 sm:w-60 px-4 sm:px-5 py-2 rounded-sm shadow hover:bg-orange-600 text-xs sm:text-sm flex items-center justify-center whitespace-nowrap transition-colors"
+            className="flex items-center gap-1.5 px-4 h-[38px] bg-gray-900 text-white text-xs font-semibold rounded-xl hover:bg-[#FF7B1D] transition-colors whitespace-nowrap shadow-sm"
           >
-            + Add Vendor
+            <Plus className="w-3.5 h-3.5" /> Add Vendor
           </button>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-sm shadow-sm overflow-x-auto pl-4 max-w-[99%] mx-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-[#FF7B1D] text-black">
-              <th className="p-3 text-left">S.N</th>
-              <th className="p-3 text-left">Vendor ID</th>
-              <th className="p-3 text-left">Authorized Name</th>
-              <th className="p-3 text-left">Store Name</th>
-              <th className="p-3 text-left">City</th>
-              <th className="p-3 text-left">Pin Code</th>
-              <th className="p-3 text-left">Contact Number</th>
-              <th className="p-3 text-left">Status</th>
-              <th className="p-3 pr-6 text-right">Action</th>
-            </tr>
-          </thead>
-
-          {loading ? (
-            <TableSkeleton />
-          ) : filteredVendors.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <tbody>
-              {filteredVendors.map((vendor, idx) => (
-                <tr
-                  key={vendor._id}
-                  className="bg-white shadow-sm hover:bg-gray-50 transition border-b-4 border-gray-200"
-                >
-                  <td className="p-3">
-                    {(currentPage - 1) * itemsPerPage + idx + 1}
-                  </td>
-                  <td className="p-3 font-mono text-xs">
-                    {vendor.storeId || "N/A"}
-                  </td>
-                  <td className="p-3">{vendor.vendorName || "N/A"}</td>
-                  <td className="p-3">{vendor.storeName || "N/A"}</td>
-                  <td className="p-3">{vendor.storeAddress?.city || "N/A"}</td>
-                  <td className="p-3">
-                    {vendor.storeAddress?.pinCode || "N/A"}
-                  </td>
-                  <td className="p-3">{vendor.contactNumber || "N/A"}</td>
-                  <td className={`p-3 ${statusColors[vendor.isActive]}`}>
-                    {vendor.isActive ? "Active" : "Suspended"}
-                  </td>
-                  <td className="p-3 text-right">
-                    <div className="flex justify-end gap-3 text-orange-600">
-                      <button
-                        onClick={() => handleEdit(vendor)}
-                        className="hover:text-blue-700 transition-colors"
-                        title="Edit"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(vendor._id)}
-                        className="hover:text-red-700 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleView(vendor)}
-                        className="hover:text-green-700 transition-colors"
-                        title="View"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          )}
-        </table>
-      </div>
-
-      {/* Pagination — always visible when vendors exist (matches AllProduct style) */}
-      {!loading && filteredVendors.length > 0 && (
-        <div className="flex justify-end pl-4 items-center gap-6 mt-8 max-w-[95%] mx-auto mb-6">
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-            className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Back
-          </button>
-
-          <div className="flex items-center gap-2 text-sm text-black font-medium">
-            {(() => {
-              const pages = [];
-              const visiblePages = new Set([
-                1,
-                2,
-                totalPages - 1,
-                totalPages,
-                currentPage - 1,
-                currentPage,
-                currentPage + 1,
-              ]);
-              for (let i = 1; i <= totalPages; i++) {
-                if (visiblePages.has(i)) pages.push(i);
-                else if (pages[pages.length - 1] !== "...") pages.push("...");
-              }
-              return pages.map((page, idx) =>
-                page === "..." ? (
-                  <span key={idx} className="px-1 text-black select-none">
-                    ...
-                  </span>
-                ) : (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-1 hover:text-orange-500 transition-colors ${
-                      currentPage === page
-                        ? "text-orange-600 font-semibold"
-                        : ""
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ),
-              );
-            })()}
+      {/* ── Table Card ── */}
+      <div className="mx-1 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+        {/* Card Header */}
+        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+            <span className="text-sm font-semibold text-gray-700">
+              Vendor Management
+            </span>
           </div>
-
-          <button
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
-            disabled={currentPage === totalPages}
-            className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Next
-          </button>
+          {!loading && (
+            <span className="text-xs text-gray-400 font-medium">
+              {filteredVendors.length} of {totalVendors} vendors
+            </span>
+          )}
         </div>
-      )}
 
-      {/* Pagination Info */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gradient-to-r from-[#FF7B1D] to-orange-400">
+                {[
+                  { label: "S.N", cls: "w-12" },
+                  { label: "Vendor ID", cls: "" },
+                  { label: "Auth. Name", cls: "" },
+                  { label: "Store Name", cls: "" },
+                  { label: "City", cls: "" },
+                  { label: "Pin Code", cls: "" },
+                  { label: "Contact", cls: "" },
+                  { label: "Status", cls: "" },
+                ].map(({ label, cls }) => (
+                  <th
+                    key={label}
+                    className={`px-4 py-3.5 text-left text-xs font-bold text-white tracking-wider uppercase opacity-90 ${cls}`}
+                  >
+                    {label}
+                  </th>
+                ))}
+                <th className="px-4 py-3.5 text-right text-xs font-bold text-white tracking-wider uppercase opacity-90 pr-5">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+
+            {loading ? (
+              <TableSkeleton />
+            ) : filteredVendors.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <tbody>
+                {filteredVendors.map((vendor, idx) => (
+                  <tr
+                    key={vendor._id}
+                    className="row-animate border-b border-gray-50 hover:bg-orange-50/40 transition-colors duration-150 group"
+                    style={{ animationDelay: `${idx * 30}ms` }}
+                  >
+                    {/* S.N */}
+                    <td className="px-4 py-3.5">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">
+                        {(currentPage - 1) * itemsPerPage + idx + 1}
+                      </span>
+                    </td>
+
+                    {/* Vendor ID */}
+                    <td className="px-4 py-3.5">
+                      <span className="font-mono text-xs bg-gray-50 border border-gray-200 px-2 py-1 rounded-md text-gray-600 group-hover:border-orange-200 group-hover:bg-orange-50 transition-colors">
+                        {vendor.storeId || "N/A"}
+                      </span>
+                    </td>
+
+                    {/* Auth. Name */}
+                    <td className="px-4 py-3.5">
+                      <span className="text-sm font-medium text-gray-800">
+                        {vendor.vendorName || "N/A"}
+                      </span>
+                    </td>
+
+                    {/* Store Name */}
+                    <td className="px-4 py-3.5 text-gray-600 text-sm">
+                      {vendor.storeName || "N/A"}
+                    </td>
+
+                    {/* City */}
+                    <td className="px-4 py-3.5">
+                      <span className="inline-block bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full border border-blue-100">
+                        {vendor.storeAddress?.city || "N/A"}
+                      </span>
+                    </td>
+
+                    {/* Pin Code */}
+                    <td className="px-4 py-3.5">
+                      <span className="inline-block bg-purple-50 text-purple-700 text-xs font-medium px-2.5 py-1 rounded-full border border-purple-100">
+                        {vendor.storeAddress?.pinCode || "N/A"}
+                      </span>
+                    </td>
+
+                    {/* Contact */}
+                    <td className="px-4 py-3.5 text-gray-600 text-sm">
+                      {vendor.contactNumber || "N/A"}
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-4 py-3.5">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ring-1 ${
+                          vendor.isActive
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 ring-emerald-100"
+                            : "bg-gray-50 text-gray-500 border-gray-200 ring-gray-100"
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            vendor.isActive ? "bg-emerald-500" : "bg-gray-400"
+                          }`}
+                        />
+                        {vendor.isActive ? "Active" : "Suspended"}
+                      </span>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-3.5 pr-5">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => handleEdit(vendor)}
+                          className="action-btn bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-700"
+                          title="Edit vendor"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(vendor._id)}
+                          className="action-btn bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600"
+                          title="Delete vendor"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleView(vendor)}
+                          className="action-btn bg-emerald-50 text-emerald-500 hover:bg-emerald-100 hover:text-emerald-700"
+                          title="View vendor"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            )}
+          </table>
+        </div>
+      </div>
+
+      {/* ── Pagination ── */}
       {!loading && filteredVendors.length > 0 && (
-        <div className="text-center text-sm text-gray-600 mt-2 mb-4">
-          Showing {filteredVendors.length} of {totalVendors} vendors
+        <div className="flex items-center justify-between px-1 mt-5 mb-6">
+          <p className="text-xs text-gray-400 font-medium">
+            Page{" "}
+            <span className="text-gray-600 font-semibold">{currentPage}</span>{" "}
+            of <span className="text-gray-600 font-semibold">{totalPages}</span>
+          </p>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" /> Prev
+            </button>
+
+            <div className="flex items-center gap-1">
+              {(() => {
+                const pages = [];
+                const visiblePages = new Set([
+                  1,
+                  2,
+                  totalPages - 1,
+                  totalPages,
+                  currentPage - 1,
+                  currentPage,
+                  currentPage + 1,
+                ]);
+                for (let i = 1; i <= totalPages; i++) {
+                  if (visiblePages.has(i)) pages.push(i);
+                  else if (pages[pages.length - 1] !== "...") pages.push("...");
+                }
+                return pages.map((page, idx) =>
+                  page === "..." ? (
+                    <span key={idx} className="px-1 text-gray-400 text-xs">
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-xl text-xs font-semibold transition-all ${
+                        currentPage === page
+                          ? "bg-[#FF7B1D] text-white shadow-sm shadow-orange-200"
+                          : "bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ),
+                );
+              })()}
+            </div>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              Next <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Add Vendor Modal */}
+      {/* ── Add Vendor Modal ── */}
       <AddVendorModal
         isOpen={isModalOpen}
         onClose={() => {
@@ -716,7 +437,7 @@ const AllVendor = () => {
         }}
       />
 
-      {/* Edit Vendor Modal */}
+      {/* ── Edit Vendor Modal ── */}
       <AddVendorModal
         isOpen={isEditModalOpen}
         onClose={() => {

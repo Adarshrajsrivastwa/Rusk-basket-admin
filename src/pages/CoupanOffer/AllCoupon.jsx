@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
-import { Eye, Edit, Trash2 } from "lucide-react";
+import {
+  Eye,
+  Edit,
+  Trash2,
+  Tag,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+} from "lucide-react";
 import CreateOfferPopup from "../../components/CreateCoupon";
 import OfferViewModal from "../../pages/CoupanOffer/SingleOffer";
 import { BASE_URL } from "../../api/api";
@@ -93,6 +101,7 @@ const AllOffer = () => {
     setEditingOffer(offer);
     setIsCreateModalOpen(true);
   };
+
   const handleView = (offer) => {
     setViewingOffer(offer);
     setIsViewModalOpen(true);
@@ -133,191 +142,327 @@ const AllOffer = () => {
     }
   };
 
-  const SkeletonRow = () => (
-    <tr className="animate-pulse border-b-4 border-gray-200 text-center">
-      {Array(9)
-        .fill(0)
-        .map((_, idx) => (
-          <td key={idx} className="p-3">
-            <div className="h-4 bg-gray-300 rounded w-full"></div>
-          </td>
-        ))}
-    </tr>
-  );
-
   const handleAddOffer = () => {
     fetchOffers();
     setIsCreateModalOpen(false);
     setEditingOffer(null);
   };
+
   const handleCloseModal = () => {
     setIsCreateModalOpen(false);
     setEditingOffer(null);
   };
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString("en-IN");
   };
 
+  const tabs = [
+    { key: "all", label: "All" },
+    { key: "active", label: "Active" },
+    { key: "inactive", label: "Inactive" },
+  ];
+
+  const TableSkeleton = () => (
+    <tbody>
+      {Array.from({ length: itemsPerPage }).map((_, idx) => (
+        <tr key={idx} className="border-b border-gray-100">
+          {Array.from({ length: 10 }).map((__, j) => (
+            <td key={j} className="px-4 py-3.5">
+              <div
+                className={`h-3.5 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full animate-pulse ${
+                  j === 9 ? "w-16 ml-auto" : "w-[70%]"
+                }`}
+              />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </tbody>
+  );
+
+  const EmptyState = () => (
+    <tbody>
+      <tr>
+        <td colSpan="10" className="py-20 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center">
+              <Tag className="w-8 h-8 text-orange-300" />
+            </div>
+            <p className="text-gray-400 text-sm font-medium">No offers found</p>
+            <p className="text-gray-300 text-xs">
+              Try adjusting your filters or search query
+            </p>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  );
+
   return (
     <DashboardLayout>
-      <div className="p-0 mt-2 ml-6">
-        {/* Top Section */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-          <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
-            {/* Tabs */}
-            <div className="flex gap-3 items-center overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0">
-              {["all", "active", "inactive"].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => {
-                    setActiveTab(tab);
-                    setCurrentPage(1);
-                  }}
-                  className={`w-24 sm:w-28 px-4 py-2 border rounded text-xs sm:text-sm font-medium text-center transition-all duration-200 ${
-                    activeTab === tab
-                      ? "bg-[#FF7B1D] text-white border-orange-500"
-                      : "border-gray-400 text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  {tab === "all"
-                    ? "All"
-                    : tab === "active"
-                      ? "Active"
-                      : "Inactive"}
-                </button>
-              ))}
-            </div>
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .row-animate { animation: fadeSlideIn 0.25s ease forwards; }
+        .action-btn {
+          width: 30px; height: 30px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 8px;
+          transition: all 0.18s ease;
+        }
+        .action-btn:hover { transform: translateY(-1px); }
+      `}</style>
 
-            {/* Search */}
-            <div className="flex items-center border border-black rounded overflow-hidden h-9 w-full max-w-full sm:max-w-[450px]">
-              <input
-                type="text"
-                placeholder="Search Offer by ID, Name or Code..."
-                className="flex-1 px-3 sm:px-4 text-sm text-gray-800 focus:outline-none h-full"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <button className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-sm px-3 sm:px-6 h-full">
-                Search
+      {/* ── Toolbar ── */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 w-full max-w-full mx-auto px-1 mt-3 mb-3">
+        {/* LEFT: Tab Pills */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => {
+                  setActiveTab(tab.key);
+                  setCurrentPage(1);
+                }}
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
+                  activeTab === tab.key
+                    ? "bg-white text-[#FF7B1D] shadow-sm shadow-orange-100"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {tab.label}
               </button>
-            </div>
+            ))}
+          </div>
+        </div>
+
+        {/* RIGHT: Search + Create */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden h-[38px] w-full lg:w-[340px] shadow-sm bg-white">
+            <input
+              type="text"
+              placeholder="Search by ID, Name or Code..."
+              className="flex-1 px-4 text-sm text-gray-700 focus:outline-none h-full placeholder:text-gray-400"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+            />
+            <button className="bg-[#FF7B1D] hover:bg-orange-500 text-white text-sm font-medium px-5 h-full transition-colors">
+              Search
+            </button>
           </div>
 
           <button
-            className="bg-black text-white w-46 sm:w-52 px-4 sm:px-5 py-2 rounded-sm shadow hover:bg-orange-600 text-xs sm:text-sm flex items-center justify-center whitespace-nowrap"
             onClick={() => {
               setEditingOffer(null);
               setIsCreateModalOpen(true);
             }}
+            className="flex items-center gap-1.5 h-[38px] px-4 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold rounded-xl whitespace-nowrap transition-colors shadow-sm"
           >
-            + Create Offer
+            <Plus className="w-3.5 h-3.5" />
+            Create Offer
           </button>
         </div>
+      </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-sm shadow-sm overflow-x-auto">
-          <table className="w-full text-sm text-center">
+      {/* ── Table Card ── */}
+      <div className="mx-1 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+        {/* Card Header */}
+        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+            <span className="text-sm font-semibold text-gray-700">
+              Offer Management
+            </span>
+          </div>
+          {!loading && (
+            <span className="text-xs text-gray-400 font-medium">
+              {filteredOffers.length} of {totalCount} offers
+            </span>
+          )}
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="bg-[#FF7B1D] text-black">
-                <th className="p-3">S.N</th>
-                <th className="p-3">Coupon Name</th>
-                <th className="p-3">Offer ID</th>
-                <th className="p-3">Code</th>
-                <th className="p-3">Type</th>
-                <th className="p-3">Min | Max</th>
-                <th className="p-3">Discount</th>
-                <th className="p-3">Valid Until</th>
-                <th className="p-3">Status</th>
-                <th className="p-3 pr-6 text-right">Action</th>
+              <tr className="bg-gradient-to-r from-[#FF7B1D] to-orange-400">
+                {[
+                  { label: "S.N", cls: "w-12" },
+                  { label: "Coupon Name" },
+                  { label: "Offer ID" },
+                  { label: "Code" },
+                  { label: "Type" },
+                  { label: "Min | Max" },
+                  { label: "Discount" },
+                  { label: "Valid Until" },
+                  { label: "Status" },
+                  { label: "Actions", right: true },
+                ].map(({ label, cls, right }) => (
+                  <th
+                    key={label}
+                    className={`px-4 py-3.5 text-xs font-bold text-white tracking-wider uppercase opacity-90 ${cls || ""} ${right ? "text-right pr-5" : "text-left"}`}
+                  >
+                    {label}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody>
-              {loading ? (
-                Array(7)
-                  .fill(0)
-                  .map((_, i) => <SkeletonRow key={i} />)
-              ) : filteredOffers.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan="10"
-                    className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
-                  >
-                    No offers found.
-                  </td>
-                </tr>
-              ) : (
-                filteredOffers.map((offer, idx) => (
+
+            {loading ? (
+              <TableSkeleton />
+            ) : filteredOffers.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <tbody>
+                {filteredOffers.map((offer, idx) => (
                   <tr
                     key={offer._id}
-                    className="bg-white shadow-sm hover:bg-gray-50 transition border-b-4 border-gray-200 text-center"
+                    className="row-animate border-b border-gray-50 hover:bg-orange-50/40 transition-colors duration-150 group"
+                    style={{ animationDelay: `${idx * 30}ms` }}
                   >
-                    <td className="p-3">
-                      {(currentPage - 1) * itemsPerPage + idx + 1}
+                    {/* S.N */}
+                    <td className="px-4 py-3.5">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">
+                        {(currentPage - 1) * itemsPerPage + idx + 1}
+                      </span>
                     </td>
-                    <td className="p-3">{offer.couponName}</td>
-                    <td className="p-3">{offer.offerId}</td>
-                    <td className="p-3">{offer.code || "N/A"}</td>
-                    <td className="p-3 capitalize">{offer.offerType}</td>
-                    <td className="p-3">{`₹${offer.minAmount} | ₹${offer.maxAmount}`}</td>
-                    <td className="p-3">
-                      {offer.offerType === "percentage"
-                        ? `${offer.discountPercentage}%`
-                        : `₹${offer.discountPercentage}`}
+
+                    {/* Coupon Name */}
+                    <td className="px-4 py-3.5">
+                      <span className="text-sm font-medium text-gray-700">
+                        {offer.couponName}
+                      </span>
                     </td>
-                    <td className="p-3">{formatDate(offer.validUntil)}</td>
-                    <td className="p-3">
+
+                    {/* Offer ID */}
+                    <td className="px-4 py-3.5">
+                      <span className="font-mono text-xs bg-gray-50 border border-gray-200 px-2 py-1 rounded-md text-gray-600 group-hover:border-orange-200 group-hover:bg-orange-50 transition-colors">
+                        {offer.offerId}
+                      </span>
+                    </td>
+
+                    {/* Code */}
+                    <td className="px-4 py-3.5">
+                      {offer.code ? (
+                        <span className="font-mono text-xs bg-orange-50 border border-orange-200 text-orange-700 px-2 py-1 rounded-md font-semibold">
+                          {offer.code}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300 text-xs italic">
+                          N/A
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Type */}
+                    <td className="px-4 py-3.5">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 ring-1 ring-blue-100 capitalize">
+                        {offer.offerType}
+                      </span>
+                    </td>
+
+                    {/* Min | Max */}
+                    <td className="px-4 py-3.5 text-xs text-gray-600 font-medium">
+                      ₹{offer.minAmount}{" "}
+                      <span className="text-gray-300 mx-0.5">|</span> ₹
+                      {offer.maxAmount}
+                    </td>
+
+                    {/* Discount */}
+                    <td className="px-4 py-3.5">
+                      <span className="text-sm font-bold text-gray-800">
+                        {offer.offerType === "percentage"
+                          ? `${offer.discountPercentage}%`
+                          : `₹${offer.discountPercentage}`}
+                      </span>
+                    </td>
+
+                    {/* Valid Until */}
+                    <td className="px-4 py-3.5 text-gray-500 text-xs">
+                      {formatDate(offer.validUntil)}
+                    </td>
+
+                    {/* Status Toggle */}
+                    <td className="px-4 py-3.5">
                       <button
                         onClick={() => handleToggleStatus(offer)}
-                        className={`px-3 py-1 rounded text-xs font-semibold ${offer.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ring-1 transition-all ${
+                          offer.status === "active"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 ring-emerald-100 hover:bg-emerald-100"
+                            : "bg-gray-50 text-gray-500 border-gray-200 ring-gray-100 hover:bg-gray-100"
+                        }`}
                       >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            offer.status === "active"
+                              ? "bg-emerald-500"
+                              : "bg-gray-400"
+                          }`}
+                        />
                         {offer.status === "active" ? "Active" : "Inactive"}
                       </button>
                     </td>
-                    <td className="p-3">
-                      <div className="flex justify-end gap-3 text-orange-600">
+
+                    {/* Actions */}
+                    <td className="px-4 py-3.5 pr-5">
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => handleEdit(offer)}
-                          className="hover:text-blue-700"
+                          className="action-btn bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-700"
                           title="Edit"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDelete(offer._id)}
-                          className="hover:text-red-700"
+                          className="action-btn bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600"
                           title="Delete"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleView(offer)}
-                          className="hover:text-blue-700"
+                          className="action-btn bg-emerald-50 text-emerald-500 hover:bg-emerald-100 hover:text-emerald-700"
                           title="View Details"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
+                ))}
+              </tbody>
+            )}
           </table>
         </div>
+      </div>
 
-        {/* ✅ Pagination — always visible when offers exist, same style as CreateCategory */}
-        {!loading && filteredOffers.length > 0 && (
-          <div className="flex justify-end items-center gap-6 mt-8 max-w-[95%] mx-auto">
+      {/* ── Pagination ── */}
+      {!loading && filteredOffers.length > 0 && (
+        <div className="flex items-center justify-between px-1 mt-5 mb-6">
+          <p className="text-xs text-gray-400 font-medium">
+            Page{" "}
+            <span className="text-gray-600 font-semibold">{currentPage}</span>{" "}
+            of <span className="text-gray-600 font-semibold">{totalPages}</span>
+          </p>
+
+          <div className="flex items-center gap-1.5">
             <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
               disabled={currentPage === 1}
-              className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
             >
-              Back
+              <ChevronLeft className="w-3.5 h-3.5" /> Prev
             </button>
 
-            <div className="flex items-center gap-2 text-sm text-black font-medium">
+            <div className="flex items-center gap-1">
               {(() => {
                 const pages = [];
                 const visiblePages = new Set([
@@ -335,14 +480,18 @@ const AllOffer = () => {
                 }
                 return pages.map((page, idx) =>
                   page === "..." ? (
-                    <span key={idx} className="px-1 text-black select-none">
-                      ...
+                    <span key={idx} className="px-1 text-gray-400 text-xs">
+                      …
                     </span>
                   ) : (
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`px-1 hover:text-orange-500 transition-colors ${currentPage === page ? "text-orange-600 font-semibold" : ""}`}
+                      className={`w-8 h-8 rounded-xl text-xs font-semibold transition-all ${
+                        currentPage === page
+                          ? "bg-[#FF7B1D] text-white shadow-sm shadow-orange-200"
+                          : "bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200"
+                      }`}
                     >
                       {page}
                     </button>
@@ -352,29 +501,27 @@ const AllOffer = () => {
             </div>
 
             <button
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
             >
-              Next
+              Next <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
-        )}
+        </div>
+      )}
 
-        <CreateOfferPopup
-          isOpen={isCreateModalOpen}
-          onClose={handleCloseModal}
-          onSubmit={handleAddOffer}
-          editData={editingOffer}
-        />
-        <OfferViewModal
-          isOpen={isViewModalOpen}
-          onClose={() => setIsViewModalOpen(false)}
-          offer={viewingOffer}
-        />
-      </div>
+      <CreateOfferPopup
+        isOpen={isCreateModalOpen}
+        onClose={handleCloseModal}
+        onSubmit={handleAddOffer}
+        editData={editingOffer}
+      />
+      <OfferViewModal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        offer={viewingOffer}
+      />
     </DashboardLayout>
   );
 };
