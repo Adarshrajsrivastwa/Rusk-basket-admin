@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import {
-  Search,
   Clock,
   CheckCircle,
   AlertCircle,
@@ -9,12 +8,115 @@ import {
   X,
   Send,
   Store,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
 } from "lucide-react";
 import api from "../../api/api";
 
+/* ─── Status badge (dot + label) ─────────────────────────────────── */
+const StatusBadge = ({ status }) => {
+  const map = {
+    active: {
+      style:
+        "bg-blue-50 text-blue-700 border border-blue-200 ring-1 ring-blue-100",
+      dot: "bg-blue-500",
+      label: "Active",
+    },
+    pending: {
+      style:
+        "bg-amber-50 text-amber-700 border border-amber-200 ring-1 ring-amber-100",
+      dot: "bg-amber-500",
+      label: "Pending",
+    },
+    resolved: {
+      style:
+        "bg-emerald-50 text-emerald-700 border border-emerald-200 ring-1 ring-emerald-100",
+      dot: "bg-emerald-500",
+      label: "Resolved",
+    },
+    closed: {
+      style:
+        "bg-gray-100 text-gray-600 border border-gray-200 ring-1 ring-gray-100",
+      dot: "bg-gray-400",
+      label: "Closed",
+    },
+  };
+  const cfg = map[status] || map.closed;
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.style}`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+      {cfg.label}
+    </span>
+  );
+};
+
+/* ─── Table skeleton ──────────────────────────────────────────────── */
+const TableSkeleton = ({ cols = 9 }) => (
+  <tbody>
+    {Array.from({ length: 8 }).map((_, i) => (
+      <tr key={i} className="border-b border-gray-100">
+        {Array.from({ length: cols }).map((__, j) => (
+          <td key={j} className="px-4 py-3.5">
+            <div
+              className={`h-3.5 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full animate-pulse ${
+                j === 1 ? "w-24" : j === cols - 1 ? "w-16 ml-auto" : "w-[70%]"
+              }`}
+            />
+          </td>
+        ))}
+      </tr>
+    ))}
+  </tbody>
+);
+
+/* ─── Empty state ─────────────────────────────────────────────────── */
+const EmptyState = ({ searching }) => (
+  <tbody>
+    <tr>
+      <td colSpan="9" className="py-20 text-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center">
+            <MessageSquare className="w-8 h-8 text-orange-300" />
+          </div>
+          <p className="text-gray-400 text-sm font-medium">No Tickets Found</p>
+          <p className="text-gray-300 text-xs">
+            {searching
+              ? "No tickets match your search criteria"
+              : "There are no tickets available at the moment"}
+          </p>
+        </div>
+      </td>
+    </tr>
+  </tbody>
+);
+
+/* ─── Category label map ──────────────────────────────────────────── */
+const categoryLabels = {
+  order_delivery: "Order & Delivery",
+  account_profile: "Account & Profile",
+  payments_refunds: "Payments & Refunds",
+  login_otp: "Login & OTP",
+  general_queries: "General Queries",
+};
+
+const formatDate = (d) => {
+  if (!d) return "N/A";
+  return new Date(d).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+/* ═══════════════════════════════════════════════════════════════════ */
 const AdminVendorSupport = () => {
   const [activeTab, setActiveTab] = useState("all");
-  const [showTicketDetailModal, setShowTicketDetailModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -25,896 +127,745 @@ const AdminVendorSupport = () => {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [statusUpdate, setStatusUpdate] = useState("");
   const [adminResponse, setAdminResponse] = useState("");
-  const itemsPerPage = 8;
 
   const [tickets, setTickets] = useState([]);
-  const [allTickets, setAllTickets] = useState([]); // Store all tickets for client-side filtering
   const [totalTickets, setTotalTickets] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [useClientSideSearch, setUseClientSideSearch] = useState(false);
-  const searchQueryRef = useRef(searchQuery);
+  const [useClientSide, setUseClientSide] = useState(false);
+  const itemsPerPage = 10;
 
-  // Update ref when searchQuery changes
+  // Refs — never cause re-renders or stale-closure issues
+  const searchRef = useRef(searchQuery);
+  const allTicketsRef = useRef([]);
+  const activeTabRef = useRef(activeTab);
+  const currentPageRef = useRef(currentPage);
+
   useEffect(() => {
-    searchQueryRef.current = searchQuery;
+    searchRef.current = searchQuery;
   }, [searchQuery]);
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
+  useEffect(() => {
+    currentPageRef.current = currentPage;
+  }, [currentPage]);
 
-  // Fetch tickets
+  /* ── Core fetch (stable — no state in deps) ── */
   const fetchTickets = useCallback(
     async (pageOverride = null, searchOverride = null) => {
       setLoading(true);
       setError("");
       try {
-        const statusFilter = activeTab !== "all" ? activeTab : undefined;
-        const pageToUse = pageOverride !== null ? pageOverride : currentPage;
-        const searchToUse =
-          searchOverride !== null ? searchOverride : searchQueryRef.current;
+        const tab = activeTabRef.current;
+        const statusFilter = tab !== "all" ? tab : undefined;
+        const page = pageOverride ?? currentPageRef.current;
+        const search = searchOverride ?? searchRef.current;
 
         const params = new URLSearchParams({
-          page: pageToUse.toString(),
+          page: page.toString(),
           limit: itemsPerPage.toString(),
-          createdByModel: "Vendor", // Filter by Vendor
+          createdByModel: "Vendor",
         });
-        if (statusFilter) {
-          params.append("status", statusFilter);
-        }
-        if (searchToUse && searchToUse.trim()) {
-          const cleanSearch = searchToUse.trim();
-          params.append("search", cleanSearch);
-        }
+        if (statusFilter) params.append("status", statusFilter);
+        if (search?.trim()) params.append("search", search.trim());
 
-        const response = await api.get(
-          `/api/admin/tickets?${params.toString()}`,
-        );
-        if (response.data && response.data.success) {
-          const ticketsData = response.data.data?.tickets || [];
-          const paginationData = response.data.data?.pagination || {};
-
-          if (!searchToUse || !searchToUse.trim()) {
-            setAllTickets(ticketsData);
-          }
-
-          setTickets(ticketsData);
-          setTotalTickets(paginationData.total || 0);
-          setTotalPages(paginationData.totalPages || paginationData.pages || 1);
-          setError("");
-          setUseClientSideSearch(false);
+        const res = await api.get(`/api/admin/tickets?${params}`);
+        if (res.data?.success) {
+          const data = res.data.data?.tickets || [];
+          const pg = res.data.data?.pagination || {};
+          // Cache unfiltered data for client-side fallback
+          if (!search?.trim()) allTicketsRef.current = data;
+          setTickets(data);
+          setTotalTickets(pg.total || 0);
+          setTotalPages(pg.totalPages || pg.pages || 1);
+          setUseClientSide(false);
         } else {
-          const errorMsg =
-            response.data?.message ||
-            response.data?.error ||
-            "Failed to load tickets";
-          setError(errorMsg);
+          setError(res.data?.message || "Failed to load tickets");
           setTickets([]);
-          setTotalTickets(0);
-          setTotalPages(1);
         }
       } catch (err) {
-        console.error("Error fetching tickets:", err);
-
-        const errorResponse = err.response?.data;
-        let errorMsg =
-          errorResponse?.message ||
-          errorResponse?.error ||
+        const msg =
+          err.response?.data?.message ||
+          err.response?.data?.error ||
           err.message ||
-          "Failed to load tickets. Please try again.";
-
+          "Failed to load tickets";
         if (
-          errorMsg.includes("Cast to Array failed") &&
-          errorMsg.includes("$or")
+          msg.includes("Cast to Array failed") &&
+          allTicketsRef.current.length > 0
         ) {
-          console.warn(
-            "Backend MongoDB query error detected. Falling back to client-side search.",
-          );
-
-          if (allTickets.length > 0 && searchToUse && searchToUse.trim()) {
-            setUseClientSideSearch(true);
-            setError("");
-            return;
-          } else {
-            try {
-              const fallbackParams = new URLSearchParams({
-                page: "1",
-                limit: "1000",
-                createdByModel: "Vendor",
-              });
-              if (statusFilter) {
-                fallbackParams.append("status", statusFilter);
-              }
-
-              const fallbackResponse = await api.get(
-                `/api/admin/tickets?${fallbackParams.toString()}`,
-              );
-              if (fallbackResponse.data && fallbackResponse.data.success) {
-                const allTicketsData =
-                  fallbackResponse.data.data?.tickets || [];
-                setAllTickets(allTicketsData);
-                setUseClientSideSearch(true);
-                setError("");
-                return;
-              }
-            } catch (fallbackErr) {
-              console.error("Fallback fetch also failed:", fallbackErr);
-            }
-          }
-
-          errorMsg =
-            "Search functionality temporarily unavailable. Please try again or contact support.";
+          setUseClientSide(true);
+        } else {
+          setError(msg);
+          setTickets([]);
         }
-
-        setError(errorMsg);
-        setTickets([]);
-        setTotalTickets(0);
-        setTotalPages(1);
       } finally {
         setLoading(false);
       }
     },
-    [activeTab, currentPage, itemsPerPage, allTickets],
+    [], // stable — reads latest values through refs
   );
 
+  // Trigger fetch when tab or page changes (not on every render)
   useEffect(() => {
-    if (!useClientSideSearch) {
-      fetchTickets();
-    }
-  }, [fetchTickets, useClientSideSearch]);
+    if (!useClientSide) fetchTickets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, currentPage, useClientSide]);
 
-  // Client-side filtering when backend search fails
+  /* ── Client-side fallback filter ── */
   useEffect(() => {
-    if (useClientSideSearch && allTickets.length > 0) {
-      setLoading(true);
-      const searchLower = searchQuery.toLowerCase().trim();
+    if (!useClientSide || !allTicketsRef.current.length) return;
+    setLoading(true);
+    const q = searchQuery.toLowerCase().trim();
+    const filtered = allTicketsRef.current.filter(
+      (t) =>
+        (!q ||
+          t.ticketNumber?.toLowerCase().includes(q) ||
+          t.complaint?.toLowerCase().includes(q) ||
+          t.vendor?.vendorName?.toLowerCase().includes(q) ||
+          t.vendor?.storeName?.toLowerCase().includes(q) ||
+          t.category?.toLowerCase().includes(q)) &&
+        (activeTab === "all" || t.status === activeTab),
+    );
+    const start = (currentPage - 1) * itemsPerPage;
+    setTickets(filtered.slice(start, start + itemsPerPage));
+    setTotalTickets(filtered.length);
+    setTotalPages(Math.ceil(filtered.length / itemsPerPage));
+    setLoading(false);
+  }, [useClientSide, searchQuery, activeTab, currentPage]);
 
-      if (!searchLower) {
-        setUseClientSideSearch(false);
-        return;
-      }
-
-      const filtered = allTickets.filter((ticket) => {
-        return (
-          ticket.ticketNumber?.toLowerCase().includes(searchLower) ||
-          ticket.complaint?.toLowerCase().includes(searchLower) ||
-          ticket.vendor?.vendorName?.toLowerCase().includes(searchLower) ||
-          ticket.vendor?.storeName?.toLowerCase().includes(searchLower) ||
-          ticket.category?.toLowerCase().includes(searchLower)
-        );
-      });
-
-      const statusFiltered =
-        activeTab !== "all"
-          ? filtered.filter((t) => t.status === activeTab)
-          : filtered;
-
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const endIndex = startIndex + itemsPerPage;
-      const paginatedTickets = statusFiltered.slice(startIndex, endIndex);
-
-      setTickets(paginatedTickets);
-      setTotalTickets(statusFiltered.length);
-      setTotalPages(Math.ceil(statusFiltered.length / itemsPerPage));
-      setLoading(false);
-    }
-  }, [
-    useClientSideSearch,
-    allTickets,
-    searchQuery,
-    activeTab,
-    currentPage,
-    itemsPerPage,
-  ]);
-
-  // Fetch single ticket details
-  const fetchTicketDetails = async (ticketId) => {
+  /* ── Ticket detail ── */
+  const fetchTicketDetails = async (id) => {
     try {
-      const response = await api.get(`/api/admin/tickets/${ticketId}`);
-      if (response.data.success) {
-        setSelectedTicket(response.data.data.ticket);
-        setShowTicketDetailModal(true);
-        setStatusUpdate(response.data.data.ticket.status);
-        setAdminResponse(response.data.data.ticket.adminResponse || "");
-      } else {
-        setError(response.data.message || "Failed to load ticket details");
+      const res = await api.get(`/api/admin/tickets/${id}`);
+      if (res.data.success) {
+        const t = res.data.data.ticket;
+        setSelectedTicket(t);
+        setStatusUpdate(t.status);
+        setAdminResponse(t.adminResponse || "");
+        setShowModal(true);
       }
     } catch (err) {
-      console.error("Error fetching ticket details:", err);
       setError(err.response?.data?.message || "Failed to load ticket details");
     }
   };
 
-  // Add admin message to ticket
+  /* ── Send message ── */
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !selectedTicket) return;
-
     setSendingMessage(true);
-    setError("");
     try {
-      const response = await api.post(
+      const res = await api.post(
         `/api/admin/tickets/${selectedTicket._id}/messages`,
         { message: messageInput.trim() },
       );
-      if (response.data.success) {
+      if (res.data.success) {
         setMessageInput("");
         await fetchTicketDetails(selectedTicket._id);
         fetchTickets();
-      } else {
-        setError(response.data.message || "Failed to send message");
-      }
+      } else setError(res.data.message || "Failed to send message");
     } catch (err) {
-      console.error("Error sending message:", err);
       setError(
         err.response?.data?.error ||
           err.response?.data?.message ||
-          "Failed to send message. Please try again.",
+          "Failed to send message",
       );
     } finally {
       setSendingMessage(false);
     }
   };
 
-  // Update ticket status
+  /* ── Update status ── */
   const handleUpdateStatus = async () => {
     if (!selectedTicket || !statusUpdate) return;
-
     setUpdatingStatus(true);
-    setError("");
     try {
       const payload = { status: statusUpdate };
-      if (adminResponse) {
-        payload.adminResponse = adminResponse;
-      }
-
-      const response = await api.patch(
+      if (adminResponse) payload.adminResponse = adminResponse;
+      const res = await api.patch(
         `/api/admin/tickets/${selectedTicket._id}/status`,
         payload,
       );
-      if (response.data.success) {
+      if (res.data.success) {
         await fetchTicketDetails(selectedTicket._id);
         fetchTickets();
-      } else {
-        setError(response.data.message || "Failed to update status");
-      }
+      } else setError(res.data.message || "Failed to update status");
     } catch (err) {
-      console.error("Error updating status:", err);
       setError(
         err.response?.data?.error ||
           err.response?.data?.message ||
-          "Failed to update status. Please try again.",
+          "Failed to update status",
       );
     } finally {
       setUpdatingStatus(false);
     }
   };
 
-  // Search handler
   const handleSearch = () => {
     setCurrentPage(1);
-    setUseClientSideSearch(false);
+    setUseClientSide(false);
+    // Pass overrides directly since state updates are async
     fetchTickets(1, searchQuery);
   };
 
-  const stats = {
-    total: totalTickets,
-    active: tickets.filter((t) => t.status === "active").length,
-    pending: tickets.filter((t) => t.status === "pending").length,
-    resolved: tickets.filter((t) => t.status === "resolved").length,
-    closed: tickets.filter((t) => t.status === "closed").length,
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedTicket(null);
+    setMessageInput("");
+    setError("");
+    setStatusUpdate("");
+    setAdminResponse("");
   };
 
-  const categoryLabels = {
-    order_delivery: "Order & Delivery",
-    account_profile: "Account & Profile",
-    payments_refunds: "Payments & Refunds",
-    login_otp: "Login & OTP",
-    general_queries: "General Queries",
-  };
+  /* ── Stat counts from current page tickets ── */
+  const statTotal = totalTickets;
+  const statActive = tickets.filter((t) => t.status === "active").length;
+  const statPending = tickets.filter((t) => t.status === "pending").length;
+  const statResolved = tickets.filter((t) => t.status === "resolved").length;
+  const statClosed = tickets.filter((t) => t.status === "closed").length;
 
-  const statusLabels = {
-    active: "Active",
-    pending: "Pending",
-    resolved: "Resolved",
-    closed: "Closed",
-  };
+  const tabs = [
+    { key: "all", label: "All" },
+    { key: "active", label: "Active" },
+    { key: "pending", label: "Pending" },
+    { key: "resolved", label: "Resolved" },
+    { key: "closed", label: "Closed" },
+  ];
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "active":
-        return " text-blue-700";
-      case "pending":
-        return "bg-orange-100 text-orange-700";
-      case "resolved":
-        return "bg-green-100 text-green-700";
-      case "closed":
-        return "bg-gray-100 text-gray-700";
-      default:
-        return "bg-gray-100 text-gray-700";
+  /* ── Pagination helper ── */
+  const buildPages = () => {
+    const pages = [];
+    const visible = new Set([
+      1,
+      2,
+      totalPages - 1,
+      totalPages,
+      currentPage - 1,
+      currentPage,
+      currentPage + 1,
+    ]);
+    for (let i = 1; i <= totalPages; i++) {
+      if (visible.has(i)) pages.push(i);
+      else if (pages[pages.length - 1] !== "...") pages.push("...");
     }
+    return pages;
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
+  /* ══════════════════════════════════════════════════════════════════
+     RENDER
+  ══════════════════════════════════════════════════════════════════ */
   return (
     <DashboardLayout>
-      <div className="min-h-screen p-6">
-        <div className="max-w-8xl mx-auto">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-orange-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total Tickets</p>
-                  <p className="text-2xl font-bold text-orange-600">
-                    {stats.total}
-                  </p>
-                </div>
-                <MessageSquare className="text-orange-500" size={24} />
-              </div>
-            </div>
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .row-animate { animation: fadeSlideIn 0.25s ease forwards; }
+        .action-btn {
+          width: 30px; height: 30px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 8px; transition: all 0.18s ease;
+        }
+        .action-btn:hover { transform: translateY(-1px); }
+      `}</style>
 
-            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-blue-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Active</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {stats.active}
-                  </p>
-                </div>
-                <AlertCircle className="text-blue-500" size={24} />
+      <div className="min-h-screen p-4">
+        {/* ── Stat Cards ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
+          {[
+            {
+              label: "Total Tickets",
+              value: statTotal,
+              border: "border-[#FF7B1D]",
+              text: "text-[#FF7B1D]",
+              iconBg: "bg-orange-50",
+              icon: <MessageSquare className="w-5 h-5 text-[#FF7B1D]" />,
+            },
+            {
+              label: "Active",
+              value: statActive,
+              border: "border-blue-500",
+              text: "text-blue-600",
+              iconBg: "bg-blue-50",
+              icon: <AlertCircle className="w-5 h-5 text-blue-500" />,
+            },
+            {
+              label: "Pending",
+              value: statPending,
+              border: "border-amber-500",
+              text: "text-amber-600",
+              iconBg: "bg-amber-50",
+              icon: <Clock className="w-5 h-5 text-amber-500" />,
+            },
+            {
+              label: "Resolved",
+              value: statResolved,
+              border: "border-emerald-500",
+              text: "text-emerald-600",
+              iconBg: "bg-emerald-50",
+              icon: <CheckCircle className="w-5 h-5 text-emerald-500" />,
+            },
+            {
+              label: "Closed",
+              value: statClosed,
+              border: "border-gray-400",
+              text: "text-gray-600",
+              iconBg: "bg-gray-100",
+              icon: <CheckCircle className="w-5 h-5 text-gray-400" />,
+            },
+          ].map((s) => (
+            <div
+              key={s.label}
+              className={`bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 ${s.border} px-4 py-3 flex items-center justify-between`}
+            >
+              <div>
+                <p className="text-xs text-gray-400 font-medium">{s.label}</p>
+                <p className={`text-2xl font-bold mt-0.5 ${s.text}`}>
+                  {s.value}
+                </p>
+              </div>
+              <div
+                className={`w-9 h-9 rounded-xl ${s.iconBg} flex items-center justify-center`}
+              >
+                {s.icon}
               </div>
             </div>
+          ))}
+        </div>
 
-            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-orange-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Pending</p>
-                  <p className="text-2xl font-bold text-orange-600">
-                    {stats.pending}
-                  </p>
-                </div>
-                <Clock className="text-orange-500" size={24} />
-              </div>
-            </div>
-
-            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-green-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Resolved</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {stats.resolved}
-                  </p>
-                </div>
-                <CheckCircle className="text-green-500" size={24} />
-              </div>
-            </div>
-
-            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-gray-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Closed</p>
-                  <p className="text-2xl font-bold text-gray-600">
-                    {stats.closed}
-                  </p>
-                </div>
-                <CheckCircle className="text-gray-500" size={24} />
-              </div>
-            </div>
+        {/* ── Toolbar: Tabs + Search ── */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4 px-1">
+          {/* Tab pills */}
+          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => {
+                  setActiveTab(tab.key);
+                  setCurrentPage(1);
+                  setUseClientSide(false);
+                }}
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
+                  activeTab === tab.key
+                    ? "bg-white text-[#FF7B1D] shadow-sm shadow-orange-100"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          {/* Filters and Actions */}
-          <div className="bg-white rounded-sm shadow-sm mb-6">
-            <div className="p-4 border-b border-gray-200">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="flex gap-2 flex-wrap">
-                  <button
-                    onClick={() => {
-                      setActiveTab("all");
-                      setCurrentPage(1);
-                      setUseClientSideSearch(false);
-                    }}
-                    className={`px-4 py-2 rounded font-medium transition-colors ${
-                      activeTab === "all"
-                        ? "bg-orange-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
-                    }`}
-                  >
-                    All Tickets
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveTab("active");
-                      setCurrentPage(1);
-                      setUseClientSideSearch(false);
-                    }}
-                    className={`px-4 py-2 rounded font-medium transition-colors ${
-                      activeTab === "active"
-                        ? "bg-orange-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
-                    }`}
-                  >
-                    Active
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveTab("pending");
-                      setCurrentPage(1);
-                      setUseClientSideSearch(false);
-                    }}
-                    className={`px-4 py-2 rounded font-medium transition-colors ${
-                      activeTab === "pending"
-                        ? "bg-orange-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
-                    }`}
-                  >
-                    Pending
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveTab("resolved");
-                      setCurrentPage(1);
-                      setUseClientSideSearch(false);
-                    }}
-                    className={`px-4 py-2 rounded font-medium transition-colors ${
-                      activeTab === "resolved"
-                        ? "bg-orange-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
-                    }`}
-                  >
-                    Resolved
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveTab("closed");
-                      setCurrentPage(1);
-                      setUseClientSideSearch(false);
-                    }}
-                    className={`px-4 py-2 rounded font-medium transition-colors ${
-                      activeTab === "closed"
-                        ? "bg-orange-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
-                    }`}
-                  >
-                    Closed
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4">
-              <div className="flex gap-4">
-                <div className="flex-1 relative">
-                  <Search
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                    size={20}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Search by Ticket Number or Complaint..."
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      if (!e.target.value.trim()) {
-                        setUseClientSideSearch(false);
-                        setCurrentPage(1);
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleSearch();
-                      }
-                    }}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  />
-                </div>
-                <button
-                  onClick={handleSearch}
-                  className="bg-orange-500 text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors font-medium"
-                >
-                  Search
-                </button>
-              </div>
-            </div>
+          {/* Search bar — matches AllProduct exactly */}
+          <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden h-[38px] w-full lg:w-[380px] shadow-sm bg-white">
+            <input
+              type="text"
+              placeholder="Search by ticket number or complaint…"
+              className="flex-1 px-4 text-sm text-gray-700 focus:outline-none h-full placeholder:text-gray-400"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (!e.target.value.trim()) {
+                  setUseClientSide(false);
+                  setCurrentPage(1);
+                }
+              }}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            />
+            <button
+              onClick={handleSearch}
+              className="bg-[#FF7B1D] hover:bg-orange-500 text-white text-sm font-medium px-5 h-full transition-colors"
+            >
+              Search
+            </button>
           </div>
+        </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              {error}
+        {/* ── Error banner ── */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-4">
+            {error}
+          </div>
+        )}
+
+        {/* ── Table Card ── */}
+        <div className="mx-1 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+          {/* Card header */}
+          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+              <span className="text-sm font-semibold text-gray-700">
+                Vendor Support Tickets
+              </span>
             </div>
-          )}
-
-          {/* Tickets List */}
-          <div className="bg-white rounded-sm shadow-sm overflow-hidden">
-            {loading && tickets.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500">Loading tickets...</p>
-              </div>
-            ) : (
-              <>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-[#FF7B1D] text-black">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-sm font-bold">
-                          S.N
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold">
-                          Ticket Number
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold">
-                          Vendor
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold">
-                          Complaint
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold">
-                          Category
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold">
-                          Messages
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold">
-                          Created At
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {tickets.map((ticket, index) => (
-                        <tr
-                          key={ticket._id}
-                          className="hover:bg-orange-50 transition-colors"
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap text-gray-900">
-                            {(currentPage - 1) * itemsPerPage + index + 1}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="font-medium text-orange-600">
-                              {ticket.ticketNumber}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <Store size={16} className="text-orange-500" />
-                              <span className="text-sm text-gray-900">
-                                {ticket.vendor?.vendorName ||
-                                  ticket.vendor?.storeName ||
-                                  "N/A"}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="max-w-xs">
-                              <div className="text-sm text-gray-900 truncate">
-                                {ticket.complaint}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
-                              {categoryLabels[ticket.category] ||
-                                ticket.category}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span
-                              className={`px-3 py-1 rounded-full text-sm font-bold ${getStatusColor(ticket.status)}`}
-                            >
-                              {statusLabels[ticket.status] || ticket.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-orange-600 text-xs px-2 py-1 rounded-sm">
-                              {ticket.messages?.length || 0}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-gray-900">
-                            {formatDate(ticket.createdAt)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <button
-                              onClick={() => fetchTicketDetails(ticket._id)}
-                              className="text-orange-600 px-3 py-1 rounded text-sm hover:bg-orange-100 font-bold transition-colors"
-                            >
-                              View
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {tickets.length === 0 && !loading && !error && (
-                  <div className="text-center py-12">
-                    <MessageSquare
-                      className="mx-auto text-gray-400 mb-4"
-                      size={48}
-                    />
-                    <p className="text-gray-500 text-lg font-medium">
-                      No Tickets Found
-                    </p>
-                    <p className="text-gray-400 text-sm mt-2">
-                      {searchQueryRef.current
-                        ? "No tickets match your search criteria"
-                        : "There are no tickets available at the moment"}
-                    </p>
-                  </div>
-                )}
-              </>
+            {!loading && (
+              <span className="text-xs text-gray-400 font-medium">
+                {tickets.length} of {totalTickets} tickets
+              </span>
             )}
           </div>
 
-          {/* Pagination — CreateCategory style */}
-          <div className="flex justify-end pl-8 items-center gap-6 mt-8 max-w-[95%] mx-auto">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-300"
-            >
-              Back
-            </button>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gradient-to-r from-[#FF7B1D] to-orange-400">
+                  {[
+                    "S.N",
+                    "Ticket No.",
+                    "Vendor",
+                    "Complaint",
+                    "Category",
+                    "Status",
+                    "Messages",
+                    "Created At",
+                    "Actions",
+                  ].map((h, i) => (
+                    <th
+                      key={h}
+                      className={`px-4 py-3.5 text-xs font-bold text-white tracking-wider uppercase opacity-90 ${
+                        i === 0
+                          ? "text-left w-12"
+                          : i === 8
+                            ? "text-right pr-5"
+                            : "text-left"
+                      }`}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
 
-            <div className="flex items-center gap-2 text-sm text-black font-medium">
-              {(() => {
-                const pages = [];
-                const visiblePages = new Set([
-                  1,
-                  2,
-                  totalPages - 1,
-                  totalPages,
-                  currentPage - 1,
-                  currentPage,
-                  currentPage + 1,
-                ]);
-                for (let i = 1; i <= totalPages; i++) {
-                  if (visiblePages.has(i)) pages.push(i);
-                  else if (pages[pages.length - 1] !== "...") pages.push("...");
-                }
-                return pages.map((page, idx) =>
+              {loading ? (
+                <TableSkeleton cols={9} />
+              ) : tickets.length === 0 ? (
+                <EmptyState searching={!!searchQuery.trim()} />
+              ) : (
+                <tbody>
+                  {tickets.map((ticket, idx) => (
+                    <tr
+                      key={ticket._id}
+                      className="row-animate border-b border-gray-50 hover:bg-orange-50/40 transition-colors duration-150 group"
+                      style={{ animationDelay: `${idx * 30}ms` }}
+                    >
+                      {/* S.N */}
+                      <td className="px-4 py-3.5">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">
+                          {(currentPage - 1) * itemsPerPage + idx + 1}
+                        </span>
+                      </td>
+
+                      {/* Ticket No */}
+                      <td className="px-4 py-3.5">
+                        <span className="font-mono text-xs bg-gray-50 border border-gray-200 px-2 py-1 rounded-md text-orange-600 font-semibold group-hover:border-orange-200 group-hover:bg-orange-50 transition-colors">
+                          {ticket.ticketNumber}
+                        </span>
+                      </td>
+
+                      {/* Vendor */}
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-1.5">
+                          <Store
+                            size={13}
+                            className="text-orange-400 shrink-0"
+                          />
+                          <span className="text-sm text-gray-700 font-medium">
+                            {ticket.vendor?.vendorName ||
+                              ticket.vendor?.storeName ||
+                              "N/A"}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Complaint */}
+                      <td className="px-4 py-3.5 max-w-[200px]">
+                        <p className="text-xs text-gray-600 truncate">
+                          {ticket.complaint}
+                        </p>
+                      </td>
+
+                      {/* Category */}
+                      <td className="px-4 py-3.5">
+                        <span className="inline-block bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full border border-blue-100">
+                          {categoryLabels[ticket.category] || ticket.category}
+                        </span>
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-4 py-3.5">
+                        <StatusBadge status={ticket.status} />
+                      </td>
+
+                      {/* Messages */}
+                      <td className="px-4 py-3.5">
+                        <span className="inline-flex items-center gap-1 bg-purple-50 text-purple-700 text-xs font-medium px-2.5 py-1 rounded-full border border-purple-100">
+                          <MessageSquare size={11} />
+                          {ticket.messages?.length || 0}
+                        </span>
+                      </td>
+
+                      {/* Created At */}
+                      <td className="px-4 py-3.5 text-xs text-gray-500 whitespace-nowrap">
+                        {formatDate(ticket.createdAt)}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-4 py-3.5 pr-5">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => fetchTicketDetails(ticket._id)}
+                            className="action-btn bg-emerald-50 text-emerald-500 hover:bg-emerald-100 hover:text-emerald-700"
+                            title="View ticket"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              )}
+            </table>
+          </div>
+        </div>
+
+        {/* ── Pagination ── */}
+        {!loading && tickets.length > 0 && (
+          <div className="flex items-center justify-between px-1 mt-5 mb-6">
+            <p className="text-xs text-gray-400 font-medium">
+              Page{" "}
+              <span className="text-gray-600 font-semibold">{currentPage}</span>{" "}
+              of{" "}
+              <span className="text-gray-600 font-semibold">{totalPages}</span>
+            </p>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={currentPage === 1}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" /> Prev
+              </button>
+
+              <div className="flex items-center gap-1">
+                {buildPages().map((page, idx) =>
                   page === "..." ? (
-                    <span key={idx} className="px-1 text-black select-none">
-                      ...
+                    <span key={idx} className="px-1 text-gray-400 text-xs">
+                      …
                     </span>
                   ) : (
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`px-1 ${
+                      className={`w-8 h-8 rounded-xl text-xs font-semibold transition-all ${
                         currentPage === page
-                          ? "text-orange-600 font-semibold"
-                          : ""
+                          ? "bg-[#FF7B1D] text-white shadow-sm shadow-orange-200"
+                          : "bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200"
                       }`}
                     >
                       {page}
                     </button>
                   ),
-                );
-              })()}
-            </div>
-
-            <button
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-              }
-              disabled={currentPage === totalPages}
-              className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-gray-300"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-
-        {/* Ticket Detail Modal */}
-        {showTicketDetailModal && selectedTicket && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-orange-500 text-white rounded-t-lg">
-                <div>
-                  <h2 className="text-2xl font-bold">
-                    Ticket: {selectedTicket.ticketNumber}
-                  </h2>
-                  <p className="text-sm mt-1">
-                    {formatDate(selectedTicket.createdAt)}
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowTicketDetailModal(false);
-                    setSelectedTicket(null);
-                    setMessageInput("");
-                    setError("");
-                    setStatusUpdate("");
-                    setAdminResponse("");
-                  }}
-                  className="text-white hover:text-gray-200"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              <div className="p-6 space-y-4">
-                {/* Ticket Info */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Vendor
-                    </label>
-                    <div className="mt-1 flex items-center gap-2">
-                      <Store size={16} className="text-orange-500" />
-                      <span className="text-gray-900">
-                        {selectedTicket.vendor?.vendorName ||
-                          selectedTicket.vendor?.storeName ||
-                          "N/A"}
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Status
-                    </label>
-                    <div className="mt-1">
-                      <select
-                        value={statusUpdate}
-                        onChange={(e) => setStatusUpdate(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      >
-                        <option value="active">Active</option>
-                        <option value="pending">Pending</option>
-                        <option value="resolved">Resolved</option>
-                        <option value="closed">Closed</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Category
-                    </label>
-                    <div className="mt-1">
-                      <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
-                        {categoryLabels[selectedTicket.category] ||
-                          selectedTicket.category}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Complaint
-                  </label>
-                  <div className="mt-1 p-4 bg-gray-50 rounded border">
-                    <p className="text-gray-900">{selectedTicket.complaint}</p>
-                  </div>
-                </div>
-
-                {/* Admin Response */}
-                <div>
-                  <label className="text-sm font-medium text-gray-600 mb-2 block">
-                    Admin Response (Optional)
-                  </label>
-                  <textarea
-                    value={adminResponse}
-                    onChange={(e) => setAdminResponse(e.target.value)}
-                    placeholder="Add your response..."
-                    rows="3"
-                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  />
-                </div>
-
-                {/* Update Status Button */}
-                <div>
-                  <button
-                    onClick={handleUpdateStatus}
-                    disabled={updatingStatus || !statusUpdate}
-                    className="bg-orange-500 text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  >
-                    {updatingStatus ? "Updating..." : "Update Status"}
-                  </button>
-                </div>
-
-                {/* Messages */}
-                <div>
-                  <label className="text-sm font-medium text-gray-600 mb-2 block">
-                    Messages ({selectedTicket.messages?.length || 0})
-                  </label>
-                  <div className="space-y-3 max-h-96 overflow-y-auto border rounded p-4">
-                    {selectedTicket.messages &&
-                    selectedTicket.messages.length > 0 ? (
-                      selectedTicket.messages.map((msg, idx) => (
-                        <div
-                          key={idx}
-                          className={`p-3 rounded ${
-                            msg.senderModel === "Vendor"
-                              ? "bg-orange-50 border-l-4 border-orange-500"
-                              : msg.senderModel === "Admin"
-                                ? "bg-blue-50 border-l-4 border-blue-500"
-                                : "bg-gray-50 border-l-4 border-gray-500"
-                          }`}
-                        >
-                          <div className="flex justify-between items-start mb-1">
-                            <span className="font-medium text-sm">
-                              {msg.senderModel === "Vendor"
-                                ? msg.sender?.vendorName ||
-                                  msg.sender?.storeName ||
-                                  "Vendor"
-                                : msg.senderModel === "Admin"
-                                  ? msg.sender?.name || "Admin"
-                                  : "Unknown"}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {formatDate(msg.createdAt)}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-700">{msg.message}</p>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-gray-500 text-sm">No messages yet</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Add Message */}
-                {selectedTicket.status !== "closed" && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 mb-2 block">
-                      Add Message
-                    </label>
-                    <div className="flex gap-2">
-                      <textarea
-                        value={messageInput}
-                        onChange={(e) => setMessageInput(e.target.value)}
-                        placeholder="Type your message..."
-                        rows="3"
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      />
-                      <button
-                        onClick={handleSendMessage}
-                        disabled={!messageInput.trim() || sendingMessage}
-                        className="bg-orange-500 text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
-                      >
-                        <Send size={18} />
-                        {sendingMessage ? "Sending..." : "Send"}
-                      </button>
-                    </div>
-                  </div>
                 )}
               </div>
 
-              <div className="p-6 border-t border-gray-200 flex gap-4 justify-end">
-                <button
-                  onClick={() => {
-                    setShowTicketDetailModal(false);
-                    setSelectedTicket(null);
-                    setMessageInput("");
-                    setError("");
-                    setStatusUpdate("");
-                    setAdminResponse("");
-                  }}
-                  className="px-6 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
+              <button
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(p + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+              >
+                Next <ChevronRight className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         )}
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          Ticket Detail Modal
+      ════════════════════════════════════════════════════════════════ */}
+      {showModal && selectedTicket && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto border border-gray-100">
+            {/* Modal header */}
+            <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-[#FF7B1D] to-orange-400 rounded-t-2xl">
+              <div>
+                <h2 className="text-lg font-bold text-white">
+                  Ticket #{selectedTicket.ticketNumber}
+                </h2>
+                <p className="text-xs text-orange-100 mt-0.5">
+                  {formatDate(selectedTicket.createdAt)}
+                </p>
+              </div>
+              <button
+                onClick={closeModal}
+                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Meta grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                  <p className="text-xs text-gray-400 mb-1 font-medium">
+                    Vendor
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <Store size={13} className="text-orange-400" />
+                    <span className="text-sm font-semibold text-gray-700">
+                      {selectedTicket.vendor?.vendorName ||
+                        selectedTicket.vendor?.storeName ||
+                        "N/A"}
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                  <p className="text-xs text-gray-400 mb-1 font-medium">
+                    Category
+                  </p>
+                  <span className="inline-block bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-blue-100">
+                    {categoryLabels[selectedTicket.category] ||
+                      selectedTicket.category}
+                  </span>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                  <p className="text-xs text-gray-400 mb-2 font-medium">
+                    Update Status
+                  </p>
+                  <select
+                    value={statusUpdate}
+                    onChange={(e) => setStatusUpdate(e.target.value)}
+                    className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-orange-200 bg-white text-gray-700"
+                  >
+                    <option value="active">Active</option>
+                    <option value="pending">Pending</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Complaint */}
+              <div>
+                <p className="text-xs text-gray-400 font-medium mb-1.5">
+                  Complaint
+                </p>
+                <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 text-sm text-gray-700 leading-relaxed">
+                  {selectedTicket.complaint}
+                </div>
+              </div>
+
+              {/* Admin response + update button */}
+              <div>
+                <p className="text-xs text-gray-400 font-medium mb-1.5">
+                  Admin Response{" "}
+                  <span className="text-gray-300">(optional)</span>
+                </p>
+                <textarea
+                  value={adminResponse}
+                  onChange={(e) => setAdminResponse(e.target.value)}
+                  placeholder="Type your response…"
+                  rows="3"
+                  className="w-full text-sm px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 resize-none"
+                />
+                <button
+                  onClick={handleUpdateStatus}
+                  disabled={updatingStatus || !statusUpdate}
+                  className="mt-2 bg-[#FF7B1D] hover:bg-orange-500 text-white text-sm font-semibold px-5 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {updatingStatus ? "Updating…" : "Update Status"}
+                </button>
+              </div>
+
+              {/* Messages thread */}
+              <div>
+                <p className="text-xs text-gray-400 font-medium mb-1.5">
+                  Messages ({selectedTicket.messages?.length || 0})
+                </p>
+                <div className="space-y-2 max-h-64 overflow-y-auto rounded-xl border border-gray-100 p-3 bg-gray-50">
+                  {selectedTicket.messages?.length ? (
+                    selectedTicket.messages.map((msg, i) => (
+                      <div
+                        key={i}
+                        className={`p-3 rounded-xl text-sm ${
+                          msg.senderModel === "Vendor"
+                            ? "bg-orange-50 border-l-4 border-orange-400"
+                            : msg.senderModel === "Admin"
+                              ? "bg-blue-50 border-l-4 border-blue-400"
+                              : "bg-white border-l-4 border-gray-300"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="text-xs font-semibold text-gray-700">
+                            {msg.senderModel === "Vendor"
+                              ? msg.sender?.vendorName ||
+                                msg.sender?.storeName ||
+                                "Vendor"
+                              : msg.senderModel === "Admin"
+                                ? msg.sender?.name || "Admin"
+                                : "Unknown"}
+                          </span>
+                          <span className="text-[10px] text-gray-400">
+                            {formatDate(msg.createdAt)}
+                          </span>
+                        </div>
+                        <p className="text-gray-700">{msg.message}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-400 text-xs text-center py-4">
+                      No messages yet
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Add message */}
+              {selectedTicket.status !== "closed" && (
+                <div>
+                  <p className="text-xs text-gray-400 font-medium mb-1.5">
+                    Add Message
+                  </p>
+                  <div className="flex gap-2">
+                    <textarea
+                      value={messageInput}
+                      onChange={(e) => setMessageInput(e.target.value)}
+                      placeholder="Type your message…"
+                      rows="3"
+                      className="flex-1 text-sm px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 resize-none"
+                    />
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={!messageInput.trim() || sendingMessage}
+                      className="bg-[#FF7B1D] hover:bg-orange-500 text-white px-4 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex flex-col items-center justify-center gap-1"
+                    >
+                      <Send size={16} />
+                      <span className="text-xs font-semibold">
+                        {sendingMessage ? "…" : "Send"}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal footer */}
+            <div className="px-6 py-4 border-t border-gray-100 flex justify-end">
+              <button
+                onClick={closeModal}
+                className="px-5 py-2 text-sm font-semibold border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 };

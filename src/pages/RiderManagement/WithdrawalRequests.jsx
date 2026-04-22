@@ -1,503 +1,3 @@
-// import React, { useState, useEffect } from "react";
-// import DashboardLayout from "../../components/DashboardLayout";
-// import api from "../../api/api";
-// import {
-//   DollarSign,
-//   CheckCircle,
-//   XCircle,
-//   Search,
-//   Filter,
-//   Calendar,
-//   User,
-//   AlertCircle,
-//   Loader2,
-//   X,
-// } from "lucide-react";
-
-// const WithdrawalRequests = () => {
-//   const [requests, setRequests] = useState([]);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState(null);
-//   const [success, setSuccess] = useState(null);
-//   const [actionLoading, setActionLoading] = useState(null);
-
-//   // Filters
-//   const [statusFilter, setStatusFilter] = useState("all");
-//   const [riderIdFilter, setRiderIdFilter] = useState("");
-//   const [searchQuery, setSearchQuery] = useState("");
-
-//   // Fetch withdrawal requests
-//   const fetchRequests = async () => {
-//     try {
-//       setLoading(true);
-//       setError(null);
-
-//       const params = {};
-//       if (statusFilter !== "all") {
-//         params.status = statusFilter;
-//       }
-//       if (riderIdFilter) {
-//         params.riderId = riderIdFilter;
-//       }
-
-//       const response = await api.get("/api/admin/riders/withdrawal-requests", {
-//         params,
-//       });
-
-//       const result = response.data;
-
-//       if (result.success) {
-//         // API returns data as array directly
-//         const requestsData = Array.isArray(result.data) ? result.data : [];
-
-//         setRequests(requestsData);
-//       } else {
-//         setError(result.message || "Failed to fetch withdrawal requests");
-//         setRequests([]);
-//       }
-//     } catch (error) {
-//       console.error("Error fetching withdrawal requests:", error);
-
-//       // Check for backend routing issue
-//       if (error.response?.status === 500) {
-//         const errorData = error.response?.data;
-//         if (
-//           typeof errorData === "string" &&
-//           errorData.includes("Cast to ObjectId failed")
-//         ) {
-//           setError(
-//             "⚠️ Backend routing issue detected. " +
-//               "The route '/api/admin/riders/withdrawal-requests' is being matched by '/api/admin/riders/:riderId'. " +
-//               "Please ensure the withdrawal-requests route is defined BEFORE the :riderId route in your backend routes file.",
-//           );
-//         } else {
-//           setError(
-//             error.response?.data?.message ||
-//               "Server error occurred. Please check backend logs.",
-//           );
-//         }
-//       } else {
-//         setError(
-//           error.response?.data?.message ||
-//             "Error fetching withdrawal requests. Please try again.",
-//         );
-//       }
-//       setRequests([]);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   // Fetch requests on mount and when filters change
-//   useEffect(() => {
-//     fetchRequests();
-//   }, [statusFilter, riderIdFilter]);
-
-//   // Handle approve request
-//   const handleApprove = async (requestId) => {
-//     if (
-//       !window.confirm(
-//         "Are you sure you want to approve this withdrawal request?",
-//       )
-//     ) {
-//       return;
-//     }
-
-//     try {
-//       setActionLoading(requestId);
-//       setError(null);
-//       setSuccess(null);
-
-//       const response = await api.put(
-//         `/api/admin/riders/withdrawal-requests/${requestId}/approve`,
-//       );
-
-//       const result = response.data;
-
-//       if (result.success) {
-//         setSuccess("Withdrawal request approved successfully!");
-//         fetchRequests();
-//         setTimeout(() => setSuccess(null), 3000);
-//       } else {
-//         setError(result.message || "Failed to approve request");
-//       }
-//     } catch (error) {
-//       console.error("Error approving request:", error);
-//       setError(
-//         error.response?.data?.message || "Error approving withdrawal request",
-//       );
-//     } finally {
-//       setActionLoading(null);
-//     }
-//   };
-
-//   // Handle reject request
-//   const handleReject = async (requestId) => {
-//     if (
-//       !window.confirm(
-//         "Are you sure you want to reject this withdrawal request?",
-//       )
-//     ) {
-//       return;
-//     }
-
-//     try {
-//       setActionLoading(requestId);
-//       setError(null);
-//       setSuccess(null);
-
-//       const response = await api.put(
-//         `/api/admin/riders/withdrawal-requests/${requestId}/reject`,
-//       );
-
-//       const result = response.data;
-
-//       if (result.success) {
-//         setSuccess("Withdrawal request rejected successfully!");
-//         fetchRequests();
-//         setTimeout(() => setSuccess(null), 3000);
-//       } else {
-//         setError(result.message || "Failed to reject request");
-//       }
-//     } catch (error) {
-//       console.error("Error rejecting request:", error);
-//       setError(
-//         error.response?.data?.message || "Error rejecting withdrawal request",
-//       );
-//     } finally {
-//       setActionLoading(null);
-//     }
-//   };
-
-//   // Format date
-//   const formatDate = (dateString) => {
-//     if (!dateString) return "N/A";
-//     const date = new Date(dateString);
-//     return date.toLocaleDateString("en-IN", {
-//       day: "numeric",
-//       month: "short",
-//       year: "numeric",
-//       hour: "2-digit",
-//       minute: "2-digit",
-//     });
-//   };
-
-//   // Format currency (amount might already be formatted from API)
-//   const formatCurrency = (amount) => {
-//     if (!amount) return "₹0";
-//     // If already formatted (contains ₹), return as is
-//     if (typeof amount === "string" && amount.includes("₹")) {
-//       return amount;
-//     }
-//     // Otherwise format it
-//     return `₹${parseFloat(amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-//   };
-
-//   // Get status color
-//   const getStatusColor = (status) => {
-//     switch (status?.toLowerCase()) {
-//       case "approved":
-//         return "bg-green-100 text-green-800 border-green-300";
-//       case "rejected":
-//         return "bg-red-100 text-red-800 border-red-300";
-//       case "pending":
-//         return "bg-yellow-100 text-yellow-800 border-yellow-300";
-//       default:
-//         return "bg-gray-100 text-gray-800 border-gray-300";
-//     }
-//   };
-
-//   // Filter requests by search query
-//   const filteredRequests = requests.filter((request) => {
-//     if (searchQuery) {
-//       const searchLower = searchQuery.toLowerCase();
-//       return (
-//         request.riderName?.toLowerCase().includes(searchLower) ||
-//         request.riderMobile?.toLowerCase().includes(searchLower) ||
-//         request.riderId?.toLowerCase().includes(searchLower) ||
-//         request.requestId?.toLowerCase().includes(searchLower) ||
-//         request.requestAmount?.toLowerCase().includes(searchLower) ||
-//         request.description?.toLowerCase().includes(searchLower)
-//       );
-//     }
-//     return true;
-//   });
-
-//   // Skeleton Loader
-//   const TableSkeleton = () => (
-//     <tbody>
-//       {Array.from({ length: 8 }).map((_, i) => (
-//         <tr
-//           key={i}
-//           className="border-b border-gray-200 animate-pulse bg-white rounded-sm"
-//         >
-//           {Array.from({ length: 8 }).map((__, j) => (
-//             <td key={j} className="p-3">
-//               <div className="h-4 bg-gray-200 rounded w-[80%]" />
-//             </td>
-//           ))}
-//         </tr>
-//       ))}
-//     </tbody>
-//   );
-
-//   // Empty State
-//   const EmptyState = () => (
-//     <tbody>
-//       <tr>
-//         <td
-//           colSpan="8"
-//           className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
-//         >
-//           No withdrawal requests found.
-//         </td>
-//       </tr>
-//     </tbody>
-//   );
-
-//   return (
-//     <DashboardLayout>
-//       {/* Success/Error Messages */}
-//       {success && (
-//         <div className="mb-4 mx-4 bg-green-50 border-l-4 border-green-500 text-green-700 px-6 py-4 rounded-xl flex items-center gap-3 shadow-md">
-//           <CheckCircle size={24} />
-//           <span className="font-medium">{success}</span>
-//         </div>
-//       )}
-//       {error && (
-//         <div className="mb-4 mx-4 bg-red-50 border-l-4 border-red-500 text-red-700 px-6 py-4 rounded-xl flex items-center gap-3 shadow-md">
-//           <AlertCircle size={24} />
-//           <span className="font-medium">{error}</span>
-//         </div>
-//       )}
-
-//       {/* Header */}
-//       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-0 mb-2">
-//         <div>
-//           <h1 className="text-2xl font-bold text-gray-800">
-//             Rider Withdrawal Requests
-//           </h1>
-//           <p className="text-sm text-gray-600 mt-1">
-//             Manage rider withdrawal requests
-//           </p>
-//         </div>
-//       </div>
-
-//       {/* Filters and Search */}
-//       <div className="flex flex-col lg:flex-row lg:items-center gap-3 pl-4 max-w-[99%] mx-auto mb-4">
-//         {/* Status Filter */}
-//         <div className="flex gap-2 items-center overflow-x-auto pb-2 lg:pb-0">
-//           {["all", "pending", "approved", "rejected"].map((status) => (
-//             <button
-//               key={status}
-//               onClick={() => setStatusFilter(status)}
-//               className={`px-4 py-1 border rounded text-xs sm:text-sm whitespace-nowrap transition-colors ${
-//                 statusFilter === status
-//                   ? "bg-[#FF7B1D] text-white border-orange-500"
-//                   : "border-gray-400 text-gray-600 hover:bg-gray-100"
-//               }`}
-//             >
-//               {status === "all"
-//                 ? "All"
-//                 : status.charAt(0).toUpperCase() + status.slice(1)}
-//             </button>
-//           ))}
-//         </div>
-
-//         {/* Rider ID Filter */}
-//         <div className="flex items-center gap-2">
-//           <Filter size={18} className="text-gray-600" />
-//           <input
-//             type="text"
-//             placeholder="Filter by Rider ID"
-//             value={riderIdFilter}
-//             onChange={(e) => setRiderIdFilter(e.target.value)}
-//             className="px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-//           />
-//         </div>
-
-//         {/* Search */}
-//         <div className="flex items-center border border-black rounded overflow-hidden h-9 w-full max-w-full sm:max-w-[400px]">
-//           <input
-//             type="text"
-//             placeholder="Search by Rider Name, Mobile, ID..."
-//             className="flex-1 px-3 sm:px-4 text-sm text-gray-800 focus:outline-none h-full"
-//             value={searchQuery}
-//             onChange={(e) => setSearchQuery(e.target.value)}
-//           />
-//           <button className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-sm px-3 sm:px-6 h-full transition-colors">
-//             <Search size={18} />
-//           </button>
-//         </div>
-//       </div>
-
-//       {/* Stats Cards */}
-//       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 pl-4 max-w-[99%] mx-auto">
-//         <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-//           <div className="flex items-center justify-between">
-//             <div>
-//               <p className="text-sm text-gray-600">Total Requests</p>
-//               <p className="text-2xl font-bold text-gray-800 mt-1">
-//                 {requests.length}
-//               </p>
-//             </div>
-//             <DollarSign className="text-orange-500" size={32} />
-//           </div>
-//         </div>
-//         <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-//           <div className="flex items-center justify-between">
-//             <div>
-//               <p className="text-sm text-gray-600">Pending</p>
-//               <p className="text-2xl font-bold text-yellow-600 mt-1">
-//                 {requests.filter((r) => r.status === "pending").length}
-//               </p>
-//             </div>
-//             <AlertCircle className="text-yellow-500" size={32} />
-//           </div>
-//         </div>
-//         <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-//           <div className="flex items-center justify-between">
-//             <div>
-//               <p className="text-sm text-gray-600">Approved</p>
-//               <p className="text-2xl font-bold text-green-600 mt-1">
-//                 {requests.filter((r) => r.status === "approved").length}
-//               </p>
-//             </div>
-//             <CheckCircle className="text-green-500" size={32} />
-//           </div>
-//         </div>
-//         <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-//           <div className="flex items-center justify-between">
-//             <div>
-//               <p className="text-sm text-gray-600">Rejected</p>
-//               <p className="text-2xl font-bold text-red-600 mt-1">
-//                 {requests.filter((r) => r.status === "rejected").length}
-//               </p>
-//             </div>
-//             <XCircle className="text-red-500" size={32} />
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* Table */}
-//       <div className="bg-white rounded-sm shadow-sm overflow-x-auto pl-4 max-w-[99%] mx-auto">
-//         <table className="w-full text-sm">
-//           <thead>
-//             <tr className="bg-[#FF7B1D] text-black">
-//               <th className="p-3 text-left">S.N</th>
-//               <th className="p-3 text-left">Request ID</th>
-//               <th className="p-3 text-left">Rider Name</th>
-//               <th className="p-3 text-left">Rider Mobile</th>
-//               <th className="p-3 text-left">Request Amount</th>
-//               <th className="p-3 text-left">Status</th>
-//               <th className="p-3 text-left">Request Date</th>
-//               <th className="p-3 pr-6 text-right">Action</th>
-//             </tr>
-//           </thead>
-
-//           {loading ? (
-//             <TableSkeleton />
-//           ) : filteredRequests.length === 0 ? (
-//             <EmptyState />
-//           ) : (
-//             <tbody>
-//               {filteredRequests.map((request, idx) => (
-//                 <tr
-//                   key={request.requestId || request._id}
-//                   className="bg-white shadow-sm hover:bg-gray-50 transition border-b-4 border-gray-200"
-//                 >
-//                   <td className="p-3">{request.sNo || idx + 1}</td>
-//                   <td className="p-3 font-mono text-xs">
-//                     {request.requestId?.slice(-8) ||
-//                       request._id?.slice(-8) ||
-//                       "N/A"}
-//                   </td>
-//                   <td className="p-3 font-medium">
-//                     {request.riderName || "N/A"}
-//                   </td>
-//                   <td className="p-3">{request.riderMobile || "N/A"}</td>
-//                   <td className="p-3 font-semibold text-green-600">
-//                     {formatCurrency(request.requestAmount)}
-//                   </td>
-//                   <td className="p-3">
-//                     <span
-//                       className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(
-//                         request.status,
-//                       )}`}
-//                     >
-//                       {request.status
-//                         ? request.status.charAt(0).toUpperCase() +
-//                           request.status.slice(1)
-//                         : "Pending"}
-//                     </span>
-//                   </td>
-//                   <td className="p-3 text-gray-600">
-//                     {formatDate(request.requestedAt || request.createdAt)}
-//                   </td>
-//                   <td className="p-3 text-right">
-//                     <div className="flex justify-end gap-2">
-//                       {request.status === "pending" && (
-//                         <>
-//                           <button
-//                             onClick={() =>
-//                               handleApprove(request.requestId || request._id)
-//                             }
-//                             disabled={
-//                               actionLoading ===
-//                               (request.requestId || request._id)
-//                             }
-//                             className="px-3 py-1.5 bg-green-500 text-white rounded text-xs hover:bg-green-600 transition-colors flex items-center gap-1 disabled:opacity-50"
-//                             title="Approve"
-//                           >
-//                             {actionLoading ===
-//                             (request.requestId || request._id) ? (
-//                               <Loader2 size={14} className="animate-spin" />
-//                             ) : (
-//                               <CheckCircle size={14} />
-//                             )}
-//                             Approve
-//                           </button>
-//                           <button
-//                             onClick={() =>
-//                               handleReject(request.requestId || request._id)
-//                             }
-//                             disabled={
-//                               actionLoading ===
-//                               (request.requestId || request._id)
-//                             }
-//                             className="px-3 py-1.5 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors flex items-center gap-1 disabled:opacity-50"
-//                             title="Reject"
-//                           >
-//                             {actionLoading ===
-//                             (request.requestId || request._id) ? (
-//                               <Loader2 size={14} className="animate-spin" />
-//                             ) : (
-//                               <XCircle size={14} />
-//                             )}
-//                             Reject
-//                           </button>
-//                         </>
-//                       )}
-//                       {request.status !== "pending" && (
-//                         <span className="text-gray-400 text-xs">
-//                           {request.status === "approved"
-//                             ? "Approved"
-//                             : "Rejected"}
-//                         </span>
-//                       )}
-//                     </div>
-//                   </td>
-//                 </tr>
-//               ))}
-//             </tbody>
-//           )}
-//         </table>
-//       </div>
-//     </DashboardLayout>
-//   );
-// };
-
-// export default WithdrawalRequests;
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import api from "../../api/api";
@@ -506,9 +6,6 @@ import {
   DollarSign,
   CheckCircle,
   XCircle,
-  Search,
-  Calendar,
-  User,
   AlertCircle,
   Loader2,
   X,
@@ -519,6 +16,11 @@ import {
   MapPin,
   Phone,
   Shield,
+  User,
+  ChevronLeft,
+  ChevronRight,
+  Banknote,
+  Clock,
 } from "lucide-react";
 
 const API_BASE_URL = `${BASE_URL}/api/rider`;
@@ -531,165 +33,90 @@ const WithdrawalRequests = () => {
   const [actionLoading, setActionLoading] = useState(null);
   const [selectedRider, setSelectedRider] = useState(null);
   const [imageModal, setImageModal] = useState(null);
-
-  // Filters
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch withdrawal requests
   const fetchRequests = async () => {
     try {
       setLoading(true);
       setError(null);
-
       const params = {};
-      if (statusFilter !== "all") {
-        params.status = statusFilter;
-      }
-
+      if (statusFilter !== "all") params.status = statusFilter;
       const response = await api.get("/api/admin/riders/withdrawal-requests", {
         params,
       });
-
       const result = response.data;
-
       if (result.success) {
-        // API returns data as array directly
-        const requestsData = Array.isArray(result.data) ? result.data : [];
-
-        setRequests(requestsData);
+        setRequests(Array.isArray(result.data) ? result.data : []);
       } else {
         setError(result.message || "Failed to fetch withdrawal requests");
         setRequests([]);
       }
     } catch (error) {
-      console.error("Error fetching withdrawal requests:", error);
-
-      // Check for backend routing issue
-      if (error.response?.status === 500) {
-        const errorData = error.response?.data;
-        if (
-          typeof errorData === "string" &&
-          errorData.includes("Cast to ObjectId failed")
-        ) {
-          setError(
-            "⚠️ Backend routing issue detected. " +
-              "The route '/api/admin/riders/withdrawal-requests' is being matched by '/api/admin/riders/:riderId'. " +
-              "Please ensure the withdrawal-requests route is defined BEFORE the :riderId route in your backend routes file.",
-          );
-        } else {
-          setError(
-            error.response?.data?.message ||
-              "Server error occurred. Please check backend logs.",
-          );
-        }
-      } else {
-        setError(
-          error.response?.data?.message ||
-            "Error fetching withdrawal requests. Please try again.",
-        );
-      }
+      setError(
+        error.response?.data?.message || "Error fetching withdrawal requests.",
+      );
       setRequests([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch requests on mount and when filters change
   useEffect(() => {
     fetchRequests();
   }, [statusFilter]);
 
-  // Handle approve request
   const handleApprove = async (requestId) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to approve this withdrawal request?",
-      )
-    ) {
-      return;
-    }
-
+    if (!window.confirm("Approve this withdrawal request?")) return;
     try {
       setActionLoading(requestId);
       setError(null);
       setSuccess(null);
-
       const response = await api.put(
         `/api/admin/riders/withdrawal-requests/${requestId}/approve`,
       );
-
-      const result = response.data;
-
-      if (result.success) {
+      if (response.data.success) {
         setSuccess("Withdrawal request approved successfully!");
         fetchRequests();
         setTimeout(() => setSuccess(null), 3000);
-      } else {
-        setError(result.message || "Failed to approve request");
-      }
+      } else setError(response.data.message || "Failed to approve");
     } catch (error) {
-      console.error("Error approving request:", error);
-      setError(
-        error.response?.data?.message || "Error approving withdrawal request",
-      );
+      setError(error.response?.data?.message || "Error approving request");
     } finally {
       setActionLoading(null);
     }
   };
 
-  // Handle reject request
   const handleReject = async (requestId) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to reject this withdrawal request?",
-      )
-    ) {
-      return;
-    }
-
+    if (!window.confirm("Reject this withdrawal request?")) return;
     try {
       setActionLoading(requestId);
       setError(null);
       setSuccess(null);
-
       const response = await api.put(
         `/api/admin/riders/withdrawal-requests/${requestId}/reject`,
       );
-
-      const result = response.data;
-
-      if (result.success) {
+      if (response.data.success) {
         setSuccess("Withdrawal request rejected successfully!");
         fetchRequests();
         setTimeout(() => setSuccess(null), 3000);
-      } else {
-        setError(result.message || "Failed to reject request");
-      }
+      } else setError(response.data.message || "Failed to reject");
     } catch (error) {
-      console.error("Error rejecting request:", error);
-      setError(
-        error.response?.data?.message || "Error rejecting withdrawal request",
-      );
+      setError(error.response?.data?.message || "Error rejecting request");
     } finally {
       setActionLoading(null);
     }
   };
 
-  // Get authorization headers
   const getAuthHeaders = () => {
     const token =
       localStorage.getItem("token") || localStorage.getItem("authToken");
-    const headers = {
+    return {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-    return headers;
   };
 
-  // Fetch rider details
   const fetchRiderDetails = async (riderId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/${riderId}`, {
@@ -698,31 +125,16 @@ const WithdrawalRequests = () => {
         headers: getAuthHeaders(),
       });
       const result = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          setError("Unauthorized. Please login again.");
-        } else {
-          setError(result.message || "Failed to fetch rider details");
-        }
-        return;
-      }
-
-      if (result.success) {
-        setSelectedRider(result.data);
-      } else {
-        setError("Failed to fetch rider details");
-      }
+      if (result.success) setSelectedRider(result.data);
+      else setError("Failed to fetch rider details");
     } catch (err) {
       setError("Error fetching rider details: " + err.message);
     }
   };
 
-  // Format date
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-IN", {
+    return new Date(dateString).toLocaleDateString("en-IN", {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -731,17 +143,21 @@ const WithdrawalRequests = () => {
     });
   };
 
-  // Format date for modal (without time)
   const formatDateModal = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString("en-IN");
   };
 
-  // Get status color for rider modal
+  const formatCurrency = (amount) => {
+    if (!amount) return "₹0";
+    if (typeof amount === "string" && amount.includes("₹")) return amount;
+    return `₹${parseFloat(amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
   const getRiderStatusColor = (status) => {
     switch (status) {
       case "approved":
-        return "bg-green-50 text-green-700 border border-green-200";
+        return "bg-emerald-50 text-emerald-700 border border-emerald-200";
       case "rejected":
       case "suspended":
         return "bg-red-50 text-red-700 border border-red-200";
@@ -750,7 +166,6 @@ const WithdrawalRequests = () => {
     }
   };
 
-  // Get status text for rider modal
   const getRiderStatusText = (status) => {
     switch (status) {
       case "approved":
@@ -763,58 +178,60 @@ const WithdrawalRequests = () => {
     }
   };
 
-  // Format currency (amount might already be formatted from API)
-  const formatCurrency = (amount) => {
-    if (!amount) return "₹0";
-    // If already formatted (contains ₹), return as is
-    if (typeof amount === "string" && amount.includes("₹")) {
-      return amount;
-    }
-    // Otherwise format it
-    return `₹${parseFloat(amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
-
-  // Get status color
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "approved":
-        return "bg-green-100 text-green-800 border-green-300";
-      case "rejected":
-        return "bg-red-100 text-red-800 border-red-300";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-300";
-    }
-  };
-
-  // Filter requests by search query
-  const filteredRequests = requests.filter((request) => {
-    if (searchQuery) {
-      const searchLower = searchQuery.toLowerCase();
-      return (
-        request.riderName?.toLowerCase().includes(searchLower) ||
-        request.riderMobile?.toLowerCase().includes(searchLower) ||
-        request.riderId?.toLowerCase().includes(searchLower) ||
-        request.requestId?.toLowerCase().includes(searchLower) ||
-        request.requestAmount?.toLowerCase().includes(searchLower) ||
-        request.description?.toLowerCase().includes(searchLower)
-      );
-    }
-    return true;
+  const filteredRequests = requests.filter((req) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      req.riderName?.toLowerCase().includes(q) ||
+      req.riderMobile?.toLowerCase().includes(q) ||
+      req.riderId?.toLowerCase().includes(q) ||
+      req.requestId?.toLowerCase().includes(q)
+    );
   });
 
-  // Skeleton Loader
+  const tabs = [
+    { key: "all", label: "All" },
+    { key: "pending", label: "Pending" },
+    { key: "approved", label: "Approved" },
+    { key: "rejected", label: "Rejected" },
+  ];
+
+  const StatusBadge = ({ status }) => {
+    const s = (status || "pending").toLowerCase();
+    const styles = {
+      approved:
+        "bg-emerald-50 text-emerald-700 border border-emerald-200 ring-1 ring-emerald-100",
+      pending:
+        "bg-amber-50 text-amber-700 border border-amber-200 ring-1 ring-amber-100",
+      rejected:
+        "bg-red-50 text-red-700 border border-red-200 ring-1 ring-red-100",
+    };
+    const dots = {
+      approved: "bg-emerald-500",
+      pending: "bg-amber-500",
+      rejected: "bg-red-500",
+    };
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${styles[s] || "bg-gray-100 text-gray-600 border border-gray-200"}`}
+      >
+        <span
+          className={`w-1.5 h-1.5 rounded-full ${dots[s] || "bg-gray-400"}`}
+        />
+        {s.charAt(0).toUpperCase() + s.slice(1)}
+      </span>
+    );
+  };
+
   const TableSkeleton = () => (
     <tbody>
       {Array.from({ length: 8 }).map((_, i) => (
-        <tr
-          key={i}
-          className="border-b border-gray-200 animate-pulse bg-white rounded-sm"
-        >
+        <tr key={i} className="border-b border-gray-100">
           {Array.from({ length: 8 }).map((__, j) => (
-            <td key={j} className="p-3">
-              <div className="h-4 bg-gray-200 rounded w-[80%]" />
+            <td key={j} className="px-4 py-3.5">
+              <div
+                className={`h-3.5 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full animate-pulse ${j === 7 ? "w-16 ml-auto" : "w-[70%]"}`}
+              />
             </td>
           ))}
         </tr>
@@ -822,385 +239,407 @@ const WithdrawalRequests = () => {
     </tbody>
   );
 
-  // Empty State
   const EmptyState = () => (
     <tbody>
       <tr>
-        <td
-          colSpan="8"
-          className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
-        >
-          No withdrawal requests found.
+        <td colSpan="8" className="py-20 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center">
+              <Banknote className="w-8 h-8 text-orange-300" />
+            </div>
+            <p className="text-gray-400 text-sm font-medium">
+              No withdrawal requests found
+            </p>
+            <p className="text-gray-300 text-xs">
+              Try adjusting your filters or search query
+            </p>
+          </div>
         </td>
       </tr>
     </tbody>
   );
 
+  const statCards = [
+    {
+      label: "Total Requests",
+      value: requests.length,
+      icon: <DollarSign className="w-5 h-5" />,
+      color: "text-orange-500",
+      bg: "bg-orange-50",
+      border: "border-orange-100",
+    },
+    {
+      label: "Pending",
+      value: requests.filter((r) => r.status === "pending").length,
+      icon: <Clock className="w-5 h-5" />,
+      color: "text-amber-500",
+      bg: "bg-amber-50",
+      border: "border-amber-100",
+    },
+    {
+      label: "Approved",
+      value: requests.filter((r) => r.status === "approved").length,
+      icon: <CheckCircle className="w-5 h-5" />,
+      color: "text-emerald-500",
+      bg: "bg-emerald-50",
+      border: "border-emerald-100",
+    },
+    {
+      label: "Rejected",
+      value: requests.filter((r) => r.status === "rejected").length,
+      icon: <XCircle className="w-5 h-5" />,
+      color: "text-red-500",
+      bg: "bg-red-50",
+      border: "border-red-100",
+    },
+  ];
+
   return (
     <DashboardLayout>
-      {/* Success/Error Messages */}
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .row-animate { animation: fadeSlideIn 0.25s ease forwards; }
+        .action-btn {
+          width: 30px; height: 30px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 8px; transition: all 0.18s ease;
+        }
+        .action-btn:hover { transform: translateY(-1px); }
+      `}</style>
+
+      {/* Toast Messages */}
       {success && (
-        <div className="mb-4 mx-4 bg-green-50 border-l-4 border-green-500 text-green-700 px-6 py-4 rounded-xl flex items-center gap-3 shadow-md">
-          <CheckCircle size={24} />
-          <span className="font-medium">{success}</span>
+        <div className="mb-3 mx-1 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl flex items-center gap-3 shadow-sm">
+          <CheckCircle className="w-4 h-4 shrink-0" />
+          <span className="text-sm font-medium">{success}</span>
         </div>
       )}
       {error && (
-        <div className="mb-4 mx-4 bg-red-50 border-l-4 border-red-500 text-red-700 px-6 py-4 rounded-xl flex items-center gap-3 shadow-md">
-          <AlertCircle size={24} />
-          <span className="font-medium">{error}</span>
+        <div className="mb-3 mx-1 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3 shadow-sm">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span className="text-sm font-medium">{error}</span>
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-0 mb-2">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Rider Withdrawal Requests
-          </h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Manage rider withdrawal requests
-          </p>
-        </div>
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 px-1">
+        {statCards.map((card, i) => (
+          <div
+            key={i}
+            className={`bg-white rounded-2xl border ${card.border} shadow-sm px-4 py-3.5 flex items-center justify-between`}
+          >
+            <div>
+              <p className="text-xs text-gray-400 font-medium mb-1">
+                {card.label}
+              </p>
+              <p className={`text-2xl font-bold ${card.color}`}>{card.value}</p>
+            </div>
+            <div
+              className={`w-10 h-10 rounded-xl ${card.bg} flex items-center justify-center ${card.color}`}
+            >
+              {card.icon}
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Filters and Search */}
-      <div className="flex flex-col lg:flex-row lg:items-center gap-3 pl-4 max-w-[99%] mx-auto mb-4">
-        {/* Status Filter */}
-        <div className="flex gap-2 items-center overflow-x-auto pb-2 lg:pb-0">
-          {["all", "pending", "approved", "rejected"].map((status) => (
+      {/* Toolbar */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 w-full px-1 mb-3">
+        {/* Tabs */}
+        <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+          {tabs.map((tab) => (
             <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`px-4 py-1 border rounded text-xs sm:text-sm whitespace-nowrap transition-colors ${
-                statusFilter === status
-                  ? "bg-[#FF7B1D] text-white border-orange-500"
-                  : "border-gray-400 text-gray-600 hover:bg-gray-100"
+              key={tab.key}
+              onClick={() => setStatusFilter(tab.key)}
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
+                statusFilter === tab.key
+                  ? "bg-white text-[#FF7B1D] shadow-sm shadow-orange-100"
+                  : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              {status === "all"
-                ? "All"
-                : status.charAt(0).toUpperCase() + status.slice(1)}
+              {tab.label}
             </button>
           ))}
         </div>
 
         {/* Search */}
-        <div className="flex items-center border border-black rounded overflow-hidden h-9 w-full max-w-full sm:max-w-[400px]">
+        <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden h-[38px] w-full lg:w-[380px] shadow-sm bg-white">
           <input
             type="text"
-            placeholder="Search by Rider Name, Mobile, ID..."
-            className="flex-1 px-3 sm:px-4 text-sm text-gray-800 focus:outline-none h-full"
+            placeholder="Search by name, mobile, ID..."
+            className="flex-1 px-4 text-sm text-gray-700 focus:outline-none h-full placeholder:text-gray-400"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <button className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-sm px-3 sm:px-6 h-full transition-colors">
-            <Search size={18} />
+          <button className="bg-[#FF7B1D] hover:bg-orange-500 text-white text-sm font-medium px-5 h-full transition-colors">
+            Search
           </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 pl-4 max-w-[99%] mx-auto">
-        <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Requests</p>
-              <p className="text-2xl font-bold text-gray-800 mt-1">
-                {requests.length}
-              </p>
-            </div>
-            <DollarSign className="text-orange-500" size={32} />
+      {/* Table Card */}
+      <div className="mx-1 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+        {/* Card Header */}
+        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+            <span className="text-sm font-semibold text-gray-700">
+              Rider Withdrawal Requests
+            </span>
           </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600 mt-1">
-                {requests.filter((r) => r.status === "pending").length}
-              </p>
-            </div>
-            <AlertCircle className="text-yellow-500" size={32} />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Approved</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">
-                {requests.filter((r) => r.status === "approved").length}
-              </p>
-            </div>
-            <CheckCircle className="text-green-500" size={32} />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Rejected</p>
-              <p className="text-2xl font-bold text-red-600 mt-1">
-                {requests.filter((r) => r.status === "rejected").length}
-              </p>
-            </div>
-            <XCircle className="text-red-500" size={32} />
-          </div>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-sm shadow-sm overflow-x-auto pl-4 max-w-[99%] mx-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-[#FF7B1D] text-black">
-              <th className="p-3 text-left">S.N</th>
-              <th className="p-3 text-left">Request ID</th>
-              <th className="p-3 text-left">Rider Name</th>
-              <th className="p-3 text-left">Rider Mobile</th>
-              <th className="p-3 text-left">Request Amount</th>
-              <th className="p-3 text-left">Status</th>
-              <th className="p-3 text-left">Request Date</th>
-              <th className="p-3 pr-6 text-right">Action</th>
-            </tr>
-          </thead>
-
-          {loading ? (
-            <TableSkeleton />
-          ) : filteredRequests.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <tbody>
-              {filteredRequests.map((request, idx) => (
-                <tr
-                  key={request.requestId || request._id}
-                  className="bg-white shadow-sm hover:bg-gray-50 transition border-b-4 border-gray-200"
-                >
-                  <td className="p-3">{request.sNo || idx + 1}</td>
-                  <td className="p-3 font-mono text-xs">
-                    {request.requestId?.slice(-8) ||
-                      request._id?.slice(-8) ||
-                      "N/A"}
-                  </td>
-                  <td className="p-3 font-medium">
-                    {request.riderName || "N/A"}
-                  </td>
-                  <td className="p-3">{request.riderMobile || "N/A"}</td>
-                  <td className="p-3 font-semibold text-green-600">
-                    {formatCurrency(request.requestAmount)}
-                  </td>
-                  <td className="p-3">
-                    <span
-                      className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(
-                        request.status,
-                      )}`}
-                    >
-                      {request.status
-                        ? request.status.charAt(0).toUpperCase() +
-                          request.status.slice(1)
-                        : "Pending"}
-                    </span>
-                  </td>
-                  <td className="p-3 text-gray-600">
-                    {formatDate(request.requestedAt || request.createdAt)}
-                  </td>
-                  <td className="p-3 text-right">
-                    <div className="flex justify-end gap-2 items-center">
-                      {/* Eye Icon - Clickable to view rider details */}
-                      <button
-                        onClick={() => {
-                          // Get rider ID from request
-                          const riderId =
-                            request.riderId ||
-                            request.rider?._id ||
-                            request.rider?.riderId;
-
-                          if (riderId) {
-                            fetchRiderDetails(riderId);
-                          } else {
-                            console.error(
-                              "Rider ID not found in request:",
-                              request,
-                            );
-                            setError(
-                              "Rider ID not found. Cannot fetch rider details.",
-                            );
-                          }
-                        }}
-                        className="text-[#FF7B1D] p-1 pr-4 hover:text-orange-600 transition-colors cursor-pointer"
-                        title="View Rider Details"
-                      >
-                        <Eye size={20} />
-                      </button>
-
-                      {/* Approve/Reject buttons - Only for pending requests */}
-                      {request.status === "pending" && (
-                        <>
-                          <button
-                            onClick={() =>
-                              handleApprove(request.requestId || request._id)
-                            }
-                            disabled={
-                              actionLoading ===
-                              (request.requestId || request._id)
-                            }
-                            className="px-3 py-1.5 bg-green-500 text-white rounded text-xs hover:bg-green-600 transition-colors flex items-center gap-1 disabled:opacity-50"
-                            title="Approve"
-                          >
-                            {actionLoading ===
-                            (request.requestId || request._id) ? (
-                              <Loader2 size={14} className="animate-spin" />
-                            ) : (
-                              <CheckCircle size={14} />
-                            )}
-                            Approve
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleReject(request.requestId || request._id)
-                            }
-                            disabled={
-                              actionLoading ===
-                              (request.requestId || request._id)
-                            }
-                            className="px-3 py-1.5 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors flex items-center gap-1 disabled:opacity-50"
-                            title="Reject"
-                          >
-                            {actionLoading ===
-                            (request.requestId || request._id) ? (
-                              <Loader2 size={14} className="animate-spin" />
-                            ) : (
-                              <XCircle size={14} />
-                            )}
-                            Reject
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+          {!loading && (
+            <span className="text-xs text-gray-400 font-medium">
+              {filteredRequests.length} of {requests.length} requests
+            </span>
           )}
-        </table>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gradient-to-r from-[#FF7B1D] to-orange-400">
+                <th className="px-4 py-3.5 text-left text-xs font-bold text-white tracking-wider uppercase opacity-90 w-12">
+                  S.N
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-bold text-white tracking-wider uppercase opacity-90">
+                  Request ID
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-bold text-white tracking-wider uppercase opacity-90">
+                  Rider Name
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-bold text-white tracking-wider uppercase opacity-90">
+                  Mobile
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-bold text-white tracking-wider uppercase opacity-90">
+                  Amount
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-bold text-white tracking-wider uppercase opacity-90">
+                  Status
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-bold text-white tracking-wider uppercase opacity-90">
+                  Date
+                </th>
+                <th className="px-4 py-3.5 text-right text-xs font-bold text-white tracking-wider uppercase opacity-90 pr-5">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+
+            {loading ? (
+              <TableSkeleton />
+            ) : filteredRequests.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <tbody>
+                {filteredRequests.map((request, idx) => (
+                  <tr
+                    key={request.requestId || request._id}
+                    className="row-animate border-b border-gray-50 hover:bg-orange-50/40 transition-colors duration-150 group"
+                    style={{ animationDelay: `${idx * 30}ms` }}
+                  >
+                    {/* S.N */}
+                    <td className="px-4 py-3.5">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">
+                        {request.sNo || idx + 1}
+                      </span>
+                    </td>
+
+                    {/* Request ID */}
+                    <td className="px-4 py-3.5">
+                      <span className="font-mono text-xs bg-gray-50 border border-gray-200 px-2 py-1 rounded-md text-gray-600 group-hover:border-orange-200 group-hover:bg-orange-50 transition-colors">
+                        {(request.requestId || request._id || "").slice(-8)}
+                      </span>
+                    </td>
+
+                    {/* Rider Name */}
+                    <td className="px-4 py-3.5">
+                      <span className="text-sm font-semibold text-gray-800">
+                        {request.riderName || "N/A"}
+                      </span>
+                    </td>
+
+                    {/* Mobile */}
+                    <td className="px-4 py-3.5">
+                      <span className="font-mono text-xs bg-gray-50 border border-gray-200 px-2 py-1 rounded-md text-gray-600 group-hover:border-orange-200 group-hover:bg-orange-50 transition-colors">
+                        {request.riderMobile || "N/A"}
+                      </span>
+                    </td>
+
+                    {/* Amount */}
+                    <td className="px-4 py-3.5">
+                      <span className="inline-flex items-center gap-1 text-sm font-bold text-emerald-700">
+                        {formatCurrency(request.requestAmount)}
+                      </span>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-4 py-3.5">
+                      <StatusBadge status={request.status} />
+                    </td>
+
+                    {/* Date */}
+                    <td className="px-4 py-3.5 text-gray-500 text-xs">
+                      {formatDate(request.requestedAt || request.createdAt)}
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-3.5 pr-5">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {/* View — emerald, same as AllProduct Eye */}
+                        <button
+                          onClick={() => {
+                            const riderId =
+                              request.riderId ||
+                              request.rider?._id ||
+                              request.rider?.riderId;
+                            if (riderId) fetchRiderDetails(riderId);
+                            else setError("Rider ID not found.");
+                          }}
+                          className="action-btn bg-emerald-50 text-emerald-500 hover:bg-emerald-100 hover:text-emerald-700"
+                          title="View Rider Details"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+
+                        {request.status === "pending" && (
+                          <>
+                            {/* Approve — blue, same as AllProduct Edit */}
+                            <button
+                              onClick={() =>
+                                handleApprove(request.requestId || request._id)
+                              }
+                              disabled={
+                                actionLoading ===
+                                (request.requestId || request._id)
+                              }
+                              className="action-btn bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-700 disabled:opacity-50"
+                              title="Approve"
+                            >
+                              {actionLoading ===
+                              (request.requestId || request._id) ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <CheckCircle className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                            {/* Reject — violet, same as AllProduct QrCode */}
+                            <button
+                              onClick={() =>
+                                handleReject(request.requestId || request._id)
+                              }
+                              disabled={
+                                actionLoading ===
+                                (request.requestId || request._id)
+                              }
+                              className="action-btn bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 disabled:opacity-50"
+                              title="Reject"
+                            >
+                              {actionLoading ===
+                              (request.requestId || request._id) ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <XCircle className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            )}
+          </table>
+        </div>
       </div>
 
-      {/* Rider Details Modal */}
+      {/* ── Rider Details Modal ── */}
       {selectedRider && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-sm max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-100">
             {/* Modal Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-[#FF7B1D] to-[#FF9B4D] text-white p-6 flex justify-between items-center rounded-t-2xl shadow-lg z-10">
+            <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-5 bg-gradient-to-r from-[#FF7B1D] to-orange-400 rounded-t-2xl">
               <div>
-                <h2 className="text-3xl font-bold">
+                <h2 className="text-lg font-bold text-white">
                   Rider Application Details
                 </h2>
-                <p className="text-white text-opacity-90 mt-1">
+                <p className="text-xs text-white/80 mt-0.5">
                   Complete verification and review
                 </p>
               </div>
               <button
                 onClick={() => setSelectedRider(null)}
-                className="text-white hover:bg-white hover:bg-opacity-20 rounded-full w-10 h-10 flex items-center justify-center text-3xl transition"
+                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
               >
-                ×
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-8">
-              {/* Personal Information */}
-              <div className="mb-8">
-                <div className="flex items-center gap-3 mb-6 pb-3 border-b-2 border-[#FF7B1D]">
-                  <div className="bg-[#FF7B1D] bg-opacity-10 p-3 rounded-lg">
-                    <User className="text-[#FF7B1D]" size={24} />
+            <div className="p-6 space-y-8">
+              {/* Section Helper */}
+              {[
+                {
+                  icon: <User className="w-4 h-4 text-[#FF7B1D]" />,
+                  title: "Personal Information",
+                },
+              ].map(() => null)}
+
+              {/* Personal Info */}
+              <section>
+                <div className="flex items-center gap-2 mb-4 pb-2 border-b-2 border-orange-100">
+                  <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center">
+                    <User className="w-4 h-4 text-[#FF7B1D]" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900">
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">
                     Personal Information
                   </h3>
                 </div>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 font-semibold mb-1">
-                      Full Name
+                <div className="grid md:grid-cols-2 gap-3">
+                  {[
+                    { label: "Full Name", value: selectedRider.fullName },
+                    {
+                      label: "Date of Birth",
+                      value: `${formatDateModal(selectedRider.dateOfBirth)} (${selectedRider.age} yrs)`,
+                    },
+                    { label: "Blood Group", value: selectedRider.bloodGroup },
+                    {
+                      label: "Mobile Number",
+                      value: `${selectedRider.mobileNumber}${selectedRider.mobileNumberVerified ? " ✓" : ""}`,
+                    },
+                    { label: "WhatsApp", value: selectedRider.whatsappNumber },
+                    {
+                      label: "Father's Name",
+                      value: selectedRider.fathersName,
+                    },
+                    {
+                      label: "Mother's Name",
+                      value: selectedRider.mothersName,
+                    },
+                    {
+                      label: "Languages",
+                      value: selectedRider.language?.join(", "),
+                    },
+                  ].map((item, i) => (
+                    <div
+                      key={i}
+                      className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-100"
+                    >
+                      <p className="text-xs text-gray-400 font-medium mb-1">
+                        {item.label}
+                      </p>
+                      <p className="text-sm font-semibold text-gray-800">
+                        {item.value || "N/A"}
+                      </p>
+                    </div>
+                  ))}
+                  <div className="md:col-span-2 bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
+                    <p className="text-xs text-gray-400 font-medium mb-1 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" /> Current Address
                     </p>
-                    <p className="text-gray-900 font-medium text-lg">
-                      {selectedRider.fullName}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 font-semibold mb-1">
-                      Date of Birth (Age)
-                    </p>
-                    <p className="text-gray-900 font-medium text-lg">
-                      {formatDateModal(selectedRider.dateOfBirth)} (
-                      {selectedRider.age} years)
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 font-semibold mb-1">
-                      Blood Group
-                    </p>
-                    <p className="text-gray-900 font-medium text-lg">
-                      {selectedRider.bloodGroup || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 font-semibold mb-1 flex items-center gap-1">
-                      <Phone size={16} />
-                      Mobile Number
-                    </p>
-                    <p className="text-gray-900 font-medium">
-                      {selectedRider.mobileNumber}
-                      {selectedRider.mobileNumberVerified && (
-                        <span className="ml-2 text-green-600 text-xs">
-                          ✓ Verified
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 font-semibold mb-1 flex items-center gap-1">
-                      <Phone size={16} />
-                      WhatsApp Number
-                    </p>
-                    <p className="text-gray-900 font-medium">
-                      {selectedRider.whatsappNumber || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 font-semibold mb-1">
-                      Father's Name
-                    </p>
-                    <p className="text-gray-900 font-medium">
-                      {selectedRider.fathersName || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 font-semibold mb-1">
-                      Mother's Name
-                    </p>
-                    <p className="text-gray-900 font-medium">
-                      {selectedRider.mothersName || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 font-semibold mb-1">
-                      Emergency Contact
-                    </p>
-                    <p className="text-gray-900 font-medium">
-                      {selectedRider.emergencyContactPerson?.name || "N/A"} (
-                      {selectedRider.emergencyContactPerson?.relation || "N/A"})
-                    </p>
-                    <p className="text-gray-600 text-sm mt-1">
-                      {selectedRider.emergencyContactPerson?.contactNumber ||
-                        "N/A"}
-                    </p>
-                  </div>
-                  <div className="md:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 font-semibold mb-1 flex items-center gap-1">
-                      <MapPin size={16} />
-                      Current Address
-                    </p>
-                    <p className="text-gray-900 font-medium">
+                    <p className="text-sm font-semibold text-gray-800">
                       {selectedRider.currentAddress?.line1},{" "}
                       {selectedRider.currentAddress?.line2}
                       <br />
@@ -1209,215 +648,150 @@ const WithdrawalRequests = () => {
                       {selectedRider.currentAddress?.pinCode}
                     </p>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 font-semibold mb-1">
-                      Languages
+                  <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
+                    <p className="text-xs text-gray-400 font-medium mb-1">
+                      Emergency Contact
                     </p>
-                    <p className="text-gray-900 font-medium">
-                      {selectedRider.language?.join(", ") || "N/A"}
+                    <p className="text-sm font-semibold text-gray-800">
+                      {selectedRider.emergencyContactPerson?.name || "N/A"} (
+                      {selectedRider.emergencyContactPerson?.relation || "N/A"})
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {selectedRider.emergencyContactPerson?.contactNumber ||
+                        "N/A"}
                     </p>
                   </div>
                 </div>
-              </div>
+              </section>
 
               {/* Identity Documents */}
-              <div className="mb-8">
-                <div className="flex items-center gap-3 mb-6 pb-3 border-b-2 border-[#FF7B1D]">
-                  <div className="bg-[#FF7B1D] bg-opacity-10 p-3 rounded-lg">
-                    <FileText className="text-[#FF7B1D]" size={24} />
+              <section>
+                <div className="flex items-center gap-2 mb-4 pb-2 border-b-2 border-orange-100">
+                  <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center">
+                    <FileText className="w-4 h-4 text-[#FF7B1D]" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900">
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">
                     Identity Documents
                   </h3>
                 </div>
-                <div className="grid md:grid-cols-2 gap-6 mb-6">
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 font-semibold mb-1">
-                      Aadhaar Number
-                    </p>
-                    <p className="text-gray-900 font-medium text-lg">
-                      {selectedRider.documents?.aadharCard?.aadharId || "N/A"}
-                    </p>
-                  </div>
+                <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-100 mb-4 w-fit">
+                  <p className="text-xs text-gray-400 font-medium mb-1">
+                    Aadhaar Number
+                  </p>
+                  <p className="text-sm font-semibold text-gray-800 font-mono">
+                    {selectedRider.documents?.aadharCard?.aadharId || "N/A"}
+                  </p>
                 </div>
-
-                {/* Document Images */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  {selectedRider.documents?.profile?.url && (
-                    <div className="bg-white border-2 border-gray-200 rounded-xl p-3 hover:border-[#FF7B1D] transition">
-                      <p className="text-sm text-gray-700 font-semibold mb-3 flex items-center gap-2">
-                        <User size={16} />
-                        Profile Photo
-                      </p>
-                      <img
-                        src={selectedRider.documents.profile.url}
-                        alt="Profile"
-                        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
-                        onClick={() =>
-                          setImageModal(selectedRider.documents.profile.url)
-                        }
-                      />
-                    </div>
-                  )}
-                  {selectedRider.documents?.aadharCard?.photo?.url && (
-                    <div className="bg-white border-2 border-gray-200 rounded-xl p-3 hover:border-[#FF7B1D] transition">
-                      <p className="text-sm text-gray-700 font-semibold mb-3 flex items-center gap-2">
-                        <Shield size={16} />
-                        Aadhaar Card
-                      </p>
-                      <img
-                        src={selectedRider.documents.aadharCard.photo.url}
-                        alt="Aadhaar"
-                        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
-                        onClick={() =>
-                          setImageModal(
-                            selectedRider.documents.aadharCard.photo.url,
-                          )
-                        }
-                      />
-                    </div>
-                  )}
-                  {selectedRider.documents?.panCard?.front?.url && (
-                    <div className="bg-white border-2 border-gray-200 rounded-xl p-3 hover:border-[#FF7B1D] transition">
-                      <p className="text-sm text-gray-700 font-semibold mb-3 flex items-center gap-2">
-                        <CreditCard size={16} />
-                        PAN Card (Front)
-                      </p>
-                      <img
-                        src={selectedRider.documents.panCard.front.url}
-                        alt="PAN Front"
-                        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
-                        onClick={() =>
-                          setImageModal(
-                            selectedRider.documents.panCard.front.url,
-                          )
-                        }
-                      />
-                    </div>
-                  )}
-                  {selectedRider.documents?.panCard?.back?.url && (
-                    <div className="bg-white border-2 border-gray-200 rounded-xl p-3 hover:border-[#FF7B1D] transition">
-                      <p className="text-sm text-gray-700 font-semibold mb-3 flex items-center gap-2">
-                        <CreditCard size={16} />
-                        PAN Card (Back)
-                      </p>
-                      <img
-                        src={selectedRider.documents.panCard.back.url}
-                        alt="PAN Back"
-                        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
-                        onClick={() =>
-                          setImageModal(
-                            selectedRider.documents.panCard.back.url,
-                          )
-                        }
-                      />
-                    </div>
-                  )}
-                  {selectedRider.documents?.drivingLicense?.front?.url && (
-                    <div className="bg-white border-2 border-gray-200 rounded-xl p-3 hover:border-[#FF7B1D] transition">
-                      <p className="text-sm text-gray-700 font-semibold mb-3 flex items-center gap-2">
-                        <FileText size={16} />
-                        Driving License (Front)
-                      </p>
-                      <img
-                        src={selectedRider.documents.drivingLicense.front.url}
-                        alt="DL Front"
-                        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
-                        onClick={() =>
-                          setImageModal(
-                            selectedRider.documents.drivingLicense.front.url,
-                          )
-                        }
-                      />
-                    </div>
-                  )}
-                  {selectedRider.documents?.drivingLicense?.back?.url && (
-                    <div className="bg-white border-2 border-gray-200 rounded-xl p-3 hover:border-[#FF7B1D] transition">
-                      <p className="text-sm text-gray-700 font-semibold mb-3 flex items-center gap-2">
-                        <FileText size={16} />
-                        Driving License (Back)
-                      </p>
-                      <img
-                        src={selectedRider.documents.drivingLicense.back.url}
-                        alt="DL Back"
-                        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
-                        onClick={() =>
-                          setImageModal(
-                            selectedRider.documents.drivingLicense.back.url,
-                          )
-                        }
-                      />
-                    </div>
-                  )}
+                <div className="grid md:grid-cols-2 gap-3">
+                  {[
+                    {
+                      url: selectedRider.documents?.profile?.url,
+                      label: "Profile Photo",
+                      icon: <User className="w-3.5 h-3.5" />,
+                    },
+                    {
+                      url: selectedRider.documents?.aadharCard?.photo?.url,
+                      label: "Aadhaar Card",
+                      icon: <Shield className="w-3.5 h-3.5" />,
+                    },
+                    {
+                      url: selectedRider.documents?.panCard?.front?.url,
+                      label: "PAN Card (Front)",
+                      icon: <CreditCard className="w-3.5 h-3.5" />,
+                    },
+                    {
+                      url: selectedRider.documents?.panCard?.back?.url,
+                      label: "PAN Card (Back)",
+                      icon: <CreditCard className="w-3.5 h-3.5" />,
+                    },
+                    {
+                      url: selectedRider.documents?.drivingLicense?.front?.url,
+                      label: "Driving License (Front)",
+                      icon: <FileText className="w-3.5 h-3.5" />,
+                    },
+                    {
+                      url: selectedRider.documents?.drivingLicense?.back?.url,
+                      label: "Driving License (Back)",
+                      icon: <FileText className="w-3.5 h-3.5" />,
+                    },
+                  ]
+                    .filter((d) => d.url)
+                    .map((doc, i) => (
+                      <div
+                        key={i}
+                        className="bg-white rounded-xl border-2 border-gray-100 hover:border-orange-200 transition-colors p-3"
+                      >
+                        <p className="text-xs font-semibold text-gray-600 mb-2 flex items-center gap-1.5 text-[#FF7B1D]">
+                          {doc.icon} {doc.label}
+                        </p>
+                        <img
+                          src={doc.url}
+                          alt={doc.label}
+                          className="w-full h-44 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-sm"
+                          onClick={() => setImageModal(doc.url)}
+                        />
+                      </div>
+                    ))}
                 </div>
-              </div>
+              </section>
 
               {/* Bank Details */}
-              <div className="mb-8">
-                <div className="flex items-center gap-3 mb-6 pb-3 border-b-2 border-[#FF7B1D]">
-                  <div className="bg-[#FF7B1D] bg-opacity-10 p-3 rounded-lg">
-                    <CreditCard className="text-[#FF7B1D]" size={24} />
+              <section>
+                <div className="flex items-center gap-2 mb-4 pb-2 border-b-2 border-orange-100">
+                  <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center">
+                    <CreditCard className="w-4 h-4 text-[#FF7B1D]" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900">
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">
                     Bank Account Details
                   </h3>
                 </div>
-                <div className="grid md:grid-cols-2 gap-6 mb-6">
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 font-semibold mb-1">
-                      Account Holder Name
-                    </p>
-                    <p className="text-gray-900 font-medium text-lg">
-                      {selectedRider.documents?.bankDetails
-                        ?.accountHolderName || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 font-semibold mb-1">
-                      Account Number
-                    </p>
-                    <p className="text-gray-900 font-medium text-lg">
-                      {selectedRider.documents?.bankDetails?.accountNumber ||
-                        "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 font-semibold mb-1">
-                      IFSC Code
-                    </p>
-                    <p className="text-gray-900 font-medium text-lg">
-                      {selectedRider.documents?.bankDetails?.ifsc || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 font-semibold mb-1">
-                      Bank Name
-                    </p>
-                    <p className="text-gray-900 font-medium">
-                      {selectedRider.documents?.bankDetails?.bankName || "N/A"}
-                    </p>
-                  </div>
-                  <div className="md:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 font-semibold mb-1">
-                      Branch Name
-                    </p>
-                    <p className="text-gray-900 font-medium">
-                      {selectedRider.documents?.bankDetails?.branchName ||
-                        "N/A"}
-                    </p>
-                  </div>
+                <div className="grid md:grid-cols-2 gap-3 mb-4">
+                  {[
+                    {
+                      label: "Account Holder",
+                      value:
+                        selectedRider.documents?.bankDetails?.accountHolderName,
+                    },
+                    {
+                      label: "Account Number",
+                      value:
+                        selectedRider.documents?.bankDetails?.accountNumber,
+                    },
+                    {
+                      label: "IFSC Code",
+                      value: selectedRider.documents?.bankDetails?.ifsc,
+                    },
+                    {
+                      label: "Bank Name",
+                      value: selectedRider.documents?.bankDetails?.bankName,
+                    },
+                    {
+                      label: "Branch Name",
+                      value: selectedRider.documents?.bankDetails?.branchName,
+                    },
+                  ].map((item, i) => (
+                    <div
+                      key={i}
+                      className={`bg-gray-50 rounded-xl px-4 py-3 border border-gray-100 ${i === 4 ? "md:col-span-2" : ""}`}
+                    >
+                      <p className="text-xs text-gray-400 font-medium mb-1">
+                        {item.label}
+                      </p>
+                      <p className="text-sm font-semibold text-gray-800 font-mono">
+                        {item.value || "N/A"}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-
                 {selectedRider.documents?.bankDetails?.cancelCheque?.url && (
-                  <div className="bg-white border-2 border-gray-200 rounded-xl p-3 hover:border-[#FF7B1D] transition">
-                    <p className="text-sm text-gray-700 font-semibold mb-3 flex items-center gap-2">
-                      <FileText size={16} />
-                      Cancelled Cheque
+                  <div className="bg-white rounded-xl border-2 border-gray-100 hover:border-orange-200 transition-colors p-3">
+                    <p className="text-xs font-semibold text-[#FF7B1D] mb-2 flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5" /> Cancelled Cheque
                     </p>
                     <img
                       src={selectedRider.documents.bankDetails.cancelCheque.url}
                       alt="Cancelled Cheque"
-                      className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-md"
+                      className="w-full h-44 object-cover rounded-lg cursor-pointer hover:opacity-80 transition shadow-sm"
                       onClick={() =>
                         setImageModal(
                           selectedRider.documents.bankDetails.cancelCheque.url,
@@ -1426,74 +800,69 @@ const WithdrawalRequests = () => {
                     />
                   </div>
                 )}
-              </div>
+              </section>
 
               {/* Work Details */}
-              <div className="mb-8">
-                <div className="flex items-center gap-3 mb-6 pb-3 border-b-2 border-[#FF7B1D]">
-                  <div className="bg-[#FF7B1D] bg-opacity-10 p-3 rounded-lg">
-                    <Car className="text-[#FF7B1D]" size={24} />
+              <section>
+                <div className="flex items-center gap-2 mb-4 pb-2 border-b-2 border-orange-100">
+                  <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center">
+                    <Car className="w-4 h-4 text-[#FF7B1D]" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900">
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">
                     Work Details
                   </h3>
                 </div>
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 font-semibold mb-1">
-                      Vehicle Type
-                    </p>
-                    <p className="text-gray-900 font-medium text-lg">
-                      {selectedRider.workDetails?.vehicleType || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 font-semibold mb-1">
-                      Experience
-                    </p>
-                    <p className="text-gray-900 font-medium text-lg">
-                      {selectedRider.workDetails?.experience || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 font-semibold mb-1">
-                      Preferred Shift
-                    </p>
-                    <p className="text-gray-900 font-medium text-lg">
-                      {selectedRider.workDetails?.shift || "N/A"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Status Display */}
-              {selectedRider.approvalStatus !== "pending" && (
-                <div className="pt-6 border-t-2 border-gray-200">
-                  <div
-                    className={`text-center py-4 rounded-xl font-semibold text-lg ${getRiderStatusColor(
-                      selectedRider.approvalStatus,
-                    )}`}
-                  >
-                    ✓ Application{" "}
-                    {getRiderStatusText(selectedRider.approvalStatus)}
-                    {selectedRider.approvedAt && (
-                      <span>
-                        {" "}
-                        on {formatDateModal(selectedRider.approvedAt)}
-                      </span>
-                    )}
-                    {selectedRider.approvedBy && (
-                      <div className="text-sm mt-2">
-                        By: {selectedRider.approvedBy.name}
-                      </div>
-                    )}
-                  </div>
-                  {selectedRider.rejectionReason && (
-                    <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
-                      <p className="text-sm text-red-700 font-semibold mb-1">
-                        Rejection Reason:
+                <div className="grid md:grid-cols-3 gap-3">
+                  {[
+                    {
+                      label: "Vehicle Type",
+                      value: selectedRider.workDetails?.vehicleType,
+                    },
+                    {
+                      label: "Experience",
+                      value: selectedRider.workDetails?.experience,
+                    },
+                    {
+                      label: "Preferred Shift",
+                      value: selectedRider.workDetails?.shift,
+                    },
+                  ].map((item, i) => (
+                    <div
+                      key={i}
+                      className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-100"
+                    >
+                      <p className="text-xs text-gray-400 font-medium mb-1">
+                        {item.label}
                       </p>
-                      <p className="text-red-900">
+                      <p className="text-sm font-semibold text-gray-800">
+                        {item.value || "N/A"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Status Banner */}
+              {selectedRider.approvalStatus !== "pending" && (
+                <div
+                  className={`rounded-xl px-5 py-4 text-sm font-semibold text-center ${getRiderStatusColor(selectedRider.approvalStatus)}`}
+                >
+                  ✓ Application{" "}
+                  {getRiderStatusText(selectedRider.approvalStatus)}
+                  {selectedRider.approvedAt && (
+                    <span> on {formatDateModal(selectedRider.approvedAt)}</span>
+                  )}
+                  {selectedRider.approvedBy && (
+                    <div className="text-xs mt-1 font-normal">
+                      By: {selectedRider.approvedBy.name}
+                    </div>
+                  )}
+                  {selectedRider.rejectionReason && (
+                    <div className="mt-3 bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-left">
+                      <p className="text-xs font-semibold text-red-600 mb-1">
+                        Rejection Reason
+                      </p>
+                      <p className="text-sm text-red-800 font-normal">
                         {selectedRider.rejectionReason}
                       </p>
                     </div>
@@ -1508,20 +877,20 @@ const WithdrawalRequests = () => {
       {/* Image Modal */}
       {imageModal && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center p-4 z-50"
+          className="fixed inset-0 bg-black/95 flex items-center justify-center p-4 z-[60]"
           onClick={() => setImageModal(null)}
         >
-          <div className="relative max-w-6xl w-full">
+          <div className="relative max-w-5xl w-full">
             <img
               src={imageModal}
               alt="Document"
-              className="max-w-full max-h-[90vh] object-contain mx-auto rounded-lg shadow-2xl"
+              className="max-w-full max-h-[88vh] object-contain mx-auto rounded-2xl shadow-2xl"
             />
             <button
               onClick={() => setImageModal(null)}
-              className="absolute -top-4 -right-4 bg-white text-gray-900 rounded-full w-12 h-12 flex items-center justify-center text-3xl hover:bg-[#FF7B1D] hover:text-white transition shadow-lg"
+              className="absolute -top-3 -right-3 w-9 h-9 rounded-full bg-white text-gray-800 flex items-center justify-center hover:bg-[#FF7B1D] hover:text-white transition-colors shadow-lg"
             >
-              ×
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>

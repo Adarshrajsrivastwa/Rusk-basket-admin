@@ -8,9 +8,15 @@ import {
   Wallet,
   DollarSign,
   Loader2,
+  Users,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  BadgePercent,
+  Layers,
+  RefreshCw,
 } from "lucide-react";
 import api from "../../api/api";
-import { X } from "lucide-react";
 
 const RiderCommissionManagement = () => {
   const [riders, setRiders] = useState([]);
@@ -34,31 +40,19 @@ const RiderCommissionManagement = () => {
   });
   const [saving, setSaving] = useState(false);
 
-  // Fetch riders with wallet data from API
   const fetchRiders = async (page = 1, limit = 10) => {
     try {
       setLoading(true);
       const response = await api.get(`/api/admin/riders/wallets`, {
-        params: {
-          page: page,
-          limit: limit,
-        },
+        params: { page, limit },
       });
-
       const result = response.data;
-
       if (result.success) {
         setRiders(result.data.wallets || []);
         setPagination(
-          result.data.pagination || {
-            total: result.data.pagination?.total || 0,
-            pages: result.data.pagination?.pages || 1,
-            page: result.data.pagination?.page || page,
-            limit: result.data.pagination?.limit || limit,
-          },
+          result.data.pagination || { total: 0, pages: 1, page, limit },
         );
       } else {
-        console.error("Failed to fetch riders:", result.message);
         setRiders([]);
       }
     } catch (error) {
@@ -73,10 +67,8 @@ const RiderCommissionManagement = () => {
     fetchRiders(currentPage, 10);
   }, [currentPage]);
 
-  // Open modal to set commission
   const handleSetCommission = (rider) => {
     setSelectedRider(rider);
-    // Initialize with existing commission if available
     if (rider.commission || rider.commissionType) {
       setCommissionData({
         type: rider.commissionType || rider.commission?.type || "percentage",
@@ -98,16 +90,11 @@ const RiderCommissionManagement = () => {
     setIsModalOpen(true);
   };
 
-  // Save commission
   const handleSaveCommission = async () => {
     if (!selectedRider) return;
-
     try {
       setSaving(true);
-
-      // Prepare payload based on commission type
       let payload = { type: commissionData.type };
-
       if (commissionData.type === "percentage") {
         payload.percentage = parseFloat(commissionData.percentage);
       } else if (commissionData.type === "fixed") {
@@ -121,77 +108,112 @@ const RiderCommissionManagement = () => {
         );
         payload.subscriptionPeriod = commissionData.subscriptionPeriod;
       }
-
       const response = await api.put(
         `/api/admin/riders/${selectedRider.riderId || selectedRider._id}/commission`,
         payload,
       );
-
       const result = response.data;
-
       if (result.success) {
         alert("Commission updated successfully!");
         setIsModalOpen(false);
         setSelectedRider(null);
-        fetchRiders(currentPage, 10); // Refresh riders list
+        fetchRiders(currentPage, 10);
       } else {
         alert(result.message || "Failed to update commission");
       }
     } catch (error) {
-      console.error("Error updating commission:", error);
       alert(
         error.response?.data?.message ||
           error.message ||
-          "Error updating commission. Please try again.",
+          "Error updating commission.",
       );
     } finally {
       setSaving(false);
     }
   };
 
-  // Format commission display
   const formatCommission = (rider) => {
-    if (!rider.commissionType && !rider.commission) return "Not Set";
-
+    if (!rider.commissionType && !rider.commission) return null;
     const commType = rider.commissionType || rider.commission?.type;
     const comm = rider.commission || {};
-
-    if (commType === "percentage") {
-      return `${rider.commissionPercentage || comm.percentage || 0}%`;
-    } else if (commType === "fixed") {
-      return `₹${comm.fixedAmount || 0}`;
-    } else if (commType === "hybrid") {
-      return `${comm.percentage || 0}% + ₹${comm.fixedAmount || 0}`;
-    } else if (commType === "subscription") {
-      return `₹${comm.subscriptionAmount || 0}/${comm.subscriptionPeriod || "monthly"}`;
-    }
-    return "Not Set";
+    if (commType === "percentage")
+      return {
+        label: `${rider.commissionPercentage || comm.percentage || 0}%`,
+        type: commType,
+      };
+    if (commType === "fixed")
+      return { label: `₹${comm.fixedAmount || 0}`, type: commType };
+    if (commType === "hybrid")
+      return {
+        label: `${comm.percentage || 0}% + ₹${comm.fixedAmount || 0}`,
+        type: commType,
+      };
+    if (commType === "subscription")
+      return {
+        label: `₹${comm.subscriptionAmount || 0}/${comm.subscriptionPeriod || "monthly"}`,
+        type: commType,
+      };
+    return null;
   };
 
-  // Filter riders by search
-  const filteredRiders = riders.filter((rider) => {
-    if (searchQuery) {
-      const searchLower = searchQuery.toLowerCase();
+  const CommissionBadge = ({ rider }) => {
+    const comm = formatCommission(rider);
+    if (!comm) {
       return (
-        rider.fullName?.toLowerCase().includes(searchLower) ||
-        rider.mobileNumber?.toLowerCase().includes(searchLower) ||
-        rider.riderId?.toLowerCase().includes(searchLower)
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-400 border border-gray-200">
+          <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
+          Not Set
+        </span>
       );
     }
-    return true;
+    const styles = {
+      percentage:
+        "bg-blue-50 text-blue-700 border border-blue-200 ring-1 ring-blue-100",
+      fixed:
+        "bg-emerald-50 text-emerald-700 border border-emerald-200 ring-1 ring-emerald-100",
+      hybrid:
+        "bg-violet-50 text-violet-700 border border-violet-200 ring-1 ring-violet-100",
+      subscription:
+        "bg-amber-50 text-amber-700 border border-amber-200 ring-1 ring-amber-100",
+    };
+    const dots = {
+      percentage: "bg-blue-500",
+      fixed: "bg-emerald-500",
+      hybrid: "bg-violet-500",
+      subscription: "bg-amber-500",
+    };
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${styles[comm.type] || "bg-gray-100 text-gray-600"}`}
+      >
+        <span
+          className={`w-1.5 h-1.5 rounded-full ${dots[comm.type] || "bg-gray-400"}`}
+        />
+        {comm.label}
+      </span>
+    );
+  };
+
+  const filteredRiders = riders.filter((rider) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      rider.fullName?.toLowerCase().includes(q) ||
+      rider.mobileNumber?.toLowerCase().includes(q) ||
+      rider.riderId?.toLowerCase().includes(q)
+    );
   });
 
-  // Skeleton Loader
+  // ── Skeleton ──
   const TableSkeleton = () => (
     <tbody>
       {Array.from({ length: 8 }).map((_, i) => (
-        <tr
-          key={i}
-          className="border-b border-gray-200 animate-pulse bg-white rounded-sm"
-        >
+        <tr key={i} className="border-b border-gray-100">
           {Array.from({ length: 7 }).map((__, j) => (
-            <td key={j} className="p-3">
-              <div className="h-4 bg-gray-200 rounded w-[80%]" />
+            <td key={j} className="px-4 py-3.5">
+              <div
+                className={`h-3.5 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full animate-pulse ${j === 1 ? "w-28" : j === 6 ? "w-16 ml-auto" : "w-[70%]"}`}
+              />
             </td>
           ))}
         </tr>
@@ -199,15 +221,20 @@ const RiderCommissionManagement = () => {
     </tbody>
   );
 
-  // Empty State
+  // ── Empty State ──
   const EmptyState = () => (
     <tbody>
       <tr>
-        <td
-          colSpan="7"
-          className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
-        >
-          No riders found.
+        <td colSpan="7" className="py-20 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center">
+              <Users className="w-8 h-8 text-orange-300" />
+            </div>
+            <p className="text-gray-400 text-sm font-medium">No riders found</p>
+            <p className="text-gray-300 text-xs">
+              Try adjusting your search query
+            </p>
+          </div>
         </td>
       </tr>
     </tbody>
@@ -215,165 +242,250 @@ const RiderCommissionManagement = () => {
 
   return (
     <DashboardLayout>
-      {/* Top Bar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-2 mb-2">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
-          {/* Search */}
-          <div className="flex items-center border border-black rounded overflow-hidden h-9 w-full max-w-full sm:max-w-[450px] mt-2 sm:mt-0">
-            <input
-              type="text"
-              placeholder="Search Rider by Name, Mobile..."
-              className="flex-1 px-3 sm:px-4 text-sm text-gray-800 focus:outline-none h-full"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <button className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-sm px-3 sm:px-6 h-full transition-colors">
-              Search
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .row-animate { animation: fadeSlideIn 0.25s ease forwards; }
+        .action-btn {
+          width: 30px; height: 30px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 8px;
+          transition: all 0.18s ease;
+        }
+        .action-btn:hover { transform: translateY(-1px); }
+      `}</style>
+
+      {/* ── Toolbar ── */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 w-full max-w-full mx-auto px-1 mt-3 mb-3">
+        {/* LEFT: info chip */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 bg-orange-50 border border-orange-100 rounded-xl px-3 h-[36px] text-xs font-semibold text-orange-600">
+            <Users className="w-3.5 h-3.5" />
+            Rider Commission
+          </div>
+        </div>
+
+        {/* RIGHT: Search */}
+        <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden h-[38px] w-full lg:w-[380px] shadow-sm bg-white">
+          <input
+            type="text"
+            placeholder="Search by name, mobile, ID..."
+            className="flex-1 px-4 text-sm text-gray-700 focus:outline-none h-full placeholder:text-gray-400"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <button className="bg-[#FF7B1D] hover:bg-orange-500 text-white text-sm font-medium px-5 h-full transition-colors">
+            Search
+          </button>
+        </div>
+      </div>
+
+      {/* ── Table Card ── */}
+      <div className="mx-1 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+        {/* Card Header */}
+        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+            <span className="text-sm font-semibold text-gray-700">
+              Rider Wallet & Commission
+            </span>
+          </div>
+          {!loading && (
+            <span className="text-xs text-gray-400 font-medium">
+              {filteredRiders.length} of {pagination.total} riders
+            </span>
+          )}
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gradient-to-r from-[#FF7B1D] to-orange-400">
+                <th className="px-4 py-3.5 text-left text-xs font-bold text-white tracking-wider uppercase opacity-90 w-12">
+                  S.N
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-bold text-white tracking-wider uppercase opacity-90">
+                  Rider Name
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-bold text-white tracking-wider uppercase opacity-90">
+                  Mobile Number
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-bold text-white tracking-wider uppercase opacity-90">
+                  Wallet Balance
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-bold text-white tracking-wider uppercase opacity-90">
+                  Due Balance
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-bold text-white tracking-wider uppercase opacity-90">
+                  Commission
+                </th>
+                <th className="px-4 py-3.5 text-right text-xs font-bold text-white tracking-wider uppercase opacity-90 pr-5">
+                  Action
+                </th>
+              </tr>
+            </thead>
+
+            {loading ? (
+              <TableSkeleton />
+            ) : filteredRiders.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <tbody>
+                {filteredRiders.map((rider, idx) => (
+                  <tr
+                    key={rider.riderId || rider._id}
+                    className="row-animate border-b border-gray-50 hover:bg-orange-50/40 transition-colors duration-150 group"
+                    style={{ animationDelay: `${idx * 30}ms` }}
+                  >
+                    {/* S.N */}
+                    <td className="px-4 py-3.5">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">
+                        {(currentPage - 1) * pagination.limit + idx + 1}
+                      </span>
+                    </td>
+
+                    {/* Rider Name */}
+                    <td className="px-4 py-3.5">
+                      <span className="text-sm font-semibold text-gray-800">
+                        {rider.fullName || "N/A"}
+                      </span>
+                    </td>
+
+                    {/* Mobile */}
+                    <td className="px-4 py-3.5">
+                      <span className="font-mono text-xs bg-gray-50 border border-gray-200 px-2 py-1 rounded-md text-gray-600 group-hover:border-orange-200 group-hover:bg-orange-50 transition-colors">
+                        {rider.mobileNumber || "N/A"}
+                      </span>
+                    </td>
+
+                    {/* Wallet Balance */}
+                    <td className="px-4 py-3.5">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 ring-1 ring-emerald-100">
+                        <Wallet className="w-3 h-3" />₹
+                        {rider.walletBalance?.toFixed(2) || "0.00"}
+                      </span>
+                    </td>
+
+                    {/* Due Balance */}
+                    <td className="px-4 py-3.5">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 ring-1 ring-amber-100">
+                        <DollarSign className="w-3 h-3" />₹
+                        {rider.dueBalance?.toFixed(2) || "0.00"}
+                      </span>
+                    </td>
+
+                    {/* Commission */}
+                    <td className="px-4 py-3.5">
+                      <CommissionBadge rider={rider} />
+                    </td>
+
+                    {/* Action */}
+                    <td className="px-4 py-3.5 pr-5">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => handleSetCommission(rider)}
+                          className="action-btn bg-orange-50 text-orange-500 hover:bg-orange-100 hover:text-orange-700"
+                          title="Set Commission"
+                        >
+                          <Settings className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            )}
+          </table>
+        </div>
+      </div>
+
+      {/* ── Pagination ── */}
+      {!loading && filteredRiders.length > 0 && (
+        <div className="flex items-center justify-between px-1 mt-5 mb-6">
+          <p className="text-xs text-gray-400 font-medium">
+            Page{" "}
+            <span className="text-gray-600 font-semibold">{currentPage}</span>{" "}
+            of{" "}
+            <span className="text-gray-600 font-semibold">
+              {pagination.pages}
+            </span>
+          </p>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" /> Prev
+            </button>
+
+            <div className="flex items-center gap-1">
+              {(() => {
+                const pages = [];
+                const totalPages = pagination.pages;
+                const visiblePages = new Set([
+                  1,
+                  2,
+                  totalPages - 1,
+                  totalPages,
+                  currentPage - 1,
+                  currentPage,
+                  currentPage + 1,
+                ]);
+                for (let i = 1; i <= totalPages; i++) {
+                  if (visiblePages.has(i)) pages.push(i);
+                  else if (pages[pages.length - 1] !== "...") pages.push("...");
+                }
+                return pages.map((page, idx) =>
+                  page === "..." ? (
+                    <span key={idx} className="px-1 text-gray-400 text-xs">
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-xl text-xs font-semibold transition-all ${
+                        currentPage === page
+                          ? "bg-[#FF7B1D] text-white shadow-sm shadow-orange-200"
+                          : "bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ),
+                );
+              })()}
+            </div>
+
+            <button
+              onClick={() =>
+                setCurrentPage((p) => Math.min(p + 1, pagination.pages))
+              }
+              disabled={currentPage === pagination.pages}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              Next <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-sm shadow-sm overflow-x-auto pl-4 max-w-[99%] mx-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-[#FF7B1D] text-black">
-              <th className="p-3 text-left">S.N</th>
-              <th className="p-3 text-left">Rider Name</th>
-              <th className="p-3 text-left">Mobile Number</th>
-              <th className="p-3 text-left">Wallet Balance</th>
-              <th className="p-3 text-left">Due Balance</th>
-              <th className="p-3 text-left">Current Commission</th>
-              <th className="p-3 pr-32 text-right">Action</th>
-            </tr>
-          </thead>
-
-          {loading ? (
-            <TableSkeleton />
-          ) : filteredRiders.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <tbody>
-              {filteredRiders.map((rider, idx) => (
-                <tr
-                  key={rider.riderId || rider._id}
-                  className="bg-white shadow-sm hover:bg-gray-50 transition border-b-4 border-gray-200"
-                >
-                  <td className="p-3">
-                    {(currentPage - 1) * pagination.limit + idx + 1}
-                  </td>
-                  <td className="p-3 font-semibold">
-                    {rider.fullName || "N/A"}
-                  </td>
-                  <td className="p-3">{rider.mobileNumber || "N/A"}</td>
-                  <td className="p-3">
-                    <div className="flex items-center gap-2">
-                      <Wallet className="w-4 h-4 text-green-600" />
-                      <span className="font-semibold text-green-700">
-                        ₹{rider.walletBalance?.toFixed(2) || "0.00"}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="w-4 h-4 text-orange-600" />
-                      <span className="font-semibold text-orange-700">
-                        ₹{rider.dueBalance?.toFixed(2) || "0.00"}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="p-3 font-semibold text-gray-700">
-                    {formatCommission(rider)}
-                  </td>
-                  <td className="p-3 text-right">
-                    <button
-                      onClick={() => handleSetCommission(rider)}
-                      className="bg-[#FF7B1D] hover:bg-orange-600 text-white px-4 py-2 rounded text-xs sm:text-sm flex items-center gap-2 transition-colors"
-                    >
-                      <Settings className="w-4 h-4" />
-                      Set Commission
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          )}
-        </table>
-      </div>
-
-      {/* Pagination */}
-      {!loading && filteredRiders.length > 0 && pagination.pages > 1 && (
-        <div className="flex justify-end items-center gap-6 mt-8 max-w-[95%] mx-auto pl-8">
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-            className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-          >
-            Back
-          </button>
-          <div className="flex items-center gap-2 text-sm text-black font-medium">
-            {(() => {
-              const pages = [];
-              const totalPages = pagination.pages;
-              const visiblePages = new Set([
-                1,
-                2,
-                totalPages - 1,
-                totalPages,
-                currentPage - 1,
-                currentPage,
-                currentPage + 1,
-              ]);
-              for (let i = 1; i <= totalPages; i++) {
-                if (visiblePages.has(i)) pages.push(i);
-                else if (pages[pages.length - 1] !== "...") pages.push("...");
-              }
-              return pages.map((page, idx) =>
-                page === "..." ? (
-                  <span key={idx} className="px-1 text-black select-none">
-                    ...
-                  </span>
-                ) : (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-1 hover:text-orange-500 transition-colors ${
-                      currentPage === page
-                        ? "text-orange-600 font-semibold"
-                        : ""
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ),
-              );
-            })()}
-          </div>
-          <button
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, pagination.pages))
-            }
-            disabled={currentPage === pagination.pages}
-            className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-          >
-            Next
-          </button>
-        </div>
       )}
 
-      {/* Commission Modal */}
+      {/* ── Commission Modal ── */}
       {isModalOpen && selectedRider && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-gray-100 max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
               <div>
-                <h2 className="text-xl font-bold text-gray-800">
-                  Set Commission - {selectedRider.fullName || "Rider"}
+                <h2 className="text-lg font-bold text-gray-800">
+                  Set Commission
                 </h2>
-                <p className="text-sm text-gray-600 mt-1">
-                  Mobile: {selectedRider.mobileNumber || "N/A"}
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {selectedRider.fullName || "Rider"}
                 </p>
               </div>
               <button
@@ -381,28 +493,30 @@ const RiderCommissionManagement = () => {
                   setIsModalOpen(false);
                   setSelectedRider(null);
                 }}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
               >
-                <X className="w-6 h-6" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Wallet Balance Info */}
-            <div className="p-6 bg-gradient-to-r from-blue-50 to-green-50 border-b">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <Wallet className="w-5 h-5 text-blue-600" />
-                Wallet Information
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white p-4 rounded-lg shadow-sm">
-                  <p className="text-xs text-gray-600 mb-1">Wallet Balance</p>
-                  <p className="text-lg font-bold text-green-700">
+            {/* Wallet Info */}
+            <div className="px-6 py-4 bg-gradient-to-r from-orange-50/60 to-amber-50/40 border-b border-gray-100">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white rounded-xl px-4 py-3 border border-emerald-100 shadow-sm">
+                  <p className="text-xs text-gray-400 mb-1 flex items-center gap-1.5">
+                    <Wallet className="w-3 h-3 text-emerald-500" /> Wallet
+                    Balance
+                  </p>
+                  <p className="text-base font-bold text-emerald-700">
                     ₹{selectedRider.walletBalance?.toFixed(2) || "0.00"}
                   </p>
                 </div>
-                <div className="bg-white p-4 rounded-lg shadow-sm">
-                  <p className="text-xs text-gray-600 mb-1">Due Balance</p>
-                  <p className="text-lg font-bold text-orange-700">
+                <div className="bg-white rounded-xl px-4 py-3 border border-amber-100 shadow-sm">
+                  <p className="text-xs text-gray-400 mb-1 flex items-center gap-1.5">
+                    <DollarSign className="w-3 h-3 text-amber-500" /> Due
+                    Balance
+                  </p>
+                  <p className="text-base font-bold text-amber-700">
                     ₹{selectedRider.dueBalance?.toFixed(2) || "0.00"}
                   </p>
                 </div>
@@ -410,35 +524,61 @@ const RiderCommissionManagement = () => {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 space-y-6">
-              {/* Commission Type Selection */}
+            <div className="px-6 py-5 space-y-5">
+              {/* Commission Type */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
                   Commission Type
                 </label>
-                <select
-                  value={commissionData.type}
-                  onChange={(e) =>
-                    setCommissionData({
-                      ...commissionData,
-                      type: e.target.value,
-                    })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF7B1D]"
-                >
-                  <option value="percentage">Percentage</option>
-                  <option value="fixed">Fixed Amount</option>
-                  <option value="hybrid">Hybrid (Percentage + Fixed)</option>
-                  <option value="subscription">Subscription</option>
-                </select>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    {
+                      value: "percentage",
+                      label: "Percentage",
+                      icon: <Percent className="w-3.5 h-3.5" />,
+                    },
+                    {
+                      value: "fixed",
+                      label: "Fixed Amount",
+                      icon: <IndianRupee className="w-3.5 h-3.5" />,
+                    },
+                    {
+                      value: "hybrid",
+                      label: "Hybrid",
+                      icon: <Layers className="w-3.5 h-3.5" />,
+                    },
+                    {
+                      value: "subscription",
+                      label: "Subscription",
+                      icon: <RefreshCw className="w-3.5 h-3.5" />,
+                    },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() =>
+                        setCommissionData({
+                          ...commissionData,
+                          type: opt.value,
+                        })
+                      }
+                      className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                        commissionData.type === opt.value
+                          ? "bg-[#FF7B1D] text-white border-[#FF7B1D] shadow-sm shadow-orange-200"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-orange-200 hover:text-orange-500"
+                      }`}
+                    >
+                      {opt.icon} {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Percentage Commission */}
+              {/* Percentage */}
               {commissionData.type === "percentage" && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                    <Percent className="w-4 h-4" />
-                    Percentage (%)
+                  <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Percent className="w-3.5 h-3.5 text-blue-500" /> Percentage
+                    (%)
                   </label>
                   <input
                     type="number"
@@ -452,20 +592,20 @@ const RiderCommissionManagement = () => {
                         percentage: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF7B1D]"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 transition-all"
                     placeholder="10"
                   />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Example: 10% means 10% of order value
+                  <p className="mt-1.5 text-xs text-gray-400">
+                    Example: 10% of each order value
                   </p>
                 </div>
               )}
 
-              {/* Fixed Commission */}
+              {/* Fixed */}
               {commissionData.type === "fixed" && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                    <IndianRupee className="w-4 h-4" />
+                  <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <IndianRupee className="w-3.5 h-3.5 text-emerald-500" />{" "}
                     Fixed Amount (₹)
                   </label>
                   <input
@@ -479,21 +619,21 @@ const RiderCommissionManagement = () => {
                         fixedAmount: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF7B1D]"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 transition-all"
                     placeholder="20"
                   />
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1.5 text-xs text-gray-400">
                     Example: ₹20 per order
                   </p>
                 </div>
               )}
 
-              {/* Hybrid Commission */}
+              {/* Hybrid */}
               {commissionData.type === "hybrid" && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                      <Percent className="w-4 h-4" />
+                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <Percent className="w-3.5 h-3.5 text-violet-500" />{" "}
                       Percentage (%)
                     </label>
                     <input
@@ -508,13 +648,13 @@ const RiderCommissionManagement = () => {
                           percentage: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF7B1D]"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 transition-all"
                       placeholder="5"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                      <IndianRupee className="w-4 h-4" />
+                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <IndianRupee className="w-3.5 h-3.5 text-violet-500" />{" "}
                       Fixed Amount (₹)
                     </label>
                     <input
@@ -528,22 +668,22 @@ const RiderCommissionManagement = () => {
                           fixedAmount: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF7B1D]"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 transition-all"
                       placeholder="20"
                     />
                   </div>
-                  <p className="text-xs text-gray-500">
-                    Example: 5% + ₹20 means 5% of order value plus ₹20 per order
+                  <p className="text-xs text-gray-400">
+                    Example: 5% + ₹20 per order
                   </p>
                 </div>
               )}
 
-              {/* Subscription Commission */}
+              {/* Subscription */}
               {commissionData.type === "subscription" && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                      <IndianRupee className="w-4 h-4" />
+                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <IndianRupee className="w-3.5 h-3.5 text-amber-500" />{" "}
                       Subscription Amount (₹)
                     </label>
                     <input
@@ -557,79 +697,79 @@ const RiderCommissionManagement = () => {
                           subscriptionAmount: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF7B1D]"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 transition-all"
                       placeholder="500"
                     />
-                    <p className="mt-1 text-xs text-red-600">
-                      ⚠️ Subscription amount will be automatically deducted from
-                      rider wallet
+                    <p className="mt-1.5 text-xs text-red-400 flex items-center gap-1">
+                      ⚠️ Auto-deducted from rider wallet
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      Subscription Period
+                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-amber-500" /> Period
                     </label>
-                    <select
-                      value={commissionData.subscriptionPeriod}
-                      onChange={(e) =>
-                        setCommissionData({
-                          ...commissionData,
-                          subscriptionPeriod: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF7B1D]"
-                    >
-                      <option value="monthly">Monthly</option>
-                      <option value="yearly">Yearly</option>
-                    </select>
+                    <div className="grid grid-cols-2 gap-2">
+                      {["monthly", "yearly"].map((period) => (
+                        <button
+                          key={period}
+                          onClick={() =>
+                            setCommissionData({
+                              ...commissionData,
+                              subscriptionPeriod: period,
+                            })
+                          }
+                          className={`px-3 py-2.5 rounded-xl border text-xs font-semibold capitalize transition-all ${
+                            commissionData.subscriptionPeriod === period
+                              ? "bg-[#FF7B1D] text-white border-[#FF7B1D] shadow-sm shadow-orange-200"
+                              : "bg-white text-gray-600 border-gray-200 hover:border-orange-200 hover:text-orange-500"
+                          }`}
+                        >
+                          {period}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-500">
-                    Example: ₹500/month means rider pays ₹500 per month
-                    (deducted from wallet)
-                  </p>
                 </div>
               )}
 
               {/* Preview */}
-              <div className="bg-gray-50 p-4 rounded-md">
-                <p className="text-sm font-semibold text-gray-700 mb-1">
-                  Commission Preview:
+              <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl px-4 py-3 border border-orange-100">
+                <p className="text-xs text-gray-500 font-medium mb-1">
+                  Preview
                 </p>
                 <p className="text-lg font-bold text-[#FF7B1D]">
                   {commissionData.type === "percentage" &&
                     `${commissionData.percentage || 0}%`}
                   {commissionData.type === "fixed" &&
-                    `₹${commissionData.fixedAmount || 0} per order`}
+                    `₹${commissionData.fixedAmount || 0} / order`}
                   {commissionData.type === "hybrid" &&
-                    `${commissionData.percentage || 0}% + ₹${commissionData.fixedAmount || 0} per order`}
+                    `${commissionData.percentage || 0}% + ₹${commissionData.fixedAmount || 0} / order`}
                   {commissionData.type === "subscription" &&
-                    `₹${commissionData.subscriptionAmount || 0}/${commissionData.subscriptionPeriod || "monthly"}`}
+                    `₹${commissionData.subscriptionAmount || 0} / ${commissionData.subscriptionPeriod || "monthly"}`}
                 </p>
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-4 p-6 border-t">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl">
               <button
                 onClick={() => {
                   setIsModalOpen(false);
                   setSelectedRider(null);
                 }}
-                className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
                 disabled={saving}
+                className="px-5 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveCommission}
                 disabled={saving}
-                className="px-6 py-2 bg-[#FF7B1D] text-white rounded-md hover:bg-orange-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-2 bg-gradient-to-r from-[#FF7B1D] to-orange-400 text-white rounded-xl text-sm font-semibold hover:from-orange-500 hover:to-orange-500 transition-all shadow-sm shadow-orange-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {saving ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Saving...
+                    <Loader2 className="w-4 h-4 animate-spin" /> Saving...
                   </>
                 ) : (
                   "Save Commission"

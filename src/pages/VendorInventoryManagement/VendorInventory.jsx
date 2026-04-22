@@ -1,417 +1,13 @@
-// import React, { useState, useEffect } from "react";
-// import DashboardLayout from "../../components/DashboardLayout";
-// import { Download, Eye, Edit2, Trash2, Plus } from "lucide-react";
-// import ProductModal from "../../pages/InventoryManagement/ProductModal";
-
-// const InventoryManagement = () => {
-//   const [activeTab, setActiveTab] = useState("all");
-//   const [currentPage, setCurrentPage] = useState(1);
-//   const [loading, setLoading] = useState(true);
-//   const [searchTerm, setSearchTerm] = useState("");
-//   const [showModal, setShowModal] = useState(false);
-//   const [editingProduct, setEditingProduct] = useState(null);
-//   const itemsPerPage = 8;
-
-//   const [products, setProducts] = useState([]);
-
-//   // Simulate API call
-//   useEffect(() => {
-//     setLoading(true);
-//     const timer = setTimeout(() => {
-//       setProducts([
-//         {
-//           id: 1,
-//           name: "Organic Apples",
-//           category: "Fruits",
-//           stock: 45,
-//           lowStockThreshold: 20,
-//           price: 120,
-//           vendor: "Fresh Farms",
-//           expiryDate: "2025-11-15",
-//           status: "In Stock",
-//         },
-//         {
-//           id: 2,
-//           name: "Fresh Milk",
-//           category: "Dairy",
-//           stock: 8,
-//           lowStockThreshold: 15,
-//           price: 60,
-//           vendor: "Dairy Co",
-//           expiryDate: "2025-10-28",
-//           status: "Low Stock",
-//         },
-//         {
-//           id: 3,
-//           name: "Brown Bread",
-//           category: "Bakery",
-//           stock: 0,
-//           lowStockThreshold: 10,
-//           price: 45,
-//           vendor: "Baker's Best",
-//           expiryDate: "2025-10-26",
-//           status: "Out of Stock",
-//         },
-//         {
-//           id: 4,
-//           name: "Green Tea",
-//           category: "Beverages",
-//           stock: 35,
-//           lowStockThreshold: 25,
-//           price: 150,
-//           vendor: "Tea House",
-//           expiryDate: "2026-05-10",
-//           status: "In Stock",
-//         },
-//         {
-//           id: 5,
-//           name: "Yogurt Cups",
-//           category: "Dairy",
-//           stock: 12,
-//           lowStockThreshold: 20,
-//           price: 80,
-//           vendor: "Dairy Co",
-//           expiryDate: "2025-10-30",
-//           status: "Low Stock",
-//         },
-//         {
-//           id: 6,
-//           name: "Bananas",
-//           category: "Fruits",
-//           stock: 60,
-//           lowStockThreshold: 30,
-//           price: 40,
-//           vendor: "Fresh Farms",
-//           expiryDate: "2025-11-01",
-//           status: "In Stock",
-//         },
-//         {
-//           id: 7,
-//           name: "Orange Juice",
-//           category: "Beverages",
-//           stock: 5,
-//           lowStockThreshold: 10,
-//           price: 90,
-//           vendor: "Juice Bar",
-//           expiryDate: "2025-11-05",
-//           status: "Low Stock",
-//         },
-//         {
-//           id: 8,
-//           name: "Whole Wheat Bread",
-//           category: "Bakery",
-//           stock: 25,
-//           lowStockThreshold: 15,
-//           price: 50,
-//           vendor: "Baker's Best",
-//           expiryDate: "2025-10-29",
-//           status: "In Stock",
-//         },
-//         {
-//           id: 9,
-//           name: "Cheese",
-//           category: "Dairy",
-//           stock: 0,
-//           lowStockThreshold: 8,
-//           price: 200,
-//           vendor: "Dairy Co",
-//           expiryDate: "2025-11-20",
-//           status: "Out of Stock",
-//         },
-//       ]);
-//       setLoading(false);
-//     }, 300);
-//     return () => clearTimeout(timer);
-//   }, []);
-
-//   const statusColors = {
-//     "In Stock": "text-green-600 font-semibold",
-//     "Low Stock": "text-yellow-600 font-semibold",
-//     "Out of Stock": "text-red-600 font-semibold",
-//   };
-
-//   // Filter products based on active tab
-//   const filteredProducts = products.filter((product) => {
-//     const matchesTab =
-//       activeTab === "all" ||
-//       (activeTab === "instock" && product.status === "In Stock") ||
-//       (activeTab === "lowstock" && product.status === "Low Stock") ||
-//       (activeTab === "outofstock" && product.status === "Out of Stock");
-
-//     const matchesSearch =
-//       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//       product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//       product.vendor.toLowerCase().includes(searchTerm.toLowerCase());
-
-//     return matchesTab && matchesSearch;
-//   });
-
-//   // Pagination
-//   const indexOfLast = currentPage * itemsPerPage;
-//   const indexOfFirst = indexOfLast - itemsPerPage;
-//   const currentProducts = filteredProducts.slice(indexOfFirst, indexOfLast);
-//   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-
-//   // Skeleton Loader
-//   const TableSkeleton = () => (
-//     <tbody>
-//       {Array.from({ length: itemsPerPage }).map((_, idx) => (
-//         <tr
-//           key={idx}
-//           className="animate-pulse border-b border-gray-200 bg-white"
-//         >
-//           {Array.from({ length: 9 }).map((__, j) => (
-//             <td key={j} className="p-3">
-//               <div className="h-4 bg-gray-200 rounded w-[80%]" />
-//             </td>
-//           ))}
-//         </tr>
-//       ))}
-//     </tbody>
-//   );
-
-//   // Empty State
-//   const EmptyState = () => (
-//     <tbody>
-//       <tr>
-//         <td
-//           colSpan="9"
-//           className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
-//         >
-//           No products found.
-//         </td>
-//       </tr>
-//     </tbody>
-//   );
-
-//   const handleTabClick = (tabKey) => {
-//     setActiveTab(tabKey);
-//     setCurrentPage(1);
-//   };
-
-//   const handleSearch = () => {
-//     setCurrentPage(1);
-//   };
-
-//   const handleDelete = (id) => {
-//     if (window.confirm("Are you sure you want to delete this product?")) {
-//       setProducts((prev) => prev.filter((p) => p.id !== id));
-//     }
-//   };
-
-//   const handleEdit = (product) => {
-//     setEditingProduct(product);
-//     setShowModal(true);
-//   };
-
-//   const handleAddNew = () => {
-//     setEditingProduct(null);
-//     setShowModal(true);
-//   };
-
-//   const handleSaveProduct = (productData) => {
-//     if (editingProduct) {
-//       setProducts((prev) =>
-//         prev.map((p) =>
-//           p.id === editingProduct.id ? { ...p, ...productData } : p
-//         )
-//       );
-//     } else {
-//       const newProduct = {
-//         id: Date.now(),
-//         ...productData,
-//         status:
-//           productData.stock === 0
-//             ? "Out of Stock"
-//             : productData.stock <= productData.lowStockThreshold
-//             ? "Low Stock"
-//             : "In Stock",
-//       };
-//       setProducts((prev) => [...prev, newProduct]);
-//     }
-//     setShowModal(false);
-//     setEditingProduct(null);
-//   };
-
-//   return (
-//     <DashboardLayout>
-//       {/* Tabs + Search + Add Button */}
-//       <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-2 w-full pl-4 max-w-[99%] mx-auto mt-0 mb-2">
-//         <div className="flex gap-4 overflow-x-auto pb-2 lg:pb-0">
-//           {[
-//             { key: "all", label: "All Products" },
-//             { key: "instock", label: "In Stock" },
-//             { key: "lowstock", label: "Low Stock" },
-//             { key: "outofstock", label: "Out of Stock" },
-//           ].map((tab) => (
-//             <button
-//               key={tab.key}
-//               onClick={() => handleTabClick(tab.key)}
-//               className={`px-4 py-1 border rounded text-xs sm:text-sm whitespace-nowrap transition-colors ${
-//                 activeTab === tab.key
-//                   ? "bg-[#FF7B1D] text-white border-orange-500"
-//                   : "bg-white text-black border-gray-300 hover:bg-gray-100"
-//               }`}
-//             >
-//               {tab.label}
-//             </button>
-//           ))}
-//         </div>
-
-//         <div className="flex flex-col sm:flex-row gap-3 w-full mt-4 lg:w-auto">
-//           {/* Search Bar */}
-//           {/* <div className="flex items-center border border-black rounded overflow-hidden h-[36px] w-full sm:w-[400px]">
-//             <input
-//               type="text"
-//               placeholder="Search by name, category, or vendor"
-//               value={searchTerm}
-//               onChange={(e) => setSearchTerm(e.target.value)}
-//               className="flex-1 px-4 text-sm focus:outline-none h-full"
-//             />
-//             <button
-//               onClick={handleSearch}
-//               className="bg-[#FF7B1D] hover:bg-orange-600 text-white px-4 sm:px-6 h-full text-sm"
-//             >
-//               Search
-//             </button>
-//           </div> */}
-//         </div>
-
-//         {/* <div className="mt-3 sm:mt-0">
-//           <button
-//             onClick={handleAddNew}
-//             className="bg-black hover:bg-gray-800 text-white w-44 sm:w-44 px-6 py-2 rounded-sm text-sm whitespace-nowrap flex items-center justify-center gap-2"
-//           >
-//             <Plus className="w-4 h-4" />
-//             Add Product
-//           </button>
-//         </div> */}
-//       </div>
-
-//       {/* Products Table */}
-//       <div className="bg-white rounded-sm shadow-sm overflow-x-auto pl-4 max-w-[99%] mx-auto">
-//         <table className="w-full text-sm border-collapse min-w-[700px]">
-//           <thead>
-//             <tr className="bg-[#FF7B1D] text-black">
-//               <th className="p-3 text-left">S.N</th>
-//               <th className="p-3 text-left">Product Name</th>
-//               <th className="p-3 text-left">Category</th>
-//               <th className="p-3 text-left">Stock</th>
-//               <th className="p-3 text-left">Price</th>
-//               <th className="p-3 text-left">Vendor</th>
-//               <th className="p-3 text-left">Expiry Date</th>
-//               <th className="p-3 text-left">Status</th>
-//               <th className="p-3 pr-6 text-right">Action</th>
-//             </tr>
-//           </thead>
-
-//           {loading ? (
-//             <TableSkeleton />
-//           ) : filteredProducts.length === 0 ? (
-//             <EmptyState />
-//           ) : (
-//             <tbody>
-//               {currentProducts.map((product, idx) => (
-//                 <tr
-//                   key={product.id}
-//                   className="shadow-sm rounded-sm hover:bg-gray-50 transition border-b-4 border-gray-200 bg-white"
-//                 >
-//                   <td className="p-3">{indexOfFirst + idx + 1}</td>
-//                   <td className="p-3 font-semibold">{product.name}</td>
-//                   <td className="p-3">{product.category}</td>
-//                   <td className="p-3">
-//                     {product.stock} / {product.lowStockThreshold}
-//                   </td>
-//                   <td className="p-3">₹{product.price}</td>
-//                   <td className="p-3">{product.vendor}</td>
-//                   <td className="p-3">{product.expiryDate}</td>
-//                   <td className={`p-3 ${statusColors[product.status]}`}>
-//                     {product.status}
-//                   </td>
-//                   <td className="p-3">
-//                     <div className="flex gap-2 justify-end">
-//                       <button className="text-orange-600 hover:text-blue-700">
-//                         <Download className="w-4 h-4" />
-//                       </button>
-//                       <button
-//                         onClick={() => handleEdit(product)}
-//                         className="text-orange-600 hover:text-blue-700"
-//                       >
-//                         <Edit2 className="w-4 h-4" />
-//                       </button>
-//                       <button
-//                         onClick={() => handleDelete(product.id)}
-//                         className="text-orange-600 hover:text-blue-700"
-//                       >
-//                         <Trash2 className="w-4 h-4" />
-//                       </button>
-//                     </div>
-//                   </td>
-//                 </tr>
-//               ))}
-//             </tbody>
-//           )}
-//         </table>
-//       </div>
-
-//       {/* Pagination */}
-//       {!loading && filteredProducts.length > 0 && (
-//         <div className="flex justify-end items-center gap-4 mt-6 max-w-[98%] mx-auto">
-//           <button
-//             onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-//             className="bg-[#FF7B1D] hover:bg-orange-600 text-white px-10 py-3 text-sm font-medium rounded-0"
-//           >
-//             Back
-//           </button>
-//           <div className="flex gap-2 text-sm text-black font-medium flex-wrap items-center">
-//             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-//               <button
-//                 key={page}
-//                 onClick={() => setCurrentPage(page)}
-//                 className={`px-3 py-1 rounded ${
-//                   currentPage === page ? "text-orange-600 font-semibold" : ""
-//                 }`}
-//               >
-//                 {page}
-//               </button>
-//             ))}
-//           </div>
-//           <button
-//             onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-//             className="bg-[#247606] hover:bg-green-700 text-white px-10 py-3 text-sm font-medium rounded-0"
-//           >
-//             Next
-//           </button>
-//         </div>
-//       )}
-
-//       {/* Product Modal */}
-//       {showModal && (
-//         <ProductModal
-//           product={editingProduct}
-//           onClose={() => {
-//             setShowModal(false);
-//             setEditingProduct(null);
-//           }}
-//           onSave={handleSaveProduct}
-//         />
-//       )}
-//     </DashboardLayout>
-//   );
-// };
-
-// export default InventoryManagement;
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import {
-  Download,
-  Eye,
-  Edit2,
-  Trash2,
   Plus,
   RefreshCw,
   X,
   Check,
+  Package,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import ProductModal from "../../pages/InventoryManagement/ProductModal";
 import { BASE_URL } from "../../api/api";
@@ -439,35 +35,20 @@ const InventoryManagement = () => {
   const [updateStockAmount, setUpdateStockAmount] = useState("");
   const [updatingStock, setUpdatingStock] = useState(false);
 
-  const itemsPerPage = 8;
+  const itemsPerPage = 10;
 
-  // Get authorization headers
   const getAuthHeaders = () => {
     const token =
       localStorage.getItem("token") || localStorage.getItem("authToken");
-    const headers = {
+    return {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-    return headers;
   };
 
-  // Fetch vendor ID first, then products
   useEffect(() => {
-    fetchVendorIdAndProducts();
+    fetchProducts();
   }, [currentPage]);
-
-  const fetchVendorIdAndProducts = async () => {
-    try {
-      // First, try to get vendorId from profile or first product
-      // If not available, we'll get it from the API response
-      await fetchProducts();
-    } catch (err) {
-      console.error("Error fetching vendor ID and products:", err);
-    }
-  };
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -475,29 +56,18 @@ const InventoryManagement = () => {
     try {
       const token =
         localStorage.getItem("token") || localStorage.getItem("authToken");
-      const headers = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
-      // Try to get vendorId from localStorage or fetch from profile
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       let currentVendorId = vendorId;
       if (!currentVendorId) {
-        // Try to get from localStorage first
         const storedVendorId = localStorage.getItem("vendorId");
         if (storedVendorId) {
           currentVendorId = storedVendorId;
           setVendorId(currentVendorId);
         } else {
-          // Try to fetch vendor profile
           try {
             const profileResponse = await fetch(
               `${BASE_URL}/api/vendor/profile`,
-              {
-                method: "GET",
-                credentials: "include",
-                headers: headers,
-              },
+              { method: "GET", credentials: "include", headers },
             );
             if (profileResponse.ok) {
               const profileData = await profileResponse.json();
@@ -507,30 +77,17 @@ const InventoryManagement = () => {
                 localStorage.setItem("vendorId", currentVendorId);
               }
             }
-          } catch (e) {
-            // Could not fetch vendor profile, will try fallback endpoint
-          }
+          } catch {}
         }
       }
-
-      // Use the analytics inventory endpoint
-      const apiUrl = `${BASE_URL}/api/analytics/vendor/inventory?page=${currentPage}`;
-      const response = await fetch(apiUrl, {
-        method: "GET",
-        credentials: "include",
-        headers: headers,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => "No error details");
-        console.error("API Error:", response.status, errorText);
+      const response = await fetch(
+        `${BASE_URL}/api/analytics/vendor/inventory?page=${currentPage}`,
+        { method: "GET", credentials: "include", headers },
+      );
+      if (!response.ok)
         throw new Error(`Failed to fetch products: ${response.status}`);
-      }
-
       const result = await response.json();
-
       if (result.success && result.data) {
-        // Extract vendorId from first product if not already set
         if (
           !currentVendorId &&
           result.data?.inventory?.length > 0 &&
@@ -539,61 +96,41 @@ const InventoryManagement = () => {
           currentVendorId = result.data.inventory[0].vendor._id;
           setVendorId(currentVendorId);
         }
-
-        // Transform API data to match your component structure
+        const getStockStatusLabel = (s) =>
+          ({
+            in_stock: "In Stock",
+            out_of_stock: "Out of Stock",
+            low_stock: "Low Stock",
+          })[s] || "In Stock";
         const transformedProducts = result.data.inventory.map(
-          (product, index) => {
-            // Map stock status to display label
-            const getStockStatusLabel = (status) => {
-              switch (status) {
-                case "in_stock":
-                  return "In Stock";
-                case "out_of_stock":
-                  return "Out of Stock";
-                case "low_stock":
-                  return "Low Stock";
-                default:
-                  return "In Stock";
-              }
-            };
-
-            return {
-              id: product.productId,
-              productId: product.productId,
-              n:
-                (result.data.pagination?.currentPage - 1) *
-                  (result.data.pagination?.limit || 20) +
-                index +
-                1,
-              name: product.productName,
-              category: product.category?.name || "General",
-              subCategory: product.subCategory?.name || "N/A",
-              stock: product.currentInventory || 0,
-              initialInventory: product.initialInventory || 0,
-              lowStockThreshold: 20, // Default threshold
-              price: product.regularPrice || 0,
-              regularPrice: product.regularPrice || 0,
-              salePrice: 0,
-              actualPrice: product.regularPrice || 0,
-              vendor:
-                product.vendor?.storeName ||
-                product.vendor?.vendorName ||
-                "N/A",
-              vendorId: product.vendor?._id,
-              expiryDate: null,
-              status: getStockStatusLabel(product.stockStatus),
-              stockStatus: product.stockStatus || "in_stock",
-              stockStatusLabel: getStockStatusLabel(product.stockStatus),
-              stockPercentage: product.stockPercentage || 100,
-              approvalStatus: "approved",
-              isActive: true,
-              skuHsn: product.skuHsn || "N/A",
-              thumbnail: null,
-              createdAt: null,
-            };
-          },
+          (product, index) => ({
+            id: product.productId,
+            productId: product.productId,
+            n:
+              (result.data.pagination?.currentPage - 1) *
+                (result.data.pagination?.limit || 20) +
+              index +
+              1,
+            name: product.productName,
+            category: product.category?.name || "General",
+            subCategory: product.subCategory?.name || "N/A",
+            stock: product.currentInventory || 0,
+            initialInventory: product.initialInventory || 0,
+            lowStockThreshold: 20,
+            price: product.regularPrice || 0,
+            regularPrice: product.regularPrice || 0,
+            salePrice: 0,
+            actualPrice: product.regularPrice || 0,
+            vendor:
+              product.vendor?.storeName || product.vendor?.vendorName || "N/A",
+            vendorId: product.vendor?._id,
+            status: getStockStatusLabel(product.stockStatus),
+            stockStatus: product.stockStatus || "in_stock",
+            stockStatusLabel: getStockStatusLabel(product.stockStatus),
+            stockPercentage: product.stockPercentage || 100,
+            skuHsn: product.skuHsn || "N/A",
+          }),
         );
-
         setProducts(transformedProducts);
         setPagination(
           result.data.pagination || {
@@ -608,88 +145,29 @@ const InventoryManagement = () => {
         setError(result.message || "Failed to fetch products");
       }
     } catch (err) {
-      console.error("Error fetching products:", err);
-      setError(err.message || "Error loading products. Please try again.");
+      setError(err.message || "Error loading products.");
     } finally {
       setLoading(false);
     }
   };
 
-  const statusColors = {
-    "In Stock": "text-green-600 font-semibold",
-    "Low Stock": "text-yellow-600 font-semibold",
-    "Out of Stock": "text-red-600 font-semibold",
-    Inactive: "text-gray-600 font-semibold",
-  };
-
-  // Calculate when product will be out of stock
-  const calculateOutOfStockDate = (product) => {
-    const currentStock = product.stock || 0;
-    const lowStockThreshold = product.lowStockThreshold || 20;
-
-    if (currentStock === 0) {
-      return "Already Out of Stock";
-    }
-
-    // Assuming average daily sales rate (this can be improved with actual sales data)
-    // For now, using a simple calculation: if stock is below threshold, estimate based on stock level
-    const averageDailySales = Math.max(1, Math.floor(currentStock / 10)); // Rough estimate
-    const daysUntilOutOfStock = Math.floor(currentStock / averageDailySales);
-
-    if (daysUntilOutOfStock <= 0) {
-      return "Already Out of Stock";
-    } else if (daysUntilOutOfStock <= 3) {
-      return `${daysUntilOutOfStock} days (Critical)`;
-    } else if (daysUntilOutOfStock <= 7) {
-      return `${daysUntilOutOfStock} days (Low)`;
-    } else if (currentStock < lowStockThreshold) {
-      return `${daysUntilOutOfStock} days (Warning)`;
-    } else {
-      return `${daysUntilOutOfStock} days`;
-    }
-  };
-
-  const getOutOfStockColor = (product) => {
-    const currentStock = product.stock || 0;
-    const lowStockThreshold = product.lowStockThreshold || 20;
-    const averageDailySales = Math.max(1, Math.floor(currentStock / 10));
-    const daysUntilOutOfStock = Math.floor(currentStock / averageDailySales);
-
-    if (currentStock === 0 || daysUntilOutOfStock <= 0) {
-      return "text-red-600 font-bold";
-    } else if (daysUntilOutOfStock <= 3) {
-      return "text-red-600 font-semibold";
-    } else if (daysUntilOutOfStock <= 7) {
-      return "text-orange-600 font-semibold";
-    } else if (currentStock < lowStockThreshold) {
-      return "text-yellow-600 font-semibold";
-    } else {
-      return "text-gray-600";
-    }
-  };
-
-  // Filter products based on active tab
   const filteredProducts = products.filter((product) => {
-    // Match tab filter based on stockStatus
     let matchesTab = false;
-    if (activeTab === "all") {
-      matchesTab = true;
-    } else if (activeTab === "instock") {
+    if (activeTab === "all") matchesTab = true;
+    else if (activeTab === "instock")
       matchesTab =
         product.stockStatus === "in_stock" || product.status === "In Stock";
-    } else if (activeTab === "lowstock") {
+    else if (activeTab === "lowstock")
       matchesTab =
         product.stockStatus === "low_stock" ||
         product.status === "Low Stock" ||
         (product.stockPercentage < 20 &&
           product.stockStatus !== "out_of_stock");
-    } else if (activeTab === "outofstock") {
+    else if (activeTab === "outofstock")
       matchesTab =
         product.stockStatus === "out_of_stock" ||
         product.status === "Out of Stock" ||
         product.stock === 0;
-    }
-
     const matchesSearch =
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (product.category &&
@@ -698,101 +176,37 @@ const InventoryManagement = () => {
         product.subCategory.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (product.skuHsn &&
         product.skuHsn.toLowerCase().includes(searchTerm.toLowerCase()));
-
     return matchesTab && matchesSearch;
   });
 
-  // Pagination - use API pagination if available, otherwise use client-side pagination
   const useApiPagination = pagination && pagination.totalPages > 0;
-  const indexOfLast = useApiPagination
-    ? filteredProducts.length
-    : currentPage * itemsPerPage;
-  const indexOfFirst = useApiPagination ? 0 : indexOfLast - itemsPerPage;
   const currentProducts = useApiPagination
     ? filteredProducts
-    : filteredProducts.slice(indexOfFirst, indexOfLast);
+    : filteredProducts.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage,
+      );
   const totalPages = useApiPagination
     ? pagination.totalPages
-    : Math.ceil(filteredProducts.length / itemsPerPage);
-
-  // Skeleton Loader
-  const TableSkeleton = () => (
-    <tbody>
-      {Array.from({ length: itemsPerPage }).map((_, idx) => (
-        <tr
-          key={idx}
-          className="animate-pulse border-b border-gray-200 bg-white"
-        >
-          {Array.from({ length: 7 }).map((__, j) => (
-            <td key={j} className="p-3">
-              <div className="h-4 bg-gray-200 rounded w-[80%]" />
-            </td>
-          ))}
-        </tr>
-      ))}
-    </tbody>
-  );
-
-  // Empty State
-  const EmptyState = () => (
-    <tbody>
-      <tr>
-        <td
-          colSpan="7"
-          className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
-        >
-          {error ? error : "No products found."}
-        </td>
-      </tr>
-    </tbody>
-  );
-
-  const handleTabClick = (tabKey) => {
-    setActiveTab(tabKey);
-    setCurrentPage(1);
-  };
-
-  const handleSearch = () => {
-    setCurrentPage(1);
-  };
+    : Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage));
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this product?")) {
-      try {
-        const token =
-          localStorage.getItem("token") || localStorage.getItem("authToken");
-        const headers = {
-          "Content-Type": "application/json",
-        };
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-
-        const response = await fetch(`${BASE_URL}/api/product/delete/${id}`, {
-          method: "DELETE",
-          credentials: "include",
-          headers: headers,
-        });
-
-        const result = await response.json();
-
-        if (!response.ok || !result.success) {
-          throw new Error(result.message || "Failed to delete product");
-        }
-
-        alert("Product deleted successfully");
-        // Refresh the product list
-        fetchProducts();
-      } catch (err) {
-        console.error("Error deleting product:", err);
-        alert(err.message || "Failed to delete product");
-      }
+    if (!window.confirm("Are you sure you want to delete this product?"))
+      return;
+    try {
+      const response = await fetch(`${BASE_URL}/api/product/delete/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success)
+        throw new Error(result.message || "Failed to delete product");
+      alert("Product deleted successfully");
+      fetchProducts();
+    } catch (err) {
+      alert(err.message || "Failed to delete product");
     }
-  };
-
-  const handleEdit = (product) => {
-    setEditingProduct(product);
-    setShowModal(true);
   };
 
   const handleUpdateStock = (product) => {
@@ -800,7 +214,6 @@ const InventoryManagement = () => {
     setUpdateStockAmount("");
     setIsUpdateStockModalOpen(true);
   };
-
   const closeUpdateStockModal = () => {
     setIsUpdateStockModalOpen(false);
     setSelectedProductForUpdate(null);
@@ -818,371 +231,533 @@ const InventoryManagement = () => {
       setError("Please enter a valid stock amount to add");
       return;
     }
-
     setUpdatingStock(true);
     setError(null);
-
     try {
-      const token =
-        localStorage.getItem("token") || localStorage.getItem("authToken");
-      const headers = {
-        "Content-Type": "application/json",
-      };
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
+      const headers = getAuthHeaders();
       const productId =
         selectedProductForUpdate.productId || selectedProductForUpdate.id;
       const currentVendorId = vendorId || selectedProductForUpdate.vendorId;
-
-      // Try multiple endpoint strategies for stock update
       let response = null;
-      let lastError = null;
-
-      // Strategy 1: Try with productId in URL
       if (currentVendorId && productId) {
         try {
-          const apiUrl = `${BASE_URL}/api/analytics/vendor/product/${currentVendorId}/stock/${productId}`;
-          response = await fetch(apiUrl, {
-            method: "PUT",
-            credentials: "include",
-            headers: headers,
-            body: JSON.stringify({
-              addedProduct: parseFloat(updateStockAmount),
-              stock:
-                (selectedProductForUpdate.stock || 0) +
-                parseFloat(updateStockAmount),
-            }),
-          });
-          if (response.ok) {
-            // Success with stock update endpoint 1
-          } else {
-            lastError = { status: response.status, url: apiUrl };
-          }
-        } catch (e) {
-          lastError = { error: e.message };
-        }
+          response = await fetch(
+            `${BASE_URL}/api/analytics/vendor/product/${currentVendorId}/stock/${productId}`,
+            {
+              method: "PUT",
+              credentials: "include",
+              headers,
+              body: JSON.stringify({
+                addedProduct: parseFloat(updateStockAmount),
+                stock:
+                  (selectedProductForUpdate.stock || 0) +
+                  parseFloat(updateStockAmount),
+              }),
+            },
+          );
+        } catch {}
       }
-
-      // Strategy 2: Try with productId in body (original)
       if ((!response || !response.ok) && currentVendorId) {
         try {
-          const apiUrl = `${BASE_URL}/api/analytics/vendor/product/${currentVendorId}/stock`;
-          response = await fetch(apiUrl, {
-            method: "PUT",
-            credentials: "include",
-            headers: headers,
-            body: JSON.stringify({
-              productId: productId,
-              addedProduct: parseFloat(updateStockAmount),
-              stock:
-                (selectedProductForUpdate.stock || 0) +
-                parseFloat(updateStockAmount),
-            }),
-          });
-          if (response.ok) {
-            // Success with stock update endpoint 2
-          } else {
-            lastError = { status: response.status, url: apiUrl };
-          }
-        } catch (e) {
-          lastError = { error: e.message };
-        }
+          response = await fetch(
+            `${BASE_URL}/api/analytics/vendor/product/${currentVendorId}/stock`,
+            {
+              method: "PUT",
+              credentials: "include",
+              headers,
+              body: JSON.stringify({
+                productId,
+                addedProduct: parseFloat(updateStockAmount),
+                stock:
+                  (selectedProductForUpdate.stock || 0) +
+                  parseFloat(updateStockAmount),
+              }),
+            },
+          );
+        } catch {}
       }
-
-      // Strategy 3: Try using product update endpoint
       if ((!response || !response.ok) && productId) {
         try {
-          const apiUrl = `${BASE_URL}/api/product/update/${productId}`;
-          response = await fetch(apiUrl, {
-            method: "PUT",
-            credentials: "include",
-            headers: headers,
-            body: JSON.stringify({
-              stock:
-                (selectedProductForUpdate.stock || 0) +
-                parseFloat(updateStockAmount),
-              inventory:
-                (selectedProductForUpdate.stock || 0) +
-                parseFloat(updateStockAmount),
-            }),
-          });
-          if (response.ok) {
-            // Success with stock update endpoint 3
-          } else {
-            lastError = { status: response.status, url: apiUrl };
-          }
-        } catch (e) {
-          lastError = { error: e.message };
-        }
+          response = await fetch(
+            `${BASE_URL}/api/product/update/${productId}`,
+            {
+              method: "PUT",
+              credentials: "include",
+              headers,
+              body: JSON.stringify({
+                stock:
+                  (selectedProductForUpdate.stock || 0) +
+                  parseFloat(updateStockAmount),
+                inventory:
+                  (selectedProductForUpdate.stock || 0) +
+                  parseFloat(updateStockAmount),
+              }),
+            },
+          );
+        } catch {}
       }
-
       if (!response || !response.ok) {
         const errorData = response
           ? await response.json().catch(() => ({}))
           : {};
-        console.error(
-          "All stock update endpoints failed. Last error:",
-          lastError,
-        );
         throw new Error(
           errorData.message ||
-            `Failed to update stock: ${response?.status || "No response"}. Please check the API endpoint.`,
+            `Failed to update stock: ${response?.status || "No response"}`,
         );
       }
-
       const result = await response.json();
       if (result.success) {
         alert("Stock updated successfully!");
         closeUpdateStockModal();
-        fetchProducts(); // Refresh the product list
-      } else {
-        throw new Error(result.message || "Failed to update stock");
-      }
+        fetchProducts();
+      } else throw new Error(result.message || "Failed to update stock");
     } catch (err) {
-      console.error("Error updating stock:", err);
       setError(err.message);
     } finally {
       setUpdatingStock(false);
     }
   };
 
-  const handleAddNew = () => {
-    setEditingProduct(null);
-    setShowModal(true);
-  };
-
   const handleSaveProduct = async (productData) => {
     try {
       setLoading(true);
-      const token =
-        localStorage.getItem("token") || localStorage.getItem("authToken");
-      const headers = {
-        "Content-Type": "application/json",
-      };
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
       if (editingProduct) {
-        // Update existing product via API
-        // Note: The inventory endpoint only accepts inventory-related fields
-        // For full product updates, use /api/product/update/:id instead
-        // For now, we'll only update inventory if that's what's being changed
-        const inventoryUpdatePayload = {
-          inventory: productData.stock || 0,
-          stock: productData.stock || 0,
-        };
-
         const response = await fetch(
           `${BASE_URL}/api/product/update/${editingProduct.id}`,
           {
             method: "PUT",
             credentials: "include",
-            headers: headers,
-            body: JSON.stringify(inventoryUpdatePayload),
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              inventory: productData.stock || 0,
+              stock: productData.stock || 0,
+            }),
           },
         );
-
         const result = await response.json();
-
-        if (!response.ok || !result.success) {
-          const errorMessage =
-            result.message || result.error || "Failed to update product";
-          throw new Error(errorMessage);
-        }
-
+        if (!response.ok || !result.success)
+          throw new Error(result.message || "Failed to update product");
         alert("Product inventory updated successfully");
-
-        // Refresh the product list
         fetchProducts();
       } else {
-        // Note: Creating products should use /api/product/add endpoint
-        // The inventory endpoint doesn't support product creation
-        alert(
-          "Please use the Products page to add new products. This page is for inventory management only.",
-        );
+        alert("Please use the Products page to add new products.");
         setShowModal(false);
         setEditingProduct(null);
         return;
       }
-
       setShowModal(false);
       setEditingProduct(null);
-      // Refetch products to get updated data
       fetchProducts();
     } catch (err) {
-      console.error("Error saving product:", err);
-      const errorMessage = err.message || "Failed to save product";
-      alert(errorMessage);
+      alert(err.message || "Failed to save product");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRefresh = () => {
-    fetchProducts();
+  // ── Summary Stats ──
+  const summaryCards = summary
+    ? [
+        {
+          label: "Total Products",
+          value: summary.totalProducts || 0,
+          color: "text-gray-700",
+          bg: "bg-gray-50 border-gray-100",
+          dot: "bg-gray-400",
+        },
+        {
+          label: "In Stock",
+          value: summary.inStock || 0,
+          color: "text-emerald-600",
+          bg: "bg-emerald-50 border-emerald-100",
+          dot: "bg-emerald-500",
+        },
+        {
+          label: "Low Stock",
+          value: summary.lowStock || 0,
+          color: "text-amber-600",
+          bg: "bg-amber-50 border-amber-100",
+          dot: "bg-amber-500",
+        },
+        {
+          label: "Out of Stock",
+          value: summary.outOfStock || 0,
+          color: "text-red-500",
+          bg: "bg-red-50 border-red-100",
+          dot: "bg-red-500",
+        },
+      ]
+    : [];
+
+  const StockBadge = ({ stockStatus, label }) => {
+    const styles = {
+      in_stock:
+        "bg-emerald-50 text-emerald-700 border-emerald-200 ring-1 ring-emerald-100",
+      low_stock:
+        "bg-amber-50 text-amber-700 border-amber-200 ring-1 ring-amber-100",
+      out_of_stock: "bg-red-50 text-red-700 border-red-200 ring-1 ring-red-100",
+    };
+    const dots = {
+      in_stock: "bg-emerald-500",
+      low_stock: "bg-amber-500",
+      out_of_stock: "bg-red-500",
+    };
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${styles[stockStatus] || "bg-gray-50 text-gray-600 border-gray-200"}`}
+      >
+        <span
+          className={`w-1.5 h-1.5 rounded-full ${dots[stockStatus] || "bg-gray-400"}`}
+        />
+        {label || stockStatus}
+      </span>
+    );
   };
+
+  const TableSkeleton = () => (
+    <tbody>
+      {Array.from({ length: itemsPerPage }).map((_, idx) => (
+        <tr key={idx} className="border-b border-gray-100">
+          {Array.from({ length: 7 }).map((__, j) => (
+            <td key={j} className="px-4 py-3.5">
+              <div
+                className={`h-3.5 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full animate-pulse ${j === 1 ? "w-36" : j === 6 ? "w-8 ml-auto" : "w-[65%]"}`}
+              />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </tbody>
+  );
+
+  const EmptyState = () => (
+    <tbody>
+      <tr>
+        <td colSpan="7" className="py-20 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center">
+              <Package className="w-8 h-8 text-orange-300" />
+            </div>
+            <p className="text-gray-400 text-sm font-medium">
+              {error || "No products found"}
+            </p>
+            <p className="text-gray-300 text-xs">
+              Try adjusting your filters or search query
+            </p>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  );
+
+  const tabs = [
+    { key: "all", label: "All Products" },
+    { key: "instock", label: "In Stock" },
+    { key: "lowstock", label: "Low Stock" },
+    { key: "outofstock", label: "Out of Stock" },
+  ];
 
   return (
     <DashboardLayout>
-      {/* Tabs + Search + Add Button */}
-      <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-2 w-full pl-4 max-w-[99%] mx-auto mt-2 mb-2">
-        <div className="flex gap-4 overflow-x-auto pb-2 lg:pb-0">
-          {[
-            { key: "all", label: "All Products" },
-            { key: "instock", label: "In Stock" },
-            { key: "lowstock", label: "Low Stock" },
-            { key: "outofstock", label: "Out of Stock" },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => handleTabClick(tab.key)}
-              className={`px-4 py-1 border rounded text-xs sm:text-sm whitespace-nowrap transition-colors ${
-                activeTab === tab.key
-                  ? "bg-[#FF7B1D] text-white border-orange-500"
-                  : "bg-white text-black border-gray-300 hover:bg-gray-100"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .row-animate { animation: fadeSlideIn 0.25s ease forwards; }
+        .action-btn {
+          width: 30px; height: 30px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 8px; transition: all 0.18s ease;
+        }
+        .action-btn:hover { transform: translateY(-1px); }
+      `}</style>
 
-        <div className="flex gap-3">
-          <button
-            onClick={handleRefresh}
-            disabled={loading}
-            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-sm text-sm whitespace-nowrap disabled:opacity-50"
-          >
-            {loading ? "Loading..." : "Refresh"}
-          </button>
-        </div>
-      </div>
-
-      {/* Products Table */}
-      <div className="bg-white rounded-sm shadow-sm overflow-x-auto pl-4 max-w-[99%] mx-auto">
-        <table className="w-full text-sm border-collapse min-w-[700px]">
-          <thead>
-            <tr className="bg-[#FF7B1D] text-black">
-              <th className="p-3 text-left">S.N</th>
-              <th className="p-3 text-left">Product Name</th>
-              <th className="p-3 text-left">Total Inventory</th>
-              <th className="p-3 text-left">Category</th>
-              <th className="p-3 text-left">Sub Category</th>
-              <th className="p-3 text-left">Stock Status</th>
-              <th className="p-3 pr-6 text-right">Action</th>
-            </tr>
-          </thead>
-
-          {loading ? (
-            <TableSkeleton />
-          ) : filteredProducts.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <tbody>
-              {currentProducts.map((product, idx) => {
-                return (
-                  <tr
-                    key={product.id}
-                    className="shadow-sm rounded-sm hover:bg-gray-50 transition border-b-4 border-gray-200 bg-white"
-                  >
-                    <td className="p-3">
-                      {product.n !== undefined
-                        ? product.n
-                        : indexOfFirst + idx + 1}
-                    </td>
-                    <td className="p-3 font-semibold">{product.name}</td>
-                    <td className="p-3 font-semibold">{product.stock || 0}</td>
-                    <td className="p-3">{product.category || "N/A"}</td>
-                    <td className="p-3">{product.subCategory || "N/A"}</td>
-                    <td className="p-3">
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
-                          product.stockStatus === "in_stock"
-                            ? "bg-green-100 text-green-700"
-                            : product.stockStatus === "out_of_stock"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-yellow-100 text-yellow-700"
-                        }`}
-                      >
-                        {product.stockStatusLabel ||
-                          product.stockStatus ||
-                          "In Stock"}
-                      </span>
-                    </td>
-                    <td className="p-3 pr-10">
-                      <div className="flex gap-2 justify-end">
-                        <button
-                          onClick={() => handleUpdateStock(product)}
-                          className="text-orange-600 hover:text-orange-700"
-                          title="Update Stock"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          )}
-        </table>
-      </div>
-
-      {/* Pagination */}
-      {!loading && filteredProducts.length > 0 && (
-        <div className="flex justify-between items-center ml-6 mt-6 max-w-[98%] mx-auto">
-          <div className="text-sm text-gray-600">
-            {pagination && (
-              <>
-                Showing {(pagination.currentPage - 1) * pagination.limit + 1} to{" "}
-                {Math.min(
-                  pagination.currentPage * pagination.limit,
-                  pagination.totalProducts,
-                )}{" "}
-                of {pagination.totalProducts} products
-              </>
-            )}
+      <div className="w-full max-w-full mx-auto px-1 mt-3 space-y-3">
+        {/* ── Summary Cards ── */}
+        {summaryCards.length > 0 && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {summaryCards.map((card) => (
+              <div
+                key={card.label}
+                className={`rounded-2xl border ${card.bg} p-4 flex items-center gap-3`}
+              >
+                <span
+                  className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${card.dot}`}
+                />
+                <div>
+                  <p className="text-xs text-gray-400 font-medium">
+                    {card.label}
+                  </p>
+                  <p className={`text-xl font-bold ${card.color}`}>
+                    {card.value}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-              disabled={currentPage === 1}
-              className="bg-[#FF7B1D] hover:bg-orange-600 text-white px-10 py-3 text-sm font-medium rounded-0 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Back
-            </button>
-            <div className="flex gap-2 text-sm text-black font-medium flex-wrap items-center">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (page) => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-3 py-1 rounded ${
-                      currentPage === page
-                        ? "text-orange-600 font-semibold"
-                        : ""
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ),
-              )}
+        )}
+
+        {/* ── Toolbar ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          {/* LEFT: Tabs */}
+          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => {
+                  setActiveTab(tab.key);
+                  setCurrentPage(1);
+                }}
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
+                  activeTab === tab.key
+                    ? "bg-white text-[#FF7B1D] shadow-sm shadow-orange-100"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* RIGHT: Search + Refresh */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden h-[38px] w-full sm:w-[300px] shadow-sm bg-white">
+              <input
+                type="text"
+                placeholder="Search product, category, SKU..."
+                className="flex-1 px-4 text-sm text-gray-700 focus:outline-none h-full placeholder:text-gray-400"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+              <button className="bg-[#FF7B1D] hover:bg-orange-500 text-white text-sm font-medium px-4 h-full transition-colors">
+                Search
+              </button>
             </div>
             <button
-              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-              disabled={currentPage === totalPages || currentPage >= totalPages}
-              className="bg-[#247606] hover:bg-green-700 text-white px-10 py-3 text-sm font-medium rounded-0 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={fetchProducts}
+              disabled={loading}
+              className="flex-shrink-0 h-[38px] w-[38px] flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 hover:text-[#FF7B1D] hover:border-orange-200 hover:bg-orange-50 disabled:opacity-50 transition-all shadow-sm"
+              title="Refresh"
             >
-              Next
+              <RefreshCw
+                className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+              />
             </button>
           </div>
         </div>
-      )}
 
-      {/* Product Modal */}
+        {/* ── Table Card ── */}
+        <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+          {/* Card Header */}
+          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+              <span className="text-sm font-semibold text-gray-700">
+                Inventory Overview
+              </span>
+            </div>
+            {!loading && (
+              <span className="text-xs text-gray-400 font-medium">
+                {filteredProducts.length} product
+                {filteredProducts.length !== 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gradient-to-r from-[#FF7B1D] to-orange-400">
+                  {[
+                    "S.N",
+                    "Product Name",
+                    "Total Inventory",
+                    "Category",
+                    "Sub Category",
+                    "Stock Status",
+                    "Action",
+                  ].map((h, i) => (
+                    <th
+                      key={h}
+                      className={`px-4 py-3.5 text-xs font-bold text-white tracking-wider uppercase opacity-90 ${i === 6 ? "text-right pr-5" : "text-left"}`}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+
+              {loading ? (
+                <TableSkeleton />
+              ) : filteredProducts.length === 0 ? (
+                <EmptyState />
+              ) : (
+                <tbody>
+                  {currentProducts.map((product, idx) => (
+                    <tr
+                      key={product.id}
+                      className="row-animate border-b border-gray-50 hover:bg-orange-50/40 transition-colors duration-150 group"
+                      style={{ animationDelay: `${idx * 30}ms` }}
+                    >
+                      {/* S.N */}
+                      <td className="px-4 py-3.5">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">
+                          {product.n !== undefined
+                            ? product.n
+                            : (currentPage - 1) * itemsPerPage + idx + 1}
+                        </span>
+                      </td>
+
+                      {/* Product Name */}
+                      <td className="px-4 py-3.5">
+                        <p className="text-sm font-semibold text-gray-700 max-w-[200px] truncate">
+                          {product.name}
+                        </p>
+                        {product.skuHsn && product.skuHsn !== "N/A" && (
+                          <p className="text-[10px] text-gray-400 mt-0.5 font-mono">
+                            {product.skuHsn}
+                          </p>
+                        )}
+                      </td>
+
+                      {/* Stock */}
+                      <td className="px-4 py-3.5">
+                        <span
+                          className={`text-sm font-bold ${product.stock <= 0 ? "text-red-500" : product.stockPercentage < 20 ? "text-amber-500" : "text-emerald-600"}`}
+                        >
+                          {product.stock || 0}
+                        </span>
+                      </td>
+
+                      {/* Category */}
+                      <td className="px-4 py-3.5">
+                        <span className="inline-block bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full border border-blue-100">
+                          {product.category || "N/A"}
+                        </span>
+                      </td>
+
+                      {/* Sub Category */}
+                      <td className="px-4 py-3.5">
+                        <span className="inline-block bg-purple-50 text-purple-700 text-xs font-medium px-2.5 py-1 rounded-full border border-purple-100">
+                          {product.subCategory || "N/A"}
+                        </span>
+                      </td>
+
+                      {/* Stock Status */}
+                      <td className="px-4 py-3.5">
+                        <StockBadge
+                          stockStatus={product.stockStatus}
+                          label={product.stockStatusLabel}
+                        />
+                      </td>
+
+                      {/* Action */}
+                      <td className="px-4 py-3.5 pr-5">
+                        <div className="flex items-center justify-end">
+                          <button
+                            onClick={() => handleUpdateStock(product)}
+                            className="action-btn bg-orange-50 text-[#FF7B1D] hover:bg-orange-100 hover:text-orange-600"
+                            title="Update Stock"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              )}
+            </table>
+          </div>
+        </div>
+
+        {/* ── Pagination ── */}
+        {!loading && filteredProducts.length > 0 && (
+          <div className="flex items-center justify-between px-1 pb-6">
+            <p className="text-xs text-gray-400 font-medium">
+              {pagination && (
+                <>
+                  Page{" "}
+                  <span className="text-gray-600 font-semibold">
+                    {pagination.currentPage}
+                  </span>{" "}
+                  of{" "}
+                  <span className="text-gray-600 font-semibold">
+                    {pagination.totalPages}
+                  </span>
+                  <span className="ml-2 text-gray-300">·</span>
+                  <span className="ml-2">{pagination.totalProducts} total</span>
+                </>
+              )}
+            </p>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={currentPage === 1}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" /> Prev
+              </button>
+
+              <div className="flex items-center gap-1">
+                {(() => {
+                  const pages = [];
+                  const visiblePages = new Set([
+                    1,
+                    2,
+                    totalPages - 1,
+                    totalPages,
+                    currentPage - 1,
+                    currentPage,
+                    currentPage + 1,
+                  ]);
+                  for (let i = 1; i <= totalPages; i++) {
+                    if (visiblePages.has(i)) pages.push(i);
+                    else if (pages[pages.length - 1] !== "...")
+                      pages.push("...");
+                  }
+                  return pages.map((page, idx) =>
+                    page === "..." ? (
+                      <span key={idx} className="px-1 text-gray-400 text-xs">
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-8 h-8 rounded-xl text-xs font-semibold transition-all ${
+                          currentPage === page
+                            ? "bg-[#FF7B1D] text-white shadow-sm shadow-orange-200"
+                            : "bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ),
+                  );
+                })()}
+              </div>
+
+              <button
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(p + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+              >
+                Next <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Product Modal ── */}
       {showModal && (
         <ProductModal
           product={editingProduct}
@@ -1194,81 +769,116 @@ const InventoryManagement = () => {
         />
       )}
 
-      {/* Update Stock Modal */}
+      {/* ── Update Stock Modal ── */}
       {isUpdateStockModalOpen && selectedProductForUpdate && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
-            <form onSubmit={handleSubmitStockUpdate}>
-              <div className="flex items-center justify-between p-6 border-b">
-                <h3 className="text-lg font-bold text-gray-900">
-                  Update Stock
-                </h3>
-                <button
-                  type="button"
-                  onClick={closeUpdateStockModal}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="p-6 space-y-4">
-                <div className="bg-gray-50 p-3 rounded-lg text-sm">
-                  <p className="font-semibold text-gray-800">
-                    Product: {selectedProductForUpdate.name}
-                  </p>
-                  <p className="text-gray-600">
-                    SKU: {selectedProductForUpdate.skuHsn || "N/A"}
-                  </p>
-                  <p className="text-gray-600">
-                    Current Stock: {selectedProductForUpdate.stock || 0}
-                  </p>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-gray-100 overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-[#FF7B1D] to-orange-400 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
+                  <Plus className="w-4 h-4 text-white" />
                 </div>
+                <h3 className="text-white font-bold text-base">Update Stock</h3>
+              </div>
+              <button
+                type="button"
+                onClick={closeUpdateStockModal}
+                className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitStockUpdate}>
+              <div className="p-6 space-y-4">
+                {/* Product Info */}
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <p className="text-sm font-semibold text-gray-800 mb-1">
+                    {selectedProductForUpdate.name}
+                  </p>
+                  <div className="flex items-center gap-4 text-xs text-gray-400">
+                    <span>
+                      SKU:{" "}
+                      <span className="font-mono text-gray-600">
+                        {selectedProductForUpdate.skuHsn || "N/A"}
+                      </span>
+                    </span>
+                    <span>
+                      Current Stock:{" "}
+                      <span className="font-bold text-gray-700">
+                        {selectedProductForUpdate.stock || 0}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Input */}
                 <div>
                   <label
                     htmlFor="updateStockAmount"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide"
                   >
-                    Amount to Add *
+                    Amount to Add <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="number"
                     id="updateStockAmount"
-                    name="updateStockAmount"
                     value={updateStockAmount}
                     onChange={(e) => setUpdateStockAmount(e.target.value)}
-                    placeholder="Enter amount to add to stock"
-                    className="w-full border border-gray-300 rounded-lg p-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="Enter quantity to add"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 transition-all"
                     required
                     min="1"
                     step="1"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-400 mt-1">
                     Enter the quantity to add to current stock
                   </p>
                 </div>
-                {error && <p className="text-red-600 text-sm">{error}</p>}
+
+                {/* Preview */}
+                {updateStockAmount && parseFloat(updateStockAmount) > 0 && (
+                  <div className="bg-orange-50 border border-orange-100 rounded-xl px-4 py-3 flex items-center justify-between">
+                    <span className="text-xs text-gray-500">
+                      New stock total
+                    </span>
+                    <span className="text-sm font-bold text-[#FF7B1D]">
+                      {(selectedProductForUpdate.stock || 0) +
+                        parseFloat(updateStockAmount)}
+                    </span>
+                  </div>
+                )}
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-xs px-4 py-2.5 rounded-xl">
+                    {error}
+                  </div>
+                )}
               </div>
-              <div className="flex justify-end gap-3 p-6 border-t">
+
+              <div className="flex justify-end gap-2 px-6 pb-6">
                 <button
                   type="button"
                   onClick={closeUpdateStockModal}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
                   disabled={updatingStock}
+                  className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2"
                   disabled={updatingStock}
+                  className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#FF7B1D] to-orange-400 hover:from-orange-500 hover:to-orange-500 text-white transition-all shadow-sm shadow-orange-200 flex items-center gap-2"
                 >
                   {updatingStock ? (
                     <>
-                      <RefreshCw className="w-4 h-4 animate-spin" /> Updating...
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />{" "}
+                      Updating…
                     </>
                   ) : (
                     <>
-                      <Check className="w-4 h-4" /> Update Stock
+                      <Check className="w-3.5 h-3.5" /> Update Stock
                     </>
                   )}
                 </button>

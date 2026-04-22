@@ -2,16 +2,16 @@ import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import api from "../../api/api";
 import {
-  DollarSign,
   CheckCircle,
   XCircle,
-  Search,
-  Calendar,
   AlertCircle,
   Loader2,
   Plus,
   Wallet,
   X,
+  IndianRupee,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 const VendorWithdrawalRequests = () => {
@@ -20,142 +20,36 @@ const VendorWithdrawalRequests = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
-
-  // Modal states
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [withdrawalAmount, setWithdrawalAmount] = useState("");
   const [availableBalance, setAvailableBalance] = useState(0);
   const [showWalletPopup, setShowWalletPopup] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
-  // Fetch withdrawal requests
   const fetchRequests = async () => {
     try {
       setLoading(true);
       setError(null);
-
-      console.log("========================================");
-      console.log("API CALL: /api/vendor/wallet/earning/withdrawal-requests");
-      console.log("Method: GET");
-      console.log("========================================");
-
       const response = await api.get(
         "/api/vendor/wallet/earning/withdrawal-requests",
       );
-
-      console.log("========================================");
-      console.log("API RESPONSE RECEIVED:");
-      console.log("Full Response:", response);
-      console.log("Response Status:", response.status);
-      console.log("Response Headers:", response.headers);
-      console.log("========================================");
-
       const result = response.data;
-
-      console.log("========================================");
-      console.log("📦 PARSED RESPONSE DATA:");
-      console.log("========================================");
-      console.log("Full result (JSON):", JSON.stringify(result, null, 2));
-      console.log("----------------------------------------");
-      console.log("Result type:", typeof result);
-      console.log("Result keys:", Object.keys(result));
-      console.log("----------------------------------------");
-      console.log("✅ Result.success:", result.success);
-      console.log("📊 Result.count:", result.count);
-      console.log(
-        "📄 Result.pagination:",
-        JSON.stringify(result.pagination, null, 2),
-      );
-      console.log(
-        "💵 Result.earningWallet:",
-        JSON.stringify(result.earningWallet, null, 2),
-      );
-      console.log(
-        "💰 Result.earningWallet.currentBalance:",
-        result.earningWallet?.currentBalance,
-      );
-      console.log("----------------------------------------");
-      console.log("📋 Result.data:", result.data);
-      console.log(
-        "📋 Result.data type:",
-        Array.isArray(result.data) ? "Array" : typeof result.data,
-      );
-      console.log(
-        "📋 Result.data length:",
-        Array.isArray(result.data) ? result.data.length : "Not an array",
-      );
-      if (Array.isArray(result.data)) {
-        console.log(
-          "📋 Result.data (JSON):",
-          JSON.stringify(result.data, null, 2),
-        );
-      }
-      console.log("========================================");
-
-      if (Array.isArray(result.data)) {
-        console.log("========================================");
-        console.log("📝 WITHDRAWAL REQUESTS DETAILS:");
-        console.log("========================================");
-        console.log(`Total Requests: ${result.data.length}`);
-        result.data.forEach((request, index) => {
-          console.log(`\n--- 📌 Request ${index + 1} ---`);
-          console.log(
-            "Full request object (JSON):",
-            JSON.stringify(request, null, 2),
-          );
-          console.log("_id:", request._id);
-          console.log("amount:", request.amount);
-          console.log("status:", request.status);
-          console.log("createdAt:", request.createdAt);
-          console.log("All keys:", Object.keys(request));
-          // Log all properties
-          Object.keys(request).forEach((key) => {
-            console.log(`  ${key}:`, request[key]);
-          });
-        });
-        console.log("========================================");
-      } else {
-        console.log("⚠️ Result.data is not an array:", result.data);
-      }
-
       if (result.success) {
         setRequests(result.data || []);
-        // Set available balance from earningWallet.currentBalance
         if (result.earningWallet?.currentBalance !== undefined) {
-          const balance = parseFloat(result.earningWallet.currentBalance) || 0;
-          setAvailableBalance(balance);
-          // Show wallet amount popup
+          setAvailableBalance(
+            parseFloat(result.earningWallet.currentBalance) || 0,
+          );
           setShowWalletPopup(true);
         }
-
-        // Summary log
-        console.log("========================================");
-        console.log("✅ API SUCCESS SUMMARY:");
-        console.log("========================================");
-        console.log("Total Requests:", result.data?.length || 0);
-        console.log(
-          "Wallet Balance:",
-          result.earningWallet?.currentBalance || "N/A",
-        );
-        console.log("Count:", result.count || 0);
-        console.log("Pagination:", result.pagination || "N/A");
-        console.log("========================================");
       } else {
-        console.log("❌ API Response Success: false");
-        console.log("Error Message:", result.message);
         setError(result.message || "Failed to fetch withdrawal requests");
         setRequests([]);
       }
-    } catch (error) {
-      console.error("========================================");
-      console.error("ERROR FETCHING WITHDRAWAL REQUESTS:");
-      console.error("Error object:", error);
-      console.error("Error message:", error.message);
-      console.error("Error response:", error.response);
-      console.error("Error response data:", error.response?.data);
-      console.error("Error response status:", error.response?.status);
-      console.error("========================================");
+    } catch (err) {
       setError(
-        error.response?.data?.message || "Error fetching withdrawal requests",
+        err.response?.data?.message || "Error fetching withdrawal requests",
       );
       setRequests([]);
     } finally {
@@ -163,35 +57,28 @@ const VendorWithdrawalRequests = () => {
     }
   };
 
-  // Fetch requests on mount
   useEffect(() => {
     fetchRequests();
   }, []);
 
-  // Handle create withdrawal request
   const handleCreateRequest = async (e) => {
     e.preventDefault();
     if (!withdrawalAmount || parseFloat(withdrawalAmount) <= 0) {
       setError("Please enter a valid amount");
       return;
     }
-
     if (parseFloat(withdrawalAmount) > availableBalance) {
       setError("Withdrawal amount cannot exceed available balance");
       return;
     }
-
     try {
       setActionLoading(true);
       setError(null);
       setSuccess(null);
-
       const response = await api.post("/api/vendor/wallet/earning/send", {
         amount: parseFloat(withdrawalAmount),
       });
-
       const result = response.data;
-
       if (result.success) {
         setSuccess("Withdrawal request created successfully!");
         setIsCreateModalOpen(false);
@@ -201,21 +88,18 @@ const VendorWithdrawalRequests = () => {
       } else {
         setError(result.message || "Failed to create withdrawal request");
       }
-    } catch (error) {
-      console.error("Error creating withdrawal request:", error);
+    } catch (err) {
       setError(
-        error.response?.data?.message || "Error creating withdrawal request",
+        err.response?.data?.message || "Error creating withdrawal request",
       );
     } finally {
       setActionLoading(false);
     }
   };
 
-  // Format date
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-IN", {
+  const formatDate = (d) => {
+    if (!d) return "N/A";
+    return new Date(d).toLocaleDateString("en-IN", {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -224,36 +108,55 @@ const VendorWithdrawalRequests = () => {
     });
   };
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    return `₹${parseFloat(amount || 0).toLocaleString("en-IN")}`;
+  const formatCurrency = (v) =>
+    `₹${parseFloat(v || 0).toLocaleString("en-IN")}`;
+
+  const STATUS_CONFIG = {
+    approved: {
+      cls: "bg-emerald-50 text-emerald-700 border-emerald-200 ring-emerald-100",
+      dot: "bg-emerald-500",
+      label: "Approved",
+    },
+    rejected: {
+      cls: "bg-red-50 text-red-700 border-red-200 ring-red-100",
+      dot: "bg-red-500",
+      label: "Rejected",
+    },
+    pending: {
+      cls: "bg-amber-50 text-amber-700 border-amber-200 ring-amber-100",
+      dot: "bg-amber-500",
+      label: "Pending",
+    },
   };
 
-  // Get status color
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "approved":
-        return "bg-green-100 text-green-800 border-green-300";
-      case "rejected":
-        return "bg-red-100 text-red-800 border-red-300";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-300";
-    }
+  const StatusBadge = ({ status }) => {
+    const key = status?.toLowerCase() || "pending";
+    const cfg = STATUS_CONFIG[key] || STATUS_CONFIG.pending;
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ring-1 ${cfg.cls}`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+        {cfg.label}
+      </span>
+    );
   };
 
-  // Skeleton Loader
+  const totalPages = Math.ceil(requests.length / itemsPerPage);
+  const currentRequests = requests.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
+
   const TableSkeleton = () => (
     <tbody>
       {Array.from({ length: 5 }).map((_, i) => (
-        <tr
-          key={i}
-          className="border-b border-gray-200 animate-pulse bg-white rounded-sm"
-        >
+        <tr key={i} className="border-b border-gray-100">
           {Array.from({ length: 5 }).map((__, j) => (
-            <td key={j} className="p-3">
-              <div className="h-4 bg-gray-200 rounded w-[80%]" />
+            <td key={j} className="px-4 py-3.5">
+              <div
+                className={`h-3.5 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full animate-pulse ${j === 1 ? "w-28" : "w-[70%]"}`}
+              />
             </td>
           ))}
         </tr>
@@ -261,15 +164,21 @@ const VendorWithdrawalRequests = () => {
     </tbody>
   );
 
-  // Empty State
   const EmptyState = () => (
     <tbody>
       <tr>
-        <td
-          colSpan="5"
-          className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
-        >
-          No withdrawal requests found.
+        <td colSpan="5" className="py-20 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center">
+              <Wallet className="w-8 h-8 text-orange-300" />
+            </div>
+            <p className="text-gray-400 text-sm font-medium">
+              No withdrawal requests found
+            </p>
+            <p className="text-gray-300 text-xs">
+              Create your first withdrawal request
+            </p>
+          </div>
         </td>
       </tr>
     </tbody>
@@ -277,264 +186,433 @@ const VendorWithdrawalRequests = () => {
 
   return (
     <DashboardLayout>
-      {/* Success/Error Messages */}
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .row-animate { animation: fadeSlideIn 0.25s ease forwards; }
+        .card-animate { animation: fadeSlideIn 0.3s ease forwards; }
+        .action-btn {
+          width: 30px; height: 30px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 8px; transition: all 0.18s ease;
+        }
+        .action-btn:hover { transform: translateY(-1px); }
+      `}</style>
+
+      {/* ── Alerts ── */}
       {success && (
-        <div className="mb-4 mx-4 bg-green-50 border-l-4 border-green-500 text-green-700 px-6 py-4 rounded-xl flex items-center gap-3 shadow-md">
-          <CheckCircle size={24} />
-          <span className="font-medium">{success}</span>
+        <div className="mx-1 mb-3 mt-3 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 shrink-0" />
+          {success}
         </div>
       )}
       {error && (
-        <div className="mb-4 mx-4 bg-red-50 border-l-4 border-red-500 text-red-700 px-6 py-4 rounded-xl flex items-center gap-3 shadow-md">
-          <AlertCircle size={24} />
-          <span className="font-medium">{error}</span>
+        <div className="mx-1 mb-3 mt-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {error}
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pl-4 max-w-[99%] mx-auto mt-0 mb-2">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">
+      {/* ── Stats Cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 mt-3 px-1">
+        {[
+          {
+            label: "Available Balance",
+            value: formatCurrency(availableBalance),
+            icon: IndianRupee,
+            border: "border-[#FF7B1D]",
+            iconBg: "bg-orange-50",
+            iconColor: "text-[#FF7B1D]",
+            valueColor: "text-[#FF7B1D]",
+            delay: 0,
+          },
+          {
+            label: "Total Requests",
+            value: requests.length,
+            icon: Wallet,
+            border: "border-blue-400",
+            iconBg: "bg-blue-50",
+            iconColor: "text-blue-500",
+            valueColor: "text-gray-800",
+            delay: 60,
+          },
+          {
+            label: "Pending",
+            value: requests.filter((r) => r.status === "pending").length,
+            icon: AlertCircle,
+            border: "border-amber-400",
+            iconBg: "bg-amber-50",
+            iconColor: "text-amber-500",
+            valueColor: "text-amber-600",
+            delay: 120,
+          },
+          {
+            label: "Approved",
+            value: requests.filter((r) => r.status === "approved").length,
+            icon: CheckCircle,
+            border: "border-emerald-400",
+            iconBg: "bg-emerald-50",
+            iconColor: "text-emerald-500",
+            valueColor: "text-emerald-600",
+            delay: 180,
+          },
+        ].map(
+          ({
+            label,
+            value,
+            icon: Icon,
+            border,
+            iconBg,
+            iconColor,
+            valueColor,
+            delay,
+          }) => (
+            <div
+              key={label}
+              className={`card-animate bg-white rounded-2xl border border-gray-100 shadow-sm p-5 border-l-4 ${border}`}
+              style={{ animationDelay: `${delay}ms` }}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">{label}</p>
+                  <p className={`text-2xl font-bold mt-1 ${valueColor}`}>
+                    {value}
+                  </p>
+                </div>
+                <div
+                  className={`w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center shrink-0`}
+                >
+                  <Icon className={`w-5 h-5 ${iconColor}`} />
+                </div>
+              </div>
+            </div>
+          ),
+        )}
+      </div>
+
+      {/* ── Toolbar ── */}
+      <div className="flex items-center justify-between px-1 mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+          <span className="text-sm font-semibold text-gray-700">
             Withdrawal Requests
-          </h1>
-          <p className="text-sm text-gray-600 mt-1">
-            View and create withdrawal requests
-          </p>
+          </span>
+          {!loading && (
+            <span className="text-xs text-gray-400 font-medium bg-gray-100 px-2 py-1 rounded-lg">
+              {requests.length} total
+            </span>
+          )}
         </div>
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="px-4 py-2 bg-black text-white rounded-sm hover:bg-orange-600 transition-colors flex items-center gap-2"
+          className="flex items-center gap-2 bg-gradient-to-r from-[#FF7B1D] to-orange-400 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:from-orange-500 hover:to-orange-500 transition-all shadow-sm shadow-orange-200"
         >
-          <Plus size={20} />
+          <Plus className="w-4 h-4" />
           Create Request
         </button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 pl-4 max-w-[99%] mx-auto">
-        <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Requests</p>
-              <p className="text-2xl font-bold text-gray-800 mt-1">
-                {requests.length}
-              </p>
-            </div>
-            <Wallet className="text-orange-500" size={32} />
+      {/* ── Table Card ── */}
+      <div className="mx-1 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+            <span className="text-sm font-semibold text-gray-700">
+              Request History
+            </span>
           </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600 mt-1">
-                {requests.filter((r) => r.status === "pending").length}
-              </p>
-            </div>
-            <AlertCircle className="text-yellow-500" size={32} />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Approved</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">
-                {requests.filter((r) => r.status === "approved").length}
-              </p>
-            </div>
-            <CheckCircle className="text-green-500" size={32} />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Rejected</p>
-              <p className="text-2xl font-bold text-red-600 mt-1">
-                {requests.filter((r) => r.status === "rejected").length}
-              </p>
-            </div>
-            <XCircle className="text-red-500" size={32} />
-          </div>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-sm shadow-sm overflow-x-auto pl-4 max-w-[99%] mx-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-[#FF7B1D] text-black">
-              <th className="p-3 text-left">S.N</th>
-              <th className="p-3 text-left">Request ID</th>
-              <th className="p-3 text-left">Request Amount</th>
-              <th className="p-3 text-left">Status</th>
-              <th className="p-3 text-left">Request Date</th>
-            </tr>
-          </thead>
-
-          {loading ? (
-            <TableSkeleton />
-          ) : requests.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <tbody>
-              {requests.map((request, idx) => (
-                <tr
-                  key={request._id}
-                  className="bg-white shadow-sm hover:bg-gray-50 transition border-b-4 border-gray-200"
-                >
-                  <td className="p-3">{idx + 1}</td>
-                  <td className="p-3 font-mono text-xs">
-                    {request._id?.slice(-8) || "N/A"}
-                  </td>
-                  <td className="p-3 font-semibold text-green-600">
-                    {formatCurrency(request.amount)}
-                  </td>
-                  <td className="p-3">
-                    <span
-                      className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(
-                        request.status,
-                      )}`}
-                    >
-                      {request.status
-                        ? request.status.charAt(0).toUpperCase() +
-                          request.status.slice(1)
-                        : "Pending"}
-                    </span>
-                  </td>
-                  <td className="p-3 text-gray-600">
-                    {formatDate(request.createdAt)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+          {!loading && requests.length > 0 && (
+            <span className="text-xs text-gray-400 font-medium">
+              {currentRequests.length} of {requests.length} requests
+            </span>
           )}
-        </table>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gradient-to-r from-[#FF7B1D] to-orange-400">
+                {["S.N", "Request ID", "Amount", "Status", "Date"].map(
+                  (h, i) => (
+                    <th
+                      key={h}
+                      className="px-4 py-3.5 text-xs font-bold text-white tracking-wider uppercase opacity-90 text-left"
+                    >
+                      {h}
+                    </th>
+                  ),
+                )}
+              </tr>
+            </thead>
+
+            {loading ? (
+              <TableSkeleton />
+            ) : requests.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <tbody>
+                {currentRequests.map((req, idx) => (
+                  <tr
+                    key={req._id}
+                    className="row-animate border-b border-gray-50 hover:bg-orange-50/40 transition-colors duration-150 group"
+                    style={{ animationDelay: `${idx * 30}ms` }}
+                  >
+                    {/* S.N */}
+                    <td className="px-4 py-3.5">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">
+                        {(currentPage - 1) * itemsPerPage + idx + 1}
+                      </span>
+                    </td>
+
+                    {/* Request ID */}
+                    <td className="px-4 py-3.5">
+                      <span className="font-mono text-xs bg-gray-50 border border-gray-200 px-2 py-1 rounded-md text-gray-600 group-hover:border-orange-200 group-hover:bg-orange-50 transition-colors">
+                        …{req._id?.slice(-10) || "N/A"}
+                      </span>
+                    </td>
+
+                    {/* Amount */}
+                    <td className="px-4 py-3.5">
+                      <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full text-xs font-bold">
+                        {formatCurrency(req.amount)}
+                      </span>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-4 py-3.5">
+                      <StatusBadge status={req.status} />
+                    </td>
+
+                    {/* Date */}
+                    <td className="px-4 py-3.5 text-xs text-gray-500">
+                      {formatDate(req.createdAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            )}
+          </table>
+        </div>
       </div>
 
-      {/* Create Withdrawal Request Modal */}
+      {/* ── Pagination ── */}
+      {!loading && requests.length > itemsPerPage && (
+        <div className="flex items-center justify-between px-1 mt-5 mb-6">
+          <p className="text-xs text-gray-400 font-medium">
+            Page{" "}
+            <span className="text-gray-600 font-semibold">{currentPage}</span>{" "}
+            of <span className="text-gray-600 font-semibold">{totalPages}</span>
+          </p>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" /> Prev
+            </button>
+            <div className="flex items-center gap-1">
+              {(() => {
+                const pages = [];
+                const visible = new Set([
+                  1,
+                  2,
+                  totalPages - 1,
+                  totalPages,
+                  currentPage - 1,
+                  currentPage,
+                  currentPage + 1,
+                ]);
+                for (let i = 1; i <= totalPages; i++) {
+                  if (visible.has(i)) pages.push(i);
+                  else if (pages[pages.length - 1] !== "...") pages.push("...");
+                }
+                return pages.map((page, i) =>
+                  page === "..." ? (
+                    <span key={i} className="px-1 text-gray-400 text-xs">
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-xl text-xs font-semibold transition-all ${
+                        currentPage === page
+                          ? "bg-[#FF7B1D] text-white shadow-sm shadow-orange-200"
+                          : "bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ),
+                );
+              })()}
+            </div>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              Next <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Create Withdrawal Modal ── */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-800">
-                Create Withdrawal Request
-              </h2>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-gray-100">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-[#FF7B1D] to-orange-400 rounded-t-2xl">
+              <div>
+                <h2 className="text-lg font-bold text-white">
+                  Create Withdrawal Request
+                </h2>
+                <p className="text-xs text-orange-100 mt-0.5">
+                  Enter the amount you want to withdraw
+                </p>
+              </div>
               <button
                 onClick={() => {
                   setIsCreateModalOpen(false);
                   setWithdrawalAmount("");
                   setError(null);
                 }}
-                className="text-gray-500 hover:text-gray-700"
+                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
               >
-                <X size={24} />
+                <X className="w-4 h-4" />
               </button>
             </div>
-            <form onSubmit={handleCreateRequest} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Available Balance
-                </label>
-                <input
-                  type="text"
-                  value={formatCurrency(availableBalance)}
-                  disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
-                />
+
+            <div className="p-6 space-y-4">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {error}
+                </div>
+              )}
+
+              {/* Balance display */}
+              <div className="bg-gradient-to-r from-emerald-50 to-white border border-emerald-200 rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">
+                    Available Balance
+                  </p>
+                  <p className="text-2xl font-bold text-emerald-600 mt-0.5">
+                    {formatCurrency(availableBalance)}
+                  </p>
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center">
+                  <Wallet className="w-6 h-6 text-emerald-500" />
+                </div>
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Withdrawal Amount <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">
+                  Withdrawal Amount <span className="text-red-400">*</span>
                 </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max={availableBalance}
-                  value={withdrawalAmount}
-                  onChange={(e) => setWithdrawalAmount(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  placeholder="Enter withdrawal amount"
-                />
-                <p className="text-xs text-gray-500 mt-1">
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">
+                    ₹
+                  </span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max={availableBalance}
+                    value={withdrawalAmount}
+                    onChange={(e) => setWithdrawalAmount(e.target.value)}
+                    required
+                    className="w-full pl-7 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-300 focus:border-[#FF7B1D] outline-none text-sm transition-all"
+                    placeholder="0.00"
+                  />
+                </div>
+                <p className="text-xs text-gray-400 mt-1.5">
                   Maximum: {formatCurrency(availableBalance)}
                 </p>
               </div>
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCreateModalOpen(false);
-                    setWithdrawalAmount("");
-                    setError(null);
-                  }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="flex-1 px-4 py-2 bg-[#FF7B1D] text-white rounded-md hover:bg-orange-600 transition-colors disabled:opacity-50"
-                >
-                  {actionLoading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <Loader2 size={16} className="animate-spin" />
-                      Creating...
-                    </span>
-                  ) : (
-                    "Create Request"
-                  )}
-                </button>
-              </div>
-            </form>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-100 flex gap-3 bg-gray-50 rounded-b-2xl">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCreateModalOpen(false);
+                  setWithdrawalAmount("");
+                  setError(null);
+                }}
+                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 font-medium hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateRequest}
+                disabled={actionLoading}
+                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-[#FF7B1D] to-orange-400 text-white rounded-xl text-sm font-semibold hover:from-orange-500 hover:to-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm shadow-orange-200 flex items-center justify-center gap-2"
+              >
+                {actionLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Creating…
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" /> Create Request
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Wallet Amount Popup */}
+      {/* ── Wallet Balance Popup ── */}
       {showWalletPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                <Wallet className="text-orange-500" size={24} />
-                Wallet Balance
-              </h2>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full border border-gray-100">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-[#FF7B1D] to-orange-400 rounded-t-2xl">
+              <div className="flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-white" />
+                <h2 className="text-lg font-bold text-white">Wallet Balance</h2>
+              </div>
               <button
                 onClick={() => setShowWalletPopup(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
               >
-                <X size={24} />
+                <X className="w-4 h-4" />
               </button>
             </div>
+
             <div className="p-6">
-              <div className="text-center">
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600 mb-2">
-                    Available Balance
-                  </p>
-                  <p className="text-4xl font-bold text-green-600">
-                    {formatCurrency(availableBalance)}
-                  </p>
+              <div className="text-center mb-6">
+                <div className="w-20 h-20 rounded-2xl bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center mx-auto mb-4">
+                  <IndianRupee className="w-10 h-10 text-emerald-500" />
                 </div>
-                <p className="text-sm text-gray-500 mb-6">
-                  This is your current wallet balance available for withdrawal.
+                <p className="text-xs text-gray-500 font-medium mb-1">
+                  Available Balance
                 </p>
+                <p className="text-4xl font-bold text-emerald-600">
+                  {formatCurrency(availableBalance)}
+                </p>
+                <p className="text-xs text-gray-400 mt-2">
+                  Available for withdrawal
+                </p>
+              </div>
+
+              <div className="space-y-2">
                 <button
                   onClick={() => {
                     setShowWalletPopup(false);
                     setIsCreateModalOpen(true);
                   }}
-                  className="w-full px-4 py-2 bg-[#FF7B1D] text-white rounded-md hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
+                  className="w-full bg-gradient-to-r from-[#FF7B1D] to-orange-400 text-white py-2.5 rounded-xl font-semibold text-sm hover:from-orange-500 hover:to-orange-500 transition-all flex items-center justify-center gap-2 shadow-sm shadow-orange-200"
                 >
-                  <Plus size={20} />
-                  Create Withdrawal Request
+                  <Plus className="w-4 h-4" /> Create Withdrawal Request
                 </button>
                 <button
                   onClick={() => setShowWalletPopup(false)}
-                  className="w-full mt-3 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full border border-gray-200 text-gray-600 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-50 transition-colors"
                 >
                   Close
                 </button>

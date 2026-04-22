@@ -1,14 +1,22 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
-import { Download, Eye } from "lucide-react";
+import {
+  Download,
+  Eye,
+  ShoppingBag,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle,
+} from "lucide-react";
 import { BASE_URL } from "../../api/api";
 
 const EARTH_RADIUS_KM = 6371;
 
 function parseGeoCoord(value) {
   if (value === null || value === undefined || value === "") return null;
-  const n = typeof value === "number" ? value : parseFloat(String(value).trim());
+  const n =
+    typeof value === "number" ? value : parseFloat(String(value).trim());
   return Number.isFinite(n) ? n : null;
 }
 
@@ -31,35 +39,23 @@ function formatDistanceKm(km) {
   return `${km.toFixed(2)} km`;
 }
 
-/** Store → customer straight-line distance (same coords as BagQr). */
 function computeOrderListDistance(order) {
   const storeAddr = order.items?.[0]?.vendor?.storeAddress;
   const ship = order.shippingAddress;
-
   const vLat = parseGeoCoord(storeAddr?.latitude ?? storeAddr?.lat);
   const vLng = parseGeoCoord(
     storeAddr?.longitude ?? storeAddr?.lng ?? storeAddr?.lon,
   );
   const sLat = parseGeoCoord(ship?.latitude ?? ship?.lat);
   const sLng = parseGeoCoord(ship?.longitude ?? ship?.lng ?? ship?.lon);
-
-  if (
-    vLat != null &&
-    vLng != null &&
-    sLat != null &&
-    sLng != null
-  ) {
+  if (vLat != null && vLng != null && sLat != null && sLng != null) {
     return formatDistanceKm(haversineDistanceKm(vLat, vLng, sLat, sLng));
   }
-
   const raw =
-    order.distance ??
-    order.deliveryDistance ??
-    order.shippingAddress?.distance;
+    order.distance ?? order.deliveryDistance ?? order.shippingAddress?.distance;
   if (raw === null || raw === undefined || raw === "") return "—";
-  if (typeof raw === "number" && Number.isFinite(raw)) {
+  if (typeof raw === "number" && Number.isFinite(raw))
     return formatDistanceKm(raw);
-  }
   const str = String(raw).trim();
   if (/km/i.test(str) || /m\b/i.test(str)) return str;
   const num = parseFloat(str.replace(/[^\d.]/g, ""));
@@ -67,73 +63,130 @@ function computeOrderListDistance(order) {
   return formatDistanceKm(num);
 }
 
+const STATUS_CONFIG = {
+  pending: {
+    label: "Pending",
+    cls: "bg-blue-50 text-blue-700 border-blue-200 ring-blue-100",
+    dot: "bg-blue-500",
+  },
+  order_placed: {
+    label: "Order Placed",
+    cls: "bg-purple-50 text-purple-700 border-purple-200 ring-purple-100",
+    dot: "bg-purple-500",
+  },
+  confirmed: {
+    label: "Confirmed",
+    cls: "bg-yellow-50 text-yellow-700 border-yellow-200 ring-yellow-100",
+    dot: "bg-yellow-500",
+  },
+  processing: {
+    label: "Processing",
+    cls: "bg-orange-50 text-orange-700 border-orange-200 ring-orange-100",
+    dot: "bg-orange-500",
+  },
+  ready: {
+    label: "Ready",
+    cls: "bg-cyan-50 text-cyan-700 border-cyan-200 ring-cyan-100",
+    dot: "bg-cyan-500",
+  },
+  rider_assign: {
+    label: "Rider Assigned",
+    cls: "bg-indigo-50 text-indigo-700 border-indigo-200 ring-indigo-100",
+    dot: "bg-indigo-500",
+  },
+  out_for_delivery: {
+    label: "Out for Delivery",
+    cls: "bg-pink-50 text-pink-700 border-pink-200 ring-pink-100",
+    dot: "bg-pink-500",
+  },
+  delivered: {
+    label: "Delivered",
+    cls: "bg-emerald-50 text-emerald-700 border-emerald-200 ring-emerald-100",
+    dot: "bg-emerald-500",
+  },
+  cancelled: {
+    label: "Cancelled",
+    cls: "bg-red-50 text-red-700 border-red-200 ring-red-100",
+    dot: "bg-red-500",
+  },
+  canceled: {
+    label: "Cancelled",
+    cls: "bg-red-50 text-red-700 border-red-200 ring-red-100",
+    dot: "bg-red-500",
+  },
+};
+
+const StatusBadge = ({ status }) => {
+  const key = status?.toLowerCase() || "pending";
+  const cfg = STATUS_CONFIG[key] || {
+    label:
+      status?.charAt(0).toUpperCase() + status?.slice(1).replace(/_/g, " ") ||
+      "Unknown",
+    cls: "bg-gray-50 text-gray-600 border-gray-200 ring-gray-100",
+    dot: "bg-gray-400",
+  };
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ring-1 ${cfg.cls}`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+      {cfg.label}
+    </span>
+  );
+};
+
 const AllOrder = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const highlightRef = useRef(null);
 
-  // Read the orderId from query params
   const queryParams = new URLSearchParams(location.search);
   const highlightOrderId = queryParams.get("orderId");
+
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const itemsPerPage = 8;
-
   const [orders, setOrders] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: 8,
     total: 0,
     pages: 1,
   });
+  const itemsPerPage = 8;
 
-  // Fetch orders from API with Authorization
   useEffect(() => {
     const fetchOrders = async () => {
       setLoading(true);
       setError(null);
-
       try {
-        // Get token from localStorage (same as AddCategoryModal)
         const token =
           localStorage.getItem("token") || localStorage.getItem("authToken");
-
-        if (!token) {
+        if (!token)
           throw new Error("No authentication token found. Please login.");
-        }
 
-        const headers = {
-          "Content-Type": "application/json",
-        };
+        const response = await fetch(
+          `${BASE_URL}/api/checkout/vendor/orders?page=${currentPage}&limit=${itemsPerPage}`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
 
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-
-        const apiUrl = `${BASE_URL}/api/checkout/vendor/orders?page=${currentPage}&limit=${itemsPerPage}`;
-
-        const response = await fetch(apiUrl, {
-          method: "GET",
-          credentials: "include", // Same as AddCategoryModal
-          headers: headers,
-        });
-
-        if (response.status === 401) {
+        if (response.status === 401)
           throw new Error("Unauthorized. Please login again.");
-        }
-
-        if (!response.ok) {
+        if (!response.ok)
           throw new Error(`HTTP error! status: ${response.status}`);
-        }
 
         const data = await response.json();
-
         if (data.success) {
-          // Transform API data to match component format
-          const transformedOrders = data.orders.map((order, index) => {
-            const transformed = {
+          setOrders(
+            data.orders.map((order) => ({
               id: order.orderNumber,
               date: new Date(order.createdAt).toLocaleDateString("en-GB", {
                 day: "2-digit",
@@ -144,168 +197,80 @@ const AllOrder = () => {
               user: order.user?.contactNumber || "N/A",
               cartValue: order.pricing.total,
               payment: order.payment.method.toUpperCase(),
-              status: order.status || "pending", // Use API status directly
+              status: order.status || "pending",
               shippingAddress: order.shippingAddress,
               items: order.items,
               pricing: order.pricing,
               notes: order.notes,
               _id: order._id,
               distanceDisplay: computeOrderListDistance(order),
-            };
-
-            return transformed;
-          });
-
-          setOrders(transformedOrders);
+            })),
+          );
           setPagination(data.pagination);
         } else {
-          console.error("========================================");
-          console.error("=== API ERROR ===");
-          console.error("API returned success: false");
-          console.error("Error Message:", data.message);
-          console.error("Full Error Data:", data);
-          console.error("========================================");
           throw new Error(data.message || "API returned success: false");
         }
       } catch (err) {
-        console.error("Error fetching orders:", err);
         setError(err.message);
-
-        // If unauthorized, redirect to login
-        if (
-          err.message.includes("Unauthorized") ||
-          err.message.includes("authentication")
-        ) {
-          // Optionally redirect to login page
-          // navigate('/login');
-        }
       } finally {
         setLoading(false);
       }
     };
-
     fetchOrders();
-  }, [currentPage, itemsPerPage]);
+  }, [currentPage]);
 
-  // Format status for display with proper labels
-  const formatStatus = (status) => {
-    if (!status) return "Order Pending Hai";
+  useEffect(() => {
+    if (!loading && highlightOrderId && highlightRef.current) {
+      setTimeout(
+        () =>
+          highlightRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          }),
+        100,
+      );
+    }
+  }, [loading, highlightOrderId]);
 
-    const statusMap = {
-      pending: "Pending ",
-      order_placed: "Order Place ",
-      confirmed: "Order Confirm ",
-      processing: "Order Process ",
-      ready: " Ready ",
-      rider_assign: "Rider Assign ",
-      out_for_delivery: "Delivery ",
-      delivered: "Delivered",
-      cancelled: "Cancelled",
-      canceled: "Cancelled",
-    };
-
-    return (
-      statusMap[status.toLowerCase()] ||
-      status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ")
-    );
-  };
-
-  // Handle download invoice - navigate to invoice page
   const handleDownloadInvoice = (orderId) => {
-    console.log("Opening invoice for order:", orderId);
-    // Navigate to invoice view page with orderId
     navigate(`/invoice/view/${orderId}`, {
-      state: { orderId: orderId },
+      state: { orderId },
       replace: false,
     });
   };
 
-  // Scroll to highlighted order after loading
-  useEffect(() => {
-    if (!loading && highlightOrderId && highlightRef.current) {
-      setTimeout(() => {
-        highlightRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-      }, 100);
-    }
-  }, [loading, highlightOrderId]);
+  const filteredOrders = orders.filter((order) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const productNames =
+      order.items?.map((i) => i.product?.name?.toLowerCase() || "").join(" ") ||
+      "";
+    return (
+      order.id?.toLowerCase().includes(q) ||
+      order.user?.toLowerCase().includes(q) ||
+      order.vendor?.toLowerCase().includes(q) ||
+      order.payment?.toLowerCase().includes(q) ||
+      order.status?.toLowerCase().includes(q) ||
+      productNames.includes(q) ||
+      order.cartValue?.toString().includes(q)
+    );
+  });
 
-  // Status colors based on API status values
-  const getStatusColor = (status) => {
-    const statusLower = status?.toLowerCase() || "";
-    if (statusLower === "pending") return "text-blue-600 font-semibold";
-    if (statusLower === "order_placed") return "text-purple-600 font-semibold";
-    if (statusLower === "confirmed") return "text-yellow-600 font-semibold";
-    if (statusLower === "processing") return "text-orange-600 font-semibold";
-    if (statusLower === "ready") return "text-cyan-600 font-semibold";
-    if (statusLower === "rider_assign") return "text-indigo-600 font-semibold";
-    if (statusLower === "out_for_delivery")
-      return "text-pink-600 font-semibold";
-    if (statusLower === "delivered") return "text-green-600 font-semibold";
-    if (statusLower === "cancelled" || statusLower === "canceled")
-      return "text-red-600 font-semibold";
-    return "text-gray-600 font-semibold";
-  };
-
-  // Filter orders based on search query
-  const getFilteredOrders = () => {
-    if (!searchQuery.trim()) {
-      return orders;
-    }
-
-    const searchLower = searchQuery.toLowerCase().trim();
-    return orders.filter((order) => {
-      // Search in order ID
-      const orderId = order.id?.toLowerCase() || "";
-      // Search in user name/contact
-      const userName = order.user?.toLowerCase() || "";
-      // Search in vendor name
-      const vendorName = order.vendor?.toLowerCase() || "";
-      // Search in payment method
-      const payment = order.payment?.toLowerCase() || "";
-      // Search in status
-      const status = order.status?.toLowerCase() || "";
-      // Search in product names (from items)
-      const productNames =
-        order.items
-          ?.map((item) => item.product?.name?.toLowerCase() || "")
-          .join(" ") || "";
-      // Search in cart value
-      const cartValue = order.cartValue?.toString() || "";
-
-      return (
-        orderId.includes(searchLower) ||
-        userName.includes(searchLower) ||
-        vendorName.includes(searchLower) ||
-        payment.includes(searchLower) ||
-        status.includes(searchLower) ||
-        productNames.includes(searchLower) ||
-        cartValue.includes(searchLower)
-      );
-    });
-  };
-
-  const filteredOrders = getFilteredOrders();
-
-  // Pagination (using all orders for display)
-  const indexOfLast = currentPage * itemsPerPage;
-  const indexOfFirst = indexOfLast - itemsPerPage;
-  const currentOrders = filteredOrders.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const currentOrders = filteredOrders.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
 
-  // Skeleton Loader
   const TableSkeleton = () => (
     <tbody>
       {Array.from({ length: itemsPerPage }).map((_, idx) => (
-        <tr
-          key={idx}
-          className="animate-pulse border-b border-gray-200 bg-white"
-        >
+        <tr key={idx} className="border-b border-gray-100">
           {Array.from({ length: 9 }).map((__, j) => (
-            <td key={j} className="p-3">
-              <div className="h-4 bg-gray-200 rounded w-[80%]" />
+            <td key={j} className="px-4 py-3.5">
+              <div
+                className={`h-3.5 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full animate-pulse ${j === 1 ? "w-28" : j === 8 ? "w-16 ml-auto" : "w-[70%]"}`}
+              />
             </td>
           ))}
         </tr>
@@ -313,28 +278,37 @@ const AllOrder = () => {
     </tbody>
   );
 
-  // Empty State
   const EmptyState = () => (
     <tbody>
       <tr>
-        <td
-          colSpan="9"
-          className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
-        >
+        <td colSpan="9" className="py-20 text-center">
           {error ? (
-            <div className="text-red-500">
-              <p className="font-semibold">Error: {error}</p>
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center">
+                <AlertCircle className="w-8 h-8 text-red-300" />
+              </div>
+              <p className="text-red-500 text-sm font-medium">{error}</p>
               {error.includes("authentication") && (
                 <button
                   onClick={() => window.location.reload()}
-                  className="mt-2 text-orange-500 underline"
+                  className="text-[#FF7B1D] underline text-xs"
                 >
                   Refresh Page
                 </button>
               )}
             </div>
           ) : (
-            "No orders found."
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center">
+                <ShoppingBag className="w-8 h-8 text-orange-300" />
+              </div>
+              <p className="text-gray-400 text-sm font-medium">
+                No orders found
+              </p>
+              <p className="text-gray-300 text-xs">
+                Try adjusting your search query
+              </p>
+            </div>
           )}
         </td>
       </tr>
@@ -343,147 +317,268 @@ const AllOrder = () => {
 
   return (
     <DashboardLayout>
-      {/* Search + Calendar */}
-      <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-2 w-full pl-4 max-w-[99%] mx-auto mt-2 mb-2">
-        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-          {/* Search Bar */}
-          <div className="flex items-center border border-black rounded overflow-hidden h-[36px] w-full sm:w-[400px]">
-            <input
-              type="text"
-              placeholder="Search Order by Order Id, Products, User name, Tag"
-              className="flex-1 px-4 text-sm focus:outline-none h-full"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  setCurrentPage(1);
-                }
-              }}
-            />
-            <button
-              onClick={() => setCurrentPage(1)}
-              className="bg-[#FF7B1D] hover:bg-orange-600 text-white px-4 sm:px-6 h-full text-sm transition-colors"
-            >
-              Search
-            </button>
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .row-animate { animation: fadeSlideIn 0.25s ease forwards; }
+        .action-btn {
+          width: 30px; height: 30px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 8px;
+          transition: all 0.18s ease;
+        }
+        .action-btn:hover { transform: translateY(-1px); }
+      `}</style>
+
+      {/* ── Toolbar ── */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 w-full px-1 mt-3 mb-3">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+            <span className="text-sm font-semibold text-gray-700">
+              All Orders
+            </span>
           </div>
+          {!loading && (
+            <span className="text-xs text-gray-400 font-medium bg-gray-100 px-2 py-1 rounded-lg">
+              {pagination.total} total
+            </span>
+          )}
         </div>
 
-        <div className="mt-3 sm:mt-0">
-          {/* <button className="bg-black hover:bg-gray-800 text-white w-44 sm:w-44 px-6 py-2 rounded-sm text-sm whitespace-nowrap">
-            Calendar
-          </button> */}
+        {/* Search */}
+        <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden h-[38px] w-full lg:w-[420px] shadow-sm bg-white">
+          <input
+            type="text"
+            placeholder="Search by Order ID, products, user, status…"
+            className="flex-1 px-4 text-sm text-gray-700 focus:outline-none h-full placeholder:text-gray-400"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
+            onKeyDown={(e) => e.key === "Enter" && setCurrentPage(1)}
+          />
+          <button
+            onClick={() => setCurrentPage(1)}
+            className="bg-[#FF7B1D] hover:bg-orange-500 text-white text-sm font-medium px-5 h-full transition-colors"
+          >
+            Search
+          </button>
         </div>
       </div>
 
-      {/* Orders Table */}
-      <div className="bg-white rounded-sm shadow-sm overflow-x-auto pl-4 max-w-[99%] mx-auto">
-        <table className="w-full text-sm border-collapse min-w-[700px]">
-          <thead>
-            <tr className="bg-[#FF7B1D] text-black">
-              <th className="p-3 text-left">S.N</th>
-              <th className="p-3 text-left">Order ID</th>
-              <th className="p-3 text-left">Date</th>
-              <th className="p-3 text-left">User Name</th>
-              <th className="p-3 text-left">Cart Value</th>
-              <th className="p-3 text-left">Distance</th>
-              <th className="p-3 text-left">Payment Status</th>
-              <th className="p-3 text-left">Status</th>
-              <th className="p-3 pr-6 text-right">Action</th>
-            </tr>
-          </thead>
+      {/* ── Table Card ── */}
+      <div className="mx-1 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+        {/* Card Header */}
+        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+            <span className="text-sm font-semibold text-gray-700">
+              Order List
+            </span>
+          </div>
+          {!loading && (
+            <span className="text-xs text-gray-400 font-medium">
+              {filteredOrders.length} of {pagination.total} orders
+            </span>
+          )}
+        </div>
 
-          {loading ? (
-            <TableSkeleton />
-          ) : filteredOrders.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <tbody>
-              {currentOrders.map((order, idx) => {
-                const isHighlighted = order.id === highlightOrderId;
-                const formattedStatus = formatStatus(order.status);
-                const statusColor = getStatusColor(order.status);
-
-                return (
-                  <tr
-                    key={order.id}
-                    ref={isHighlighted ? highlightRef : null}
-                    className={`shadow-sm rounded-sm hover:bg-gray-50 transition border-b-4 border-gray-200 ${
-                      isHighlighted ? "bg-yellow-100 animate-pulse" : "bg-white"
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gradient-to-r from-[#FF7B1D] to-orange-400">
+                {[
+                  "S.N",
+                  "Order ID",
+                  "Date",
+                  "User",
+                  "Cart Value",
+                  "Distance",
+                  "Payment",
+                  "Status",
+                  "Actions",
+                ].map((h, i) => (
+                  <th
+                    key={h}
+                    className={`px-4 py-3.5 text-xs font-bold text-white tracking-wider uppercase opacity-90 ${
+                      i === 8 ? "text-right pr-5" : "text-left"
                     }`}
                   >
-                    <td className="p-3">{indexOfFirst + idx + 1}</td>
-                    <td className="p-3 font-semibold">{order.id}</td>
-                    <td className="p-3">{order.date}</td>
-                    <td className="p-3">{order.user}</td>
-                    <td className="p-3">₹{order.cartValue}</td>
-                    <td className="p-3 whitespace-nowrap">
-                      {order.distanceDisplay}
-                    </td>
-                    <td className="p-3">{order.payment}</td>
-                    <td className={`p-3 ${statusColor}`}>{formattedStatus}</td>
-                    <td className="p-3 pr-6">
-                      <div className="flex gap-2 justify-end">
-                        <button
-                          onClick={() => handleDownloadInvoice(order._id)}
-                          className="text-orange-600 hover:text-blue-700"
-                          title="View Invoice"
-                        >
-                          <Download className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() =>
-                            navigate(`/order/${order.id || order._id}`)
-                          }
-                          className="text-orange-600 hover:text-blue-700"
-                          title="View Order Details"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          )}
-        </table>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+
+            {loading ? (
+              <TableSkeleton />
+            ) : filteredOrders.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <tbody>
+                {currentOrders.map((order, idx) => {
+                  const isHighlighted = order.id === highlightOrderId;
+                  return (
+                    <tr
+                      key={order.id}
+                      ref={isHighlighted ? highlightRef : null}
+                      className={`row-animate border-b border-gray-50 transition-colors duration-150 group ${
+                        isHighlighted
+                          ? "bg-yellow-50 ring-2 ring-inset ring-yellow-300"
+                          : "hover:bg-orange-50/40"
+                      }`}
+                      style={{ animationDelay: `${idx * 30}ms` }}
+                    >
+                      {/* S.N */}
+                      <td className="px-4 py-3.5">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">
+                          {(currentPage - 1) * itemsPerPage + idx + 1}
+                        </span>
+                      </td>
+
+                      {/* Order ID */}
+                      <td className="px-4 py-3.5">
+                        <span className="font-mono text-xs bg-gray-50 border border-gray-200 px-2 py-1 rounded-md text-gray-600 group-hover:border-orange-200 group-hover:bg-orange-50 transition-colors">
+                          {order.id}
+                        </span>
+                      </td>
+
+                      {/* Date */}
+                      <td className="px-4 py-3.5 text-gray-500 text-xs whitespace-nowrap">
+                        {order.date}
+                      </td>
+
+                      {/* User */}
+                      <td className="px-4 py-3.5">
+                        <span className="text-sm font-medium text-gray-700">
+                          {order.user}
+                        </span>
+                      </td>
+
+                      {/* Cart Value */}
+                      <td className="px-4 py-3.5">
+                        <span className="text-sm font-bold text-gray-800">
+                          ₹{order.cartValue}
+                        </span>
+                      </td>
+
+                      {/* Distance */}
+                      <td className="px-4 py-3.5">
+                        <span className="inline-block bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full border border-blue-100 whitespace-nowrap">
+                          {order.distanceDisplay}
+                        </span>
+                      </td>
+
+                      {/* Payment */}
+                      <td className="px-4 py-3.5">
+                        <span className="inline-block bg-purple-50 text-purple-700 text-xs font-medium px-2.5 py-1 rounded-full border border-purple-100">
+                          {order.payment}
+                        </span>
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-4 py-3.5">
+                        <StatusBadge status={order.status} />
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-4 py-3.5 pr-5">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleDownloadInvoice(order._id)}
+                            className="action-btn bg-orange-50 text-orange-500 hover:bg-orange-100 hover:text-orange-700"
+                            title="View Invoice"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() =>
+                              navigate(`/order/${order.id || order._id}`)
+                            }
+                            className="action-btn bg-emerald-50 text-emerald-500 hover:bg-emerald-100 hover:text-emerald-700"
+                            title="View Order Details"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            )}
+          </table>
+        </div>
       </div>
 
-      {/* Pagination */}
+      {/* ── Pagination ── */}
       {!loading && filteredOrders.length > 0 && (
-        <div className="flex justify-end items-center gap-4 mt-6 max-w-[98%] mx-auto">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            disabled={currentPage === 1}
-            className="bg-[#FF7B1D] hover:bg-orange-600 text-white px-10 py-3 text-sm font-medium rounded-0 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Back
-          </button>
-          <div className="flex gap-2 text-sm text-black font-medium flex-wrap items-center">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`px-3 py-1 rounded ${
-                  currentPage === page ? "text-orange-600 font-semibold" : ""
-                }`}
-              >
-                {page}
-              </button>
-            ))}
+        <div className="flex items-center justify-between px-1 mt-5 mb-6">
+          <p className="text-xs text-gray-400 font-medium">
+            Page{" "}
+            <span className="text-gray-600 font-semibold">{currentPage}</span>{" "}
+            of <span className="text-gray-600 font-semibold">{totalPages}</span>
+          </p>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" /> Prev
+            </button>
+
+            <div className="flex items-center gap-1">
+              {(() => {
+                const pages = [];
+                const visible = new Set([
+                  1,
+                  2,
+                  totalPages - 1,
+                  totalPages,
+                  currentPage - 1,
+                  currentPage,
+                  currentPage + 1,
+                ]);
+                for (let i = 1; i <= totalPages; i++) {
+                  if (visible.has(i)) pages.push(i);
+                  else if (pages[pages.length - 1] !== "...") pages.push("...");
+                }
+                return pages.map((page, idx) =>
+                  page === "..." ? (
+                    <span key={idx} className="px-1 text-gray-400 text-xs">
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-xl text-xs font-semibold transition-all ${
+                        currentPage === page
+                          ? "bg-[#FF7B1D] text-white shadow-sm shadow-orange-200"
+                          : "bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ),
+                );
+              })()}
+            </div>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              Next <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-            disabled={currentPage === totalPages}
-            className="bg-[#247606] hover:bg-green-700 text-white px-10 py-3 text-sm font-medium rounded-0 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Next
-          </button>
         </div>
       )}
     </DashboardLayout>

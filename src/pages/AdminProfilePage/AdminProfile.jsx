@@ -64,7 +64,7 @@ const GetLocationButton = ({ onLocation, onError }) => {
       type="button"
       onClick={handleClick}
       disabled={fetching}
-      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg text-white transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed hover:opacity-90"
+      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-white transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed hover:opacity-90"
       style={{
         background: fetching
           ? "#9ca3af"
@@ -111,7 +111,7 @@ const GoogleMapEmbed = ({ lat, lng }) => {
 
   if (!hasCoords) {
     return (
-      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl h-56 flex flex-col items-center justify-center border-2 border-dashed border-gray-200">
+      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl h-56 flex flex-col items-center justify-center border-2 border-dashed border-gray-200">
         <MapPinIcon className="w-10 h-10 text-gray-300 mb-2" />
         <p className="text-sm font-medium text-gray-400">No coordinates set</p>
         <p className="text-xs text-gray-300 mt-0.5">
@@ -124,7 +124,7 @@ const GoogleMapEmbed = ({ lat, lng }) => {
   const src = `https://maps.google.com/maps?q=${parseFloat(lat)},${parseFloat(lng)}&z=15&output=embed`;
 
   return (
-    <div className="rounded-xl overflow-hidden border-2 border-orange-200 shadow-md">
+    <div className="rounded-2xl overflow-hidden border-2 border-orange-200 shadow-md">
       <iframe
         title="Office Location"
         src={src}
@@ -154,7 +154,6 @@ const AdminProfile = () => {
   const [companyLogoPreview, setCompanyLogoPreview] = useState(null);
   const [locationError, setLocationError] = useState(null);
 
-  // ── build flat form data helper ──────────────────────────────────────────
   const buildFlatFormData = (data) => ({
     name: data.name || "",
     email: data.email || "",
@@ -182,7 +181,6 @@ const AdminProfile = () => {
     longitude: data.officeAddress?.longitude || "",
   });
 
-  // Fetch admin profile data
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
@@ -209,8 +207,8 @@ const AdminProfile = () => {
         console.error("Error fetching profile:", error);
         setError(
           error.response?.data?.message ||
-          error.message ||
-          "Error fetching profile data",
+            error.message ||
+            "Error fetching profile data",
         );
       } finally {
         setLoading(false);
@@ -223,7 +221,6 @@ const AdminProfile = () => {
     setEditFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // ── Location handler ──────────────────────────────────────────────────────
   const handleLocationFetched = (lat, lng) => {
     setLocationError(null);
     setEditFormData((prev) => ({ ...prev, latitude: lat, longitude: lng }));
@@ -393,9 +390,7 @@ const AdminProfile = () => {
       if (error.response?.status === 413)
         alert("File too large! Please upload an image smaller than 5MB.");
       else if (error.response?.status === 400)
-        alert(
-          "Invalid request or file. Please check your data and try again.",
-        );
+        alert("Invalid request or file. Please check your data and try again.");
       else if (error.response?.status === 500)
         alert("Server error. Please try again later.");
     } finally {
@@ -475,7 +470,7 @@ const AdminProfile = () => {
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg transition-colors shadow-md"
+              className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-xl transition-colors shadow-md"
             >
               Retry
             </button>
@@ -486,8 +481,6 @@ const AdminProfile = () => {
   }
 
   const { officeAddress, verificationStatus } = profileData;
-
-  // Live map coords — update in real time while editing
   const mapLat = isEditing
     ? editFormData.latitude
     : officeAddress?.latitude || "";
@@ -497,10 +490,11 @@ const AdminProfile = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-4 ml-4 py-4">
+      {/* Changed: max-w-7xl → w-full, added pl-2 to match other pages */}
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-4 ml-4 py-2">
         {/* Success */}
         {saveSuccess && (
-          <div className="mb-4 bg-green-50 border border-green-200 rounded-sm p-4 flex items-center gap-3 shadow-md">
+          <div className="mb-4 bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center gap-3 shadow-md">
             <CheckIcon className="w-6 h-6 text-green-600" />
             <p className="text-green-800 font-medium">
               Profile updated successfully!
@@ -510,14 +504,14 @@ const AdminProfile = () => {
 
         {/* Error */}
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 shadow-md">
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3 shadow-md">
             <XMarkIcon className="w-6 h-6 text-red-600" />
             <p className="text-red-800 font-medium">{error}</p>
           </div>
         )}
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-sm shadow-xl p-6 mb-6">
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl shadow-xl p-6 mb-6">
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="flex items-center gap-4 mb-4 md:mb-0">
               <div className="relative">
@@ -529,8 +523,8 @@ const AdminProfile = () => {
                     className={`w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg ring-4 ring-orange-300 overflow-hidden transition-all ${isEditing ? "hover:ring-orange-400 hover:scale-105" : ""}`}
                   >
                     {profileImagePreview ||
-                      profileData.profileImage ||
-                      profileData.profilePhoto?.url ? (
+                    profileData.profileImage ||
+                    profileData.profilePhoto?.url ? (
                       <img
                         src={
                           profileImagePreview ||
@@ -571,7 +565,7 @@ const AdminProfile = () => {
                 <div className="flex flex-col gap-2">
                   <label
                     htmlFor="profile-image-upload"
-                    className="flex items-center gap-2 bg-white text-orange-600 px-4 py-2.5 rounded-lg font-semibold hover:bg-orange-50 transition-colors shadow-md cursor-pointer border-2 border-orange-300 hover:border-orange-400"
+                    className="flex items-center gap-2 bg-white text-orange-600 px-4 py-2.5 rounded-xl font-semibold hover:bg-orange-50 transition-colors shadow-md cursor-pointer border-2 border-orange-300 hover:border-orange-400"
                   >
                     <PencilIcon className="w-5 h-5" />
                     <span className="text-sm font-medium">
@@ -585,10 +579,9 @@ const AdminProfile = () => {
                       </span>
                       <button
                         onClick={handleRemoveImage}
-                        className="flex items-center gap-1 bg-red-50 text-red-600 px-3 py-1.5 rounded-lg font-semibold hover:bg-red-100 transition-colors shadow-sm border border-red-200 text-xs"
+                        className="flex items-center gap-1 bg-red-50 text-red-600 px-3 py-1.5 rounded-xl font-semibold hover:bg-red-100 transition-colors shadow-sm border border-red-200 text-xs"
                       >
-                        <XMarkIcon className="w-3 h-3" />
-                        Remove
+                        <XMarkIcon className="w-3 h-3" /> Remove
                       </button>
                     </div>
                   )}
@@ -605,7 +598,7 @@ const AdminProfile = () => {
                 </p>
                 <div className="flex items-center gap-2">
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold shadow ${profileData.isActive ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}
+                    className={`px-3 py-1 rounded-xl text-xs font-semibold shadow ${profileData.isActive ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}
                   >
                     {profileData.isActive ? "● Active" : "● Inactive"}
                   </span>
@@ -617,25 +610,23 @@ const AdminProfile = () => {
               {!isEditing ? (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 bg-white text-orange-600 px-6 py-2.5 rounded-lg font-semibold hover:bg-orange-50 transition-colors shadow-md"
+                  className="flex items-center gap-2 bg-white text-orange-600 px-6 py-2.5 rounded-xl font-semibold hover:bg-orange-50 transition-colors shadow-md"
                 >
-                  <PencilIcon className="w-5 h-5" />
-                  Edit Profile
+                  <PencilIcon className="w-5 h-5" /> Edit Profile
                 </button>
               ) : (
                 <>
                   <button
                     onClick={handleCancelEdit}
                     disabled={isSaving}
-                    className="flex items-center gap-2 bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-semibold hover:bg-gray-300 transition-colors shadow-md disabled:opacity-50"
+                    className="flex items-center gap-2 bg-gray-200 text-gray-700 px-6 py-2.5 rounded-xl font-semibold hover:bg-gray-300 transition-colors shadow-md disabled:opacity-50"
                   >
-                    <XMarkIcon className="w-5 h-5" />
-                    Cancel
+                    <XMarkIcon className="w-5 h-5" /> Cancel
                   </button>
                   <button
                     onClick={handleSaveProfile}
                     disabled={isSaving}
-                    className="flex items-center gap-2 bg-green-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-green-700 transition-colors shadow-md disabled:opacity-50"
+                    className="flex items-center gap-2 bg-green-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-green-700 transition-colors shadow-md disabled:opacity-50"
                   >
                     {isSaving ? (
                       <>
@@ -763,7 +754,7 @@ const AdminProfile = () => {
                   onChange={(v) => handleInputChange("registrationNumber", v)}
                 />
                 <div className="sm:col-span-2">
-                  <div className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors border border-gray-200">
+                  <div className="bg-gray-50 rounded-2xl p-4 hover:bg-gray-100 transition-colors border border-gray-200">
                     <div className="flex items-center gap-2 mb-3">
                       <BuildingOfficeIcon className="w-4 h-4 text-gray-500" />
                       <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
@@ -776,26 +767,26 @@ const AdminProfile = () => {
                           <img
                             src={companyLogoPreview}
                             alt="Company Logo Preview"
-                            className="w-32 h-32 rounded-lg object-cover border-2 border-orange-300"
+                            className="w-32 h-32 rounded-2xl object-cover border-2 border-orange-300"
                           />
                           {isEditing && (
                             <button
                               onClick={handleRemoveCompanyLogo}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-xl p-1 hover:bg-red-600"
                             >
                               <XMarkIcon className="w-4 h-4" />
                             </button>
                           )}
                         </div>
                       ) : (
-                        <div className="w-32 h-32 rounded-lg bg-gray-200 flex items-center justify-center border-2 border-dashed border-gray-300">
+                        <div className="w-32 h-32 rounded-2xl bg-gray-200 flex items-center justify-center border-2 border-dashed border-gray-300">
                           <BuildingOfficeIcon className="w-12 h-12 text-gray-400" />
                         </div>
                       )}
                       {isEditing && (
                         <label
                           htmlFor="company-logo-upload"
-                          className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 cursor-pointer transition-colors shadow-md"
+                          className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-xl hover:bg-orange-700 cursor-pointer transition-colors shadow-md"
                         >
                           <PencilIcon className="w-5 h-5" />
                           <span className="text-sm font-medium">
@@ -854,7 +845,7 @@ const AdminProfile = () => {
             {/* Office Address */}
             <InfoSection title="Office Address" icon={MapPinIcon}>
               <div className="space-y-3">
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-orange-200 shadow-sm">
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-2xl border border-orange-200 shadow-sm">
                   <div className="flex items-start gap-2 mb-2">
                     <MapPinIcon className="w-5 h-5 text-orange-600 mt-0.5" />
                     <div className="flex-1">
@@ -868,7 +859,7 @@ const AdminProfile = () => {
                           onChange={(e) =>
                             handleInputChange("streetAddress", e.target.value)
                           }
-                          className="w-full text-sm text-gray-800 font-semibold bg-white border border-orange-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          className="w-full text-sm text-gray-800 font-semibold bg-white border border-orange-300 rounded-xl px-2 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
                         />
                       ) : (
                         <p className="text-sm text-gray-800 font-semibold">
@@ -908,11 +899,11 @@ const AdminProfile = () => {
                   />
                 </div>
 
-                {/* ── Coordinates + Get Location ── */}
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                {/* Coordinates */}
+                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-3">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
-                      <MapPinIcon className="w-3.5 h-3.5 text-orange-500" />
+                      <MapPinIcon className="w-3.5 h-3.5 text-orange-500" />{" "}
                       Coordinates
                     </p>
                     {isEditing && (
@@ -923,20 +914,18 @@ const AdminProfile = () => {
                     )}
                   </div>
 
-                  {/* Location error banner */}
                   {locationError && isEditing && (
-                    <div className="mb-2 flex items-start gap-1.5 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg px-2.5 py-2">
+                    <div className="mb-2 flex items-start gap-1.5 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl px-2.5 py-2">
                       <XMarkIcon className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                       <span>{locationError}</span>
                     </div>
                   )}
 
-                  {/* Success banner */}
                   {isEditing &&
                     editFormData.latitude &&
                     editFormData.longitude &&
                     !locationError && (
-                      <div className="mb-2 flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 text-xs rounded-lg px-2.5 py-1.5">
+                      <div className="mb-2 flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 text-xs rounded-xl px-2.5 py-1.5">
                         <CheckIcon className="w-3.5 h-3.5 shrink-0" />
                         <span>
                           Location set: {editFormData.latitude},{" "}
@@ -946,7 +935,7 @@ const AdminProfile = () => {
                     )}
 
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-white p-2.5 rounded-lg border border-gray-200">
+                    <div className="bg-white p-2.5 rounded-2xl border border-gray-200">
                       <p className="text-xs text-gray-400 mb-1">Latitude</p>
                       {isEditing ? (
                         <input
@@ -957,7 +946,7 @@ const AdminProfile = () => {
                             handleInputChange("latitude", e.target.value)
                           }
                           placeholder="e.g. 28.6139"
-                          className="w-full text-sm font-semibold text-gray-800 bg-gray-50 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          className="w-full text-sm font-semibold text-gray-800 bg-gray-50 border border-gray-300 rounded-xl px-2 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
                         />
                       ) : (
                         <p className="text-sm font-semibold text-gray-800">
@@ -965,7 +954,7 @@ const AdminProfile = () => {
                         </p>
                       )}
                     </div>
-                    <div className="bg-white p-2.5 rounded-lg border border-gray-200">
+                    <div className="bg-white p-2.5 rounded-2xl border border-gray-200">
                       <p className="text-xs text-gray-400 mb-1">Longitude</p>
                       {isEditing ? (
                         <input
@@ -976,7 +965,7 @@ const AdminProfile = () => {
                             handleInputChange("longitude", e.target.value)
                           }
                           placeholder="e.g. 77.2090"
-                          className="w-full text-sm font-semibold text-gray-800 bg-gray-50 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          className="w-full text-sm font-semibold text-gray-800 bg-gray-50 border border-gray-300 rounded-xl px-2 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
                         />
                       ) : (
                         <p className="text-sm font-semibold text-gray-800">
@@ -989,12 +978,12 @@ const AdminProfile = () => {
               </div>
             </InfoSection>
 
-            {/* ── Google Map (replaces old placeholder) ── */}
-            <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
+            {/* Google Map */}
+            <div className="bg-white rounded-2xl shadow-md p-4 border border-gray-200">
               <h3 className="font-semibold text-gray-800 mb-3 flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                  <MapPinIcon className="w-5 h-5 text-orange-600" />
-                  Location Map
+                  <MapPinIcon className="w-5 h-5 text-orange-600" /> Location
+                  Map
                 </span>
                 {mapLat && mapLng && (
                   <span className="text-xs text-gray-400 font-normal">
@@ -1003,9 +992,7 @@ const AdminProfile = () => {
                   </span>
                 )}
               </h3>
-
               <GoogleMapEmbed lat={mapLat} lng={mapLng} />
-
               {mapLat && mapLng && (
                 <a
                   href={`https://www.google.com/maps?q=${mapLat},${mapLng}`}
@@ -1013,16 +1000,15 @@ const AdminProfile = () => {
                   rel="noopener noreferrer"
                   className="mt-2.5 flex items-center justify-center gap-1.5 text-xs text-orange-600 hover:text-orange-700 font-semibold hover:underline"
                 >
-                  <GlobeAltIcon className="w-3.5 h-3.5" />
-                  Open in Google Maps
+                  <GlobeAltIcon className="w-3.5 h-3.5" /> Open in Google Maps
                 </a>
               )}
             </div>
 
             {/* Verification Status */}
-            <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
+            <div className="bg-white rounded-2xl shadow-md p-4 border border-gray-200">
               <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <ShieldCheckIcon className="w-5 h-5 text-orange-600" />
+                <ShieldCheckIcon className="w-5 h-5 text-orange-600" />{" "}
                 Verification Status
               </h3>
               <div className="space-y-3">
@@ -1038,10 +1024,10 @@ const AdminProfile = () => {
             </div>
 
             {/* Account Activity */}
-            <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
+            <div className="bg-white rounded-2xl shadow-md p-4 border border-gray-200">
               <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <ClockIcon className="w-5 h-5 text-orange-600" />
-                Account Activity
+                <ClockIcon className="w-5 h-5 text-orange-600" /> Account
+                Activity
               </h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
@@ -1058,7 +1044,7 @@ const AdminProfile = () => {
                 </div>
                 <div className="flex justify-between items-center py-2">
                   <span className="text-sm text-gray-600">Account ID</span>
-                  <span className="text-xs font-mono text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                  <span className="text-xs font-mono text-gray-600 bg-gray-100 px-2 py-1 rounded-xl">
                     {profileData._id.slice(-8)}
                   </span>
                 </div>
@@ -1073,7 +1059,7 @@ const AdminProfile = () => {
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 const InfoSection = ({ title, icon: Icon, children }) => (
-  <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+  <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
     <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-3">
       <Icon className="w-6 h-6 text-orange-600" />
       {title}
@@ -1098,7 +1084,7 @@ const InfoItem = ({
   inputType = "text",
 }) => (
   <div className={fullWidth ? "sm:col-span-2" : ""}>
-    <div className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors border border-gray-200">
+    <div className="bg-gray-50 rounded-2xl p-3 hover:bg-gray-100 transition-colors border border-gray-200">
       <div className="flex items-center gap-2 mb-2">
         {Icon && <Icon className="w-4 h-4 text-gray-500" />}
         <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
@@ -1111,7 +1097,7 @@ const InfoItem = ({
             type={inputType}
             value={value || ""}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="w-full text-sm font-semibold text-gray-800 bg-white border border-gray-300 rounded-xl px-2 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
           />
         ) : isLink && value ? (
           <a
@@ -1145,7 +1131,7 @@ const InfoItem = ({
 
 const VerificationBadge = ({ label, verified }) => (
   <div
-    className={`flex items-center justify-between p-3 rounded-lg border shadow-sm transition-colors ${verified ? "bg-green-50 border-green-200 hover:bg-green-100" : "bg-red-50 border-red-200 hover:bg-red-100"}`}
+    className={`flex items-center justify-between p-3 rounded-2xl border shadow-sm transition-colors ${verified ? "bg-green-50 border-green-200 hover:bg-green-100" : "bg-red-50 border-red-200 hover:bg-red-100"}`}
   >
     <div className="flex items-center gap-2">
       <ShieldCheckIcon
@@ -1158,7 +1144,7 @@ const VerificationBadge = ({ label, verified }) => (
       </span>
     </div>
     <span
-      className={`px-3 py-1 rounded-full text-xs font-semibold ${verified ? "bg-green-200 text-green-800" : "bg-red-200 text-red-800"}`}
+      className={`px-3 py-1 rounded-xl text-xs font-semibold ${verified ? "bg-green-200 text-green-800" : "bg-red-200 text-red-800"}`}
     >
       {verified ? "✓ Verified" : "✗ Not Verified"}
     </span>

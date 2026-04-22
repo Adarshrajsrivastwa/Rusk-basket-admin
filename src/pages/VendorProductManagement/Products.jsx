@@ -1,807 +1,21 @@
-// import React, { useState, useEffect, useRef } from "react";
-// import DashboardLayout from "../../components/DashboardLayout";
-// import { Eye, Edit, Trash2, Download } from "lucide-react";
-// import AddProductModal from "../../components/AddProduct";
-// import { useNavigate } from "react-router-dom";
-// import JsBarcode from "jsbarcode";
-// import { BASE_URL } from "../../api/api";
-
-// // API Base URL - Make sure this matches your AddProduct component
-// const API_BASE_URL = `${BASE_URL}/api`;
-
-// const AllProduct = () => {
-//   const [activeTab, setActiveTab] = useState("all");
-//   const [isModalOpen, setIsModalOpen] = useState(false);
-//   const [isEditMode, setIsEditMode] = useState(false);
-//   const [editingProduct, setEditingProduct] = useState(null);
-//   const [searchQuery, setSearchQuery] = useState("");
-//   const [selectedVendor, setSelectedVendor] = useState("All Vendors");
-//   const [currentPage, setCurrentPage] = useState(1);
-//   const [loading, setLoading] = useState(true);
-//   const [products, setProducts] = useState([]);
-//   const navigate = useNavigate();
-//   const itemsPerPage = 7;
-
-//   // Hidden canvas for barcode generation
-//   const canvasRef = useRef(null);
-
-//   // Utility function to get auth token
-//   const getAuthToken = () => {
-//     return localStorage.getItem("token") || localStorage.getItem("authToken");
-//   };
-
-//   // 🟢 Fetch products from API (GET vendor products)
-//   const fetchProducts = async () => {
-//     setLoading(true);
-//     try {
-//       const token = getAuthToken();
-
-//       if (!token) {
-//         console.error("No auth token found");
-//         alert("Please login to view products");
-//         setLoading(false);
-//         return;
-//       }
-
-//       const headers = {
-//         "Content-Type": "application/json",
-//         Authorization: `Bearer ${token}`,
-//       };
-
-//       // Using the correct vendor products endpoint
-//       const response = await fetch(`${API_BASE_URL}/vendor/products`, {
-//         method: "GET",
-//         headers: headers,
-//         credentials: "include",
-//       });
-
-//       console.log("Fetch response status:", response.status);
-
-//       if (!response.ok) {
-//         const errorText = await response.text();
-//         console.error("Fetch error response:", errorText);
-//         throw new Error(`Failed to fetch products: ${response.status}`);
-//       }
-
-//       const result = await response.json();
-
-//       console.log("Fetched products raw result:", result);
-//       console.log("Result.success:", result.success);
-//       console.log("Result.data:", result.data);
-
-//       if (result.success && result.data && Array.isArray(result.data)) {
-//         console.log("Number of products fetched:", result.data.length);
-
-//         // Transform API data to match component structure
-//         const transformedProducts = result.data.map((product) => {
-//           console.log("Processing product:", product._id, product.productName);
-
-//           // Extract vendor name from vendor object
-//           let vendorName = "Unknown Vendor";
-//           if (product.vendor) {
-//             if (typeof product.vendor === "string") {
-//               vendorName = product.vendor;
-//             } else if (product.vendor.vendorName) {
-//               vendorName = product.vendor.vendorName;
-//             } else if (product.vendor.storeName) {
-//               vendorName = product.vendor.storeName;
-//             } else if (product.vendor.name) {
-//               vendorName = product.vendor.name;
-//             }
-//           }
-
-//           // Map approvalStatus to display status
-//           let displayStatus = "In Review";
-//           if (product.approvalStatus) {
-//             const approvalStatus = product.approvalStatus.toLowerCase();
-//             if (approvalStatus === "approved") {
-//               displayStatus = "Approved";
-//             } else if (approvalStatus === "pending") {
-//               displayStatus = "In Review";
-//             } else if (approvalStatus === "rejected") {
-//               displayStatus = "Rejected";
-//             }
-//           }
-
-//           // Get category name - handle both nested object and code
-//           let categoryName = "Uncategorized";
-//           if (product.category) {
-//             if (typeof product.category === "object" && product.category.name) {
-//               categoryName = product.category.name;
-//             } else if (
-//               typeof product.category === "object" &&
-//               product.category.code
-//             ) {
-//               categoryName = product.category.code;
-//             } else if (
-//               typeof product.category === "object" &&
-//               product.category._id
-//             ) {
-//               categoryName = product.category._id;
-//             } else if (typeof product.category === "string") {
-//               categoryName = product.category;
-//             }
-//           }
-
-//           // Get subcategory name - handle both nested object and code
-//           let subCategoryName = "N/A";
-//           if (product.subCategory) {
-//             if (
-//               typeof product.subCategory === "object" &&
-//               product.subCategory.name
-//             ) {
-//               subCategoryName = product.subCategory.name;
-//             } else if (
-//               typeof product.subCategory === "object" &&
-//               product.subCategory.code
-//             ) {
-//               subCategoryName = product.subCategory.code;
-//             } else if (
-//               typeof product.subCategory === "object" &&
-//               product.subCategory._id
-//             ) {
-//               subCategoryName = product.subCategory._id;
-//             } else if (typeof product.subCategory === "string") {
-//               subCategoryName = product.subCategory;
-//             }
-//           }
-
-//           return {
-//             id: product._id,
-//             productId: product.productNumber || product._id,
-//             date: product.createdAt
-//               ? new Date(product.createdAt).toISOString().split("T")[0]
-//               : "N/A",
-//             vendor: vendorName,
-//             category: categoryName,
-//             subCategory: subCategoryName,
-//             price: `₹${product.salePrice || product.regularPrice || 0}`,
-//             regularPrice: product.regularPrice || 0,
-//             salePrice: product.salePrice || 0,
-//             status: displayStatus,
-//             approvalStatus: product.approvalStatus || "pending",
-//             name: product.productName || "Unnamed Product",
-//             productName: product.productName || "Unnamed Product",
-//             images: product.images || [],
-//             description: product.description || "",
-//             sku: product.skuHsn || "",
-//             skuHsn: product.skuHsn || "",
-//             inventory: product.inventory || 0,
-//             cashback: product.cashback || 0,
-//             discountPercentage: product.discountPercentage || 0,
-//             tags: Array.isArray(product.tags) ? product.tags.join(", ") : "",
-//             productType: product.productType || {},
-//             // Keep original category and subcategory objects for editing
-//             categoryObj: product.category,
-//             subCategoryObj: product.subCategory,
-//             actualPrice: product.actualPrice || 0,
-//             isActive: product.isActive || false,
-//           };
-//         });
-
-//         console.log("Transformed products:", transformedProducts);
-//         setProducts(transformedProducts);
-//       } else {
-//         console.error("Invalid API response format:", result);
-//         console.log("Result.success:", result.success);
-//         console.log("Result.data exists:", !!result.data);
-//         console.log("Result.data is array:", Array.isArray(result.data));
-//         setProducts([]);
-//       }
-//     } catch (error) {
-//       console.error("Error fetching products:", error);
-//       console.error("Error details:", error.message);
-//       // Show error message to user
-//       alert("Failed to load products. Please check console for details.");
-//       setProducts([]);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   // Fetch products on component mount
-//   useEffect(() => {
-//     fetchProducts();
-//   }, []);
-
-//   // 🟢 Handle successful product addition
-//   const handleProductAdded = async (newProduct) => {
-//     console.log("New product added, refreshing list:", newProduct);
-//     // Add a small delay to ensure backend has processed
-//     setTimeout(() => {
-//       fetchProducts();
-//     }, 500);
-//   };
-
-//   // 🟢 Handle Edit Product
-//   const handleEdit = (product) => {
-//     console.log("Editing product:", product);
-//     console.log("Product ID:", product.id);
-//     console.log("Product category:", product.categoryObj);
-//     console.log("Product subCategory:", product.subCategoryObj);
-
-//     // Prepare product data for editing with proper structure
-//     const editProduct = {
-//       id: product.id,
-//       productId: product.productId,
-//       name: product.productName,
-//       productName: product.productName,
-//       description: product.description,
-//       sku: product.skuHsn,
-//       skuHsn: product.skuHsn,
-//       inventory: product.inventory,
-//       category: product.categoryObj, // Use original object
-//       subCategory: product.subCategoryObj, // Use original object
-//       actualPrice: product.actualPrice,
-//       regularPrice: product.regularPrice,
-//       salePrice: product.salePrice,
-//       cashback: product.cashback,
-//       discountPercentage: product.discountPercentage,
-//       productType: product.productType,
-//       tags: Array.isArray(product.tags)
-//         ? product.tags
-//         : product.tags
-//           ? product.tags.split(", ")
-//           : [],
-//       images: product.images,
-//       approvalStatus: product.approvalStatus,
-//       isActive: product.isActive,
-//     };
-
-//     console.log("Edit product data prepared:", editProduct);
-
-//     setEditingProduct(editProduct);
-//     setIsEditMode(true);
-//     setIsModalOpen(true);
-//   };
-
-//   // 🟢 Handle successful product update
-//   const handleProductUpdated = async (updatedProduct) => {
-//     console.log("Product updated, refreshing list:", updatedProduct);
-//     setIsEditMode(false);
-//     setEditingProduct(null);
-//     // Add a small delay to ensure backend has processed
-//     setTimeout(() => {
-//       fetchProducts();
-//     }, 500);
-//   };
-
-//   // 🟢 Handle modal close
-//   const handleModalClose = () => {
-//     setIsModalOpen(false);
-//     setIsEditMode(false);
-//     setEditingProduct(null);
-//   };
-
-//   // 🟢 Download Barcode Function
-//   const handleDownloadBarcode = (productId) => {
-//     const canvas = canvasRef.current;
-//     JsBarcode(canvas, productId, {
-//       format: "CODE128",
-//       displayValue: true,
-//       fontSize: 16,
-//       lineColor: "#000000",
-//       background: "#ffffff",
-//     });
-
-//     const link = document.createElement("a");
-//     link.download = `${productId}-barcode.png`;
-//     link.href = canvas.toDataURL("image/png");
-//     link.click();
-//   };
-
-//   const statusColors = {
-//     Approved: "text-green-600 font-semibold",
-//     "In Review": "text-yellow-600 font-semibold",
-//     Rejected: "text-red-600 font-semibold",
-//   };
-
-//   const handleDelete = async (id) => {
-//     if (window.confirm("Are you sure you want to delete this product?")) {
-//       try {
-//         const token = getAuthToken();
-
-//         const headers = {
-//           "Content-Type": "application/json",
-//         };
-
-//         if (token) {
-//           headers["Authorization"] = `Bearer ${token}`;
-//         }
-
-//         // Using 'delete product vendor' endpoint (DELETE method)
-//         const response = await fetch(`${API_BASE_URL}/product/vendor/${id}`, {
-//           method: "DELETE",
-//           headers: headers,
-//         });
-
-//         console.log("Delete response status:", response.status);
-
-//         if (response.ok) {
-//           const result = await response.json();
-//           console.log("Delete response:", result);
-
-//           // Remove from local state
-//           setProducts((prev) => prev.filter((p) => p.id !== id));
-//           alert("Product deleted successfully!");
-//         } else {
-//           const result = await response.json();
-//           console.error("Delete error:", result);
-//           alert(result.message || "Failed to delete product");
-//         }
-//       } catch (error) {
-//         console.error("Error deleting product:", error);
-//         alert("Failed to delete product. Please try again.");
-//       }
-//     }
-//   };
-
-//   // 🟢 Approve Product (PUT approved product(admin))
-//   const handleApprove = async (id) => {
-//     if (window.confirm("Are you sure you want to approve this product?")) {
-//       try {
-//         const token = getAuthToken();
-
-//         const headers = {
-//           "Content-Type": "application/json",
-//         };
-
-//         if (token) {
-//           headers["Authorization"] = `Bearer ${token}`;
-//         }
-
-//         const response = await fetch(`${API_BASE_URL}/product/approve/${id}`, {
-//           method: "PUT",
-//           headers: headers,
-//         });
-
-//         if (response.ok) {
-//           // Update local state
-//           setProducts((prev) =>
-//             prev.map((p) =>
-//               p.id === id
-//                 ? { ...p, status: "Approved", approvalStatus: "approved" }
-//                 : p,
-//             ),
-//           );
-//           alert("Product approved successfully!");
-//         } else {
-//           const result = await response.json();
-//           alert(result.message || "Failed to approve product");
-//         }
-//       } catch (error) {
-//         console.error("Error approving product:", error);
-//         alert("Failed to approve product. Please try again.");
-//       }
-//     }
-//   };
-
-//   // 🟢 Reject Product (PUT reject product(admin))
-//   const handleReject = async (id) => {
-//     if (window.confirm("Are you sure you want to reject this product?")) {
-//       try {
-//         const token = getAuthToken();
-
-//         const headers = {
-//           "Content-Type": "application/json",
-//         };
-
-//         if (token) {
-//           headers["Authorization"] = `Bearer ${token}`;
-//         }
-
-//         const response = await fetch(`${API_BASE_URL}/product/reject/${id}`, {
-//           method: "PUT",
-//           headers: headers,
-//         });
-
-//         if (response.ok) {
-//           // Update local state
-//           setProducts((prev) =>
-//             prev.map((p) =>
-//               p.id === id
-//                 ? { ...p, status: "Rejected", approvalStatus: "rejected" }
-//                 : p,
-//             ),
-//           );
-//           alert("Product rejected successfully!");
-//         } else {
-//           const result = await response.json();
-//           alert(result.message || "Failed to reject product");
-//         }
-//       } catch (error) {
-//         console.error("Error rejecting product:", error);
-//         alert("Failed to reject product. Please try again.");
-//       }
-//     }
-//   };
-
-//   // Filtering + Pagination logic
-//   const filteredByTab = products.filter((p) => {
-//     if (activeTab === "approved") return p.status === "Approved";
-//     if (activeTab === "in_review") return p.status === "In Review";
-//     if (activeTab === "rejected") return p.status === "Rejected";
-//     return true;
-//   });
-
-//   const filteredByVendor =
-//     selectedVendor === "All Vendors"
-//       ? filteredByTab
-//       : filteredByTab.filter((p) => p.vendor === selectedVendor);
-
-//   const searchedProducts = filteredByVendor.filter((product) =>
-//     [product.productId, product.vendor, product.category, product.name]
-//       .join(" ")
-//       .toLowerCase()
-//       .includes(searchQuery.toLowerCase()),
-//   );
-
-//   const indexOfLast = currentPage * itemsPerPage;
-//   const indexOfFirst = indexOfLast - itemsPerPage;
-//   const currentProducts = searchedProducts.slice(indexOfFirst, indexOfLast);
-//   const totalPages = Math.ceil(searchedProducts.length / itemsPerPage);
-
-//   const TableSkeleton = () => (
-//     <tbody>
-//       {Array.from({ length: itemsPerPage }).map((_, idx) => (
-//         <tr
-//           key={idx}
-//           className="border-b border-gray-200 animate-pulse bg-white"
-//         >
-//           {Array.from({ length: 11 }).map((__, j) => (
-//             <td key={j} className="p-3">
-//               <div className="h-4 bg-gray-200 rounded w-[80%]"></div>
-//             </td>
-//           ))}
-//         </tr>
-//       ))}
-//     </tbody>
-//   );
-
-//   const EmptyState = () => (
-//     <tbody>
-//       <tr>
-//         <td
-//           colSpan="11"
-//           className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
-//         >
-//           No products found.
-//         </td>
-//       </tr>
-//     </tbody>
-//   );
-
-//   // Get unique vendors for dropdown
-//   const uniqueVendors = [...new Set(products.map((p) => p.vendor))];
-
-//   return (
-//     <DashboardLayout>
-//       {/* Hidden Canvas for Barcode Generation */}
-//       <canvas ref={canvasRef} className="hidden" />
-
-//       {/* Header Section */}
-//       <div className="flex flex-col lg:flex-row lg:items-center ml-2 sm:ml-8 lg:justify-between gap-4 max-w-[99%] mx-auto mt-0 mb-2 px-2 sm:px-0">
-//         <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
-//           {/* Tabs */}
-//           <div className="flex gap-2 items-center overflow-x-auto pb-2 lg:pb-0">
-//             {[
-//               { key: "all", label: "All" },
-//               { key: "in_review", label: "In Review" },
-//               { key: "approved", label: "Approved" },
-//               { key: "rejected", label: "Rejected" },
-//             ].map((tab) => (
-//               <button
-//                 key={tab.key}
-//                 onClick={() => {
-//                   setActiveTab(tab.key);
-//                   setCurrentPage(1);
-//                 }}
-//                 className={`px-3 sm:px-4 py-1 border rounded text-xs sm:text-sm whitespace-nowrap ${
-//                   activeTab === tab.key
-//                     ? "bg-[#FF7B1D] text-white border-orange-500"
-//                     : "border-gray-400 text-gray-600 hover:bg-gray-100"
-//                 }`}
-//               >
-//                 {tab.label}
-//               </button>
-//             ))}
-//           </div>
-
-//           {/* Vendor Filter */}
-//           <div className="flex items-center w-full sm:w-auto">
-//             <select
-//               value={selectedVendor}
-//               onChange={(e) => {
-//                 setSelectedVendor(e.target.value);
-//                 setCurrentPage(1);
-//               }}
-//               className="border border-black rounded text-xs sm:text-sm px-2 sm:px-3 h-[36px] text-gray-800 focus:outline-none w-full sm:w-auto"
-//             >
-//               <option>All Vendors</option>
-//               {uniqueVendors.map((vendor) => (
-//                 <option key={vendor} value={vendor}>
-//                   {vendor}
-//                 </option>
-//               ))}
-//             </select>
-//           </div>
-
-//           {/* Search */}
-//           <div className="flex items-center border border-black rounded overflow-hidden h-[36px] w-full lg:max-w-[400px]">
-//             <input
-//               type="text"
-//               placeholder="Search Product by ID, Name, Vendor, or Category..."
-//               className="flex-1 px-2 sm:px-4 text-xs sm:text-sm text-gray-800 focus:outline-none h-full"
-//               value={searchQuery}
-//               onChange={(e) => setSearchQuery(e.target.value)}
-//             />
-//             <button className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-xs sm:text-sm px-3 sm:px-6 h-full">
-//               Search
-//             </button>
-//           </div>
-//         </div>
-
-//         {/* Add Product Button */}
-//         <div className="w-full lg:w-auto flex justify-start lg:justify-end mt-2 lg:mt-0">
-//           <button
-//             onClick={() => setIsModalOpen(true)}
-//             className="bg-black text-white w-full sm:w-52 lg:w-60 px-4 sm:px-10 py-2.5 rounded-sm shadow hover:bg-orange-600 text-xs sm:text-sm flex items-center justify-center whitespace-nowrap"
-//           >
-//             + Add Product
-//           </button>
-//         </div>
-//       </div>
-
-//       {/* Table Section */}
-//       <div className="bg-white rounded-sm ml-0 sm:ml-8 shadow-sm overflow-x-auto max-w-[99%] mx-auto">
-//         <div className="min-w-[1200px]">
-//           <table className="w-full text-sm">
-//             <thead>
-//               <tr className="bg-[#FF7B1D] text-black">
-//                 <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-//                   S.N
-//                 </th>
-//                 <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-//                   Product ID
-//                 </th>
-//                 <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-//                   Product Name
-//                 </th>
-//                 <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-//                   Stock
-//                 </th>
-//                 <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-//                   Sell Price
-//                 </th>
-//                 <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-//                   Regular Price
-//                 </th>
-//                 <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-//                   Status
-//                 </th>
-//                 <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-//                   Category
-//                 </th>
-//                 <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-//                   Sub Category
-//                 </th>
-//                 <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-//                   Vendor
-//                 </th>
-//                 <th className="p-2 sm:p-3 pr-6 text-right whitespace-nowrap text-xs sm:text-sm">
-//                   Action
-//                 </th>
-//               </tr>
-//             </thead>
-
-//             {loading ? (
-//               <TableSkeleton />
-//             ) : searchedProducts.length === 0 ? (
-//               <EmptyState />
-//             ) : (
-//               <tbody>
-//                 {currentProducts.map((product, idx) => (
-//                   <tr
-//                     key={product.id}
-//                     className="bg-white shadow-sm hover:bg-gray-50 transition border-b-4 border-gray-200"
-//                   >
-//                     <td className="p-2 sm:p-3 whitespace-nowrap text-xs sm:text-sm">
-//                       {indexOfFirst + idx + 1}
-//                     </td>
-//                     <td className="p-2 sm:p-3 font-medium whitespace-nowrap text-xs sm:text-sm">
-//                       {product.productId}
-//                     </td>
-//                     <td className="p-2 sm:p-3 font-medium whitespace-nowrap text-xs sm:text-sm">
-//                       {product.name}
-//                     </td>
-//                     <td className="p-2 sm:p-3 whitespace-nowrap text-xs sm:text-sm">
-//                       <span
-//                         className={`font-semibold ${
-//                           product.inventory <= 10
-//                             ? "text-red-600"
-//                             : product.inventory <= 50
-//                               ? "text-yellow-600"
-//                               : "text-green-600"
-//                         }`}
-//                       >
-//                         {product.inventory}
-//                       </span>
-//                     </td>
-//                     <td className="p-2 sm:p-3 font-semibold text-green-600 whitespace-nowrap text-xs sm:text-sm">
-//                       {product.price}
-//                     </td>
-//                     <td className="p-2 sm:p-3 text-gray-600 whitespace-nowrap text-xs sm:text-sm">
-//                       ₹{product.regularPrice}
-//                     </td>
-//                     <td
-//                       className={`p-2 sm:p-3 whitespace-nowrap text-xs sm:text-sm ${
-//                         statusColors[product.status]
-//                       }`}
-//                     >
-//                       {product.status}
-//                     </td>
-//                     <td className="p-2 sm:p-3 whitespace-nowrap text-xs sm:text-sm">
-//                       {product.category}
-//                     </td>
-//                     <td className="p-2 sm:p-3 whitespace-nowrap text-xs sm:text-sm">
-//                       {product.subCategory}
-//                     </td>
-//                     <td className="p-2 sm:p-3 whitespace-nowrap text-xs sm:text-sm">
-//                       {product.vendor}
-//                     </td>
-//                     <td className="p-2 sm:p-3 text-right whitespace-nowrap">
-//                       <div className="flex justify-end gap-2 sm:gap-3 text-orange-600">
-//                         {/* 🟢 Download Barcode Button */}
-//                         {/* <button
-//                           onClick={() =>
-//                             handleDownloadBarcode(product.productId)
-//                           }
-//                           className="text-orange-600 hover:text-blue-700"
-//                           title="Download barcode"
-//                         >
-//                           <Download className="w-3 h-3 sm:w-4 sm:h-4" />
-//                         </button> */}
-
-//                         {/* 🟢 Approve Button (only show if not approved) */}
-//                         {/* {product.status !== "Approved" && (
-//                           <button
-//                             onClick={() => handleApprove(product.id)}
-//                             className="text-green-600 hover:text-green-800"
-//                             title="Approve product"
-//                           >
-//                             ✓
-//                           </button>
-//                         )} */}
-
-//                         {/* 🟢 Reject Button (only show if not rejected) */}
-//                         {/* {product.status !== "Rejected" && (
-//                           <button
-//                             onClick={() => handleReject(product.id)}
-//                             className="text-red-600 hover:text-red-800"
-//                             title="Reject product"
-//                           >
-//                             ✗
-//                           </button>
-//                         )} */}
-
-//                         <button
-//                           onClick={() => handleEdit(product)}
-//                           className="hover:text-blue-700"
-//                           title="Edit product"
-//                         >
-//                           <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
-//                         </button>
-
-//                         <button
-//                           onClick={() => handleDelete(product.id)}
-//                           className="hover:text-red-700"
-//                           title="Delete product"
-//                         >
-//                           <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-//                         </button>
-
-//                         <button
-//                           onClick={() =>
-//                             navigate(`/vendor/products/${product.id}`)
-//                           }
-//                           className="hover:text-blue-700"
-//                           title="View product details"
-//                         >
-//                           <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
-//                         </button>
-//                       </div>
-//                     </td>
-//                   </tr>
-//                 ))}
-//               </tbody>
-//             )}
-//           </table>
-//         </div>
-//       </div>
-
-//       {/* Pagination */}
-//       {!loading && searchedProducts.length > itemsPerPage && (
-//         <div className="flex flex-col sm:flex-row justify-between sm:justify-end pl-0 sm:pl-8 items-center gap-4 sm:gap-6 mt-8 max-w-[95%] mx-auto mb-6 px-4 sm:px-0">
-//           <button
-//             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-//             className="bg-[#FF7B1D] text-white px-6 sm:px-10 py-2 sm:py-3 text-xs sm:text-sm font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
-//             disabled={currentPage === 1}
-//           >
-//             Back
-//           </button>
-
-//           <div className="flex items-center gap-2 text-xs sm:text-sm text-black font-medium overflow-x-auto">
-//             {(() => {
-//               const pages = [];
-//               const visiblePages = new Set([
-//                 1,
-//                 2,
-//                 totalPages - 1,
-//                 totalPages,
-//                 currentPage - 1,
-//                 currentPage,
-//                 currentPage + 1,
-//               ]);
-//               for (let i = 1; i <= totalPages; i++) {
-//                 if (visiblePages.has(i)) pages.push(i);
-//                 else if (pages[pages.length - 1] !== "...") pages.push("...");
-//               }
-//               return pages.map((page, idx) =>
-//                 page === "..." ? (
-//                   <span key={idx} className="px-1 text-black select-none">
-//                     ...
-//                   </span>
-//                 ) : (
-//                   <button
-//                     key={page}
-//                     onClick={() => setCurrentPage(page)}
-//                     className={`px-2 sm:px-1 ${
-//                       currentPage === page
-//                         ? "text-orange-600 font-semibold"
-//                         : ""
-//                     }`}
-//                   >
-//                     {page}
-//                   </button>
-//                 ),
-//               );
-//             })()}
-//           </div>
-
-//           <button
-//             onClick={() =>
-//               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-//             }
-//             className="bg-[#247606] text-white px-6 sm:px-10 py-2 sm:py-3 text-xs sm:text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
-//             disabled={currentPage === totalPages}
-//           >
-//             Next
-//           </button>
-//         </div>
-//       )}
-
-//       <AddProductModal
-//         isOpen={isModalOpen}
-//         onClose={handleModalClose}
-//         onSuccess={isEditMode ? handleProductUpdated : handleProductAdded}
-//         isEditMode={isEditMode}
-//         editingProduct={editingProduct}
-//       />
-//     </DashboardLayout>
-//   );
-// };
-
-// export default AllProduct;
 import React, { useState, useEffect, useRef } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
-import { Eye, Edit, Trash2, Download, QrCode } from "lucide-react";
+import {
+  Eye,
+  Edit,
+  Trash2,
+  Download,
+  QrCode,
+  Package,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import AddProductModal from "../../components/AddProduct";
 import { useNavigate } from "react-router-dom";
 import JsBarcode from "jsbarcode";
 import QRCode from "qrcode";
 import { BASE_URL } from "../../api/api";
 
-// API Base URL - Make sure this matches your AddProduct component
 const API_BASE_URL = `${BASE_URL}/api`;
 
 const AllProduct = () => {
@@ -809,144 +23,66 @@ const AllProduct = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
   const navigate = useNavigate();
-  const itemsPerPage = 7;
-
-  // Hidden canvas for barcode generation
+  const itemsPerPage = 10;
   const canvasRef = useRef(null);
-  // Hidden canvas for QR code generation
   const qrCanvasRef = useRef(null);
-
-  // QR Code modal state
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [selectedProductForQR, setSelectedProductForQR] = useState(null);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState(null);
 
-  // Utility function to get auth token
-  const getAuthToken = () => {
-    return localStorage.getItem("token") || localStorage.getItem("authToken");
-  };
+  const getAuthToken = () =>
+    localStorage.getItem("token") || localStorage.getItem("authToken");
 
-  // 🟢 Fetch products from API (GET vendor products)
   const fetchProducts = async () => {
     setLoading(true);
     try {
       const token = getAuthToken();
-
       if (!token) {
-        console.error("No auth token found");
         alert("Please login to view products");
         setLoading(false);
         return;
       }
-
-      const headers = {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      };
-
-      // Using the correct vendor products endpoint
       const response = await fetch(`${API_BASE_URL}/vendor/products`, {
         method: "GET",
-        headers: headers,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         credentials: "include",
       });
-
-      console.log("Fetch response status:", response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Fetch error response:", errorText);
+      if (!response.ok)
         throw new Error(`Failed to fetch products: ${response.status}`);
-      }
-
       const result = await response.json();
-
-      console.log("Fetched products raw result:", result);
-      console.log("Result.success:", result.success);
-      console.log("Result.data:", result.data);
-
       if (result.success && result.data && Array.isArray(result.data)) {
-        console.log("Number of products fetched:", result.data.length);
-
-        // Transform API data to match component structure
         const transformedProducts = result.data.map((product) => {
-          console.log("Processing product:", product._id, product.productName);
-
-          // Extract vendor name from vendor object
           let vendorName = "Unknown Vendor";
           if (product.vendor) {
-            if (typeof product.vendor === "string") {
-              vendorName = product.vendor;
-            } else if (product.vendor.vendorName) {
-              vendorName = product.vendor.vendorName;
-            } else if (product.vendor.storeName) {
-              vendorName = product.vendor.storeName;
-            } else if (product.vendor.name) {
-              vendorName = product.vendor.name;
-            }
+            if (typeof product.vendor === "string") vendorName = product.vendor;
+            else
+              vendorName =
+                product.vendor.vendorName ||
+                product.vendor.storeName ||
+                product.vendor.name ||
+                "Unknown Vendor";
           }
-
-          // Map approvalStatus to display status
           let displayStatus = "In Review";
           if (product.approvalStatus) {
-            const approvalStatus = product.approvalStatus.toLowerCase();
-            if (approvalStatus === "approved") {
-              displayStatus = "Approved";
-            } else if (approvalStatus === "pending") {
-              displayStatus = "In Review";
-            } else if (approvalStatus === "rejected") {
-              displayStatus = "Rejected";
-            }
+            const s = product.approvalStatus.toLowerCase();
+            if (s === "approved") displayStatus = "Approved";
+            else if (s === "pending") displayStatus = "In Review";
+            else if (s === "rejected") displayStatus = "Rejected";
           }
-
-          // Get category name - handle both nested object and code
-          let categoryName = "Uncategorized";
-          if (product.category) {
-            if (typeof product.category === "object" && product.category.name) {
-              categoryName = product.category.name;
-            } else if (
-              typeof product.category === "object" &&
-              product.category.code
-            ) {
-              categoryName = product.category.code;
-            } else if (
-              typeof product.category === "object" &&
-              product.category._id
-            ) {
-              categoryName = product.category._id;
-            } else if (typeof product.category === "string") {
-              categoryName = product.category;
-            }
-          }
-
-          // Get subcategory name - handle both nested object and code
-          let subCategoryName = "N/A";
-          if (product.subCategory) {
-            if (
-              typeof product.subCategory === "object" &&
-              product.subCategory.name
-            ) {
-              subCategoryName = product.subCategory.name;
-            } else if (
-              typeof product.subCategory === "object" &&
-              product.subCategory.code
-            ) {
-              subCategoryName = product.subCategory.code;
-            } else if (
-              typeof product.subCategory === "object" &&
-              product.subCategory._id
-            ) {
-              subCategoryName = product.subCategory._id;
-            } else if (typeof product.subCategory === "string") {
-              subCategoryName = product.subCategory;
-            }
-          }
-
+          const getCatName = (c) => {
+            if (!c) return "Uncategorized";
+            if (typeof c === "object")
+              return c.name || c.code || "Uncategorized";
+            return c;
+          };
           return {
             id: product._id,
             productId: product.productNumber || product._id,
@@ -954,8 +90,12 @@ const AllProduct = () => {
               ? new Date(product.createdAt).toISOString().split("T")[0]
               : "N/A",
             vendor: vendorName,
-            category: categoryName,
-            subCategory: subCategoryName,
+            category: getCatName(product.category),
+            subCategory: product.subCategory
+              ? typeof product.subCategory === "object"
+                ? product.subCategory.name || "N/A"
+                : product.subCategory
+              : "N/A",
             price: `₹${product.salePrice || product.regularPrice || 0}`,
             regularPrice: product.regularPrice || 0,
             salePrice: product.salePrice || 0,
@@ -972,57 +112,32 @@ const AllProduct = () => {
             discountPercentage: product.discountPercentage || 0,
             tags: Array.isArray(product.tags) ? product.tags.join(", ") : "",
             productType: product.productType || {},
-            // Keep original category and subcategory objects for editing
             categoryObj: product.category,
             subCategoryObj: product.subCategory,
             actualPrice: product.actualPrice || 0,
             isActive: product.isActive || false,
           };
         });
-
-        console.log("Transformed products:", transformedProducts);
         setProducts(transformedProducts);
       } else {
-        console.error("Invalid API response format:", result);
-        console.log("Result.success:", result.success);
-        console.log("Result.data exists:", !!result.data);
-        console.log("Result.data is array:", Array.isArray(result.data));
         setProducts([]);
       }
     } catch (error) {
-      console.error("Error fetching products:", error);
-      console.error("Error details:", error.message);
-      // Show error message to user
-      alert("Failed to load products. Please check console for details.");
+      alert("Failed to load products.");
       setProducts([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch products on component mount
   useEffect(() => {
     fetchProducts();
   }, []);
 
-  // 🟢 Handle successful product addition
-  const handleProductAdded = async (newProduct) => {
-    console.log("New product added, refreshing list:", newProduct);
-    // Add a small delay to ensure backend has processed
-    setTimeout(() => {
-      fetchProducts();
-    }, 500);
-  };
+  const handleProductAdded = async () => setTimeout(() => fetchProducts(), 500);
 
-  // 🟢 Handle Edit Product
   const handleEdit = (product) => {
-    console.log("Editing product:", product);
-    console.log("Product ID:", product.id);
-    console.log("Product category:", product.categoryObj);
-    console.log("Product subCategory:", product.subCategoryObj);
-
-    // Prepare product data for editing with proper structure
-    const editProduct = {
+    setEditingProduct({
       id: product.id,
       productId: product.productId,
       name: product.productName,
@@ -1031,8 +146,8 @@ const AllProduct = () => {
       sku: product.skuHsn,
       skuHsn: product.skuHsn,
       inventory: product.inventory,
-      category: product.categoryObj, // Use original object
-      subCategory: product.subCategoryObj, // Use original object
+      category: product.categoryObj,
+      subCategory: product.subCategoryObj,
       actualPrice: product.actualPrice,
       regularPrice: product.regularPrice,
       salePrice: product.salePrice,
@@ -1047,34 +162,23 @@ const AllProduct = () => {
       images: product.images,
       approvalStatus: product.approvalStatus,
       isActive: product.isActive,
-    };
-
-    console.log("Edit product data prepared:", editProduct);
-
-    setEditingProduct(editProduct);
+    });
     setIsEditMode(true);
     setIsModalOpen(true);
   };
 
-  // 🟢 Handle successful product update
-  const handleProductUpdated = async (updatedProduct) => {
-    console.log("Product updated, refreshing list:", updatedProduct);
+  const handleProductUpdated = async () => {
     setIsEditMode(false);
     setEditingProduct(null);
-    // Add a small delay to ensure backend has processed
-    setTimeout(() => {
-      fetchProducts();
-    }, 500);
+    setTimeout(() => fetchProducts(), 500);
   };
 
-  // 🟢 Handle modal close
   const handleModalClose = () => {
     setIsModalOpen(false);
     setIsEditMode(false);
     setEditingProduct(null);
   };
 
-  // 🟢 Download Barcode Function
   const handleDownloadBarcode = (productId) => {
     const canvas = canvasRef.current;
     JsBarcode(canvas, productId, {
@@ -1084,73 +188,35 @@ const AllProduct = () => {
       lineColor: "#000000",
       background: "#ffffff",
     });
-
     const link = document.createElement("a");
     link.download = `${productId}-barcode.png`;
     link.href = canvas.toDataURL("image/png");
     link.click();
   };
 
-  // 🟢 Generate QR Code Function (Show in Modal)
   const handleGenerateQR = async (product) => {
     try {
       const productId =
         product.productId || product.productNumber || product._id;
-
       if (!productId) {
         alert("Product ID not found!");
         return;
       }
-
-      // Generate QR code with product ID
       const qrDataUrl = await QRCode.toDataURL(productId, {
         width: 300,
         margin: 2,
-        color: {
-          dark: "#000000",
-          light: "#FFFFFF",
-        },
+        color: { dark: "#000000", light: "#FFFFFF" },
       });
-
       setSelectedProductForQR(product);
       setQrCodeDataUrl(qrDataUrl);
       setQrModalOpen(true);
-    } catch (error) {
-      console.error("Error generating QR code:", error);
-      alert("Failed to generate QR code. Please try again.");
+    } catch {
+      alert("Failed to generate QR code.");
     }
   };
 
-  // 🟢 Download QR Code Function
-  const handleDownloadQRCode = async (productId) => {
-    try {
-      const canvas = qrCanvasRef.current;
-
-      // Generate QR code with product ID
-      await QRCode.toCanvas(canvas, productId, {
-        width: 300,
-        margin: 2,
-        color: {
-          dark: "#000000",
-          light: "#ffffff",
-        },
-      });
-
-      // Convert canvas to downloadable image
-      const link = document.createElement("a");
-      link.download = `${productId}-qrcode.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-    } catch (error) {
-      console.error("Error generating QR code:", error);
-      alert("Failed to generate QR code. Please try again.");
-    }
-  };
-
-  // 🟢 Download QR Code from Modal
   const handleDownloadQR = () => {
     if (!qrCodeDataUrl) return;
-
     const link = document.createElement("a");
     const productId =
       selectedProductForQR?.productId ||
@@ -1161,133 +227,31 @@ const AllProduct = () => {
     link.click();
   };
 
-  const statusColors = {
-    Approved: "text-green-600 font-semibold",
-    "In Review": "text-yellow-600 font-semibold",
-    Rejected: "text-red-600 font-semibold",
-  };
-
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this product?")) {
-      try {
-        const token = getAuthToken();
-
-        const headers = {
+    if (!window.confirm("Are you sure you want to delete this product?"))
+      return;
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/product/vendor/${id}`, {
+        method: "DELETE",
+        headers: {
           "Content-Type": "application/json",
-        };
-
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-
-        // Using 'delete product vendor' endpoint (DELETE method)
-        const response = await fetch(`${API_BASE_URL}/product/vendor/${id}`, {
-          method: "DELETE",
-          headers: headers,
-        });
-
-        console.log("Delete response status:", response.status);
-
-        if (response.ok) {
-          const result = await response.json();
-          console.log("Delete response:", result);
-
-          // Remove from local state
-          setProducts((prev) => prev.filter((p) => p.id !== id));
-          alert("Product deleted successfully!");
-        } else {
-          const result = await response.json();
-          console.error("Delete error:", result);
-          alert(result.message || "Failed to delete product");
-        }
-      } catch (error) {
-        console.error("Error deleting product:", error);
-        alert("Failed to delete product. Please try again.");
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (response.ok) {
+        setProducts((prev) => prev.filter((p) => p.id !== id));
+        alert("Product deleted successfully!");
+      } else {
+        const result = await response.json();
+        alert(result.message || "Failed to delete product");
       }
+    } catch {
+      alert("Failed to delete product.");
     }
   };
 
-  // 🟢 Approve Product (PUT approved product(admin))
-  const handleApprove = async (id) => {
-    if (window.confirm("Are you sure you want to approve this product?")) {
-      try {
-        const token = getAuthToken();
-
-        const headers = {
-          "Content-Type": "application/json",
-        };
-
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-
-        const response = await fetch(`${API_BASE_URL}/product/approve/${id}`, {
-          method: "PUT",
-          headers: headers,
-        });
-
-        if (response.ok) {
-          // Update local state
-          setProducts((prev) =>
-            prev.map((p) =>
-              p.id === id
-                ? { ...p, status: "Approved", approvalStatus: "approved" }
-                : p,
-            ),
-          );
-          alert("Product approved successfully!");
-        } else {
-          const result = await response.json();
-          alert(result.message || "Failed to approve product");
-        }
-      } catch (error) {
-        console.error("Error approving product:", error);
-        alert("Failed to approve product. Please try again.");
-      }
-    }
-  };
-
-  // 🟢 Reject Product (PUT reject product(admin))
-  const handleReject = async (id) => {
-    if (window.confirm("Are you sure you want to reject this product?")) {
-      try {
-        const token = getAuthToken();
-
-        const headers = {
-          "Content-Type": "application/json",
-        };
-
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-
-        const response = await fetch(`${API_BASE_URL}/product/reject/${id}`, {
-          method: "PUT",
-          headers: headers,
-        });
-
-        if (response.ok) {
-          // Update local state
-          setProducts((prev) =>
-            prev.map((p) =>
-              p.id === id
-                ? { ...p, status: "Rejected", approvalStatus: "rejected" }
-                : p,
-            ),
-          );
-          alert("Product rejected successfully!");
-        } else {
-          const result = await response.json();
-          alert(result.message || "Failed to reject product");
-        }
-      } catch (error) {
-        console.error("Error rejecting product:", error);
-        alert("Failed to reject product. Please try again.");
-      }
-    }
-  };
-
-  // Filtering + Pagination logic
+  // Filtering + Pagination
   const filteredByTab = products.filter((p) => {
     if (activeTab === "approved") return p.status === "Approved";
     if (activeTab === "in_review") return p.status === "In Review";
@@ -1302,21 +266,49 @@ const AllProduct = () => {
       .includes(searchQuery.toLowerCase()),
   );
 
-  const indexOfLast = currentPage * itemsPerPage;
-  const indexOfFirst = indexOfLast - itemsPerPage;
-  const currentProducts = searchedProducts.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(searchedProducts.length / itemsPerPage);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(searchedProducts.length / itemsPerPage),
+  );
+  const currentProducts = searchedProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
+
+  const StatusBadge = ({ status }) => {
+    const styles = {
+      Approved:
+        "bg-emerald-50 text-emerald-700 border-emerald-200 ring-1 ring-emerald-100",
+      "In Review":
+        "bg-amber-50 text-amber-700 border-amber-200 ring-1 ring-amber-100",
+      Rejected: "bg-red-50 text-red-700 border-red-200 ring-1 ring-red-100",
+    };
+    const dots = {
+      Approved: "bg-emerald-500",
+      "In Review": "bg-amber-500",
+      Rejected: "bg-red-500",
+    };
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${styles[status] || "bg-gray-50 text-gray-600 border-gray-200"}`}
+      >
+        <span
+          className={`w-1.5 h-1.5 rounded-full ${dots[status] || "bg-gray-400"}`}
+        />
+        {status}
+      </span>
+    );
+  };
 
   const TableSkeleton = () => (
     <tbody>
       {Array.from({ length: itemsPerPage }).map((_, idx) => (
-        <tr
-          key={idx}
-          className="border-b border-gray-200 animate-pulse bg-white"
-        >
-          {Array.from({ length: 11 }).map((__, j) => (
-            <td key={j} className="p-3">
-              <div className="h-4 bg-gray-200 rounded w-[80%]"></div>
+        <tr key={idx} className="border-b border-gray-100">
+          {Array.from({ length: 9 }).map((__, j) => (
+            <td key={j} className="px-4 py-3.5">
+              <div
+                className={`h-3.5 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full animate-pulse ${j === 1 ? "w-24" : j === 8 ? "w-16 ml-auto" : "w-[70%]"}`}
+              />
             </td>
           ))}
         </tr>
@@ -1327,127 +319,140 @@ const AllProduct = () => {
   const EmptyState = () => (
     <tbody>
       <tr>
-        <td
-          colSpan="11"
-          className="text-center py-10 text-gray-500 text-sm bg-white rounded-sm"
-        >
-          No products found.
+        <td colSpan="9" className="py-20 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center">
+              <Package className="w-8 h-8 text-orange-300" />
+            </div>
+            <p className="text-gray-400 text-sm font-medium">
+              No products found
+            </p>
+            <p className="text-gray-300 text-xs">
+              Try adjusting your filters or search query
+            </p>
+          </div>
         </td>
       </tr>
     </tbody>
   );
 
+  const tabs = [
+    { key: "in_review", label: "In Review" },
+    { key: "approved", label: "Approved" },
+    { key: "rejected", label: "Rejected" },
+  ];
+
   return (
     <DashboardLayout>
-      {/* Hidden Canvas for Barcode Generation */}
       <canvas ref={canvasRef} className="hidden" />
-
-      {/* Hidden Canvas for QR Code Generation */}
       <canvas ref={qrCanvasRef} className="hidden" />
 
-      {/* Header Section */}
-      <div className="flex flex-col lg:flex-row lg:items-center ml-2 sm:ml-8 lg:justify-between gap-4 max-w-[99%] mx-auto mt-2 mb-2 px-2 sm:px-0">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
-          {/* Tabs */}
-          <div className="flex gap-2 items-center overflow-x-auto pb-2 lg:pb-0">
-            {[
-              { key: "in_review", label: "In Review" },
-              { key: "approved", label: "Approved" },
-              { key: "rejected", label: "Rejected" },
-            ].map((tab) => (
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .row-animate { animation: fadeSlideIn 0.25s ease forwards; }
+        .action-btn {
+          width: 30px; height: 30px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 8px; transition: all 0.18s ease;
+        }
+        .action-btn:hover { transform: translateY(-1px); }
+      `}</style>
+
+      {/* ── Toolbar ── */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 w-full max-w-full mx-auto px-1 mt-3 mb-3">
+        {/* LEFT: Tabs */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
+            {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => {
                   setActiveTab(tab.key);
                   setCurrentPage(1);
                 }}
-                className={`px-3 sm:px-4 py-1 border rounded text-xs sm:text-sm whitespace-nowrap ${
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
                   activeTab === tab.key
-                    ? "bg-[#FF7B1D] text-white border-orange-500"
-                    : "border-gray-400 text-gray-600 hover:bg-gray-100"
+                    ? "bg-white text-[#FF7B1D] shadow-sm shadow-orange-100"
+                    : "text-gray-500 hover:text-gray-700"
                 }`}
               >
                 {tab.label}
               </button>
             ))}
           </div>
+        </div>
 
-          {/* Search */}
-          <div className="flex items-center border border-black rounded overflow-hidden h-[36px] w-full lg:max-w-[400px]">
+        {/* RIGHT: Search + Add */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden h-[38px] w-full lg:w-[340px] shadow-sm bg-white">
             <input
               type="text"
-              placeholder="Search Product by ID, Name, Vendor, or Category..."
-              className="flex-1 px-2 sm:px-4 text-xs sm:text-sm text-gray-800 focus:outline-none h-full"
+              placeholder="Search by ID, Name, Vendor..."
+              className="flex-1 px-4 text-sm text-gray-700 focus:outline-none h-full placeholder:text-gray-400"
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  setCurrentPage(1);
-                }
-              }}
             />
-            <button
-              onClick={() => setCurrentPage(1)}
-              className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-xs sm:text-sm px-3 sm:px-6 h-full transition-colors"
-            >
+            <button className="bg-[#FF7B1D] hover:bg-orange-500 text-white text-sm font-medium px-5 h-full transition-colors">
               Search
             </button>
           </div>
-        </div>
-
-        {/* Add Product Button */}
-        <div className="w-full lg:w-auto flex justify-start lg:justify-end mt-2 lg:mt-0">
           <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-black text-white w-full sm:w-52 lg:w-60 px-4 sm:px-10 py-2.5 rounded-sm shadow hover:bg-orange-600 text-xs sm:text-sm flex items-center justify-center whitespace-nowrap"
+            className="flex-shrink-0 h-[38px] px-5 bg-gray-900 hover:bg-[#FF7B1D] text-white text-xs font-semibold rounded-xl transition-all shadow-sm whitespace-nowrap"
           >
             + Add Product
           </button>
         </div>
       </div>
 
-      {/* Table Section */}
-      <div className="bg-white rounded-sm ml-0 sm:ml-8 shadow-sm overflow-x-auto max-w-[99%] mx-auto">
-        <div className="min-w-[1200px]">
+      {/* ── Table Card ── */}
+      <div className="mx-1 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+        {/* Card Header */}
+        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+            <span className="text-sm font-semibold text-gray-700">
+              Product Inventory
+            </span>
+          </div>
+          {!loading && (
+            <span className="text-xs text-gray-400 font-medium">
+              {searchedProducts.length} product
+              {searchedProducts.length !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-[#FF7B1D] text-black">
-                <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-                  S.N
-                </th>
-                <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-                  Product ID
-                </th>
-                <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-                  Product Name
-                </th>
-                <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-                  Stock
-                </th>
-                <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-                  Sell Price
-                </th>
-                <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-                  Regular Price
-                </th>
-                <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-                  Status
-                </th>
-                <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-                  Category
-                </th>
-                <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-                  Sub Category
-                </th>
-                <th className="p-2 sm:p-3 text-left whitespace-nowrap text-xs sm:text-sm">
-                  Vendor
-                </th>
-                <th className="p-2 sm:p-3 pr-6 text-right whitespace-nowrap text-xs sm:text-sm">
-                  Action
+              <tr className="bg-gradient-to-r from-[#FF7B1D] to-orange-400">
+                {[
+                  "S.N",
+                  "Product ID",
+                  "Product Name",
+                  "Stock",
+                  "Sell Price",
+                  "Regular Price",
+                  "Status",
+                  "Category",
+                  "Sub Category",
+                ].map((h, i) => (
+                  <th
+                    key={h}
+                    className={`px-4 py-3.5 text-xs font-bold text-white tracking-wider uppercase opacity-90 ${i === 8 ? "text-right pr-5" : "text-left"}`}
+                  >
+                    {h}
+                  </th>
+                ))}
+                <th className="px-4 py-3.5 text-right text-xs font-bold text-white tracking-wider uppercase opacity-90 pr-5">
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -1461,87 +466,102 @@ const AllProduct = () => {
                 {currentProducts.map((product, idx) => (
                   <tr
                     key={product.id}
-                    className="bg-white shadow-sm hover:bg-gray-50 transition border-b-4 border-gray-200"
+                    className="row-animate border-b border-gray-50 hover:bg-orange-50/40 transition-colors duration-150 group"
+                    style={{ animationDelay: `${idx * 30}ms` }}
                   >
-                    <td className="p-2 sm:p-3 whitespace-nowrap text-xs sm:text-sm">
-                      {indexOfFirst + idx + 1}
+                    {/* S.N */}
+                    <td className="px-4 py-3.5">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">
+                        {(currentPage - 1) * itemsPerPage + idx + 1}
+                      </span>
                     </td>
-                    <td className="p-2 sm:p-3 font-medium whitespace-nowrap text-xs sm:text-sm">
-                      {product.productId}
+
+                    {/* Product ID */}
+                    <td className="px-4 py-3.5">
+                      <span className="font-mono text-xs bg-gray-50 border border-gray-200 px-2 py-1 rounded-md text-gray-600 group-hover:border-orange-200 group-hover:bg-orange-50 transition-colors">
+                        {String(product.productId || "").slice(0, 10)}…
+                      </span>
                     </td>
-                    <td className="p-2 sm:p-3 font-medium whitespace-nowrap text-xs sm:text-sm">
-                      {product.name}
+
+                    {/* Product Name */}
+                    <td className="px-4 py-3.5">
+                      <span className="text-sm font-semibold text-gray-700 max-w-[150px] truncate block">
+                        {product.name}
+                      </span>
                     </td>
-                    <td className="p-2 sm:p-3 whitespace-nowrap text-xs sm:text-sm">
+
+                    {/* Stock */}
+                    <td className="px-4 py-3.5">
                       <span
-                        className={`font-semibold ${
-                          product.inventory <= 10
-                            ? "text-red-600"
-                            : product.inventory <= 50
-                              ? "text-yellow-600"
-                              : "text-green-600"
-                        }`}
+                        className={`text-sm font-bold ${product.inventory <= 10 ? "text-red-500" : product.inventory <= 50 ? "text-amber-500" : "text-emerald-600"}`}
                       >
                         {product.inventory}
                       </span>
                     </td>
-                    <td className="p-2 sm:p-3 font-semibold text-green-600 whitespace-nowrap text-xs sm:text-sm">
-                      {product.price}
+
+                    {/* Sell Price */}
+                    <td className="px-4 py-3.5">
+                      <span className="text-sm font-bold text-gray-800">
+                        {product.price}
+                      </span>
                     </td>
-                    <td className="p-2 sm:p-3 text-gray-600 whitespace-nowrap text-xs sm:text-sm">
+
+                    {/* Regular Price */}
+                    <td className="px-4 py-3.5 text-xs text-gray-400 font-medium">
                       ₹{product.regularPrice}
                     </td>
-                    <td
-                      className={`p-2 sm:p-3 whitespace-nowrap text-xs sm:text-sm ${
-                        statusColors[product.status]
-                      }`}
-                    >
-                      {product.status}
+
+                    {/* Status */}
+                    <td className="px-4 py-3.5">
+                      <StatusBadge status={product.status} />
                     </td>
-                    <td className="p-2 sm:p-3 whitespace-nowrap text-xs sm:text-sm">
-                      {product.category}
+
+                    {/* Category */}
+                    <td className="px-4 py-3.5">
+                      <span className="inline-block bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full border border-blue-100">
+                        {product.category}
+                      </span>
                     </td>
-                    <td className="p-2 sm:p-3 whitespace-nowrap text-xs sm:text-sm">
-                      {product.subCategory}
+
+                    {/* Sub Category */}
+                    <td className="px-4 py-3.5">
+                      <span className="inline-block bg-purple-50 text-purple-700 text-xs font-medium px-2.5 py-1 rounded-full border border-purple-100">
+                        {product.subCategory}
+                      </span>
                     </td>
-                    <td className="p-2 sm:p-3 whitespace-nowrap text-xs sm:text-sm">
-                      {product.vendor}
-                    </td>
-                    <td className="p-2 sm:p-3 text-right whitespace-nowrap">
-                      <div className="flex justify-end gap-2 sm:gap-3 text-orange-600">
-                        {/* 🟢 Generate QR Code Button */}
+
+                    {/* Actions */}
+                    <td className="px-4 py-3.5 pr-5">
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => handleGenerateQR(product)}
-                          className="text-orange-600 hover:text-purple-700"
+                          className="action-btn bg-violet-50 text-violet-500 hover:bg-violet-100 hover:text-violet-700"
                           title="Generate QR Code"
                         >
-                          <QrCode className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <QrCode className="w-3.5 h-3.5" />
                         </button>
-
                         <button
                           onClick={() => handleEdit(product)}
-                          className="hover:text-blue-700"
+                          className="action-btn bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-700"
                           title="Edit product"
                         >
-                          <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <Edit className="w-3.5 h-3.5" />
                         </button>
-
                         <button
                           onClick={() => handleDelete(product.id)}
-                          className="hover:text-red-700"
+                          className="action-btn bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600"
                           title="Delete product"
                         >
-                          <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
-
                         <button
                           onClick={() =>
                             navigate(`/vendor/products/${product.id}`)
                           }
-                          className="hover:text-blue-700"
-                          title="View product details"
+                          className="action-btn bg-emerald-50 text-emerald-500 hover:bg-emerald-100 hover:text-emerald-700"
+                          title="View product"
                         >
-                          <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <Eye className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -1553,64 +573,121 @@ const AllProduct = () => {
         </div>
       </div>
 
-      {/* ── Pagination (matches CreateCategory style) ── */}
+      {/* ── Pagination ── */}
       {!loading && searchedProducts.length > 0 && (
-        <div className="flex justify-end pl-8 items-center gap-6 mt-8 max-w-[95%] mx-auto">
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={currentPage === 1}
-          >
-            Back
-          </button>
+        <div className="flex items-center justify-between px-1 mt-5 mb-6">
+          <p className="text-xs text-gray-400 font-medium">
+            Page{" "}
+            <span className="text-gray-600 font-semibold">{currentPage}</span>{" "}
+            of <span className="text-gray-600 font-semibold">{totalPages}</span>
+          </p>
 
-          <div className="flex items-center gap-2 text-sm text-black font-medium">
-            {(() => {
-              const pages = [];
-              const visiblePages = new Set([
-                1,
-                2,
-                totalPages - 1,
-                totalPages,
-                currentPage - 1,
-                currentPage,
-                currentPage + 1,
-              ]);
-              for (let i = 1; i <= totalPages; i++) {
-                if (visiblePages.has(i)) pages.push(i);
-                else if (pages[pages.length - 1] !== "...") pages.push("...");
-              }
-              return pages.map((page, idx) =>
-                page === "..." ? (
-                  <span key={idx} className="px-1 text-black select-none">
-                    ...
-                  </span>
-                ) : (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-1 ${
-                      currentPage === page
-                        ? "text-orange-600 font-semibold"
-                        : ""
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ),
-              );
-            })()}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" /> Prev
+            </button>
+
+            <div className="flex items-center gap-1">
+              {(() => {
+                const pages = [];
+                const visiblePages = new Set([
+                  1,
+                  2,
+                  totalPages - 1,
+                  totalPages,
+                  currentPage - 1,
+                  currentPage,
+                  currentPage + 1,
+                ]);
+                for (let i = 1; i <= totalPages; i++) {
+                  if (visiblePages.has(i)) pages.push(i);
+                  else if (pages[pages.length - 1] !== "...") pages.push("...");
+                }
+                return pages.map((page, idx) =>
+                  page === "..." ? (
+                    <span key={idx} className="px-1 text-gray-400 text-xs">
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-xl text-xs font-semibold transition-all ${
+                        currentPage === page
+                          ? "bg-[#FF7B1D] text-white shadow-sm shadow-orange-200"
+                          : "bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ),
+                );
+              })()}
+            </div>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              Next <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
+        </div>
+      )}
 
-          <button
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
-            className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </button>
+      {/* ── QR Modal ── */}
+      {qrModalOpen && selectedProductForQR && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-gray-100">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="text-lg font-bold text-gray-800">QR Code</h2>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Scan to identify product
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setQrModalOpen(false);
+                  setSelectedProductForQR(null);
+                  setQrCodeDataUrl(null);
+                }}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex flex-col items-center gap-4">
+              {qrCodeDataUrl && (
+                <div className="p-4 rounded-2xl border-2 border-dashed border-orange-200 bg-orange-50">
+                  <img
+                    src={qrCodeDataUrl}
+                    alt="QR Code"
+                    className="w-56 h-56"
+                  />
+                </div>
+              )}
+              <div className="text-center w-full bg-gray-50 rounded-xl px-4 py-3">
+                <p className="text-xs text-gray-400 mb-1">Product ID</p>
+                <p className="text-sm font-bold text-gray-800 font-mono break-all">
+                  {selectedProductForQR.productId ||
+                    selectedProductForQR.productNumber ||
+                    selectedProductForQR._id}
+                </p>
+              </div>
+              <button
+                onClick={handleDownloadQR}
+                className="w-full bg-gradient-to-r from-[#FF7B1D] to-orange-400 text-white py-2.5 px-4 rounded-xl font-semibold text-sm hover:from-orange-500 hover:to-orange-500 transition-all flex items-center justify-center gap-2 shadow-sm shadow-orange-200"
+              >
+                <Download className="w-4 h-4" /> Download QR Code
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1621,73 +698,6 @@ const AllProduct = () => {
         isEditMode={isEditMode}
         editingProduct={editingProduct}
       />
-
-      {/* QR Code Modal */}
-      {qrModalOpen && selectedProductForQR && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-800">
-                Product QR Code
-              </h2>
-              <button
-                onClick={() => {
-                  setQrModalOpen(false);
-                  setSelectedProductForQR(null);
-                  setQrCodeDataUrl(null);
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <div className="flex flex-col items-center justify-center space-y-4">
-              {/* QR Code Image */}
-              {qrCodeDataUrl && (
-                <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
-                  <img
-                    src={qrCodeDataUrl}
-                    alt="QR Code"
-                    className="w-64 h-64 mx-auto"
-                  />
-                </div>
-              )}
-
-              {/* Product ID below QR Code */}
-              <div className="text-center">
-                <p className="text-sm text-gray-600 mb-1">Product ID</p>
-                <p className="text-lg font-bold text-gray-800 font-mono">
-                  {selectedProductForQR.productId ||
-                    selectedProductForQR.productNumber ||
-                    selectedProductForQR._id}
-                </p>
-              </div>
-
-              {/* Download Button */}
-              <button
-                onClick={handleDownloadQR}
-                className="w-full bg-[#FF7B1D] text-white py-2 px-4 rounded-md hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Download QR Code
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </DashboardLayout>
   );
 };

@@ -1,787 +1,3 @@
-// import React, { useState, useEffect, useCallback, useRef } from "react";
-// import DashboardLayout from "../../components/DashboardLayout";
-// import {
-//   Search,
-//   Clock,
-//   CheckCircle,
-//   AlertCircle,
-//   MessageSquare,
-//   X,
-//   Send,
-//   Truck,
-// } from "lucide-react";
-// import api from "../../api/api";
-
-// const AdminRiderSupport = () => {
-//   const [activeTab, setActiveTab] = useState("all");
-//   const [showTicketDetailModal, setShowTicketDetailModal] = useState(false);
-//   const [selectedTicket, setSelectedTicket] = useState(null);
-//   const [searchQuery, setSearchQuery] = useState("");
-//   const [currentPage, setCurrentPage] = useState(1);
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState("");
-//   const [messageInput, setMessageInput] = useState("");
-//   const [sendingMessage, setSendingMessage] = useState(false);
-//   const [updatingStatus, setUpdatingStatus] = useState(false);
-//   const [statusUpdate, setStatusUpdate] = useState("");
-//   const [adminResponse, setAdminResponse] = useState("");
-//   const itemsPerPage = 8;
-
-//   const [tickets, setTickets] = useState([]);
-//   const [totalTickets, setTotalTickets] = useState(0);
-//   const [totalPages, setTotalPages] = useState(1);
-//   const searchQueryRef = useRef(searchQuery);
-
-//   // Update ref when searchQuery changes
-//   useEffect(() => {
-//     searchQueryRef.current = searchQuery;
-//   }, [searchQuery]);
-
-//   // Fetch tickets
-//   const fetchTickets = useCallback(async () => {
-//     setLoading(true);
-//     setError("");
-//     try {
-//       const statusFilter = activeTab !== "all" ? activeTab : undefined;
-//       const params = new URLSearchParams({
-//         page: currentPage.toString(),
-//         limit: itemsPerPage.toString(),
-//         createdByModel: "Rider", // Filter by Rider
-//       });
-//       if (statusFilter) {
-//         params.append("status", statusFilter);
-//       }
-//       if (searchQueryRef.current) {
-//         params.append("search", searchQueryRef.current);
-//       }
-
-//       const response = await api.get(`/api/admin/tickets?${params.toString()}`);
-//       if (response.data && response.data.success) {
-//         const ticketsData = response.data.data?.tickets || [];
-//         const paginationData = response.data.data?.pagination || {};
-
-//         setTickets(ticketsData);
-//         setTotalTickets(paginationData.total || 0);
-//         setTotalPages(paginationData.totalPages || paginationData.pages || 1);
-//         setError(""); // Clear any previous errors
-//       } else {
-//         const errorMsg =
-//           response.data?.message ||
-//           response.data?.error ||
-//           "Failed to load tickets";
-//         setError(errorMsg);
-//         setTickets([]);
-//         setTotalTickets(0);
-//         setTotalPages(1);
-//       }
-//     } catch (err) {
-//       console.error("Error fetching tickets:", err);
-//       const errorMsg =
-//         err.response?.data?.message ||
-//         err.response?.data?.error ||
-//         err.message ||
-//         "Failed to load tickets. Please try again.";
-//       setError(errorMsg);
-//       setTickets([]);
-//       setTotalTickets(0);
-//       setTotalPages(1);
-//     } finally {
-//       setLoading(false);
-//     }
-//   }, [activeTab, currentPage]);
-
-//   useEffect(() => {
-//     fetchTickets();
-//   }, [fetchTickets]);
-
-//   // Fetch single ticket details
-//   const fetchTicketDetails = async (ticketId) => {
-//     try {
-//       const response = await api.get(`/api/admin/tickets/${ticketId}`);
-//       if (response.data.success) {
-//         setSelectedTicket(response.data.data.ticket);
-//         setShowTicketDetailModal(true);
-//         setStatusUpdate(response.data.data.ticket.status);
-//         setAdminResponse(response.data.data.ticket.adminResponse || "");
-//       } else {
-//         setError(response.data.message || "Failed to load ticket details");
-//       }
-//     } catch (err) {
-//       console.error("Error fetching ticket details:", err);
-//       setError(err.response?.data?.message || "Failed to load ticket details");
-//     }
-//   };
-
-//   // Add admin message to ticket
-//   const handleSendMessage = async () => {
-//     if (!messageInput.trim() || !selectedTicket) return;
-
-//     setSendingMessage(true);
-//     setError("");
-//     try {
-//       const response = await api.post(
-//         `/api/admin/tickets/${selectedTicket._id}/messages`,
-//         { message: messageInput.trim() },
-//       );
-//       if (response.data.success) {
-//         setMessageInput("");
-//         // Refresh ticket details
-//         await fetchTicketDetails(selectedTicket._id);
-//         // Refresh tickets list
-//         fetchTickets();
-//       } else {
-//         setError(response.data.message || "Failed to send message");
-//       }
-//     } catch (err) {
-//       console.error("Error sending message:", err);
-//       setError(
-//         err.response?.data?.error ||
-//           err.response?.data?.message ||
-//           "Failed to send message. Please try again.",
-//       );
-//     } finally {
-//       setSendingMessage(false);
-//     }
-//   };
-
-//   // Update ticket status
-//   const handleUpdateStatus = async () => {
-//     if (!selectedTicket || !statusUpdate) return;
-
-//     setUpdatingStatus(true);
-//     setError("");
-//     try {
-//       const payload = { status: statusUpdate };
-//       if (adminResponse) {
-//         payload.adminResponse = adminResponse;
-//       }
-
-//       const response = await api.patch(
-//         `/api/admin/tickets/${selectedTicket._id}/status`,
-//         payload,
-//       );
-//       if (response.data.success) {
-//         // Refresh ticket details
-//         await fetchTicketDetails(selectedTicket._id);
-//         // Refresh tickets list
-//         fetchTickets();
-//       } else {
-//         setError(response.data.message || "Failed to update status");
-//       }
-//     } catch (err) {
-//       console.error("Error updating status:", err);
-//       setError(
-//         err.response?.data?.error ||
-//           err.response?.data?.message ||
-//           "Failed to update status. Please try again.",
-//       );
-//     } finally {
-//       setUpdatingStatus(false);
-//     }
-//   };
-
-//   // Search handler
-//   const handleSearch = () => {
-//     setCurrentPage(1);
-//     fetchTickets();
-//   };
-
-//   const stats = {
-//     total: totalTickets,
-//     active: tickets.filter((t) => t.status === "active").length,
-//     pending: tickets.filter((t) => t.status === "pending").length,
-//     resolved: tickets.filter((t) => t.status === "resolved").length,
-//     closed: tickets.filter((t) => t.status === "closed").length,
-//   };
-
-//   const categoryLabels = {
-//     order_delivery: "Order & Delivery",
-//     account_profile: "Account & Profile",
-//     payments_refunds: "Payments & Refunds",
-//     login_otp: "Login & OTP",
-//     general_queries: "General Queries",
-//   };
-
-//   const statusLabels = {
-//     active: "Active",
-//     pending: "Pending",
-//     resolved: "Resolved",
-//     closed: "Closed",
-//   };
-
-//   const getStatusColor = (status) => {
-//     switch (status) {
-//       case "active":
-//         return "bg-blue-100 text-blue-700";
-//       case "pending":
-//         return "bg-orange-100 text-orange-700";
-//       case "resolved":
-//         return "bg-green-100 text-green-700";
-//       case "closed":
-//         return "bg-gray-100 text-gray-700";
-//       default:
-//         return "bg-gray-100 text-gray-700";
-//     }
-//   };
-
-//   const formatDate = (dateString) => {
-//     if (!dateString) return "N/A";
-//     const date = new Date(dateString);
-//     return date.toLocaleDateString("en-US", {
-//       year: "numeric",
-//       month: "short",
-//       day: "numeric",
-//       hour: "2-digit",
-//       minute: "2-digit",
-//     });
-//   };
-
-//   return (
-//     <DashboardLayout>
-//       <div className="min-h-screen p-6">
-//         <div className="max-w-8xl mx-auto">
-//           <h1 className="text-2xl font-bold mb-6 text-gray-800">
-//             Rider Support
-//           </h1>
-
-//           {/* Stats Cards */}
-//           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-//             <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-[#FF7B1D]">
-//               <div className="flex items-center justify-between">
-//                 <div>
-//                   <p className="text-sm text-gray-600">Total Tickets</p>
-//                   <p className="text-2xl font-bold text-[#FF7B1D]">
-//                     {stats.total}
-//                   </p>
-//                 </div>
-//                 <MessageSquare className="text-[#FF7B1D]" size={24} />
-//               </div>
-//             </div>
-
-//             <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-blue-500">
-//               <div className="flex items-center justify-between">
-//                 <div>
-//                   <p className="text-sm text-gray-600">Active</p>
-//                   <p className="text-2xl font-bold text-blue-600">
-//                     {stats.active}
-//                   </p>
-//                 </div>
-//                 <AlertCircle className="text-blue-500" size={24} />
-//               </div>
-//             </div>
-
-//             <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-orange-500">
-//               <div className="flex items-center justify-between">
-//                 <div>
-//                   <p className="text-sm text-gray-600">Pending</p>
-//                   <p className="text-2xl font-bold text-orange-600">
-//                     {stats.pending}
-//                   </p>
-//                 </div>
-//                 <Clock className="text-orange-500" size={24} />
-//               </div>
-//             </div>
-
-//             <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-[#247606]">
-//               <div className="flex items-center justify-between">
-//                 <div>
-//                   <p className="text-sm text-gray-600">Resolved</p>
-//                   <p className="text-2xl font-bold text-[#247606]">
-//                     {stats.resolved}
-//                   </p>
-//                 </div>
-//                 <CheckCircle className="text-[#247606]" size={24} />
-//               </div>
-//             </div>
-
-//             <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-gray-500">
-//               <div className="flex items-center justify-between">
-//                 <div>
-//                   <p className="text-sm text-gray-600">Closed</p>
-//                   <p className="text-2xl font-bold text-gray-600">
-//                     {stats.closed}
-//                   </p>
-//                 </div>
-//                 <CheckCircle className="text-gray-500" size={24} />
-//               </div>
-//             </div>
-//           </div>
-
-//           {/* Filters and Actions */}
-//           <div className="bg-white rounded-sm shadow-sm mb-6">
-//             <div className="p-4 border-b border-gray-200">
-//               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-//                 <div className="flex gap-2 flex-wrap">
-//                   <button
-//                     onClick={() => {
-//                       setActiveTab("all");
-//                       setCurrentPage(1);
-//                     }}
-//                     className={`px-4 py-2 rounded font-medium transition-colors ${
-//                       activeTab === "all"
-//                         ? "bg-[#FF7B1D] text-white"
-//                         : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
-//                     }`}
-//                   >
-//                     All Tickets
-//                   </button>
-//                   <button
-//                     onClick={() => {
-//                       setActiveTab("active");
-//                       setCurrentPage(1);
-//                     }}
-//                     className={`px-4 py-2 rounded font-medium transition-colors ${
-//                       activeTab === "active"
-//                         ? "bg-[#FF7B1D] text-white"
-//                         : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
-//                     }`}
-//                   >
-//                     Active
-//                   </button>
-//                   <button
-//                     onClick={() => {
-//                       setActiveTab("pending");
-//                       setCurrentPage(1);
-//                     }}
-//                     className={`px-4 py-2 rounded font-medium transition-colors ${
-//                       activeTab === "pending"
-//                         ? "bg-[#FF7B1D] text-white"
-//                         : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
-//                     }`}
-//                   >
-//                     Pending
-//                   </button>
-//                   <button
-//                     onClick={() => {
-//                       setActiveTab("resolved");
-//                       setCurrentPage(1);
-//                     }}
-//                     className={`px-4 py-2 rounded font-medium transition-colors ${
-//                       activeTab === "resolved"
-//                         ? "bg-[#FF7B1D] text-white"
-//                         : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
-//                     }`}
-//                   >
-//                     Resolved
-//                   </button>
-//                   <button
-//                     onClick={() => {
-//                       setActiveTab("closed");
-//                       setCurrentPage(1);
-//                     }}
-//                     className={`px-4 py-2 rounded font-medium transition-colors ${
-//                       activeTab === "closed"
-//                         ? "bg-[#FF7B1D] text-white"
-//                         : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
-//                     }`}
-//                   >
-//                     Closed
-//                   </button>
-//                 </div>
-//               </div>
-//             </div>
-
-//             <div className="p-4">
-//               <div className="flex gap-4">
-//                 <div className="flex-1 relative">
-//                   <Search
-//                     className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-//                     size={20}
-//                   />
-//                   <input
-//                     type="text"
-//                     placeholder="Search by Ticket Number or Complaint..."
-//                     value={searchQuery}
-//                     onChange={(e) => setSearchQuery(e.target.value)}
-//                     onKeyDown={(e) => {
-//                       if (e.key === "Enter") {
-//                         handleSearch();
-//                       }
-//                     }}
-//                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#FF7B1D] focus:border-transparent"
-//                   />
-//                 </div>
-//                 <button
-//                   onClick={handleSearch}
-//                   className="bg-[#FF7B1D] text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors font-medium"
-//                 >
-//                   Search
-//                 </button>
-//               </div>
-//             </div>
-//           </div>
-
-//           {/* Error Message */}
-//           {error && (
-//             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-//               {error}
-//             </div>
-//           )}
-
-//           {/* Tickets List */}
-//           <div className="bg-white rounded-sm shadow-sm overflow-hidden">
-//             {loading && tickets.length === 0 ? (
-//               <div className="text-center py-12">
-//                 <p className="text-gray-500">Loading tickets...</p>
-//               </div>
-//             ) : (
-//               <>
-//                 <div className="overflow-x-auto">
-//                   <table className="w-full">
-//                     <thead className="bg-[#FF7B1D] text-black">
-//                       <tr>
-//                         <th className="px-6 py-3 text-left text-sm font-bold ">
-//                           S.N
-//                         </th>
-//                         <th className="px-6 py-3 text-left text-sm font-bold ">
-//                           Ticket Number
-//                         </th>
-//                         <th className="px-6 py-3 text-left text-sm font-bold ">
-//                           Rider
-//                         </th>
-//                         <th className="px-6 py-3 text-left text-sm font-bold ">
-//                           Complaint
-//                         </th>
-//                         <th className="px-6 py-3 text-left text-sm font-bold ">
-//                           Category
-//                         </th>
-//                         <th className="px-6 py-3 text-left text-sm font-bold ">
-//                           Status
-//                         </th>
-//                         <th className="px-6 py-3 text-left text-sm font-bold ">
-//                           Messages
-//                         </th>
-//                         <th className="px-6 py-3 text-left text-sm font-bold ">
-//                           Created At
-//                         </th>
-//                         <th className="px-6 py-3 text-left text-sm font-bold ">
-//                           Actions
-//                         </th>
-//                       </tr>
-//                     </thead>
-//                     <tbody className="bg-white divide-y divide-gray-200">
-//                       {tickets.map((ticket, index) => (
-//                         <tr
-//                           key={ticket._id}
-//                           className="hover:bg-orange-50 transition-colors"
-//                         >
-//                           <td className="px-6 py-4 whitespace-nowrap text-gray-900">
-//                             {(currentPage - 1) * itemsPerPage + index + 1}
-//                           </td>
-//                           <td className="px-6 py-4 whitespace-nowrap">
-//                             <span className="font-medium text-[#FF7B1D]">
-//                               {ticket.ticketNumber}
-//                             </span>
-//                           </td>
-//                           <td className="px-6 py-4 whitespace-nowrap">
-//                             <div className="flex items-center gap-2">
-//                               <Truck size={16} className="text-[#FF7B1D]" />
-//                               <span className="text-sm text-gray-900">
-//                                 {ticket.rider?.fullName || "N/A"}
-//                               </span>
-//                             </div>
-//                           </td>
-//                           <td className="px-6 py-4">
-//                             <div className="max-w-xs">
-//                               <div className="text-sm text-gray-900 truncate">
-//                                 {ticket.complaint}
-//                               </div>
-//                             </div>
-//                           </td>
-//                           <td className="px-6 py-4 whitespace-nowrap">
-//                             <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
-//                               {categoryLabels[ticket.category] ||
-//                                 ticket.category}
-//                             </span>
-//                           </td>
-//                           <td className="px-6 py-4 whitespace-nowrap">
-//                             <span
-//                               className={`px-3 py-1 rounded-full text-sm font-bold ${getStatusColor(
-//                                 ticket.status,
-//                               )}`}
-//                             >
-//                               {statusLabels[ticket.status] || ticket.status}
-//                             </span>
-//                           </td>
-//                           <td className="px-6 py-4 whitespace-nowrap">
-//                             <span className="bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-sm">
-//                               {ticket.messages?.length || 0}
-//                             </span>
-//                           </td>
-//                           <td className="px-6 py-4 whitespace-nowrap text-gray-900">
-//                             {formatDate(ticket.createdAt)}
-//                           </td>
-//                           <td className="px-6 py-4 whitespace-nowrap">
-//                             <button
-//                               onClick={() => fetchTicketDetails(ticket._id)}
-//                               className="bg-[#FF7B1D] text-white px-3 py-1 rounded text-sm hover:bg-orange-600 transition-colors"
-//                             >
-//                               View
-//                             </button>
-//                           </td>
-//                         </tr>
-//                       ))}
-//                     </tbody>
-//                   </table>
-//                 </div>
-
-//                 {tickets.length === 0 && !loading && !error && (
-//                   <div className="text-center py-12">
-//                     <MessageSquare
-//                       className="mx-auto text-gray-400 mb-4"
-//                       size={48}
-//                     />
-//                     <p className="text-gray-500 text-lg font-medium">
-//                       No Tickets Found
-//                     </p>
-//                     <p className="text-gray-400 text-sm mt-2">
-//                       {searchQueryRef.current
-//                         ? "No tickets match your search criteria"
-//                         : "There are no tickets available at the moment"}
-//                     </p>
-//                   </div>
-//                 )}
-//               </>
-//             )}
-//           </div>
-
-//           {/* Pagination */}
-//           {totalPages > 1 && (
-//             <div className="flex justify-end items-center gap-6 mt-8 max-w-[95%] mx-auto">
-//               <button
-//                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-//                 disabled={currentPage === 1}
-//                 className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium rounded hover:bg-orange-600 transition-colors disabled:cursor-not-allowed disabled:bg-gray-300"
-//               >
-//                 Back
-//               </button>
-
-//               <div className="flex items-center gap-2 text-sm text-black font-medium">
-//                 {[...Array(totalPages)].map((_, idx) => (
-//                   <button
-//                     key={idx + 1}
-//                     onClick={() => setCurrentPage(idx + 1)}
-//                     className={`px-2 py-1 rounded transition-colors ${
-//                       currentPage === idx + 1
-//                         ? "text-[#FF7B1D] font-semibold"
-//                         : "text-gray-700 hover:text-black"
-//                     }`}
-//                   >
-//                     {idx + 1}
-//                   </button>
-//                 ))}
-//               </div>
-
-//               <button
-//                 onClick={() =>
-//                   setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-//                 }
-//                 disabled={currentPage === totalPages}
-//                 className="bg-[#247606] text-white px-10 py-3 text-sm font-medium rounded hover:bg-green-800 transition-colors disabled:cursor-not-allowed disabled:bg-gray-300"
-//               >
-//                 Next
-//               </button>
-//             </div>
-//           )}
-//         </div>
-
-//         {/* Ticket Detail Modal */}
-//         {showTicketDetailModal && selectedTicket && (
-//           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-//             <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-//               <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-[#FF7B1D] text-white rounded-t-lg">
-//                 <div>
-//                   <h2 className="text-2xl font-bold">
-//                     Ticket: {selectedTicket.ticketNumber}
-//                   </h2>
-//                   <p className="text-sm mt-1">
-//                     {formatDate(selectedTicket.createdAt)}
-//                   </p>
-//                 </div>
-//                 <button
-//                   onClick={() => {
-//                     setShowTicketDetailModal(false);
-//                     setSelectedTicket(null);
-//                     setMessageInput("");
-//                     setError("");
-//                     setStatusUpdate("");
-//                     setAdminResponse("");
-//                   }}
-//                   className="text-white hover:text-gray-200"
-//                 >
-//                   <X size={24} />
-//                 </button>
-//               </div>
-
-//               <div className="p-6 space-y-4">
-//                 {/* Ticket Info */}
-//                 <div className="grid grid-cols-2 gap-4">
-//                   <div>
-//                     <label className="text-sm font-medium text-gray-600">
-//                       Rider
-//                     </label>
-//                     <div className="mt-1 flex items-center gap-2">
-//                       <Truck size={16} className="text-[#FF7B1D]" />
-//                       <span className="text-gray-900">
-//                         {selectedTicket.rider?.fullName || "N/A"}
-//                       </span>
-//                     </div>
-//                   </div>
-//                   <div>
-//                     <label className="text-sm font-medium text-gray-600">
-//                       Status
-//                     </label>
-//                     <div className="mt-1">
-//                       <select
-//                         value={statusUpdate}
-//                         onChange={(e) => setStatusUpdate(e.target.value)}
-//                         className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#FF7B1D] focus:border-transparent"
-//                       >
-//                         <option value="active">Active</option>
-//                         <option value="pending">Pending</option>
-//                         <option value="resolved">Resolved</option>
-//                         <option value="closed">Closed</option>
-//                       </select>
-//                     </div>
-//                   </div>
-//                   <div>
-//                     <label className="text-sm font-medium text-gray-600">
-//                       Category
-//                     </label>
-//                     <div className="mt-1">
-//                       <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
-//                         {categoryLabels[selectedTicket.category] ||
-//                           selectedTicket.category}
-//                       </span>
-//                     </div>
-//                   </div>
-//                 </div>
-
-//                 <div>
-//                   <label className="text-sm font-medium text-gray-600">
-//                     Complaint
-//                   </label>
-//                   <div className="mt-1 p-4 bg-gray-50 rounded border">
-//                     <p className="text-gray-900">{selectedTicket.complaint}</p>
-//                   </div>
-//                 </div>
-
-//                 {/* Admin Response */}
-//                 <div>
-//                   <label className="text-sm font-medium text-gray-600 mb-2 block">
-//                     Admin Response (Optional)
-//                   </label>
-//                   <textarea
-//                     value={adminResponse}
-//                     onChange={(e) => setAdminResponse(e.target.value)}
-//                     placeholder="Add your response..."
-//                     rows="3"
-//                     className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#FF7B1D] focus:border-transparent"
-//                   />
-//                 </div>
-
-//                 {/* Update Status Button */}
-//                 <div>
-//                   <button
-//                     onClick={handleUpdateStatus}
-//                     disabled={updatingStatus || !statusUpdate}
-//                     className="bg-[#FF7B1D] text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-//                   >
-//                     {updatingStatus ? "Updating..." : "Update Status"}
-//                   </button>
-//                 </div>
-
-//                 {/* Messages */}
-//                 <div>
-//                   <label className="text-sm font-medium text-gray-600 mb-2 block">
-//                     Messages ({selectedTicket.messages?.length || 0})
-//                   </label>
-//                   <div className="space-y-3 max-h-96 overflow-y-auto border rounded p-4">
-//                     {selectedTicket.messages &&
-//                     selectedTicket.messages.length > 0 ? (
-//                       selectedTicket.messages.map((msg, idx) => (
-//                         <div
-//                           key={idx}
-//                           className={`p-3 rounded ${
-//                             msg.senderModel === "Rider"
-//                               ? "bg-green-50 border-l-4 border-[#247606]"
-//                               : msg.senderModel === "Admin"
-//                                 ? "bg-orange-50 border-l-4 border-[#FF7B1D]"
-//                                 : "bg-gray-50 border-l-4 border-gray-500"
-//                           }`}
-//                         >
-//                           <div className="flex justify-between items-start mb-1">
-//                             <span className="font-medium text-sm">
-//                               {msg.senderModel === "Rider"
-//                                 ? msg.sender?.fullName || "Rider"
-//                                 : msg.senderModel === "Admin"
-//                                   ? msg.sender?.name || "Admin"
-//                                   : "Unknown"}
-//                             </span>
-//                             <span className="text-xs text-gray-500">
-//                               {formatDate(msg.createdAt)}
-//                             </span>
-//                           </div>
-//                           <p className="text-sm text-gray-700">{msg.message}</p>
-//                         </div>
-//                       ))
-//                     ) : (
-//                       <p className="text-gray-500 text-sm">No messages yet</p>
-//                     )}
-//                   </div>
-//                 </div>
-
-//                 {/* Add Message */}
-//                 {selectedTicket.status !== "closed" && (
-//                   <div>
-//                     <label className="text-sm font-medium text-gray-600 mb-2 block">
-//                       Add Message
-//                     </label>
-//                     <div className="flex gap-2">
-//                       <textarea
-//                         value={messageInput}
-//                         onChange={(e) => setMessageInput(e.target.value)}
-//                         placeholder="Type your message..."
-//                         rows="3"
-//                         className="flex-1 px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#FF7B1D] focus:border-transparent"
-//                       />
-//                       <button
-//                         onClick={handleSendMessage}
-//                         disabled={!messageInput.trim() || sendingMessage}
-//                         className="bg-[#FF7B1D] text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
-//                       >
-//                         <Send size={18} />
-//                         {sendingMessage ? "Sending..." : "Send"}
-//                       </button>
-//                     </div>
-//                   </div>
-//                 )}
-//               </div>
-
-//               <div className="p-6 border-t border-gray-200 flex gap-4 justify-end">
-//                 <button
-//                   onClick={() => {
-//                     setShowTicketDetailModal(false);
-//                     setSelectedTicket(null);
-//                     setMessageInput("");
-//                     setError("");
-//                     setStatusUpdate("");
-//                     setAdminResponse("");
-//                   }}
-//                   className="px-6 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition-colors"
-//                 >
-//                   Close
-//                 </button>
-//               </div>
-//             </div>
-//           </div>
-//         )}
-//       </div>
-//     </DashboardLayout>
-//   );
-// };
-
-// export default AdminRiderSupport;
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import {
@@ -793,6 +9,8 @@ import {
   X,
   Send,
   Truck,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import api from "../../api/api";
 
@@ -815,10 +33,17 @@ const AdminRiderSupport = () => {
   const [totalTickets, setTotalTickets] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const searchQueryRef = useRef(searchQuery);
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
     searchQueryRef.current = searchQuery;
   }, [searchQuery]);
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [selectedTicket?.messages]);
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
@@ -853,7 +78,6 @@ const AdminRiderSupport = () => {
         setTotalPages(1);
       }
     } catch (err) {
-      console.error("Error fetching tickets:", err);
       setError(
         err.response?.data?.message ||
           err.response?.data?.error ||
@@ -895,7 +119,9 @@ const AdminRiderSupport = () => {
     try {
       const response = await api.post(
         `/api/admin/tickets/${selectedTicket._id}/messages`,
-        { message: messageInput.trim() },
+        {
+          message: messageInput.trim(),
+        },
       );
       if (response.data.success) {
         setMessageInput("");
@@ -964,26 +190,43 @@ const AdminRiderSupport = () => {
     general_queries: "General Queries",
   };
 
-  const statusLabels = {
-    active: "Active",
-    pending: "Pending",
-    resolved: "Resolved",
-    closed: "Closed",
+  const statusConfig = {
+    active: {
+      label: "Active",
+      className:
+        "bg-blue-50 text-blue-700 border border-blue-200 ring-1 ring-blue-100",
+      dot: "bg-blue-500",
+    },
+    pending: {
+      label: "Pending",
+      className:
+        "bg-amber-50 text-amber-700 border border-amber-200 ring-1 ring-amber-100",
+      dot: "bg-amber-500",
+    },
+    resolved: {
+      label: "Resolved",
+      className:
+        "bg-emerald-50 text-emerald-700 border border-emerald-200 ring-1 ring-emerald-100",
+      dot: "bg-emerald-500",
+    },
+    closed: {
+      label: "Closed",
+      className:
+        "bg-gray-100 text-gray-500 border border-gray-200 ring-1 ring-gray-100",
+      dot: "bg-gray-400",
+    },
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "active":
-        return "text-blue-700 font-semibold";
-      case "pending":
-        return "text-orange-600 font-semibold";
-      case "resolved":
-        return "text-green-600 font-semibold";
-      case "closed":
-        return "text-gray-500 font-semibold";
-      default:
-        return "text-gray-500 font-semibold";
-    }
+  const StatusBadge = ({ status }) => {
+    const cfg = statusConfig[status] || statusConfig.closed;
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.className}`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+        {cfg.label}
+      </span>
+    );
   };
 
   const formatDate = (dateString) => {
@@ -997,17 +240,15 @@ const AdminRiderSupport = () => {
     });
   };
 
-  // Skeleton Loader
   const TableSkeleton = () => (
     <tbody>
       {Array.from({ length: itemsPerPage }).map((_, idx) => (
-        <tr
-          key={idx}
-          className="animate-pulse border-b-4 border-gray-200 bg-white"
-        >
+        <tr key={idx} className="border-b border-gray-100">
           {Array.from({ length: 9 }).map((__, j) => (
-            <td key={j} className="p-3 text-center">
-              <div className="bg-gray-300 rounded h-4 w-[80%] mx-auto" />
+            <td key={j} className="px-4 py-3.5">
+              <div
+                className={`h-3.5 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full animate-pulse ${j === 8 ? "w-16 ml-auto" : "w-[70%]"}`}
+              />
             </td>
           ))}
         </tr>
@@ -1015,290 +256,405 @@ const AdminRiderSupport = () => {
     </tbody>
   );
 
-  const tabs = ["all", "active", "pending", "resolved", "closed"];
+  const EmptyState = () => (
+    <tbody>
+      <tr>
+        <td colSpan="9" className="py-20 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center">
+              <MessageSquare className="w-8 h-8 text-orange-300" />
+            </div>
+            <p className="text-gray-400 text-sm font-medium">
+              No tickets found
+            </p>
+            <p className="text-gray-300 text-xs">
+              {searchQueryRef.current
+                ? "No tickets match your search criteria."
+                : "No tickets available at the moment."}
+            </p>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  );
+
+  const tabs = [
+    { key: "all", label: "All" },
+    { key: "active", label: "Active" },
+    { key: "pending", label: "Pending" },
+    { key: "resolved", label: "Resolved" },
+    { key: "closed", label: "Closed" },
+  ];
+
+  const statCards = [
+    {
+      label: "Total Tickets",
+      value: stats.total,
+      icon: MessageSquare,
+      border: "border-[#FF7B1D]",
+      text: "text-[#FF7B1D]",
+      iconColor: "text-[#FF7B1D]",
+    },
+    {
+      label: "Active",
+      value: stats.active,
+      icon: AlertCircle,
+      border: "border-blue-500",
+      text: "text-blue-600",
+      iconColor: "text-blue-500",
+    },
+    {
+      label: "Pending",
+      value: stats.pending,
+      icon: Clock,
+      border: "border-amber-400",
+      text: "text-amber-500",
+      iconColor: "text-amber-400",
+    },
+    {
+      label: "Resolved",
+      value: stats.resolved,
+      icon: CheckCircle,
+      border: "border-emerald-500",
+      text: "text-emerald-600",
+      iconColor: "text-emerald-500",
+    },
+    {
+      label: "Closed",
+      value: stats.closed,
+      icon: CheckCircle,
+      border: "border-gray-400",
+      text: "text-gray-500",
+      iconColor: "text-gray-400",
+    },
+  ];
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen p-0 ml-4">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4 max-w-[99%] mx-auto pt-4 pl-2">
-          <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-[#FF7B1D]">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-600">Total Tickets</p>
-                <p className="text-2xl font-bold text-[#FF7B1D]">
-                  {stats.total}
-                </p>
-              </div>
-              <MessageSquare className="text-[#FF7B1D]" size={22} />
-            </div>
-          </div>
-          <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-blue-500">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-600">Active</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {stats.active}
-                </p>
-              </div>
-              <AlertCircle className="text-blue-500" size={22} />
-            </div>
-          </div>
-          <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-orange-400">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-600">Pending</p>
-                <p className="text-2xl font-bold text-orange-500">
-                  {stats.pending}
-                </p>
-              </div>
-              <Clock className="text-orange-400" size={22} />
-            </div>
-          </div>
-          <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-[#247606]">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-600">Resolved</p>
-                <p className="text-2xl font-bold text-[#247606]">
-                  {stats.resolved}
-                </p>
-              </div>
-              <CheckCircle className="text-[#247606]" size={22} />
-            </div>
-          </div>
-          <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-gray-400">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-600">Closed</p>
-                <p className="text-2xl font-bold text-gray-500">
-                  {stats.closed}
-                </p>
-              </div>
-              <CheckCircle className="text-gray-400" size={22} />
-            </div>
-          </div>
-        </div>
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .row-animate { animation: fadeSlideIn 0.25s ease forwards; }
+        @keyframes modalIn {
+          from { opacity: 0; transform: scale(0.96) translateY(8px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-animate { animation: modalIn 0.22s ease forwards; }
+        .action-btn {
+          width: 30px; height: 30px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 8px;
+          transition: all 0.18s ease;
+        }
+        .action-btn:hover { transform: translateY(-1px); }
+      `}</style>
 
-        {/* Top Bar */}
-        <div className="flex flex-col md:flex-row md:items-center pl-4 md:justify-between gap-3 max-w-[99%] mx-auto mt-2 mb-2">
-          <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
-            {/* Tabs */}
-            <div className="flex gap-2 items-center overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0 flex-wrap">
-              {tabs.map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => {
-                    setActiveTab(tab);
-                    setCurrentPage(1);
-                  }}
-                  className={`px-4 py-1 border rounded text-xs sm:text-sm whitespace-nowrap ${
-                    activeTab === tab
-                      ? "bg-[#FF7B1D] text-white border-orange-500"
-                      : "border-gray-400 text-gray-600 hover:bg-gray-100"
-                  }`}
+      <div className="min-h-screen px-1 pt-4">
+        {/* ── Stat Cards ── */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5 max-w-full">
+          {statCards.map((card) => (
+            <div
+              key={card.label}
+              className={`bg-white rounded-2xl shadow-sm p-4 border-l-4 ${card.border} hover:shadow-md transition-shadow`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">
+                    {card.label}
+                  </p>
+                  <p className={`text-2xl font-bold mt-0.5 ${card.text}`}>
+                    {card.value}
+                  </p>
+                </div>
+                <div
+                  className={`w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center`}
                 >
-                  {tab === "all"
-                    ? "All"
-                    : tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
+                  <card.icon className={card.iconColor} size={20} />
+                </div>
+              </div>
             </div>
+          ))}
+        </div>
 
-            {/* Search */}
-            <div className="flex items-center border border-black rounded overflow-hidden h-9 w-full max-w-full sm:max-w-[450px]">
-              <input
-                type="text"
-                placeholder="Search by Ticket Number or Complaint..."
-                className="flex-1 px-3 sm:px-4 text-sm text-gray-800 focus:outline-none h-full"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleSearch();
-                  }
-                }}
-              />
+        {/* ── Toolbar ── */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-3">
+          {/* LEFT: Tabs */}
+          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+            {tabs.map((tab) => (
               <button
-                onClick={handleSearch}
-                className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-sm px-3 sm:px-6 h-full"
+                key={tab.key}
+                onClick={() => {
+                  setActiveTab(tab.key);
+                  setCurrentPage(1);
+                }}
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
+                  activeTab === tab.key
+                    ? "bg-white text-[#FF7B1D] shadow-sm shadow-orange-100"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
               >
-                Search
+                {tab.label}
               </button>
-            </div>
+            ))}
+          </div>
+
+          {/* RIGHT: Search */}
+          <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden h-[38px] w-full lg:w-[400px] shadow-sm bg-white">
+            <input
+              type="text"
+              placeholder="Search by ticket number or complaint..."
+              className="flex-1 px-4 text-sm text-gray-700 focus:outline-none h-full placeholder:text-gray-400"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSearch();
+                }
+              }}
+            />
+            <button
+              onClick={handleSearch}
+              className="bg-[#FF7B1D] hover:bg-orange-500 text-white text-sm font-medium px-5 h-full transition-colors flex items-center gap-1.5"
+            >
+              <Search size={14} /> Search
+            </button>
           </div>
         </div>
 
-        {/* Error */}
+        {/* ── Error Banner ── */}
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-3 mx-4 text-sm">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-3 text-sm flex items-center gap-2">
+            <AlertCircle size={15} className="shrink-0" />
             {error}
           </div>
         )}
 
-        {/* Table */}
-        <div className="bg-white rounded-sm shadow-sm overflow-x-auto pl-4 max-w-[99%] mx-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-[#FF7B1D] text-black">
-                <th className="p-3 text-center">S.N</th>
-                <th className="p-3 text-center">Ticket No.</th>
-                <th className="p-3 text-center">Rider</th>
-                <th className="p-3 text-center">Complaint</th>
-                <th className="p-3 text-center">Category</th>
-                <th className="p-3 text-center">Status</th>
-                <th className="p-3 text-center">Messages</th>
-                <th className="p-3 text-center">Created At</th>
-                <th className="p-3 pr-6 text-right">Action</th>
-              </tr>
-            </thead>
-
-            {loading ? (
-              <TableSkeleton />
-            ) : tickets.length === 0 && !error ? (
-              <tbody>
-                <tr>
-                  <td
-                    colSpan="9"
-                    className="text-center py-10 text-gray-500 text-sm bg-white"
-                  >
-                    <MessageSquare
-                      className="mx-auto text-gray-400 mb-3"
-                      size={36}
-                    />
-                    {searchQueryRef.current
-                      ? "No tickets match your search criteria."
-                      : "No tickets available at the moment."}
-                  </td>
-                </tr>
-              </tbody>
-            ) : (
-              <tbody>
-                {tickets.map((ticket, index) => (
-                  <tr
-                    key={ticket._id}
-                    className="bg-white shadow-sm hover:bg-gray-50 transition border-b-4 border-gray-200"
-                  >
-                    <td className="p-3 text-center">
-                      {(currentPage - 1) * itemsPerPage + index + 1}
-                    </td>
-                    <td className="p-3 text-center">
-                      <span className="font-medium text-orange-600">
-                        {ticket.ticketNumber}
-                      </span>
-                    </td>
-                    <td className="p-3 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <Truck size={14} className="text-[#FF7B1D]" />
-                        <span className="text-gray-800">
-                          {ticket.rider?.fullName || "N/A"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="p-3 text-center max-w-[200px]">
-                      <div className="text-gray-700 truncate">
-                        {ticket.complaint}
-                      </div>
-                    </td>
-                    <td className="p-3 text-center text-orange-700 font-medium">
-                      {categoryLabels[ticket.category] || ticket.category}
-                    </td>
-                    <td
-                      className={`p-3 text-center ${getStatusColor(ticket.status)}`}
-                    >
-                      {statusLabels[ticket.status] || ticket.status}
-                    </td>
-                    <td className="p-3 text-center text-orange-600 font-semibold">
-                      {ticket.messages?.length || 0}
-                    </td>
-                    <td className="p-3 text-center text-gray-600">
-                      {formatDate(ticket.createdAt)}
-                    </td>
-                    <td className="p-3 text-right pr-4">
-                      <button
-                        onClick={() => fetchTicketDetails(ticket._id)}
-                        className="text-orange-600 hover:text-gray-700 font-bold text-sm"
-                        title="View Ticket"
-                      >
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+        {/* ── Table Card ── */}
+        <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+          {/* Card Header */}
+          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+              <span className="text-sm font-semibold text-gray-700">
+                Rider Support Tickets
+              </span>
+            </div>
+            {!loading && (
+              <span className="text-xs text-gray-400 font-medium">
+                {tickets.length} of {totalTickets} tickets
+              </span>
             )}
-          </table>
-        </div>
-
-        {/* Pagination — always visible, CreateCategory style */}
-        <div className="flex justify-end pl-8 items-center gap-6 mt-8 max-w-[95%] mx-auto">
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-            disabled={currentPage === 1}
-            className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-300"
-          >
-            Back
-          </button>
-
-          <div className="flex items-center gap-2 text-sm text-black font-medium">
-            {(() => {
-              const pages = [];
-              const visiblePages = new Set([
-                1,
-                2,
-                totalPages - 1,
-                totalPages,
-                currentPage - 1,
-                currentPage,
-                currentPage + 1,
-              ]);
-              for (let i = 1; i <= totalPages; i++) {
-                if (visiblePages.has(i)) pages.push(i);
-                else if (pages[pages.length - 1] !== "...") pages.push("...");
-              }
-              return pages.map((page, idx) =>
-                page === "..." ? (
-                  <span key={idx} className="px-1 text-black select-none">
-                    ...
-                  </span>
-                ) : (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-1 ${currentPage === page ? "text-orange-600 font-semibold" : ""}`}
-                  >
-                    {page}
-                  </button>
-                ),
-              );
-            })()}
           </div>
 
-          <button
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-            }
-            disabled={currentPage === totalPages}
-            className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-gray-300"
-          >
-            Next
-          </button>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gradient-to-r from-[#FF7B1D] to-orange-400">
+                  {[
+                    "S.N",
+                    "Ticket No.",
+                    "Rider",
+                    "Complaint",
+                    "Category",
+                    "Status",
+                    "Messages",
+                    "Created At",
+                    "Action",
+                  ].map((h, i) => (
+                    <th
+                      key={h}
+                      className={`px-4 py-3.5 text-xs font-bold text-white tracking-wider uppercase opacity-90 ${i === 8 ? "text-right pr-5" : "text-left"}`}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+
+              {loading ? (
+                <TableSkeleton />
+              ) : tickets.length === 0 ? (
+                <EmptyState />
+              ) : (
+                <tbody>
+                  {tickets.map((ticket, index) => (
+                    <tr
+                      key={ticket._id}
+                      className="row-animate border-b border-gray-50 hover:bg-orange-50/40 transition-colors duration-150 group"
+                      style={{ animationDelay: `${index * 30}ms` }}
+                    >
+                      {/* S.N */}
+                      <td className="px-4 py-3.5">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">
+                          {(currentPage - 1) * itemsPerPage + index + 1}
+                        </span>
+                      </td>
+
+                      {/* Ticket No */}
+                      <td className="px-4 py-3.5">
+                        <span className="font-mono text-xs bg-orange-50 border border-orange-200 px-2 py-1 rounded-md text-orange-600 font-semibold">
+                          {ticket.ticketNumber}
+                        </span>
+                      </td>
+
+                      {/* Rider */}
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                            <Truck size={12} className="text-[#FF7B1D]" />
+                          </div>
+                          <span className="text-gray-700 text-sm font-medium">
+                            {ticket.rider?.fullName || "N/A"}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Complaint */}
+                      <td className="px-4 py-3.5 max-w-[200px]">
+                        <p className="text-gray-600 text-xs truncate">
+                          {ticket.complaint}
+                        </p>
+                      </td>
+
+                      {/* Category */}
+                      <td className="px-4 py-3.5">
+                        <span className="inline-block bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full border border-blue-100">
+                          {categoryLabels[ticket.category] || ticket.category}
+                        </span>
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-4 py-3.5">
+                        <StatusBadge status={ticket.status} />
+                      </td>
+
+                      {/* Messages */}
+                      <td className="px-4 py-3.5">
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-1 rounded-full border border-orange-100">
+                          <MessageSquare size={10} />
+                          {ticket.messages?.length || 0}
+                        </span>
+                      </td>
+
+                      {/* Date */}
+                      <td className="px-4 py-3.5 text-gray-500 text-xs">
+                        {formatDate(ticket.createdAt)}
+                      </td>
+
+                      {/* Action */}
+                      <td className="px-4 py-3.5 pr-5">
+                        <div className="flex justify-end">
+                          <button
+                            onClick={() => fetchTicketDetails(ticket._id)}
+                            className="action-btn bg-orange-50 text-orange-500 hover:bg-orange-100 hover:text-orange-700"
+                            title="View Ticket"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              )}
+            </table>
+          </div>
         </div>
 
-        {/* Ticket Detail Modal */}
-        {showTicketDetailModal && selectedTicket && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-sm shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              {/* Modal Header */}
-              <div className="bg-[#FF7B1D] px-6 py-4 flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-bold text-white">
-                    Ticket: {selectedTicket.ticketNumber}
-                  </h2>
-                  <p className="text-xs text-white/80 mt-0.5">
-                    {formatDate(selectedTicket.createdAt)}
-                  </p>
-                </div>
+        {/* ── Pagination ── */}
+        {!loading && tickets.length > 0 && (
+          <div className="flex items-center justify-between mt-5 mb-6">
+            <p className="text-xs text-gray-400 font-medium">
+              Page{" "}
+              <span className="text-gray-600 font-semibold">{currentPage}</span>{" "}
+              of{" "}
+              <span className="text-gray-600 font-semibold">{totalPages}</span>
+            </p>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={currentPage === 1}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" /> Prev
+              </button>
+
+              <div className="flex items-center gap-1">
+                {(() => {
+                  const pages = [];
+                  const visiblePages = new Set([
+                    1,
+                    2,
+                    totalPages - 1,
+                    totalPages,
+                    currentPage - 1,
+                    currentPage,
+                    currentPage + 1,
+                  ]);
+                  for (let i = 1; i <= totalPages; i++) {
+                    if (visiblePages.has(i)) pages.push(i);
+                    else if (pages[pages.length - 1] !== "...")
+                      pages.push("...");
+                  }
+                  return pages.map((page, idx) =>
+                    page === "..." ? (
+                      <span key={idx} className="px-1 text-gray-400 text-xs">
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-8 h-8 rounded-xl text-xs font-semibold transition-all ${
+                          currentPage === page
+                            ? "bg-[#FF7B1D] text-white shadow-sm shadow-orange-200"
+                            : "bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ),
+                  );
+                })()}
+              </div>
+
+              <button
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(p + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+              >
+                Next <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Ticket Detail Modal ── */}
+      {showTicketDetailModal && selectedTicket && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="modal-animate bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-gray-100">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-[#FF7B1D] to-orange-400 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+              <div>
+                <h2 className="text-base font-bold text-white">
+                  Ticket:{" "}
+                  <span className="font-mono">
+                    {selectedTicket.ticketNumber}
+                  </span>
+                </h2>
+                <p className="text-xs text-white/80 mt-0.5">
+                  {formatDate(selectedTicket.createdAt)}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <StatusBadge status={selectedTicket.status} />
                 <button
                   onClick={() => {
                     setShowTicketDetailModal(false);
@@ -1308,104 +664,110 @@ const AdminRiderSupport = () => {
                     setStatusUpdate("");
                     setAdminResponse("");
                   }}
-                  className="text-white hover:bg-white/20 p-1 rounded"
+                  className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors ml-2"
                 >
-                  <X size={20} />
+                  <X size={16} />
                 </button>
               </div>
+            </div>
 
-              <div className="p-6 space-y-5 text-sm">
-                {/* Info Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium mb-1">
-                      Rider
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Truck size={14} className="text-[#FF7B1D]" />
-                      <span className="text-gray-800 font-medium">
-                        {selectedTicket.rider?.fullName || "N/A"}
-                      </span>
+            <div className="p-6 space-y-5">
+              {/* Info Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-xl p-3.5 border border-gray-100">
+                  <p className="text-xs text-gray-400 font-medium mb-1.5">
+                    Rider
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                      <Truck size={13} className="text-[#FF7B1D]" />
                     </div>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium mb-1">
-                      Category
-                    </p>
-                    <span className="text-orange-700 font-medium">
-                      {categoryLabels[selectedTicket.category] ||
-                        selectedTicket.category}
+                    <span className="text-gray-800 text-sm font-semibold">
+                      {selectedTicket.rider?.fullName || "N/A"}
                     </span>
                   </div>
-                  <div className="col-span-2">
-                    <p className="text-xs text-gray-500 font-medium mb-1">
-                      Update Status
-                    </p>
-                    <select
-                      value={statusUpdate}
-                      onChange={(e) => setStatusUpdate(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#FF7B1D]"
-                    >
-                      <option value="active">Active</option>
-                      <option value="pending">Pending</option>
-                      <option value="resolved">Resolved</option>
-                      <option value="closed">Closed</option>
-                    </select>
-                  </div>
                 </div>
-
-                {/* Complaint */}
-                <div>
-                  <p className="text-xs text-gray-500 font-medium mb-1">
-                    Complaint
+                <div className="bg-gray-50 rounded-xl p-3.5 border border-gray-100">
+                  <p className="text-xs text-gray-400 font-medium mb-1.5">
+                    Category
                   </p>
-                  <div className="p-3 bg-gray-50 rounded border border-gray-200 text-gray-800">
-                    {selectedTicket.complaint}
-                  </div>
+                  <span className="inline-block bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-blue-100">
+                    {categoryLabels[selectedTicket.category] ||
+                      selectedTicket.category}
+                  </span>
                 </div>
+              </div>
 
-                {/* Admin Response */}
+              {/* Complaint */}
+              <div>
+                <p className="text-xs text-gray-400 font-medium mb-1.5">
+                  Complaint
+                </p>
+                <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-100 text-gray-700 text-sm leading-relaxed">
+                  {selectedTicket.complaint}
+                </div>
+              </div>
+
+              {/* Status + Admin Response */}
+              <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <p className="text-xs text-gray-500 font-medium mb-1">
-                    Admin Response (Optional)
+                  <p className="text-xs text-gray-400 font-medium mb-1.5">
+                    Update Status
+                  </p>
+                  <select
+                    value={statusUpdate}
+                    onChange={(e) => setStatusUpdate(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 bg-white text-gray-700 transition-all"
+                  >
+                    <option value="active">Active</option>
+                    <option value="pending">Pending</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 font-medium mb-1.5">
+                    Admin Response{" "}
+                    <span className="text-gray-300">(Optional)</span>
                   </p>
                   <textarea
                     value={adminResponse}
                     onChange={(e) => setAdminResponse(e.target.value)}
                     placeholder="Add your response..."
                     rows="3"
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#FF7B1D]"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 bg-white text-gray-700 resize-none transition-all placeholder:text-gray-300"
                   />
                 </div>
+                <button
+                  onClick={handleUpdateStatus}
+                  disabled={updatingStatus || !statusUpdate}
+                  className="w-fit px-5 py-2.5 bg-gray-900 hover:bg-gray-700 text-white rounded-xl text-sm font-semibold disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed transition-all"
+                >
+                  {updatingStatus ? "Updating..." : "Update Status"}
+                </button>
+              </div>
 
-                {/* Update Status Button */}
-                <div>
-                  <button
-                    onClick={handleUpdateStatus}
-                    disabled={updatingStatus || !statusUpdate}
-                    className="px-5 py-2 bg-black hover:bg-gray-700 text-white rounded text-sm font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {updatingStatus ? "Updating..." : "Update Status"}
-                  </button>
-                </div>
-
-                {/* Messages */}
-                <div>
-                  <p className="text-xs text-gray-500 font-medium mb-2">
-                    Messages ({selectedTicket.messages?.length || 0})
-                  </p>
-                  <div className="space-y-3 max-h-72 overflow-y-auto border border-gray-200 rounded p-3 bg-gray-50">
-                    {selectedTicket.messages &&
-                    selectedTicket.messages.length > 0 ? (
-                      selectedTicket.messages.map((msg, idx) => (
+              {/* Messages */}
+              <div>
+                <p className="text-xs text-gray-400 font-medium mb-2">
+                  Messages{" "}
+                  <span className="text-gray-300">
+                    ({selectedTicket.messages?.length || 0})
+                  </span>
+                </p>
+                <div className="space-y-2.5 max-h-64 overflow-y-auto border border-gray-100 rounded-xl p-3 bg-gray-50">
+                  {selectedTicket.messages &&
+                  selectedTicket.messages.length > 0 ? (
+                    <>
+                      {selectedTicket.messages.map((msg, idx) => (
                         <div
                           key={idx}
-                          className={`p-3 rounded text-xs ${
+                          className={`p-3 rounded-xl text-xs ${
                             msg.senderModel === "Rider"
-                              ? "bg-green-50 border-l-4 border-[#247606]"
+                              ? "bg-white border border-emerald-100 border-l-4 border-l-emerald-400"
                               : msg.senderModel === "Admin"
-                                ? "bg-orange-50 border-l-4 border-[#FF7B1D]"
-                                : "bg-white border-l-4 border-gray-300"
+                                ? "bg-white border border-orange-100 border-l-4 border-l-[#FF7B1D]"
+                                : "bg-white border border-gray-100"
                           }`}
                         >
                           <div className="flex justify-between items-start mb-1">
@@ -1416,68 +778,72 @@ const AdminRiderSupport = () => {
                                   ? msg.sender?.name || "Admin"
                                   : "Unknown"}
                             </span>
-                            <span className="text-gray-400">
+                            <span className="text-gray-400 text-[10px]">
                               {formatDate(msg.createdAt)}
                             </span>
                           </div>
-                          <p className="text-gray-700">{msg.message}</p>
+                          <p className="text-gray-600 leading-relaxed">
+                            {msg.message}
+                          </p>
                         </div>
-                      ))
-                    ) : (
-                      <p className="text-gray-400 text-xs text-center py-4">
-                        No messages yet
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Add Message */}
-                {selectedTicket.status !== "closed" && (
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium mb-1">
-                      Add Message
-                    </p>
-                    <div className="flex gap-2">
-                      <textarea
-                        value={messageInput}
-                        onChange={(e) => setMessageInput(e.target.value)}
-                        placeholder="Type your message..."
-                        rows="3"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#FF7B1D] text-sm"
-                      />
-                      <button
-                        onClick={handleSendMessage}
-                        disabled={!messageInput.trim() || sendingMessage}
-                        className="px-4 py-2 bg-black hover:bg-gray-700 text-white rounded text-sm font-semibold flex items-center gap-2 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors self-end"
-                      >
-                        <Send size={16} />
-                        {sendingMessage ? "Sending..." : "Send"}
-                      </button>
+                      ))}
+                      <div ref={messagesEndRef} />
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 py-6">
+                      <MessageSquare size={24} className="text-gray-200" />
+                      <p className="text-gray-300 text-xs">No messages yet</p>
                     </div>
-                  </div>
-                )}
-
-                {/* Footer */}
-                <div className="flex justify-end pt-2 border-t border-gray-200">
-                  <button
-                    onClick={() => {
-                      setShowTicketDetailModal(false);
-                      setSelectedTicket(null);
-                      setMessageInput("");
-                      setError("");
-                      setStatusUpdate("");
-                      setAdminResponse("");
-                    }}
-                    className="px-5 py-2 border border-gray-300 rounded text-sm font-semibold hover:bg-gray-100 transition-colors"
-                  >
-                    Close
-                  </button>
+                  )}
                 </div>
+              </div>
+
+              {/* Add Message */}
+              {selectedTicket.status !== "closed" && (
+                <div>
+                  <p className="text-xs text-gray-400 font-medium mb-1.5">
+                    Add Message
+                  </p>
+                  <div className="flex gap-2 items-end">
+                    <textarea
+                      value={messageInput}
+                      onChange={(e) => setMessageInput(e.target.value)}
+                      placeholder="Type your message..."
+                      rows="3"
+                      className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 text-sm text-gray-700 resize-none transition-all placeholder:text-gray-300"
+                    />
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={!messageInput.trim() || sendingMessage}
+                      className="px-4 py-2.5 bg-gray-900 hover:bg-gray-700 text-white rounded-xl text-sm font-semibold flex items-center gap-2 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed transition-all shrink-0"
+                    >
+                      <Send size={14} />
+                      {sendingMessage ? "Sending..." : "Send"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Footer */}
+              <div className="flex justify-end pt-2 border-t border-gray-100">
+                <button
+                  onClick={() => {
+                    setShowTicketDetailModal(false);
+                    setSelectedTicket(null);
+                    setMessageInput("");
+                    setError("");
+                    setStatusUpdate("");
+                    setAdminResponse("");
+                  }}
+                  className="px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all"
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 };

@@ -2,17 +2,19 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import {
-  Search,
   Tag,
   Calendar,
   Percent,
-  ToggleLeft,
-  ToggleRight,
   Edit,
   X,
   Check,
   AlertCircle,
   Clock,
+  Package,
+  ChevronLeft,
+  ChevronRight,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 import api from "../../api/api";
 
@@ -42,7 +44,6 @@ const VendorDailyOffers = () => {
     isDailyOffer: false,
   });
 
-  // Fetch offers
   const fetchOffers = async () => {
     setLoading(true);
     setError("");
@@ -51,9 +52,7 @@ const VendorDailyOffers = () => {
         page: currentPage.toString(),
         limit: itemsPerPage.toString(),
       });
-      if (statusFilter !== "all") {
-        params.append("status", statusFilter);
-      }
+      if (statusFilter !== "all") params.append("status", statusFilter);
 
       const response = await api.get(
         `/api/vendor/products/offers?${params.toString()}`,
@@ -66,7 +65,6 @@ const VendorDailyOffers = () => {
         setError(response.data.message || "Failed to load offers");
       }
     } catch (err) {
-      console.error("Error fetching offers:", err);
       setError(
         err.response?.data?.message ||
           "Failed to load offers. Please try again.",
@@ -80,38 +78,22 @@ const VendorDailyOffers = () => {
     fetchOffers();
   }, [currentPage, statusFilter]);
 
-  // Handle search
-  const handleSearch = () => {
-    setCurrentPage(1);
-    fetchOffers();
-  };
-
-  // Open edit modal
   const handleEditOffer = (product) => {
     setSelectedProduct(product);
+    let startDate = "",
+      startTime = "",
+      endDate = "",
+      endTime = "";
 
-    // Extract date and time from offerStartDate
-    let startDate = "";
-    let startTime = "";
     if (product.offerStartDate) {
-      const startDateTime = new Date(product.offerStartDate);
-      startDate = startDateTime.toISOString().split("T")[0];
-      // Extract time in HH:MM format
-      const hours = String(startDateTime.getHours()).padStart(2, "0");
-      const minutes = String(startDateTime.getMinutes()).padStart(2, "0");
-      startTime = `${hours}:${minutes}`;
+      const dt = new Date(product.offerStartDate);
+      startDate = dt.toISOString().split("T")[0];
+      startTime = `${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`;
     }
-
-    // Extract date and time from offerEndDate
-    let endDate = "";
-    let endTime = "";
     if (product.offerEndDate) {
-      const endDateTime = new Date(product.offerEndDate);
-      endDate = endDateTime.toISOString().split("T")[0];
-      // Extract time in HH:MM format
-      const hours = String(endDateTime.getHours()).padStart(2, "0");
-      const minutes = String(endDateTime.getMinutes()).padStart(2, "0");
-      endTime = `${hours}:${minutes}`;
+      const dt = new Date(product.offerEndDate);
+      endDate = dt.toISOString().split("T")[0];
+      endTime = `${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`;
     }
 
     setEditForm({
@@ -126,45 +108,26 @@ const VendorDailyOffers = () => {
     setShowEditModal(true);
   };
 
-  // Update offer
   const handleUpdateOffer = async () => {
     if (!selectedProduct) return;
-
-    // Validation
     if (editForm.offerEnabled && editForm.offerDiscountPercentage <= 0) {
       setError(
         "Discount percentage must be greater than 0 when offer is enabled",
       );
       return;
     }
-
-    // Validate date and time combination - End must be after Start
     if (editForm.offerStartDate && editForm.offerEndDate) {
-      let startDateTime = new Date(editForm.offerStartDate);
-      let endDateTime = new Date(editForm.offerEndDate);
-
-      // Add time if provided
+      let s = new Date(editForm.offerStartDate);
+      let e = new Date(editForm.offerEndDate);
       if (editForm.offerStartTime) {
-        const timeParts = editForm.offerStartTime.split(":");
-        const hours = parseInt(timeParts[0]) || 0;
-        const minutes = parseInt(timeParts[1]) || 0;
-        const seconds = parseInt(timeParts[2]) || 0;
-        startDateTime.setHours(hours, minutes, seconds, 0);
-      } else {
-        startDateTime.setHours(0, 0, 0, 0);
+        const [h, m] = editForm.offerStartTime.split(":");
+        s.setHours(+h, +m, 0, 0);
       }
-
       if (editForm.offerEndTime) {
-        const timeParts = editForm.offerEndTime.split(":");
-        const hours = parseInt(timeParts[0]) || 0;
-        const minutes = parseInt(timeParts[1]) || 0;
-        const seconds = parseInt(timeParts[2]) || 0;
-        endDateTime.setHours(hours, minutes, seconds, 0);
-      } else {
-        endDateTime.setHours(23, 59, 59, 999);
+        const [h, m] = editForm.offerEndTime.split(":");
+        e.setHours(+h, +m, 0, 0);
       }
-
-      if (endDateTime <= startDateTime) {
+      if (e <= s) {
         setError("End date and time must be after start date and time");
         return;
       }
@@ -179,76 +142,38 @@ const VendorDailyOffers = () => {
     setUpdating(true);
     setError("");
     try {
-      // Build payload - all fields are optional as per API spec
-      const payload = {};
-
-      // Only include fields that have values
-      if (editForm.offerEnabled !== undefined) {
-        payload.offerEnabled = editForm.offerEnabled;
-      }
-
-      if (
-        editForm.offerDiscountPercentage !== undefined &&
-        editForm.offerDiscountPercentage !== null
-      ) {
-        payload.offerDiscountPercentage =
-          parseFloat(editForm.offerDiscountPercentage) || 0;
-      }
-
-      if (editForm.isDailyOffer !== undefined) {
-        payload.isDailyOffer = editForm.isDailyOffer;
-      }
-
-      // Handle start date and time
+      const payload = {
+        offerEnabled: editForm.offerEnabled,
+        offerDiscountPercentage:
+          parseFloat(editForm.offerDiscountPercentage) || 0,
+        isDailyOffer: editForm.isDailyOffer,
+      };
       if (editForm.offerStartDate) {
         payload.offerStartDate = editForm.offerStartDate;
         if (editForm.offerStartTime) {
-          // Convert HH:MM to HH:MM:SS format if needed
-          let startTime = editForm.offerStartTime;
-          if (startTime.length === 5) {
-            // If format is HH:MM, convert to HH:MM:SS
-            startTime = `${startTime}:00`;
-          }
-          // Validate time format (HH:MM:SS)
-          const timePattern = /^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/;
-          if (timePattern.test(startTime)) {
-            payload.offerStartTime = startTime;
-          }
+          let t = editForm.offerStartTime;
+          if (t.length === 5) t += ":00";
+          if (/^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/.test(t))
+            payload.offerStartTime = t;
         }
       }
-
-      // Handle end date and time
       if (editForm.offerEndDate) {
         payload.offerEndDate = editForm.offerEndDate;
         if (editForm.offerEndTime) {
-          // Convert HH:MM to HH:MM:SS format if needed
-          let endTime = editForm.offerEndTime;
-          if (endTime.length === 5) {
-            // If format is HH:MM, convert to HH:MM:SS
-            endTime = `${endTime}:00`;
-          }
-          // Validate time format (HH:MM:SS)
-          const timePattern = /^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/;
-          if (timePattern.test(endTime)) {
-            payload.offerEndTime = endTime;
-          }
+          let t = editForm.offerEndTime;
+          if (t.length === 5) t += ":00";
+          if (/^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/.test(t))
+            payload.offerEndTime = t;
         }
       }
-
-      console.log("Updating offer with payload:", payload);
-
       const response = await api.put(
         `/api/vendor/daily-offers/${selectedProduct._id}`,
         payload,
       );
-
-      console.log("Update response:", response.data);
-
       if (response.data.success) {
-        setError(""); // Clear errors
         setShowEditModal(false);
         setSelectedProduct(null);
-        fetchOffers(); // Refresh list
+        fetchOffers();
       } else {
         setError(
           response.data.message ||
@@ -257,8 +182,6 @@ const VendorDailyOffers = () => {
         );
       }
     } catch (err) {
-      console.error("Error updating offer:", err);
-      console.error("Error response:", err.response?.data);
       setError(
         err.response?.data?.error ||
           err.response?.data?.message ||
@@ -269,74 +192,44 @@ const VendorDailyOffers = () => {
     }
   };
 
-  // Toggle offer quickly
   const handleQuickToggle = async (product) => {
-    if (togglingId === product._id) return; // Prevent double clicks
-
+    if (togglingId === product._id) return;
     setTogglingId(product._id);
     setError("");
-
     try {
-      // Toggle daily offer flag
       const newIsDailyOffer = !product.isDailyOffer;
-      const payload = {
-        isDailyOffer: newIsDailyOffer,
-      };
-
-      // If enabling daily offer, also enable the offer if it's disabled
+      const payload = { isDailyOffer: newIsDailyOffer };
       if (newIsDailyOffer && !product.offerEnabled) {
         payload.offerEnabled = true;
-
-        // If no discount percentage exists, calculate from prices or set default
-        if (
-          !product.offerDiscountPercentage ||
-          product.offerDiscountPercentage === 0
-        ) {
-          if (
-            product.regularPrice &&
-            product.salePrice &&
-            product.regularPrice > product.salePrice
-          ) {
-            const calculatedDiscount =
-              ((product.regularPrice - product.salePrice) /
-                product.regularPrice) *
-              100;
-            payload.offerDiscountPercentage = Math.round(calculatedDiscount);
-          } else {
-            payload.offerDiscountPercentage = 10; // Default 10%
-          }
-        } else {
-          payload.offerDiscountPercentage = product.offerDiscountPercentage;
-        }
+        payload.offerDiscountPercentage =
+          product.regularPrice &&
+          product.salePrice &&
+          product.regularPrice > product.salePrice
+            ? Math.round(
+                ((product.regularPrice - product.salePrice) /
+                  product.regularPrice) *
+                  100,
+              )
+            : product.offerDiscountPercentage || 10;
       } else if (newIsDailyOffer) {
-        // Keep existing discount if offer is already enabled
         payload.offerDiscountPercentage = product.offerDiscountPercentage || 10;
       }
-
-      console.log("Toggling daily offer with payload:", payload);
-
       const response = await api.put(
         `/api/vendor/daily-offers/${product._id}`,
         payload,
       );
-
-      console.log("Toggle response:", response.data);
-
       if (response.data.success) {
-        setError(""); // Clear any previous errors
-        // Update local state immediately for better UX
-        setOffers((prevOffers) =>
-          prevOffers.map((offer) =>
-            offer._id === product._id
+        setOffers((prev) =>
+          prev.map((o) =>
+            o._id === product._id
               ? {
-                  ...offer,
+                  ...o,
                   isDailyOffer: newIsDailyOffer,
-                  offerEnabled: newIsDailyOffer ? true : offer.offerEnabled,
+                  offerEnabled: newIsDailyOffer ? true : o.offerEnabled,
                 }
-              : offer,
+              : o,
           ),
         );
-        // Also refresh from server to get latest data
         setTimeout(() => fetchOffers(), 500);
       } else {
         setError(
@@ -346,8 +239,6 @@ const VendorDailyOffers = () => {
         );
       }
     } catch (err) {
-      console.error("Error toggling offer:", err);
-      console.error("Error response:", err.response?.data);
       setError(
         err.response?.data?.error ||
           err.response?.data?.message ||
@@ -358,133 +249,72 @@ const VendorDailyOffers = () => {
     }
   };
 
-  // Get offer status based on current date/time
   const getOfferStatus = (product) => {
     if (!product.offerEnabled) return "disabled";
     if (!product.isDailyOffer) return "regular";
-
     const now = new Date();
-
-    // Parse start date and time
-    let startDateTime = null;
+    let start = null,
+      end = null;
     if (product.offerStartDate) {
-      startDateTime = new Date(product.offerStartDate);
-      // Add start time if available
+      start = new Date(product.offerStartDate);
       if (product.offerStartTime) {
-        const timeParts = product.offerStartTime.split(":");
-        const hours = parseInt(timeParts[0]) || 0;
-        const minutes = parseInt(timeParts[1]) || 0;
-        const seconds = parseInt(timeParts[2]) || 0;
-        startDateTime.setHours(hours, minutes, seconds, 0);
-      } else {
-        startDateTime.setHours(0, 0, 0, 0);
-      }
+        const [h, m, s] = product.offerStartTime.split(":");
+        start.setHours(+h, +m, +(s || 0), 0);
+      } else start.setHours(0, 0, 0, 0);
     }
-
-    // Parse end date and time
-    let endDateTime = null;
     if (product.offerEndDate) {
-      endDateTime = new Date(product.offerEndDate);
-      // Add end time if available
+      end = new Date(product.offerEndDate);
       if (product.offerEndTime) {
-        const timeParts = product.offerEndTime.split(":");
-        const hours = parseInt(timeParts[0]) || 0;
-        const minutes = parseInt(timeParts[1]) || 0;
-        const seconds = parseInt(timeParts[2]) || 0;
-        endDateTime.setHours(hours, minutes, seconds, 0);
-      } else {
-        endDateTime.setHours(23, 59, 59, 999);
-      }
+        const [h, m, s] = product.offerEndTime.split(":");
+        end.setHours(+h, +m, +(s || 0), 0);
+      } else end.setHours(23, 59, 59, 999);
     }
-
-    // Check if current time is before start
-    if (startDateTime && now < startDateTime) return "upcoming";
-
-    // Check if current time is after end
-    if (endDateTime && now > endDateTime) return "expired";
-
-    // Check if current time is within the offer period
-    if (startDateTime && endDateTime) {
-      if (now >= startDateTime && now <= endDateTime) {
-        return "active";
-      }
-    } else if (startDateTime && now >= startDateTime) {
-      return "active";
-    } else if (endDateTime && now <= endDateTime) {
-      return "active";
-    } else if (!startDateTime && !endDateTime) {
-      // No date restrictions, check if enabled
-      return product.offerEnabled ? "active" : "disabled";
-    }
-
+    if (start && now < start) return "upcoming";
+    if (end && now > end) return "expired";
+    if (start && end) return now >= start && now <= end ? "active" : "active";
+    if (start && now >= start) return "active";
+    if (end && now <= end) return "active";
+    if (!start && !end) return product.offerEnabled ? "active" : "disabled";
     return "active";
   };
 
-  // Check if offer is currently active (for display in Actions column)
   const isOfferCurrentlyActive = (offer) => {
     if (!offer.offerEnabled || !offer.isDailyOffer) return false;
-
     const now = new Date();
-
-    // Parse start date and time
-    let startDateTime = null;
+    let start = null,
+      end = null;
     if (offer.offerStartDate) {
-      startDateTime = new Date(offer.offerStartDate);
+      start = new Date(offer.offerStartDate);
       if (offer.offerStartTime) {
-        const timeParts = offer.offerStartTime.split(":");
-        const hours = parseInt(timeParts[0]) || 0;
-        const minutes = parseInt(timeParts[1]) || 0;
-        const seconds = parseInt(timeParts[2]) || 0;
-        startDateTime.setHours(hours, minutes, seconds, 0);
-      } else {
-        startDateTime.setHours(0, 0, 0, 0);
-      }
+        const [h, m, s] = offer.offerStartTime.split(":");
+        start.setHours(+h, +m, +(s || 0), 0);
+      } else start.setHours(0, 0, 0, 0);
     }
-
-    // Parse end date and time
-    let endDateTime = null;
     if (offer.offerEndDate) {
-      endDateTime = new Date(offer.offerEndDate);
+      end = new Date(offer.offerEndDate);
       if (offer.offerEndTime) {
-        const timeParts = offer.offerEndTime.split(":");
-        const hours = parseInt(timeParts[0]) || 0;
-        const minutes = parseInt(timeParts[1]) || 0;
-        const seconds = parseInt(timeParts[2]) || 0;
-        endDateTime.setHours(hours, minutes, seconds, 0);
-      } else {
-        endDateTime.setHours(23, 59, 59, 999);
-      }
+        const [h, m, s] = offer.offerEndTime.split(":");
+        end.setHours(+h, +m, +(s || 0), 0);
+      } else end.setHours(23, 59, 59, 999);
     }
-
-    // Check if current time is within the offer period
-    if (startDateTime && endDateTime) {
-      return now >= startDateTime && now <= endDateTime;
-    } else if (startDateTime) {
-      return now >= startDateTime;
-    } else if (endDateTime) {
-      return now <= endDateTime;
-    } else {
-      // No date restrictions, check if enabled
-      return offer.offerEnabled && offer.isDailyOffer;
-    }
+    if (start && end) return now >= start && now <= end;
+    if (start) return now >= start;
+    if (end) return now <= end;
+    return offer.offerEnabled && offer.isDailyOffer;
   };
 
-  // Format date
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
     });
   };
 
-  // Filter offers by search
   const filteredOffers = offers.filter((offer) => {
     if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return offer.productName?.toLowerCase().includes(query);
+    return offer.productName?.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   const stats = {
@@ -495,390 +325,522 @@ const VendorDailyOffers = () => {
     daily: offers.filter((o) => o.isDailyOffer).length,
   };
 
-  return (
-    <DashboardLayout>
-      <div className="min-h-screen p-0 ml-6">
-        <div className="max-w-8xl mx-auto">
-          {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Daily Offers Management
-            </h1>
-            <p className="text-gray-600">
-              Manage daily offers and discounts for your products
+  const tabs = [
+    { key: "all", label: "All" },
+    { key: "active", label: "Active" },
+    { key: "upcoming", label: "Upcoming" },
+    { key: "expired", label: "Expired" },
+    { key: "enabled", label: "Enabled" },
+  ];
+
+  const StatusBadge = ({ offer }) => {
+    const active = isOfferCurrentlyActive(offer);
+    if (active) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 ring-1 ring-emerald-100">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          Active
+        </span>
+      );
+    }
+    const status = getOfferStatus(offer);
+    const map = {
+      upcoming: {
+        cls: "bg-blue-50 text-blue-700 border-blue-200 ring-blue-100",
+        dot: "bg-blue-500",
+        label: "Upcoming",
+      },
+      expired: {
+        cls: "bg-red-50 text-red-700 border-red-200 ring-red-100",
+        dot: "bg-red-500",
+        label: "Expired",
+      },
+      disabled: {
+        cls: "bg-gray-50 text-gray-500 border-gray-200 ring-gray-100",
+        dot: "bg-gray-400",
+        label: "Disabled",
+      },
+      regular: {
+        cls: "bg-amber-50 text-amber-700 border-amber-200 ring-amber-100",
+        dot: "bg-amber-500",
+        label: "Regular",
+      },
+    };
+    const s = map[status] || map.disabled;
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ring-1 ${s.cls}`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+        {s.label}
+      </span>
+    );
+  };
+
+  const TableSkeleton = () => (
+    <tbody>
+      {Array.from({ length: itemsPerPage }).map((_, idx) => (
+        <tr key={idx} className="border-b border-gray-100">
+          {Array.from({ length: 6 }).map((__, j) => (
+            <td key={j} className="px-4 py-3.5">
+              <div
+                className={`h-3.5 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full animate-pulse ${j === 1 ? "w-32" : "w-[70%]"}`}
+              />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </tbody>
+  );
+
+  const EmptyState = () => (
+    <tbody>
+      <tr>
+        <td colSpan="6" className="py-20 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center">
+              <Tag className="w-8 h-8 text-orange-300" />
+            </div>
+            <p className="text-gray-400 text-sm font-medium">No offers found</p>
+            <p className="text-gray-300 text-xs">
+              Try adjusting your filters or search query
             </p>
           </div>
+        </td>
+      </tr>
+    </tbody>
+  );
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-orange-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total Offers</p>
-                  <p className="text-2xl font-bold text-orange-600">
-                    {stats.total}
-                  </p>
-                </div>
-                <Tag className="text-orange-500" size={24} />
+  return (
+    <DashboardLayout>
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .row-animate { animation: fadeSlideIn 0.25s ease forwards; }
+        .action-btn {
+          width: 30px; height: 30px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 8px;
+          transition: all 0.18s ease;
+        }
+        .action-btn:hover { transform: translateY(-1px); }
+      `}</style>
+
+      {/* ── Stats Cards ── */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4 mt-3 px-1">
+        {[
+          {
+            label: "Total Offers",
+            value: stats.total,
+            icon: Tag,
+            color: "orange",
+          },
+          {
+            label: "Active",
+            value: stats.active,
+            icon: Check,
+            color: "emerald",
+          },
+          {
+            label: "Upcoming",
+            value: stats.upcoming,
+            icon: Clock,
+            color: "blue",
+          },
+          {
+            label: "Expired",
+            value: stats.expired,
+            icon: AlertCircle,
+            color: "red",
+          },
+          {
+            label: "Daily Offers",
+            value: stats.daily,
+            icon: Tag,
+            color: "purple",
+          },
+        ].map(({ label, value, icon: Icon, color }) => {
+          const palette = {
+            orange: {
+              border: "border-[#FF7B1D]",
+              text: "text-[#FF7B1D]",
+              bg: "bg-orange-50",
+              icon: "text-[#FF7B1D]",
+            },
+            emerald: {
+              border: "border-emerald-500",
+              text: "text-emerald-600",
+              bg: "bg-emerald-50",
+              icon: "text-emerald-500",
+            },
+            blue: {
+              border: "border-blue-500",
+              text: "text-blue-600",
+              bg: "bg-blue-50",
+              icon: "text-blue-500",
+            },
+            red: {
+              border: "border-red-500",
+              text: "text-red-600",
+              bg: "bg-red-50",
+              icon: "text-red-500",
+            },
+            purple: {
+              border: "border-purple-500",
+              text: "text-purple-600",
+              bg: "bg-purple-50",
+              icon: "text-purple-500",
+            },
+          }[color];
+          return (
+            <div
+              key={label}
+              className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center justify-between border-l-4 ${palette.border}`}
+            >
+              <div>
+                <p className="text-xs text-gray-500 font-medium">{label}</p>
+                <p className={`text-2xl font-bold mt-0.5 ${palette.text}`}>
+                  {value}
+                </p>
               </div>
-            </div>
-
-            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-green-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Active</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {stats.active}
-                  </p>
-                </div>
-                <Check className="text-green-500" size={24} />
-              </div>
-            </div>
-
-            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-blue-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Upcoming</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {stats.upcoming}
-                  </p>
-                </div>
-                <Clock className="text-blue-500" size={24} />
-              </div>
-            </div>
-
-            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-red-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Expired</p>
-                  <p className="text-2xl font-bold text-red-600">
-                    {stats.expired}
-                  </p>
-                </div>
-                <AlertCircle className="text-red-500" size={24} />
-              </div>
-            </div>
-
-            <div className="bg-white rounded-sm shadow-sm p-4 border-l-4 border-purple-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Daily Offers</p>
-                  <p className="text-2xl font-bold text-purple-600">
-                    {stats.daily}
-                  </p>
-                </div>
-                <Tag className="text-purple-500" size={24} />
-              </div>
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="bg-white rounded-sm shadow-sm mb-6">
-            <div className="p-4 border-b border-gray-200">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="flex gap-2 flex-wrap">
-                  <button
-                    onClick={() => {
-                      setStatusFilter("all");
-                      setCurrentPage(1);
-                    }}
-                    className={`px-4 py-2 rounded font-medium transition-colors ${
-                      statusFilter === "all"
-                        ? "bg-orange-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
-                    }`}
-                  >
-                    All
-                  </button>
-                  <button
-                    onClick={() => {
-                      setStatusFilter("active");
-                      setCurrentPage(1);
-                    }}
-                    className={`px-4 py-2 rounded font-medium transition-colors ${
-                      statusFilter === "active"
-                        ? "bg-orange-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
-                    }`}
-                  >
-                    Active
-                  </button>
-                  <button
-                    onClick={() => {
-                      setStatusFilter("upcoming");
-                      setCurrentPage(1);
-                    }}
-                    className={`px-4 py-2 rounded font-medium transition-colors ${
-                      statusFilter === "upcoming"
-                        ? "bg-orange-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
-                    }`}
-                  >
-                    Upcoming
-                  </button>
-                  <button
-                    onClick={() => {
-                      setStatusFilter("expired");
-                      setCurrentPage(1);
-                    }}
-                    className={`px-4 py-2 rounded font-medium transition-colors ${
-                      statusFilter === "expired"
-                        ? "bg-orange-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
-                    }`}
-                  >
-                    Expired
-                  </button>
-                  <button
-                    onClick={() => {
-                      setStatusFilter("enabled");
-                      setCurrentPage(1);
-                    }}
-                    className={`px-4 py-2 rounded font-medium transition-colors ${
-                      statusFilter === "enabled"
-                        ? "bg-orange-500 text-white"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-orange-50"
-                    }`}
-                  >
-                    Enabled
-                  </button>
-                </div>
-
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Search products..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleSearch();
-                      }
-                    }}
-                    className="px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  />
-                  <button
-                    onClick={handleSearch}
-                    className="bg-orange-500 text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors font-medium"
-                  >
-                    Search
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              {error}
-            </div>
-          )}
-
-          {/* Offers Table */}
-          <div className="bg-white rounded-sm shadow-sm overflow-hidden">
-            {loading && offers.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500">Loading offers...</p>
-              </div>
-            ) : (
-              <>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-orange-500 text-black">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-sm font-bold ">
-                          S.N
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold ">
-                          Product
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold ">
-                          Discount
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold ">
-                          Dates
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold ">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredOffers.map((offer, index) => {
-                        return (
-                          <tr
-                            key={offer._id}
-                            className="hover:bg-orange-50 transition-colors"
-                          >
-                            <td className="px-6 py-4 whitespace-nowrap text-gray-900">
-                              {(currentPage - 1) * itemsPerPage + index + 1}
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="max-w-xs">
-                                <div className="font-medium text-gray-900">
-                                  {offer.productName}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  ₹{offer.regularPrice} → ₹
-                                  {offer.salePrice || offer.regularPrice}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                                <Percent size={14} />
-                                {offer.offerDiscountPercentage || 0}%
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              <div>
-                                <div>
-                                  <span className="text-gray-500">Start: </span>
-                                  {formatDate(offer.offerStartDate)}
-                                </div>
-                                <div>
-                                  <span className="text-gray-500">End: </span>
-                                  {formatDate(offer.offerEndDate)}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center gap-2">
-                                {/* Show Offer Status based on current date/time check */}
-                                {isOfferCurrentlyActive(offer) ? (
-                                  <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-                                    Offer Enabled
-                                  </span>
-                                ) : (
-                                  <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
-                                    Disabled
-                                  </span>
-                                )}
-                                <button
-                                  onClick={() => handleEditOffer(offer)}
-                                  className="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600 transition-colors flex items-center gap-1"
-                                >
-                                  <Edit size={14} />
-                                  Edit
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {filteredOffers.length === 0 && !loading && (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500">No offers found</p>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-end items-center gap-6 mt-8 max-w-[95%] mx-auto">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium rounded hover:bg-orange-600 transition-colors disabled:cursor-not-allowed disabled:bg-gray-300"
+              <div
+                className={`w-10 h-10 rounded-xl ${palette.bg} flex items-center justify-center`}
               >
-                Back
-              </button>
-
-              <div className="flex items-center gap-2 text-sm text-black font-medium">
-                {[...Array(totalPages)].map((_, idx) => (
-                  <button
-                    key={idx + 1}
-                    onClick={() => setCurrentPage(idx + 1)}
-                    className={`px-2 py-1 rounded transition-colors ${
-                      currentPage === idx + 1
-                        ? "text-orange-600 font-semibold"
-                        : "text-gray-700 hover:text-black"
-                    }`}
-                  >
-                    {idx + 1}
-                  </button>
-                ))}
+                <Icon className={`w-5 h-5 ${palette.icon}`} />
               </div>
-
-              <button
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                }
-                disabled={currentPage === totalPages}
-                className="bg-[#247606] text-white px-10 py-3 text-sm font-medium rounded hover:bg-green-800 transition-colors disabled:cursor-not-allowed disabled:bg-gray-300"
-              >
-                Next
-              </button>
             </div>
+          );
+        })}
+      </div>
+
+      {/* ── Toolbar ── */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 w-full px-1 mb-3">
+        {/* Tabs */}
+        <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => {
+                setStatusFilter(tab.key);
+                setCurrentPage(1);
+              }}
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
+                statusFilter === tab.key
+                  ? "bg-white text-[#FF7B1D] shadow-sm shadow-orange-100"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Search */}
+        <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden h-[38px] w-full lg:w-[380px] shadow-sm bg-white">
+          <input
+            type="text"
+            placeholder="Search products..."
+            className="flex-1 px-4 text-sm text-gray-700 focus:outline-none h-full placeholder:text-gray-400"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && setCurrentPage(1)}
+          />
+          <button
+            onClick={() => setCurrentPage(1)}
+            className="bg-[#FF7B1D] hover:bg-orange-500 text-white text-sm font-medium px-5 h-full transition-colors"
+          >
+            Search
+          </button>
+        </div>
+      </div>
+
+      {/* ── Error ── */}
+      {error && (
+        <div className="mx-1 mb-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {error}
+        </div>
+      )}
+
+      {/* ── Table Card ── */}
+      <div className="mx-1 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+        {/* Card Header */}
+        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+            <span className="text-sm font-semibold text-gray-700">
+              Daily Offers
+            </span>
+          </div>
+          {!loading && (
+            <span className="text-xs text-gray-400 font-medium">
+              {filteredOffers.length} of {totalOffers} offers
+            </span>
           )}
         </div>
 
-        {/* Edit Offer Modal */}
-        {showEditModal && selectedProduct && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-orange-500 text-white rounded-t-lg">
-                <h2 className="text-2xl font-bold">
-                  Edit Offer - {selectedProduct.productName}
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setSelectedProduct(null);
-                    setError("");
-                  }}
-                  className="text-white hover:text-gray-200"
-                >
-                  <X size={24} />
-                </button>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gradient-to-r from-[#FF7B1D] to-orange-400">
+                {[
+                  "S.N",
+                  "Product",
+                  "Discount",
+                  "Offer Dates",
+                  "Status",
+                  "Actions",
+                ].map((h, i) => (
+                  <th
+                    key={h}
+                    className={`px-4 py-3.5 text-xs font-bold text-white tracking-wider uppercase opacity-90 ${i === 5 ? "text-right pr-5" : "text-left"}`}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+
+            {loading ? (
+              <TableSkeleton />
+            ) : filteredOffers.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <tbody>
+                {filteredOffers.map((offer, idx) => (
+                  <tr
+                    key={offer._id}
+                    className="row-animate border-b border-gray-50 hover:bg-orange-50/40 transition-colors duration-150 group"
+                    style={{ animationDelay: `${idx * 30}ms` }}
+                  >
+                    {/* S.N */}
+                    <td className="px-4 py-3.5">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">
+                        {(currentPage - 1) * itemsPerPage + idx + 1}
+                      </span>
+                    </td>
+
+                    {/* Product */}
+                    <td className="px-4 py-3.5">
+                      <div className="max-w-[220px]">
+                        <p className="text-sm font-semibold text-gray-800 truncate">
+                          {offer.productName}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          ₹{offer.regularPrice}
+                          {offer.salePrice &&
+                            offer.salePrice !== offer.regularPrice && (
+                              <>
+                                {" "}
+                                →{" "}
+                                <span className="text-emerald-600 font-medium">
+                                  ₹{offer.salePrice}
+                                </span>
+                              </>
+                            )}
+                        </p>
+                      </div>
+                    </td>
+
+                    {/* Discount */}
+                    <td className="px-4 py-3.5">
+                      <span className="inline-flex items-center gap-1 bg-orange-50 text-[#FF7B1D] border border-orange-200 px-2.5 py-1 rounded-full text-xs font-bold">
+                        <Percent className="w-3 h-3" />
+                        {offer.offerDiscountPercentage || 0}%
+                      </span>
+                    </td>
+
+                    {/* Dates */}
+                    <td className="px-4 py-3.5">
+                      <div className="text-xs text-gray-600 space-y-1">
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-400 w-8">Start</span>
+                          <span className="font-medium">
+                            {formatDate(offer.offerStartDate)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-400 w-8">End</span>
+                          <span className="font-medium">
+                            {formatDate(offer.offerEndDate)}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-4 py-3.5">
+                      <StatusBadge offer={offer} />
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-3.5 pr-5">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => handleEditOffer(offer)}
+                          className="action-btn bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-700"
+                          title="Edit offer"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleQuickToggle(offer)}
+                          disabled={togglingId === offer._id}
+                          className={`action-btn ${offer.isDailyOffer ? "bg-emerald-50 text-emerald-500 hover:bg-emerald-100 hover:text-emerald-700" : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"}`}
+                          title={
+                            offer.isDailyOffer
+                              ? "Disable daily offer"
+                              : "Enable daily offer"
+                          }
+                        >
+                          {offer.isDailyOffer ? (
+                            <ToggleRight className="w-4 h-4" />
+                          ) : (
+                            <ToggleLeft className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            )}
+          </table>
+        </div>
+      </div>
+
+      {/* ── Pagination ── */}
+      {!loading && filteredOffers.length > 0 && totalPages > 1 && (
+        <div className="flex items-center justify-between px-1 mt-5 mb-6">
+          <p className="text-xs text-gray-400 font-medium">
+            Page{" "}
+            <span className="text-gray-600 font-semibold">{currentPage}</span>{" "}
+            of <span className="text-gray-600 font-semibold">{totalPages}</span>
+          </p>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" /> Prev
+            </button>
+
+            <div className="flex items-center gap-1">
+              {(() => {
+                const pages = [];
+                const visible = new Set([
+                  1,
+                  2,
+                  totalPages - 1,
+                  totalPages,
+                  currentPage - 1,
+                  currentPage,
+                  currentPage + 1,
+                ]);
+                for (let i = 1; i <= totalPages; i++) {
+                  if (visible.has(i)) pages.push(i);
+                  else if (pages[pages.length - 1] !== "...") pages.push("...");
+                }
+                return pages.map((page, idx) =>
+                  page === "..." ? (
+                    <span key={idx} className="px-1 text-gray-400 text-xs">
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-xl text-xs font-semibold transition-all ${
+                        currentPage === page
+                          ? "bg-[#FF7B1D] text-white shadow-sm shadow-orange-200"
+                          : "bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ),
+                );
+              })()}
+            </div>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              Next <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Modal ── */}
+      {showEditModal && selectedProduct && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-100">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-[#FF7B1D] to-orange-400 rounded-t-2xl">
+              <div>
+                <h2 className="text-lg font-bold text-white">Edit Offer</h2>
+                <p className="text-xs text-orange-100 mt-0.5 truncate max-w-[360px]">
+                  {selectedProduct.productName}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setSelectedProduct(null);
+                  setError("");
+                }}
+                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {error}
+                </div>
+              )}
+
+              {/* Toggles */}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: "Enable Offer", key: "offerEnabled" },
+                  { label: "Mark as Daily Offer", key: "isDailyOffer" },
+                ].map(({ label, key }) => (
+                  <label
+                    key={key}
+                    className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 cursor-pointer hover:border-orange-300 hover:bg-orange-50/40 transition-all"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={editForm[key]}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, [key]: e.target.checked })
+                      }
+                      className="w-4 h-4 text-[#FF7B1D] rounded focus:ring-[#FF7B1D] accent-[#FF7B1D]"
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      {label}
+                    </span>
+                  </label>
+                ))}
               </div>
 
-              <div className="p-6 space-y-4">
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={editForm.offerEnabled}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          offerEnabled: e.target.checked,
-                        })
-                      }
-                      className="w-5 h-5 text-orange-500 rounded focus:ring-orange-500"
-                    />
-                    <span className="font-medium">Enable Offer</span>
-                  </label>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={editForm.isDailyOffer}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          isDailyOffer: e.target.checked,
-                        })
-                      }
-                      className="w-5 h-5 text-orange-500 rounded focus:ring-orange-500"
-                    />
-                    <span className="font-medium">Mark as Daily Offer</span>
-                  </label>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Discount Percentage *
-                  </label>
+              {/* Discount */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">
+                  Discount Percentage *
+                </label>
+                <div className="relative">
                   <input
                     type="number"
                     min="0"
@@ -891,108 +853,125 @@ const VendorDailyOffers = () => {
                           parseFloat(e.target.value) || 0,
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    className="w-full px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-300 focus:border-[#FF7B1D] outline-none text-sm transition-all"
+                  />
+                  <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                </div>
+              </div>
+
+              {/* Dates & Times */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editForm.offerStartDate}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        offerStartDate: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-300 focus:border-[#FF7B1D] outline-none text-sm transition-all"
                   />
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Start Date (Optional)
-                    </label>
-                    <input
-                      type="date"
-                      value={editForm.offerStartDate}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          offerStartDate: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Start Time (Optional) - HH:MM
-                    </label>
-                    <input
-                      type="time"
-                      value={editForm.offerStartTime}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          offerStartTime: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="HH:MM"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">
+                    Start Time
+                  </label>
+                  <input
+                    type="time"
+                    value={editForm.offerStartTime}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        offerStartTime: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-300 focus:border-[#FF7B1D] outline-none text-sm transition-all"
+                  />
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      End Date (Optional)
-                    </label>
-                    <input
-                      type="date"
-                      value={editForm.offerEndDate}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          offerEndDate: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      End Time (Optional) - HH:MM
-                    </label>
-                    <input
-                      type="time"
-                      value={editForm.offerEndTime}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          offerEndTime: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="HH:MM"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editForm.offerEndDate}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, offerEndDate: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-300 focus:border-[#FF7B1D] outline-none text-sm transition-all"
+                  />
                 </div>
-              </div>
-
-              <div className="p-6 border-t border-gray-200 flex gap-4 justify-end">
-                <button
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setSelectedProduct(null);
-                    setError("");
-                  }}
-                  className="px-6 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleUpdateOffer}
-                  disabled={updating}
-                  className="px-6 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  {updating ? "Updating..." : "Update Offer"}
-                </button>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">
+                    End Time
+                  </label>
+                  <input
+                    type="time"
+                    value={editForm.offerEndTime}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, offerEndTime: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-300 focus:border-[#FF7B1D] outline-none text-sm transition-all"
+                  />
+                </div>
               </div>
             </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-gray-100 flex gap-3 justify-end bg-gray-50 rounded-b-2xl">
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setSelectedProduct(null);
+                  setError("");
+                }}
+                className="px-5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 font-medium hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateOffer}
+                disabled={updating}
+                className="px-6 py-2.5 bg-gradient-to-r from-[#FF7B1D] to-orange-400 text-white rounded-xl text-sm font-semibold hover:from-orange-500 hover:to-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm shadow-orange-200 flex items-center gap-2"
+              >
+                {updating ? (
+                  <>
+                    <svg
+                      className="w-4 h-4 animate-spin"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v8H4z"
+                      />
+                    </svg>
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" /> Update Offer
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 };

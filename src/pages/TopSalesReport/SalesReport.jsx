@@ -1,402 +1,3 @@
-// import React, { useState, useEffect, useCallback } from "react";
-// import DashboardLayout from "../../components/DashboardLayout";
-// import {
-//   FiDownload,
-//   FiRefreshCw,
-//   FiPackage,
-//   FiDollarSign,
-//   FiShoppingCart,
-//   FiPercent,
-//   FiCalendar,
-//   FiSearch,
-//   FiFilter,
-// } from "react-icons/fi";
-// import api from "../../api/api";
-
-// // ─── Stat Card ─────────────────────────────────────────────────────────────────
-// const StatCard = ({ icon, label, value, sub, color }) => (
-//   <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
-//     <div className={`p-3 rounded-xl ${color}`}>{icon}</div>
-//     <div>
-//       <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
-//         {label}
-//       </p>
-//       <p className="text-xl font-bold text-gray-800 mt-0.5">{value}</p>
-//       {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
-//     </div>
-//   </div>
-// );
-
-// // ─── Main Page ─────────────────────────────────────────────────────────────────
-// const VendorSalesReport = () => {
-//   const [data, setData] = useState([]);
-//   const [filtered, setFiltered] = useState([]);
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState(null);
-//   const [search, setSearch] = useState("");
-//   const [dateFrom, setDateFrom] = useState("");
-//   const [dateTo, setDateTo] = useState("");
-
-//   const fetchReport = useCallback(async () => {
-//     try {
-//       setLoading(true);
-//       setError(null);
-//       const res = await api.get("/api/analytics/vendor/product-sales-report");
-//       if (res.data?.success) {
-//         setData(res.data.data || []);
-//         setFiltered(res.data.data || []);
-//       }
-//     } catch (err) {
-//       console.error(err);
-//       setError("Failed to load sales report. Please try again.");
-//     } finally {
-//       setLoading(false);
-//     }
-//   }, []);
-
-//   useEffect(() => {
-//     fetchReport();
-//   }, [fetchReport]);
-
-//   // Apply filters
-//   useEffect(() => {
-//     let result = [...data];
-//     if (search.trim()) {
-//       const q = search.toLowerCase();
-//       result = result.filter(
-//         (r) =>
-//           r.productName?.toLowerCase().includes(q) ||
-//           r.hsnCode?.toLowerCase().includes(q),
-//       );
-//     }
-//     if (dateFrom) result = result.filter((r) => r.date >= dateFrom);
-//     if (dateTo) result = result.filter((r) => r.date <= dateTo);
-//     setFiltered(result);
-//   }, [search, dateFrom, dateTo, data]);
-
-//   // Aggregates
-//   const totalSales = filtered.reduce((s, r) => s + (r.totalAmount || 0), 0);
-//   const totalQty = filtered.reduce((s, r) => s + (r.quantity || 0), 0);
-//   const totalGst = filtered.reduce((s, r) => s + (r.gstAmount || 0), 0);
-//   const totalTaxable = filtered.reduce((s, r) => s + (r.taxableAmount || 0), 0);
-
-//   // CSV Export
-//   const exportCSV = () => {
-//     const headers = [
-//       "Sr No",
-//       "Date",
-//       "Product Name",
-//       "HSN Code",
-//       "GST Slab (%)",
-//       "Sale Price (₹)",
-//       "Quantity",
-//       "Total Amount (₹)",
-//       "GST Amount (₹)",
-//       "Taxable Amount (₹)",
-//     ];
-//     const rows = filtered.map((r) => [
-//       r.srNo,
-//       r.date,
-//       r.productName,
-//       r.hsnCode,
-//       r.gstSlab,
-//       r.salePrice,
-//       r.quantity,
-//       r.totalAmount,
-//       r.gstAmount,
-//       r.taxableAmount,
-//     ]);
-//     const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
-//     const blob = new Blob([csv], { type: "text/csv" });
-//     const url = URL.createObjectURL(blob);
-//     const a = document.createElement("a");
-//     a.href = url;
-//     a.download = `sales-report-${new Date().toISOString().slice(0, 10)}.csv`;
-//     a.click();
-//     URL.revokeObjectURL(url);
-//   };
-
-//   return (
-//     <DashboardLayout>
-//       <div className="min-h-screen bg-gray-0 p-0 ml-6 sm:p-6 lg:p-2">
-//         {/* Page Header */}
-//         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-//           <div>
-//             <h1 className="text-2xl font-bold text-gray-800">Sales Report</h1>
-//             <p className="text-sm text-gray-500 mt-0.5">
-//               Detailed product-wise sales analysis
-//             </p>
-//           </div>
-//           <div className="flex items-center gap-2">
-//             <button
-//               onClick={fetchReport}
-//               disabled={loading}
-//               className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-60"
-//             >
-//               <FiRefreshCw
-//                 className={loading ? "animate-spin" : ""}
-//                 size={15}
-//               />
-//               Refresh
-//             </button>
-//             <button
-//               onClick={exportCSV}
-//               disabled={filtered.length === 0}
-//               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold transition-colors shadow-sm disabled:opacity-60"
-//             >
-//               <FiDownload size={15} />
-//               Export CSV
-//             </button>
-//           </div>
-//         </div>
-
-//         {/* Stat Cards */}
-//         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-//           <StatCard
-//             icon={<FiDollarSign className="text-orange-500" size={20} />}
-//             label="Total Sales"
-//             value={`₹${totalSales.toFixed(2)}`}
-//             color="bg-orange-50"
-//           />
-//           <StatCard
-//             icon={<FiShoppingCart className="text-blue-500" size={20} />}
-//             label="Total Quantity"
-//             value={totalQty}
-//             color="bg-blue-50"
-//           />
-//           <StatCard
-//             icon={<FiPercent className="text-green-500" size={20} />}
-//             label="GST Collected"
-//             value={`₹${totalGst.toFixed(2)}`}
-//             color="bg-green-50"
-//           />
-//           <StatCard
-//             icon={<FiPackage className="text-purple-500" size={20} />}
-//             label="Taxable Amount"
-//             value={`₹${totalTaxable.toFixed(2)}`}
-//             color="bg-purple-50"
-//           />
-//         </div>
-
-//         {/* Filters */}
-//         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-//           <div className="flex flex-col sm:flex-row gap-3">
-//             {/* Search */}
-//             <div className="relative flex-1">
-//               <FiSearch
-//                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-//                 size={16}
-//               />
-//               <input
-//                 type="text"
-//                 placeholder="Search product or HSN code..."
-//                 value={search}
-//                 onChange={(e) => setSearch(e.target.value)}
-//                 className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
-//               />
-//             </div>
-//             {/* Date From */}
-//             <div className="relative flex items-center gap-1.5">
-//               <FiCalendar className="text-gray-400" size={15} />
-//               <label className="text-xs text-gray-500 font-medium whitespace-nowrap">
-//                 From:
-//               </label>
-//               <input
-//                 type="date"
-//                 value={dateFrom}
-//                 onChange={(e) => setDateFrom(e.target.value)}
-//                 className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300"
-//               />
-//             </div>
-//             {/* Date To */}
-//             <div className="relative flex items-center gap-1.5">
-//               <FiCalendar className="text-gray-400" size={15} />
-//               <label className="text-xs text-gray-500 font-medium whitespace-nowrap">
-//                 To:
-//               </label>
-//               <input
-//                 type="date"
-//                 value={dateTo}
-//                 onChange={(e) => setDateTo(e.target.value)}
-//                 className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300"
-//               />
-//             </div>
-//             {(search || dateFrom || dateTo) && (
-//               <button
-//                 onClick={() => {
-//                   setSearch("");
-//                   setDateFrom("");
-//                   setDateTo("");
-//                 }}
-//                 className="text-xs text-orange-500 hover:text-orange-700 font-medium px-2 whitespace-nowrap"
-//               >
-//                 Clear Filters
-//               </button>
-//             )}
-//           </div>
-//         </div>
-
-//         {/* Table */}
-//         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-//           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-//             <h2 className="font-semibold text-gray-700 flex items-center gap-2">
-//               <FiFilter size={16} className="text-orange-400" />
-//               Sales Transactions
-//             </h2>
-//             <span className="text-xs text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full font-medium">
-//               {filtered.length} record{filtered.length !== 1 ? "s" : ""}
-//             </span>
-//           </div>
-
-//           {loading ? (
-//             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-//               <div className="w-10 h-10 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin mb-3" />
-//               <p className="text-sm">Loading report...</p>
-//             </div>
-//           ) : error ? (
-//             <div className="flex flex-col items-center justify-center py-20 text-red-400">
-//               <p className="text-sm font-medium">{error}</p>
-//               <button
-//                 onClick={fetchReport}
-//                 className="mt-3 text-xs text-orange-500 hover:underline"
-//               >
-//                 Try again
-//               </button>
-//             </div>
-//           ) : filtered.length === 0 ? (
-//             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-//               <FiPackage size={40} className="mb-3 opacity-30" />
-//               <p className="text-sm font-medium">No records found</p>
-//               <p className="text-xs mt-1">Try adjusting your filters</p>
-//             </div>
-//           ) : (
-//             <div className="overflow-x-auto">
-//               <table className="w-full text-sm">
-//                 <thead>
-//                   <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-//                     <th className="px-5 py-3 text-left font-semibold w-10">
-//                       #
-//                     </th>
-//                     <th className="px-5 py-3 text-left font-semibold">Date</th>
-//                     <th className="px-5 py-3 text-left font-semibold">
-//                       Product
-//                     </th>
-//                     <th className="px-5 py-3 text-left font-semibold">
-//                       HSN Code
-//                     </th>
-//                     <th className="px-5 py-3 text-center font-semibold">
-//                       GST %
-//                     </th>
-//                     <th className="px-5 py-3 text-right font-semibold">
-//                       Sale Price
-//                     </th>
-//                     <th className="px-5 py-3 text-center font-semibold">Qty</th>
-//                     <th className="px-5 py-3 text-right font-semibold">
-//                       Total Amt
-//                     </th>
-//                     <th className="px-5 py-3 text-right font-semibold">
-//                       GST Amt
-//                     </th>
-//                     <th className="px-5 py-3 text-right font-semibold">
-//                       Taxable Amt
-//                     </th>
-//                   </tr>
-//                 </thead>
-//                 <tbody className="divide-y divide-gray-50">
-//                   {filtered.map((row, idx) => (
-//                     <tr
-//                       key={row.srNo}
-//                       className={`hover:bg-orange-50/40 transition-colors ${
-//                         idx % 2 === 0 ? "bg-white" : "bg-gray-50/30"
-//                       }`}
-//                     >
-//                       <td className="px-5 py-3.5 text-gray-400 font-medium">
-//                         {row.srNo}
-//                       </td>
-//                       <td className="px-5 py-3.5 text-gray-600 whitespace-nowrap">
-//                         <span className="inline-flex items-center gap-1.5">
-//                           <FiCalendar size={12} className="text-gray-300" />
-//                           {new Date(row.date).toLocaleDateString("en-IN", {
-//                             day: "2-digit",
-//                             month: "short",
-//                             year: "numeric",
-//                           })}
-//                         </span>
-//                       </td>
-//                       <td className="px-5 py-3.5">
-//                         <span className="font-semibold text-gray-800">
-//                           {row.productName}
-//                         </span>
-//                       </td>
-//                       <td className="px-5 py-3.5">
-//                         <span className="bg-gray-100 text-gray-600 text-xs font-mono px-2 py-0.5 rounded">
-//                           {row.hsnCode}
-//                         </span>
-//                       </td>
-//                       <td className="px-5 py-3.5 text-center">
-//                         <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">
-//                           {row.gstSlab}%
-//                         </span>
-//                       </td>
-//                       <td className="px-5 py-3.5 text-right text-gray-700 font-medium">
-//                         ₹{row.salePrice?.toFixed(2)}
-//                       </td>
-//                       <td className="px-5 py-3.5 text-center">
-//                         <span className="bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-0.5 rounded-full">
-//                           {row.quantity}
-//                         </span>
-//                       </td>
-//                       <td className="px-5 py-3.5 text-right font-bold text-gray-800">
-//                         ₹{row.totalAmount?.toFixed(2)}
-//                       </td>
-//                       <td className="px-5 py-3.5 text-right text-orange-600 font-medium">
-//                         ₹{row.gstAmount?.toFixed(2)}
-//                       </td>
-//                       <td className="px-5 py-3.5 text-right text-purple-600 font-semibold">
-//                         ₹{row.taxableAmount?.toFixed(2)}
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//                 {/* Totals Row */}
-//                 <tfoot>
-//                   <tr className="bg-gradient-to-r from-orange-50 to-white border-t-2 border-orange-200">
-//                     <td
-//                       colSpan={6}
-//                       className="px-5 py-3.5 font-bold text-gray-700 text-sm"
-//                     >
-//                       Totals ({filtered.length} items)
-//                     </td>
-//                     <td className="px-5 py-3.5 text-center font-bold text-blue-700">
-//                       {totalQty}
-//                     </td>
-//                     <td className="px-5 py-3.5 text-right font-bold text-gray-800">
-//                       ₹{totalSales.toFixed(2)}
-//                     </td>
-//                     <td className="px-5 py-3.5 text-right font-bold text-orange-600">
-//                       ₹{totalGst.toFixed(2)}
-//                     </td>
-//                     <td className="px-5 py-3.5 text-right font-bold text-purple-700">
-//                       ₹{totalTaxable.toFixed(2)}
-//                     </td>
-//                   </tr>
-//                 </tfoot>
-//               </table>
-//             </div>
-//           )}
-//         </div>
-
-//         {/* Footer note */}
-//         <p className="text-xs text-gray-400 text-center mt-4">
-//           All amounts are in Indian Rupees (₹) · GST amounts are calculated
-//           based on your registered GST slab
-//         </p>
-//       </div>
-//     </DashboardLayout>
-//   );
-// };
-
-// export default VendorSalesReport;
 import React, { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import {
@@ -409,37 +10,8 @@ import {
   FiCalendar,
   FiSearch,
 } from "react-icons/fi";
+import { AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import api from "../../api/api";
-
-// ─── Stat Card ─────────────────────────────────────────────────────────────────
-const StatCard = ({ icon, label, value, borderColor }) => (
-  <div
-    className={`bg-white rounded-sm shadow-sm p-4 border-l-4 ${borderColor}`}
-  >
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-xs text-gray-600">{label}</p>
-        <p className="text-2xl font-bold text-gray-800 mt-0.5">{value}</p>
-      </div>
-      <div>{icon}</div>
-    </div>
-  </div>
-);
-
-// ─── Skeleton Loader ───────────────────────────────────────────────────────────
-const TableSkeleton = ({ cols = 10, rows = 8 }) => (
-  <tbody>
-    {Array.from({ length: rows }).map((_, idx) => (
-      <tr key={idx} className="animate-pulse border-b-4 border-gray-200">
-        {Array.from({ length: cols }).map((__, j) => (
-          <td key={j} className="p-3">
-            <div className="bg-gray-300 rounded h-4 w-[80%]" />
-          </td>
-        ))}
-      </tr>
-    ))}
-  </tbody>
-);
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 const VendorSalesReport = () => {
@@ -450,6 +22,8 @@ const VendorSalesReport = () => {
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const fetchReport = useCallback(async () => {
     try {
@@ -472,7 +46,6 @@ const VendorSalesReport = () => {
     fetchReport();
   }, [fetchReport]);
 
-  // Apply filters
   useEffect(() => {
     let result = [...data];
     if (search.trim()) {
@@ -486,6 +59,7 @@ const VendorSalesReport = () => {
     if (dateFrom) result = result.filter((r) => r.date >= dateFrom);
     if (dateTo) result = result.filter((r) => r.date <= dateTo);
     setFiltered(result);
+    setCurrentPage(1);
   }, [search, dateFrom, dateTo, data]);
 
   // Aggregates
@@ -493,6 +67,11 @@ const VendorSalesReport = () => {
   const totalQty = filtered.reduce((s, r) => s + (r.quantity || 0), 0);
   const totalGst = filtered.reduce((s, r) => s + (r.gstAmount || 0), 0);
   const totalTaxable = filtered.reduce((s, r) => s + (r.taxableAmount || 0), 0);
+
+  // Pagination
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const indexOfFirst = (currentPage - 1) * itemsPerPage;
+  const currentRows = filtered.slice(indexOfFirst, indexOfFirst + itemsPerPage);
 
   // CSV Export
   const exportCSV = () => {
@@ -530,182 +109,370 @@ const VendorSalesReport = () => {
     URL.revokeObjectURL(url);
   };
 
+  const stats = [
+    {
+      icon: <FiDollarSign className="w-5 h-5 text-orange-600" />,
+      label: "Total Sales",
+      value: `₹${totalSales.toFixed(2)}`,
+      bg: "bg-orange-50",
+      border: "border-orange-200",
+      color: "text-orange-600",
+    },
+    {
+      icon: <FiShoppingCart className="w-5 h-5 text-blue-600" />,
+      label: "Total Quantity",
+      value: totalQty,
+      bg: "bg-blue-50",
+      border: "border-blue-200",
+      color: "text-blue-600",
+    },
+    {
+      icon: <FiPercent className="w-5 h-5 text-emerald-600" />,
+      label: "GST Collected",
+      value: `₹${totalGst.toFixed(2)}`,
+      bg: "bg-emerald-50",
+      border: "border-emerald-200",
+      color: "text-emerald-600",
+    },
+    {
+      icon: <FiPackage className="w-5 h-5 text-gray-500" />,
+      label: "Taxable Amount",
+      value: `₹${totalTaxable.toFixed(2)}`,
+      bg: "bg-gray-50",
+      border: "border-gray-200",
+      color: "text-gray-600",
+    },
+  ];
+
+  // ── Skeleton (same as AllProduct) ──
+  const TableSkeleton = () => (
+    <tbody>
+      {Array.from({ length: itemsPerPage }).map((_, idx) => (
+        <tr key={idx} className="border-b border-gray-100">
+          {Array.from({ length: 10 }).map((__, j) => (
+            <td key={j} className="px-4 py-3.5">
+              <div
+                className={`h-3.5 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full animate-pulse ${
+                  j === 0 ? "w-6" : j === 9 ? "w-[70%] ml-auto" : "w-[70%]"
+                }`}
+              />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </tbody>
+  );
+
+  // ── Empty State (same as AllProduct) ──
+  const EmptyState = () => (
+    <tbody>
+      <tr>
+        <td colSpan={10} className="py-20 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center">
+              <FiPackage className="w-8 h-8 text-orange-300" />
+            </div>
+            <p className="text-gray-400 text-sm font-medium">
+              No records found
+            </p>
+            <p className="text-gray-300 text-xs">Try adjusting your filters</p>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  );
+
   return (
     <DashboardLayout>
-      <div className="min-h-screen p-0 ml-4">
-        {/* Stat Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4 max-w-[99%] mx-auto pt-4 pl-4">
-          <StatCard
-            icon={<FiDollarSign className="text-[#FF7B1D]" size={22} />}
-            label="Total Sales"
-            value={`₹${totalSales.toFixed(2)}`}
-            borderColor="border-[#FF7B1D]"
-          />
-          <StatCard
-            icon={<FiShoppingCart className="text-blue-500" size={22} />}
-            label="Total Quantity"
-            value={totalQty}
-            borderColor="border-blue-500"
-          />
-          <StatCard
-            icon={<FiPercent className="text-[#247606]" size={22} />}
-            label="GST Collected"
-            value={`₹${totalGst.toFixed(2)}`}
-            borderColor="border-[#247606]"
-          />
-          <StatCard
-            icon={<FiPackage className="text-gray-500" size={22} />}
-            label="Taxable Amount"
-            value={`₹${totalTaxable.toFixed(2)}`}
-            borderColor="border-gray-400"
-          />
-        </div>
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .row-animate { animation: fadeSlideIn 0.25s ease forwards; }
+        .action-btn {
+          width: 30px; height: 30px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 8px;
+          transition: all 0.18s ease;
+        }
+        .action-btn:hover { transform: translateY(-1px); }
+        input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; }
+      `}</style>
 
-        {/* Top Bar — Search + Date Filters + Buttons */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 max-w-[99%] mx-auto mt-2 mb-2 pl-4">
-          {/* Search */}
-          <div className="flex items-center border border-black rounded overflow-hidden h-9 w-full max-w-[450px]">
-            <FiSearch className="ml-3 text-gray-400 shrink-0" size={15} />
-            <input
-              type="text"
-              placeholder="Search product or HSN code..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 px-3 text-sm text-gray-800 focus:outline-none h-full"
-            />
+      {/* ── Stats Cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full max-w-full mx-auto px-1 mt-3 mb-3">
+        {stats.map((s) => (
+          <div
+            key={s.label}
+            className={`bg-white rounded-2xl border ${s.border} shadow-sm p-4 flex items-center justify-between`}
+          >
+            <div>
+              <p className="text-xs text-gray-500 font-medium">{s.label}</p>
+              <p className={`text-xl font-bold mt-0.5 ${s.color}`}>{s.value}</p>
+            </div>
+            <div
+              className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center`}
+            >
+              {s.icon}
+            </div>
           </div>
+        ))}
+      </div>
 
-          {/* Date Filters */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1.5">
-              <FiCalendar className="text-gray-400" size={14} />
-              <label className="text-xs text-gray-500 font-medium whitespace-nowrap">
-                From:
-              </label>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-[#FF7B1D]"
+      {/* ── Toolbar (AllProduct-style: LEFT = filters, RIGHT = actions) ── */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 w-full max-w-full mx-auto px-1 mb-3">
+        {/* LEFT: Search + Date Filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Date From */}
+          <div className="flex items-center gap-1.5 border border-gray-200 rounded-xl px-3 h-[36px] bg-white shadow-sm focus-within:ring-2 focus-within:ring-orange-200 transition-all">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <rect
+                x="1"
+                y="2"
+                width="14"
+                height="13"
+                rx="2"
+                stroke="#FF7B1D"
+                strokeWidth="1.4"
               />
-            </div>
-            <div className="flex items-center gap-1.5">
-              <FiCalendar className="text-gray-400" size={14} />
-              <label className="text-xs text-gray-500 font-medium whitespace-nowrap">
-                To:
-              </label>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-[#FF7B1D]"
+              <path
+                d="M5 1v3M11 1v3M1 6h14"
+                stroke="#FF7B1D"
+                strokeWidth="1.4"
+                strokeLinecap="round"
               />
-            </div>
-            {(search || dateFrom || dateTo) && (
+            </svg>
+            <label className="text-xs text-gray-400 font-medium whitespace-nowrap">
+              From
+            </label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="border-none bg-transparent text-xs text-gray-700 outline-none cursor-pointer w-[110px]"
+            />
+            {dateFrom && (
               <button
-                onClick={() => {
-                  setSearch("");
-                  setDateFrom("");
-                  setDateTo("");
-                }}
-                className="text-xs text-[#FF7B1D] hover:text-orange-700 font-medium whitespace-nowrap"
+                onClick={() => setDateFrom("")}
+                className="text-gray-300 hover:text-gray-500 text-sm leading-none ml-1"
+                title="Clear date"
               >
-                Clear Filters
+                ✕
               </button>
             )}
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={fetchReport}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 bg-white text-gray-600 text-sm font-medium hover:bg-orange-50 rounded disabled:opacity-60"
+          {/* Date To */}
+          <div className="flex items-center gap-1.5 border border-gray-200 rounded-xl px-3 h-[36px] bg-white shadow-sm focus-within:ring-2 focus-within:ring-orange-200 transition-all">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
             >
-              <FiRefreshCw
-                className={loading ? "animate-spin" : ""}
-                size={14}
+              <rect
+                x="1"
+                y="2"
+                width="14"
+                height="13"
+                rx="2"
+                stroke="#FF7B1D"
+                strokeWidth="1.4"
               />
-              Refresh
-            </button>
-            <button
-              onClick={exportCSV}
-              disabled={filtered.length === 0}
-              className="flex items-center gap-2 px-4 py-2 bg-black hover:bg-orange-600 text-white text-sm font-semibold rounded transition-colors disabled:opacity-60"
-            >
-              <FiDownload size={14} />
-              Export CSV
-            </button>
+              <path
+                d="M5 1v3M11 1v3M1 6h14"
+                stroke="#FF7B1D"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+              />
+            </svg>
+            <label className="text-xs text-gray-400 font-medium whitespace-nowrap">
+              To
+            </label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="border-none bg-transparent text-xs text-gray-700 outline-none cursor-pointer w-[110px]"
+            />
+            {dateTo && (
+              <button
+                onClick={() => setDateTo("")}
+                className="text-gray-300 hover:text-gray-500 text-sm leading-none ml-1"
+                title="Clear date"
+              >
+                ✕
+              </button>
+            )}
           </div>
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-gray-200 hidden sm:block" />
+
+          {/* Clear All */}
+          {(search || dateFrom || dateTo) && (
+            <button
+              onClick={() => {
+                setSearch("");
+                setDateFrom("");
+                setDateTo("");
+              }}
+              className="text-xs text-[#FF7B1D] hover:text-orange-700 font-semibold whitespace-nowrap px-2"
+            >
+              Clear All
+            </button>
+          )}
         </div>
 
-        {/* Error */}
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-3 mx-4 text-sm">
-            {error}{" "}
-            <button
-              onClick={fetchReport}
-              className="underline text-[#FF7B1D] ml-2"
-            >
-              Try again
+        {/* RIGHT: Search + Action Buttons */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Search (AllProduct-style with orange button) */}
+          <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden h-[38px] w-full lg:w-[300px] shadow-sm bg-white">
+            <input
+              type="text"
+              placeholder="Search product or HSN code..."
+              className="flex-1 px-4 text-sm text-gray-700 focus:outline-none h-full placeholder:text-gray-400"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <button className="bg-[#FF7B1D] hover:bg-orange-500 text-white text-sm font-medium px-5 h-full transition-colors">
+              Search
             </button>
           </div>
-        )}
 
-        {/* Table */}
-        <div className="bg-white rounded-sm shadow-sm overflow-x-auto pl-4 max-w-[99%] mx-auto">
-          {/* Table Header Bar */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          {/* Refresh */}
+          <button
+            onClick={fetchReport}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-200 bg-white text-gray-600 text-xs font-semibold hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 rounded-xl transition-all shadow-sm disabled:opacity-60 h-[38px]"
+          >
+            <FiRefreshCw className={loading ? "animate-spin" : ""} size={13} />
+            Refresh
+          </button>
+
+          {/* Export CSV */}
+          <button
+            onClick={exportCSV}
+            disabled={filtered.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold rounded-xl transition-colors shadow-sm disabled:opacity-60 h-[38px]"
+          >
+            <FiDownload size={13} />
+            Export CSV
+          </button>
+        </div>
+      </div>
+
+      {/* ── Error ── */}
+      {error && (
+        <div className="mx-1 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-3 text-sm flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {error}
+          <button
+            onClick={fetchReport}
+            className="underline text-[#FF7B1D] ml-2 font-medium"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
+      {/* ── Table Card (AllProduct-style) ── */}
+      <div className="mx-1 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+        {/* Card Header */}
+        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
             <span className="text-sm font-semibold text-gray-700">
               Sales Transactions
             </span>
-            <span className="text-xs text-gray-400 bg-gray-100 px-2.5 py-1 rounded font-medium">
+          </div>
+          {!loading && (
+            <span className="text-xs text-gray-400 font-medium">
               {filtered.length} record{filtered.length !== 1 ? "s" : ""}
             </span>
-          </div>
+          )}
+        </div>
 
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-[#FF7B1D] text-black">
-                <th className="p-3 text-left font-bold">#</th>
-                <th className="p-3 text-left font-bold">Date</th>
-                <th className="p-3 text-left font-bold">Product</th>
-                <th className="p-3 text-left font-bold">HSN Code</th>
-                <th className="p-3 text-center font-bold">GST %</th>
-                <th className="p-3 text-right font-bold">Sale Price</th>
-                <th className="p-3 text-center font-bold">Qty</th>
-                <th className="p-3 text-right font-bold">Total Amt</th>
-                <th className="p-3 text-right font-bold">GST Amt</th>
-                <th className="p-3 text-right font-bold">Taxable Amt</th>
+              <tr className="bg-gradient-to-r from-[#FF7B1D] to-orange-400">
+                {[
+                  { label: "#", align: "text-left w-12" },
+                  { label: "Date", align: "text-left" },
+                  { label: "Product", align: "text-left" },
+                  { label: "HSN Code", align: "text-left" },
+                  { label: "GST %", align: "text-center" },
+                  { label: "Sale Price", align: "text-right" },
+                  { label: "Qty", align: "text-center" },
+                  { label: "Total Amt", align: "text-right" },
+                  { label: "GST Amt", align: "text-right" },
+                  { label: "Taxable Amt", align: "text-right" },
+                ].map(({ label, align }) => (
+                  <th
+                    key={label}
+                    className={`px-4 py-3.5 text-xs font-bold text-white tracking-wider uppercase opacity-90 ${align}`}
+                  >
+                    {label}
+                  </th>
+                ))}
               </tr>
             </thead>
 
             {loading ? (
-              <TableSkeleton cols={10} rows={8} />
+              <TableSkeleton />
             ) : filtered.length === 0 ? (
-              <tbody>
-                <tr>
-                  <td colSpan={10} className="text-center py-14 text-gray-400">
-                    <FiPackage size={36} className="mx-auto mb-3 opacity-30" />
-                    <p className="text-sm font-medium">No records found</p>
-                    <p className="text-xs mt-1">Try adjusting your filters</p>
-                  </td>
-                </tr>
-              </tbody>
+              <EmptyState />
             ) : (
               <>
                 <tbody>
-                  {filtered.map((row) => (
+                  {currentRows.map((row, idx) => (
                     <tr
                       key={row.srNo}
-                      className="hover:bg-gray-50 border-b-4 border-gray-200"
+                      className="row-animate border-b border-gray-50 hover:bg-orange-50/40 transition-colors duration-150 group"
+                      style={{ animationDelay: `${idx * 30}ms` }}
                     >
-                      <td className="p-3 text-gray-500 font-medium">
-                        {row.srNo}
+                      {/* # */}
+                      <td className="px-4 py-3.5">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">
+                          {row.srNo}
+                        </span>
                       </td>
-                      <td className="p-3 text-gray-600 whitespace-nowrap">
+
+                      {/* Date */}
+                      <td className="px-4 py-3.5 text-gray-500 text-xs whitespace-nowrap">
                         <span className="inline-flex items-center gap-1.5">
-                          <FiCalendar size={12} className="text-gray-300" />
+                          <svg
+                            width="11"
+                            height="11"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <rect
+                              x="1"
+                              y="2"
+                              width="14"
+                              height="13"
+                              rx="2"
+                              stroke="#d1d5db"
+                              strokeWidth="1.4"
+                            />
+                            <path
+                              d="M5 1v3M11 1v3M1 6h14"
+                              stroke="#d1d5db"
+                              strokeWidth="1.4"
+                              strokeLinecap="round"
+                            />
+                          </svg>
                           {new Date(row.date).toLocaleDateString("en-IN", {
                             day: "2-digit",
                             month: "short",
@@ -713,46 +480,75 @@ const VendorSalesReport = () => {
                           })}
                         </span>
                       </td>
-                      <td className="p-3 font-semibold text-gray-800">
-                        {row.productName}
+
+                      {/* Product */}
+                      <td className="px-4 py-3.5 font-semibold text-gray-800 max-w-[180px]">
+                        <span className="truncate block">
+                          {row.productName}
+                        </span>
                       </td>
-                      <td className="p-3">
-                        <span className="bg-gray-100 text-gray-600 text-xs font-mono px-2 py-0.5 rounded">
+
+                      {/* HSN Code */}
+                      <td className="px-4 py-3.5">
+                        <span className="font-mono text-xs bg-gray-50 border border-gray-200 px-2 py-1 rounded-md text-gray-600 group-hover:border-orange-200 group-hover:bg-orange-50 transition-colors">
                           {row.hsnCode}
                         </span>
                       </td>
-                      <td className="p-3 text-center text-[#247606] font-semibold">
-                        {row.gstSlab}%
+
+                      {/* GST % */}
+                      <td className="px-4 py-3.5 text-center">
+                        <span className="inline-block bg-emerald-50 text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-emerald-100">
+                          {row.gstSlab}%
+                        </span>
                       </td>
-                      <td className="p-3 text-right text-gray-700 font-medium">
-                        ₹{row.salePrice?.toFixed(2)}
+
+                      {/* Sale Price */}
+                      <td className="px-4 py-3.5 text-right">
+                        <span className="text-sm font-bold text-gray-800">
+                          ₹{row.salePrice?.toFixed(2)}
+                        </span>
                       </td>
-                      <td className="p-3 text-center text-blue-700 font-bold">
-                        {row.quantity}
+
+                      {/* Qty */}
+                      <td className="px-4 py-3.5 text-center">
+                        <span className="inline-block bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-full border border-blue-100">
+                          {row.quantity}
+                        </span>
                       </td>
-                      <td className="p-3 text-right font-bold text-gray-800">
+
+                      {/* Total Amt */}
+                      <td className="px-4 py-3.5 text-right font-bold text-gray-800 text-sm">
                         ₹{row.totalAmount?.toFixed(2)}
                       </td>
-                      <td className="p-3 text-right text-[#FF7B1D] font-medium">
+
+                      {/* GST Amt */}
+                      <td className="px-4 py-3.5 text-right text-[#FF7B1D] font-medium text-xs">
                         ₹{row.gstAmount?.toFixed(2)}
                       </td>
-                      <td className="p-3 text-right text-gray-700 font-semibold">
+
+                      {/* Taxable Amt */}
+                      <td className="px-4 py-3.5 text-right text-gray-700 font-semibold text-xs">
                         ₹{row.taxableAmount?.toFixed(2)}
                       </td>
                     </tr>
                   ))}
                 </tbody>
 
-                {/* Totals Row */}
+                {/* Totals Footer Row */}
                 <tfoot>
-                  <tr className="bg-[#FF7B1D] text-black font-bold">
-                    <td colSpan={6} className="p-3">
-                      Totals ({filtered.length} items)
+                  <tr className="bg-gradient-to-r from-[#FF7B1D] to-orange-400 text-white font-bold text-xs">
+                    <td colSpan={6} className="px-4 py-3.5 opacity-90">
+                      Totals — {filtered.length} item
+                      {filtered.length !== 1 ? "s" : ""}
                     </td>
-                    <td className="p-3 text-center">{totalQty}</td>
-                    <td className="p-3 text-right">₹{totalSales.toFixed(2)}</td>
-                    <td className="p-3 text-right">₹{totalGst.toFixed(2)}</td>
-                    <td className="p-3 text-right">
+                    <td className="px-4 py-3.5 text-center">{totalQty}</td>
+                    <td className="px-4 py-3.5 text-right">
+                      ₹{totalSales.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3.5 text-right">
+                      ₹{totalGst.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3.5 text-right">
                       ₹{totalTaxable.toFixed(2)}
                     </td>
                   </tr>
@@ -761,13 +557,80 @@ const VendorSalesReport = () => {
             )}
           </table>
         </div>
-
-        {/* Footer note */}
-        <p className="text-xs text-gray-400 text-center mt-4">
-          All amounts are in Indian Rupees (₹) · GST amounts are calculated
-          based on your registered GST slab
-        </p>
       </div>
+
+      {/* ── Pagination (AllProduct-style) ── */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-between px-1 mt-5 mb-6">
+          <p className="text-xs text-gray-400 font-medium">
+            Page{" "}
+            <span className="text-gray-600 font-semibold">{currentPage}</span>{" "}
+            of <span className="text-gray-600 font-semibold">{totalPages}</span>
+          </p>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" /> Prev
+            </button>
+
+            <div className="flex items-center gap-1">
+              {(() => {
+                const pages = [];
+                const visiblePages = new Set([
+                  1,
+                  2,
+                  totalPages - 1,
+                  totalPages,
+                  currentPage - 1,
+                  currentPage,
+                  currentPage + 1,
+                ]);
+                for (let i = 1; i <= totalPages; i++) {
+                  if (visiblePages.has(i)) pages.push(i);
+                  else if (pages[pages.length - 1] !== "...") pages.push("...");
+                }
+                return pages.map((page, idx) =>
+                  page === "..." ? (
+                    <span key={idx} className="px-1 text-gray-400 text-xs">
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-xl text-xs font-semibold transition-all ${
+                        currentPage === page
+                          ? "bg-[#FF7B1D] text-white shadow-sm shadow-orange-200"
+                          : "bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ),
+                );
+              })()}
+            </div>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              Next <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Footer note */}
+      <p className="text-xs text-gray-400 text-center mt-4 mb-2">
+        All amounts are in Indian Rupees (₹) · GST amounts are calculated based
+        on your registered GST slab
+      </p>
     </DashboardLayout>
   );
 };

@@ -1,392 +1,18 @@
-// import React, { useState, useEffect } from "react";
-// import DashboardLayout from "../../components/DashboardLayout";
-// import { BASE_URL } from "../../api/api";
-// import { Bike, Edit, RefreshCw, X, Check } from "lucide-react";
-
-// export default function RiderDueAmountsPage() {
-//   const [riderDueAmounts, setRiderDueAmounts] = useState([]);
-//   const [riderDueLoading, setRiderDueLoading] = useState(false);
-//   const [riderDueSummary, setRiderDueSummary] = useState(null);
-//   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-//   const [selectedRider, setSelectedRider] = useState(null);
-//   const [updateFormData, setUpdateFormData] = useState({
-//     dueAmount: "",
-//     description: "",
-//   });
-//   const [updating, setUpdating] = useState(false);
-//   const [error, setError] = useState(null);
-
-//   useEffect(() => {
-//     fetchRiderDueAmounts();
-//   }, []);
-
-//   const fetchRiderDueAmounts = async () => {
-//     setRiderDueLoading(true);
-//     setError(null);
-//     try {
-//       const token =
-//         localStorage.getItem("token") || localStorage.getItem("authToken");
-//       const headers = { "Content-Type": "application/json" };
-//       if (token) {
-//         headers["Authorization"] = `Bearer ${token}`;
-//       }
-
-//       const response = await fetch(
-//         `${BASE_URL}/api/vendor/riders/due-amounts`,
-//         {
-//           method: "GET",
-//           headers: headers,
-//           credentials: "include",
-//         },
-//       );
-
-//       if (!response.ok) {
-//         throw new Error(
-//           `Failed to fetch rider due amounts: ${response.status}`,
-//         );
-//       }
-//       const result = await response.json();
-//       if (result.success) {
-//         setRiderDueAmounts(result.data || []);
-//         setRiderDueSummary(result.summary || null);
-//       } else {
-//         throw new Error(result.message || "Failed to fetch rider due amounts");
-//       }
-//     } catch (err) {
-//       console.error("Error fetching rider due amounts:", err);
-//       setError(err.message);
-//     } finally {
-//       setRiderDueLoading(false);
-//     }
-//   };
-
-//   const openUpdateModal = (rider) => {
-//     setSelectedRider(rider);
-//     setUpdateFormData({
-//       dueAmount: parseFloat(rider.dueBalance || 0).toFixed(2),
-//       description: "",
-//     });
-//     setIsUpdateModalOpen(true);
-//     setError(null);
-//   };
-
-//   const closeUpdateModal = () => {
-//     setIsUpdateModalOpen(false);
-//     setSelectedRider(null);
-//     setUpdateFormData({ dueAmount: "", description: "" });
-//     setError(null);
-//   };
-
-//   const handleUpdateDueAmount = async (e) => {
-//     e.preventDefault();
-//     if (!selectedRider || !updateFormData.dueAmount) {
-//       setError("Due amount is required.");
-//       return;
-//     }
-//     setUpdating(true);
-//     setError(null);
-
-//     try {
-//       const token =
-//         localStorage.getItem("token") || localStorage.getItem("authToken");
-//       const headers = { "Content-Type": "application/json" };
-//       if (token) {
-//         headers["Authorization"] = `Bearer ${token}`;
-//       }
-
-//       const response = await fetch(
-//         `${BASE_URL}/api/vendor/riders/${selectedRider.riderId}/due-amount`,
-//         {
-//           method: "PUT",
-//           headers: headers,
-//           credentials: "include",
-//           body: JSON.stringify({
-//             dueAmount: parseFloat(updateFormData.dueAmount),
-//             description: updateFormData.description,
-//           }),
-//         },
-//       );
-
-//       if (!response.ok) {
-//         const errorData = await response.json();
-//         throw new Error(
-//           errorData.message ||
-//             `Failed to update due amount: ${response.status}`,
-//         );
-//       }
-
-//       const result = await response.json();
-//       if (result.success) {
-//         alert("Due amount updated successfully!");
-//         closeUpdateModal();
-//         fetchRiderDueAmounts(); // Refresh data
-//       } else {
-//         throw new Error(result.message || "Failed to update due amount");
-//       }
-//     } catch (err) {
-//       console.error("Error updating due amount:", err);
-//       setError(err.message);
-//     } finally {
-//       setUpdating(false);
-//     }
-//   };
-
-//   return (
-//     <DashboardLayout>
-//       <div className="p-0 ml-6 mt-2">
-//         <div className="mb-6">
-//           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-//             <Bike className="w-7 h-7 text-orange-600" />
-//             Rider Due Amounts
-//           </h1>
-//           <p className="text-gray-600 mt-1">
-//             Manage and update rider due amounts
-//           </p>
-//         </div>
-
-//         {/* Summary Card */}
-//         {riderDueSummary && (
-//           <div className="mb-6 p-6 bg-orange-50 rounded-sm border border-orange-200">
-//             <div className="flex items-center justify-between">
-//               <div>
-//                 <p className="text-sm text-gray-600">Total Riders</p>
-//                 <p className="text-2xl font-bold text-gray-900 mt-1">
-//                   {riderDueSummary.totalRiders || 0}
-//                 </p>
-//               </div>
-//               <div className="text-right">
-//                 <p className="text-sm text-gray-600">Total Due Amount</p>
-//                 <p className="text-2xl font-bold text-orange-600 mt-1">
-//                   ₹
-//                   {parseFloat(
-//                     riderDueSummary.totalDueAmount || 0,
-//                   ).toLocaleString("en-IN", {
-//                     minimumFractionDigits: 2,
-//                     maximumFractionDigits: 2,
-//                   })}
-//                 </p>
-//               </div>
-//             </div>
-//           </div>
-//         )}
-
-//         {/* Main Content */}
-//         <div className="bg-white rounded-sm shadow-sm p-2">
-//           <div className="flex items-center justify-between mb-6">
-//             <h2 className="text-lg font-semibold text-gray-900">
-//               Rider Details
-//             </h2>
-//             <button
-//               onClick={fetchRiderDueAmounts}
-//               className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-//               title="Refresh"
-//             >
-//               <RefreshCw className="w-4 h-4 text-gray-600" />
-//               Refresh
-//             </button>
-//           </div>
-
-//           {error && !riderDueLoading && (
-//             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-//               <p className="text-red-600 text-sm">{error}</p>
-//             </div>
-//           )}
-
-//           {riderDueLoading ? (
-//             <div className="text-center py-12">
-//               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500 mx-auto"></div>
-//               <p className="text-gray-500 text-sm mt-4">
-//                 Loading rider due amounts...
-//               </p>
-//             </div>
-//           ) : riderDueAmounts.length === 0 ? (
-//             <div className="text-center py-12">
-//               <Bike className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-//               <p className="text-gray-500 font-medium">
-//                 No rider due amounts found
-//               </p>
-//               <p className="text-gray-400 text-sm mt-2">
-//                 Riders with due amounts will appear here
-//               </p>
-//             </div>
-//           ) : (
-//             <div className="overflow-x-auto">
-//               <table className="w-full">
-//                 <thead>
-//                   <tr className="border-b bg-gray-50">
-//                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
-//                       Rider Name
-//                     </th>
-//                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
-//                       Mobile
-//                     </th>
-//                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
-//                       Due Balance
-//                     </th>
-//                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
-//                       Action
-//                     </th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {riderDueAmounts.map((rider, index) => (
-//                     <tr key={index} className="border-b hover:bg-gray-50">
-//                       <td className="py-3 px-4 text-sm font-medium text-gray-900">
-//                         {rider.fullName || "N/A"}
-//                       </td>
-//                       <td className="py-3 px-4 text-sm text-gray-600">
-//                         {rider.mobileNumber || "N/A"}
-//                       </td>
-//                       <td className="py-3 px-4 text-sm font-semibold text-orange-600">
-//                         ₹
-//                         {parseFloat(rider.dueBalance || 0).toLocaleString(
-//                           "en-IN",
-//                           {
-//                             minimumFractionDigits: 2,
-//                             maximumFractionDigits: 2,
-//                           },
-//                         )}
-//                       </td>
-//                       <td className="py-3 px-4">
-//                         <button
-//                           onClick={() => openUpdateModal(rider)}
-//                           className="flex items-center gap-1 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors"
-//                         >
-//                           <Edit className="w-4 h-4" />
-//                           Update
-//                         </button>
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-//           )}
-//         </div>
-
-//         {/* Update Due Amount Modal */}
-//         {isUpdateModalOpen && (
-//           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-//             <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
-//               <form onSubmit={handleUpdateDueAmount}>
-//                 <div className="flex items-center justify-between p-6 border-b">
-//                   <h3 className="text-lg font-bold text-gray-900">
-//                     Update Due Amount
-//                   </h3>
-//                   <button
-//                     type="button"
-//                     onClick={closeUpdateModal}
-//                     className="text-gray-400 hover:text-gray-600"
-//                   >
-//                     <X className="w-5 h-5" />
-//                   </button>
-//                 </div>
-//                 <div className="p-6 space-y-4">
-//                   {selectedRider && (
-//                     <div className="bg-gray-50 p-3 rounded-lg text-sm">
-//                       <p className="font-semibold text-gray-800">
-//                         Rider: {selectedRider.fullName}
-//                       </p>
-//                       <p className="text-gray-600">
-//                         Mobile: {selectedRider.mobileNumber}
-//                       </p>
-//                       <p className="text-gray-600">
-//                         Current Due: ₹
-//                         {parseFloat(
-//                           selectedRider.dueBalance || 0,
-//                         ).toLocaleString("en-IN", {
-//                           minimumFractionDigits: 2,
-//                           maximumFractionDigits: 2,
-//                         })}
-//                       </p>
-//                     </div>
-//                   )}
-//                   <div>
-//                     <label
-//                       htmlFor="dueAmount"
-//                       className="block text-sm font-medium text-gray-700 mb-1"
-//                     >
-//                       Amount Paid *
-//                     </label>
-//                     <input
-//                       type="number"
-//                       id="dueAmount"
-//                       name="dueAmount"
-//                       value={updateFormData.dueAmount}
-//                       onChange={(e) =>
-//                         setUpdateFormData((prev) => ({
-//                           ...prev,
-//                           dueAmount: e.target.value,
-//                         }))
-//                       }
-//                       placeholder="Enter amount paid"
-//                       className="w-full border border-gray-300 rounded-lg p-2 focus:ring-orange-500 focus:border-orange-500"
-//                       required
-//                       step="0.01"
-//                     />
-//                   </div>
-//                   <div>
-//                     <label
-//                       htmlFor="description"
-//                       className="block text-sm font-medium text-gray-700 mb-1"
-//                     >
-//                       Description (Optional)
-//                     </label>
-//                     <textarea
-//                       id="description"
-//                       name="description"
-//                       value={updateFormData.description}
-//                       onChange={(e) =>
-//                         setUpdateFormData((prev) => ({
-//                           ...prev,
-//                           description: e.target.value,
-//                         }))
-//                       }
-//                       placeholder="Add a description for the update"
-//                       rows="3"
-//                       className="w-full border border-gray-300 rounded-lg p-2 focus:ring-orange-500 focus:border-orange-500 resize-y"
-//                     ></textarea>
-//                   </div>
-//                   {error && <p className="text-red-600 text-sm">{error}</p>}
-//                 </div>
-//                 <div className="flex justify-end gap-3 p-6 border-t">
-//                   <button
-//                     type="button"
-//                     onClick={closeUpdateModal}
-//                     className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
-//                     disabled={updating}
-//                   >
-//                     Cancel
-//                   </button>
-//                   <button
-//                     type="submit"
-//                     className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2"
-//                     disabled={updating}
-//                   >
-//                     {updating ? (
-//                       <>
-//                         <RefreshCw className="w-4 h-4 animate-spin" />{" "}
-//                         Submitting...
-//                       </>
-//                     ) : (
-//                       <>
-//                         <Check className="w-4 h-4" /> Submit
-//                       </>
-//                     )}
-//                   </button>
-//                 </div>
-//               </form>
-//             </div>
-//           </div>
-//         )}
-//       </div>
-//     </DashboardLayout>
-//   );
-// }
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { BASE_URL } from "../../api/api";
-import { Bike, Edit, RefreshCw, X, Check } from "lucide-react";
+import {
+  Bike,
+  Edit,
+  RefreshCw,
+  X,
+  Check,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  IndianRupee,
+  Users,
+} from "lucide-react";
 
 export default function RiderDueAmountsPage() {
   const [riderDueAmounts, setRiderDueAmounts] = useState([]);
@@ -400,6 +26,7 @@ export default function RiderDueAmountsPage() {
   });
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState(null);
+  const [updateSuccess, setUpdateSuccess] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -416,16 +43,10 @@ export default function RiderDueAmountsPage() {
         localStorage.getItem("token") || localStorage.getItem("authToken");
       const headers = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
-
       const response = await fetch(
         `${BASE_URL}/api/vendor/riders/due-amounts`,
-        {
-          method: "GET",
-          headers,
-          credentials: "include",
-        },
+        { method: "GET", headers, credentials: "include" },
       );
-
       if (!response.ok)
         throw new Error(
           `Failed to fetch rider due amounts: ${response.status}`,
@@ -434,11 +55,9 @@ export default function RiderDueAmountsPage() {
       if (result.success) {
         setRiderDueAmounts(result.data || []);
         setRiderDueSummary(result.summary || null);
-      } else {
+      } else
         throw new Error(result.message || "Failed to fetch rider due amounts");
-      }
     } catch (err) {
-      console.error("Error fetching rider due amounts:", err);
       setError(err.message);
     } finally {
       setRiderDueLoading(false);
@@ -475,7 +94,6 @@ export default function RiderDueAmountsPage() {
         localStorage.getItem("token") || localStorage.getItem("authToken");
       const headers = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
-
       const response = await fetch(
         `${BASE_URL}/api/vendor/riders/${selectedRider.riderId}/due-amount`,
         {
@@ -488,37 +106,33 @@ export default function RiderDueAmountsPage() {
           }),
         },
       );
-
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message ||
-            `Failed to update due amount: ${response.status}`,
-        );
+        const d = await response.json();
+        throw new Error(d.message || `Failed to update: ${response.status}`);
       }
       const result = await response.json();
       if (result.success) {
-        alert("Due amount updated successfully!");
+        setUpdateSuccess(true);
         closeUpdateModal();
         fetchRiderDueAmounts();
-      } else {
-        throw new Error(result.message || "Failed to update due amount");
-      }
+        setTimeout(() => setUpdateSuccess(false), 3000);
+      } else throw new Error(result.message || "Failed to update due amount");
     } catch (err) {
-      console.error("Error updating due amount:", err);
       setError(err.message);
     } finally {
       setUpdating(false);
     }
   };
 
-  // Search filter
-  const filteredRiders = riderDueAmounts.filter((rider) => {
+  const fmt = (v) =>
+    `₹${parseFloat(v || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const filteredRiders = riderDueAmounts.filter((r) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
-      (rider.fullName || "").toLowerCase().includes(q) ||
-      (rider.mobileNumber || "").toLowerCase().includes(q)
+      (r.fullName || "").toLowerCase().includes(q) ||
+      (r.mobileNumber || "").toLowerCase().includes(q)
     );
   });
 
@@ -531,14 +145,13 @@ export default function RiderDueAmountsPage() {
 
   const TableSkeleton = () => (
     <tbody>
-      {Array.from({ length: itemsPerPage }).map((_, idx) => (
-        <tr
-          key={idx}
-          className="border-b border-gray-200 animate-pulse bg-white"
-        >
-          {Array.from({ length: 4 }).map((__, j) => (
-            <td key={j} className="p-3">
-              <div className="h-4 bg-gray-200 rounded w-[80%]" />
+      {Array.from({ length: itemsPerPage }).map((_, i) => (
+        <tr key={i} className="border-b border-gray-100">
+          {Array.from({ length: 5 }).map((__, j) => (
+            <td key={j} className="px-4 py-3.5">
+              <div
+                className={`h-3.5 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full animate-pulse ${j === 1 ? "w-28" : j === 4 ? "w-16 ml-auto" : "w-[70%]"}`}
+              />
             </td>
           ))}
         </tr>
@@ -549,13 +162,17 @@ export default function RiderDueAmountsPage() {
   const EmptyState = () => (
     <tbody>
       <tr>
-        <td
-          colSpan="4"
-          className="text-center py-10 text-gray-500 text-sm bg-white"
-        >
-          {searchQuery
-            ? "No riders match your search."
-            : "No rider due amounts found."}
+        <td colSpan="5" className="py-20 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center">
+              <Bike className="w-8 h-8 text-orange-300" />
+            </div>
+            <p className="text-gray-400 text-sm font-medium">
+              {searchQuery
+                ? "No riders match your search"
+                : "No rider due amounts found"}
+            </p>
+          </div>
         </td>
       </tr>
     </tbody>
@@ -563,77 +180,168 @@ export default function RiderDueAmountsPage() {
 
   return (
     <DashboardLayout>
-      <div className="p-0 ml-8 mt-2">
-        {/* ── Summary Cards ── */}
-        {riderDueSummary && (
-          <div className="grid grid-cols-2 gap-4 mb-4 max-w-[99%]">
-            <div className="bg-white border border-gray-200 rounded-sm shadow-sm p-4">
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
-                Total Riders
-              </p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {riderDueSummary.totalRiders || 0}
-              </p>
-            </div>
-            <div className="bg-white border border-gray-200 rounded-sm shadow-sm p-4">
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
-                Total Due Amount
-              </p>
-              <p className="text-2xl font-bold text-orange-600 mt-1">
-                ₹
-                {parseFloat(riderDueSummary.totalDueAmount || 0).toLocaleString(
-                  "en-IN",
-                  { minimumFractionDigits: 2, maximumFractionDigits: 2 },
-                )}
-              </p>
-            </div>
-          </div>
-        )}
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .row-animate { animation: fadeSlideIn 0.25s ease forwards; }
+        .card-animate { animation: fadeSlideIn 0.3s ease forwards; }
+        .action-btn {
+          width: 30px; height: 30px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 8px; transition: all 0.18s ease;
+        }
+        .action-btn:hover { transform: translateY(-1px); }
+      `}</style>
 
-        {/* ── Header: Search + Refresh ── */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 max-w-[99%] mx-auto mb-2">
-          <div className="flex items-center border border-black rounded overflow-hidden h-[36px] w-full max-w-[100%] lg:max-w-[380px]">
+      {/* ── Success Alert ── */}
+      {updateSuccess && (
+        <div className="mx-1 mb-3 mt-3 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+          <Check className="w-4 h-4 shrink-0" /> Due amount updated
+          successfully!
+        </div>
+      )}
+
+      {/* ── Stats Cards ── */}
+      {riderDueSummary && (
+        <div className="grid grid-cols-2 gap-3 mb-4 mt-3 px-1">
+          {[
+            {
+              label: "Total Riders",
+              value: riderDueSummary.totalRiders || 0,
+              icon: Users,
+              border: "border-blue-400",
+              iconBg: "bg-blue-50",
+              iconColor: "text-blue-500",
+              valueColor: "text-gray-800",
+              delay: 0,
+            },
+            {
+              label: "Total Due Amount",
+              value: fmt(riderDueSummary.totalDueAmount || 0),
+              icon: IndianRupee,
+              border: "border-[#FF7B1D]",
+              iconBg: "bg-orange-50",
+              iconColor: "text-[#FF7B1D]",
+              valueColor: "text-[#FF7B1D]",
+              delay: 60,
+            },
+          ].map(
+            ({
+              label,
+              value,
+              icon: Icon,
+              border,
+              iconBg,
+              iconColor,
+              valueColor,
+              delay,
+            }) => (
+              <div
+                key={label}
+                className={`card-animate bg-white rounded-2xl border border-gray-100 shadow-sm p-5 border-l-4 ${border}`}
+                style={{ animationDelay: `${delay}ms` }}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium">{label}</p>
+                    <p className={`text-2xl font-bold mt-1 ${valueColor}`}>
+                      {value}
+                    </p>
+                  </div>
+                  <div
+                    className={`w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center shrink-0`}
+                  >
+                    <Icon className={`w-5 h-5 ${iconColor}`} />
+                  </div>
+                </div>
+              </div>
+            ),
+          )}
+        </div>
+      )}
+
+      {/* ── Toolbar ── */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 px-1 mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+          <span className="text-sm font-semibold text-gray-700">
+            Rider Due Amounts
+          </span>
+          {!riderDueLoading && (
+            <span className="text-xs text-gray-400 font-medium bg-gray-100 px-2 py-1 rounded-lg">
+              {filteredRiders.length} riders
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Search */}
+          <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden h-[38px] w-full lg:w-[320px] shadow-sm bg-white">
             <input
               type="text"
-              placeholder="Search by Name or Mobile..."
-              className="flex-1 px-4 text-sm text-gray-800 focus:outline-none h-full"
+              placeholder="Search by name or mobile…"
+              className="flex-1 px-4 text-sm text-gray-700 focus:outline-none h-full placeholder:text-gray-400"
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
             />
-            <button className="bg-[#FF7B1D] hover:bg-orange-600 text-white text-sm px-4 sm:px-6 h-full transition-colors">
+            <button className="bg-[#FF7B1D] hover:bg-orange-500 text-white text-sm font-medium px-4 h-full transition-colors">
               Search
             </button>
           </div>
 
+          {/* Refresh */}
           <button
             onClick={fetchRiderDueAmounts}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-sm text-sm font-medium text-gray-700 transition-colors border border-gray-300"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 transition-all shadow-sm h-[38px]"
           >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
+            <RefreshCw className="w-3.5 h-3.5" /> Refresh
           </button>
         </div>
+      </div>
 
-        {/* ── Error ── */}
-        {error && !riderDueLoading && (
-          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-sm max-w-[99%]">
-            <p className="text-red-600 text-sm">{error}</p>
+      {/* ── Error ── */}
+      {error && !riderDueLoading && (
+        <div className="mx-1 mb-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {error}
+        </div>
+      )}
+
+      {/* ── Table Card ── */}
+      <div className="mx-1 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+            <span className="text-sm font-semibold text-gray-700">
+              Rider List
+            </span>
           </div>
-        )}
+          {!riderDueLoading && currentRiders.length > 0 && (
+            <span className="text-xs text-gray-400 font-medium">
+              {currentRiders.length} of {filteredRiders.length} riders
+            </span>
+          )}
+        </div>
 
-        {/* ── Table ── */}
-        <div className="bg-white rounded-sm ml-0 shadow-sm overflow-x-auto max-w-[99%] mx-auto">
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-[#FF7B1D] text-black">
-                <th className="p-3 text-left">S.N</th>
-                <th className="p-3 text-left">Rider Name</th>
-                <th className="p-3 text-left">Mobile</th>
-                <th className="p-3 text-left">Due Balance</th>
-                <th className="p-3 pr-6 text-right">Action</th>
+              <tr className="bg-gradient-to-r from-[#FF7B1D] to-orange-400">
+                {["S.N", "Rider Name", "Mobile", "Due Balance", "Actions"].map(
+                  (h, i) => (
+                    <th
+                      key={h}
+                      className={`px-4 py-3.5 text-xs font-bold text-white tracking-wider uppercase opacity-90 ${i === 4 ? "text-right pr-5" : "text-left"}`}
+                    >
+                      {h}
+                    </th>
+                  ),
+                )}
               </tr>
             </thead>
 
@@ -646,30 +354,57 @@ export default function RiderDueAmountsPage() {
                 {currentRiders.map((rider, idx) => (
                   <tr
                     key={idx}
-                    className="bg-white shadow-sm hover:bg-gray-50 transition border-b-4 border-gray-200"
+                    className="row-animate border-b border-gray-50 hover:bg-orange-50/40 transition-colors duration-150 group"
+                    style={{ animationDelay: `${idx * 30}ms` }}
                   >
-                    <td className="p-3">{indexOfFirst + idx + 1}</td>
-                    <td className="p-3 font-medium text-gray-800">
-                      {rider.fullName || "N/A"}
+                    {/* S.N */}
+                    <td className="px-4 py-3.5">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">
+                        {indexOfFirst + idx + 1}
+                      </span>
                     </td>
-                    <td className="p-3 text-gray-700">
-                      {rider.mobileNumber || "N/A"}
+
+                    {/* Rider Name */}
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-orange-50 border border-orange-100 flex items-center justify-center shrink-0">
+                          <Bike className="w-3.5 h-3.5 text-[#FF7B1D]" />
+                        </div>
+                        <span className="text-sm font-semibold text-gray-800">
+                          {rider.fullName || "N/A"}
+                        </span>
+                      </div>
                     </td>
-                    <td className="p-3 font-semibold text-orange-600">
-                      ₹
-                      {parseFloat(rider.dueBalance || 0).toLocaleString(
-                        "en-IN",
-                        { minimumFractionDigits: 2, maximumFractionDigits: 2 },
-                      )}
+
+                    {/* Mobile */}
+                    <td className="px-4 py-3.5">
+                      <span className="inline-block bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full border border-blue-100">
+                        {rider.mobileNumber || "N/A"}
+                      </span>
                     </td>
-                    <td className="p-3 text-right">
-                      <div className="flex justify-end gap-3 text-orange-600">
+
+                    {/* Due Balance */}
+                    <td className="px-4 py-3.5">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border ${
+                          parseFloat(rider.dueBalance || 0) > 0
+                            ? "bg-orange-50 text-[#FF7B1D] border-orange-200"
+                            : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        }`}
+                      >
+                        {fmt(rider.dueBalance)}
+                      </span>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-3.5 pr-5">
+                      <div className="flex items-center justify-end">
                         <button
                           onClick={() => openUpdateModal(rider)}
-                          className="hover:text-blue-700"
+                          className="action-btn bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-700"
                           title="Update Due Amount"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -679,22 +414,28 @@ export default function RiderDueAmountsPage() {
             )}
           </table>
         </div>
+      </div>
 
-        {/* ── Pagination ── */}
-        {!riderDueLoading && filteredRiders.length > 0 && (
-          <div className="flex justify-end items-center gap-6 mt-8 max-w-[95%] mx-auto mb-6">
+      {/* ── Pagination ── */}
+      {!riderDueLoading && filteredRiders.length > itemsPerPage && (
+        <div className="flex items-center justify-between px-1 mt-5 mb-6">
+          <p className="text-xs text-gray-400 font-medium">
+            Page{" "}
+            <span className="text-gray-600 font-semibold">{currentPage}</span>{" "}
+            of <span className="text-gray-600 font-semibold">{totalPages}</span>
+          </p>
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
               disabled={currentPage === 1}
-              className="bg-[#FF7B1D] text-white px-10 py-3 text-sm font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
             >
-              Back
+              <ChevronLeft className="w-3.5 h-3.5" /> Prev
             </button>
-
-            <div className="flex items-center gap-2 text-sm text-black font-medium">
+            <div className="flex items-center gap-1">
               {(() => {
                 const pages = [];
-                const visiblePages = new Set([
+                const visible = new Set([
                   1,
                   2,
                   totalPages - 1,
@@ -704,19 +445,23 @@ export default function RiderDueAmountsPage() {
                   currentPage + 1,
                 ]);
                 for (let i = 1; i <= totalPages; i++) {
-                  if (visiblePages.has(i)) pages.push(i);
+                  if (visible.has(i)) pages.push(i);
                   else if (pages[pages.length - 1] !== "...") pages.push("...");
                 }
-                return pages.map((page, idx) =>
+                return pages.map((page, i) =>
                   page === "..." ? (
-                    <span key={idx} className="px-1 text-black select-none">
-                      ...
+                    <span key={i} className="px-1 text-gray-400 text-xs">
+                      …
                     </span>
                   ) : (
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`px-1 hover:text-orange-500 transition-colors ${currentPage === page ? "text-orange-600 font-semibold" : ""}`}
+                      className={`w-8 h-8 rounded-xl text-xs font-semibold transition-all ${
+                        currentPage === page
+                          ? "bg-[#FF7B1D] text-white shadow-sm shadow-orange-200"
+                          : "bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200"
+                      }`}
                     >
                       {page}
                     </button>
@@ -724,120 +469,141 @@ export default function RiderDueAmountsPage() {
                 );
               })()}
             </div>
-
             <button
               onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className="bg-[#247606] text-white px-10 py-3 text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
             >
-              Next
+              Next <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ── Update Modal ── */}
       {isUpdateModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-sm shadow-xl max-w-md w-full border border-gray-300">
-            <form onSubmit={handleUpdateDueAmount}>
-              {/* Modal Header */}
-              <div className="bg-[#FF7B1D] px-6 py-4 flex items-center justify-between rounded-t-sm">
-                <h3 className="text-base font-bold text-white">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-gray-100">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-[#FF7B1D] to-orange-400 rounded-t-2xl">
+              <div>
+                <h3 className="text-lg font-bold text-white">
                   Update Due Amount
                 </h3>
-                <button
-                  type="button"
-                  onClick={closeUpdateModal}
-                  className="text-white hover:bg-white/20 p-1 rounded transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <p className="text-xs text-orange-100 mt-0.5">
+                  Enter the amount paid by rider
+                </p>
               </div>
+              <button
+                type="button"
+                onClick={closeUpdateModal}
+                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-              <div className="p-6 space-y-4 text-sm">
-                {/* Rider Info */}
+            <form onSubmit={handleUpdateDueAmount}>
+              <div className="p-6 space-y-4">
+                {/* Rider Info Card */}
                 {selectedRider && (
-                  <div className="bg-orange-50 border border-orange-200 rounded-sm p-3 text-sm">
-                    <p className="font-semibold text-gray-800">
-                      {selectedRider.fullName}
-                    </p>
-                    <p className="text-gray-600">
-                      Mobile: {selectedRider.mobileNumber}
-                    </p>
-                    <p className="text-orange-600 font-semibold">
-                      Current Due: ₹
-                      {parseFloat(selectedRider.dueBalance || 0).toLocaleString(
-                        "en-IN",
-                        { minimumFractionDigits: 2, maximumFractionDigits: 2 },
-                      )}
-                    </p>
+                  <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-white border border-orange-200 flex items-center justify-center">
+                        <Bike className="w-5 h-5 text-[#FF7B1D]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-800">
+                          {selectedRider.fullName}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {selectedRider.mobileNumber}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500">Current Due</p>
+                      <p className="text-sm font-bold text-[#FF7B1D]">
+                        {fmt(selectedRider.dueBalance)}
+                      </p>
+                    </div>
                   </div>
                 )}
 
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    {error}
+                  </div>
+                )}
+
+                {/* Amount */}
                 <div>
-                  <label className="block font-semibold text-gray-700 mb-1">
-                    Amount Paid <span className="text-red-500">*</span>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">
+                    Amount Paid <span className="text-red-400">*</span>
                   </label>
-                  <input
-                    type="number"
-                    value={updateFormData.dueAmount}
-                    onChange={(e) =>
-                      setUpdateFormData((prev) => ({
-                        ...prev,
-                        dueAmount: e.target.value,
-                      }))
-                    }
-                    placeholder="Enter amount paid"
-                    className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none focus:ring-1 focus:ring-[#FF7B1D]"
-                    required
-                    step="0.01"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">
+                      ₹
+                    </span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={updateFormData.dueAmount}
+                      onChange={(e) =>
+                        setUpdateFormData((p) => ({
+                          ...p,
+                          dueAmount: e.target.value,
+                        }))
+                      }
+                      placeholder="0.00"
+                      required
+                      className="w-full pl-7 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-300 focus:border-[#FF7B1D] outline-none text-sm transition-all"
+                    />
+                  </div>
                 </div>
 
+                {/* Description */}
                 <div>
-                  <label className="block font-semibold text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">
                     Description{" "}
-                    <span className="text-gray-400 font-normal">
+                    <span className="text-gray-400 font-normal normal-case">
                       (Optional)
                     </span>
                   </label>
                   <textarea
                     value={updateFormData.description}
                     onChange={(e) =>
-                      setUpdateFormData((prev) => ({
-                        ...prev,
+                      setUpdateFormData((p) => ({
+                        ...p,
                         description: e.target.value,
                       }))
                     }
-                    placeholder="Add a description for the update"
+                    placeholder="Add a description for this update…"
                     rows="3"
-                    className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none focus:ring-1 focus:ring-[#FF7B1D] resize-y"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-300 focus:border-[#FF7B1D] outline-none text-sm resize-none transition-all"
                   />
                 </div>
-
-                {error && <p className="text-red-600 text-sm">{error}</p>}
               </div>
 
-              {/* Modal Footer */}
-              <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200">
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-gray-100 flex gap-3 bg-gray-50 rounded-b-2xl">
                 <button
                   type="button"
                   onClick={closeUpdateModal}
                   disabled={updating}
-                  className="px-6 py-2 border border-gray-400 rounded-sm hover:bg-gray-50 transition-colors font-semibold text-gray-700 text-sm"
+                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 font-medium hover:bg-gray-100 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={updating}
-                  className="px-6 py-2 bg-green-700 hover:bg-green-800 text-white rounded-sm font-semibold text-sm transition-colors flex items-center gap-2"
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-[#FF7B1D] to-orange-400 text-white rounded-xl text-sm font-semibold hover:from-orange-500 hover:to-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm shadow-orange-200 flex items-center justify-center gap-2"
                 >
                   {updating ? (
                     <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />{" "}
-                      Submitting...
+                      <RefreshCw className="w-4 h-4 animate-spin" /> Submitting…
                     </>
                   ) : (
                     <>
