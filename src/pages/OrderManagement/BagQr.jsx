@@ -1,939 +1,3 @@
-// import React, { useState, useEffect } from "react";
-// import { useParams, useNavigate } from "react-router-dom";
-// import DashboardLayout from "../../components/DashboardLayout";
-// import { BASE_URL } from "../../api/api";
-// import {
-//   Package,
-//   QrCode,
-//   History,
-//   Truck,
-//   CheckCircle,
-//   Settings,
-//   Clock,
-//   RefreshCw,
-//   ArrowLeft,
-//   Plus,
-// } from "lucide-react";
-// import {
-//   StatCard,
-//   TabButton,
-//   PackingTab,
-//   HistoryTab,
-//   BagDetailsTab,
-//   DeliveryTab,
-//   ScanModal,
-//   DeliveryPartnerModal,
-//   AddExtraItemModal,
-// } from "../../pages/OrderManagement/BagQRScan";
-
-// const BagQRScan = () => {
-//   const { id } = useParams();
-//   const navigate = useNavigate();
-//   const [activeTab, setActiveTab] = useState("packing");
-//   const [loading, setLoading] = useState(true);
-//   const [orderData, setOrderData] = useState(null);
-//   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
-//   const [isDeliveryModalOpen, setIsDeliveryModalOpen] = useState(false);
-//   const [isAddExtraItemModalOpen, setIsAddExtraItemModalOpen] = useState(false);
-//   const [scanInput, setScanInput] = useState("");
-//   const [searchPartner, setSearchPartner] = useState("");
-//   const [selectedPartner, setSelectedPartner] = useState(null);
-//   const [assignmentStatus, setAssignmentStatus] = useState("pending");
-//   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-
-//   // Realistic Order Products
-//   const [orderProducts] = useState([
-//     {
-//       id: 1,
-//       name: "Samsung Galaxy M34 5G (Midnight Blue, 128GB)",
-//       sku: "MOBGW7FZYHQZQVZZ",
-//       quantity: 1,
-//       scanned: 0,
-//       qrCode: "QR-MOBGW7FZYHQZQVZZ",
-//       category: "Electronics",
-//       price: 16999,
-//       seller: "RetailNet",
-//     },
-//     {
-//       id: 2,
-//       name: "boAt Airdopes 141 Bluetooth Truly Wireless",
-//       sku: "ACCGQZ8HHGFQYHZX",
-//       quantity: 2,
-//       scanned: 0,
-//       qrCode: "QR-ACCGQZ8HHGFQYHZX",
-//       category: "Electronics",
-//       price: 1299,
-//       seller: "SuperComNet",
-//     },
-//     {
-//       id: 3,
-//       name: "Noise ColorFit Pro 4 Alpha Smart Watch",
-//       sku: "SMWGXB8YNF9KGDZH",
-//       quantity: 1,
-//       scanned: 0,
-//       qrCode: "QR-SMWGXB8YNF9KGDZH",
-//       category: "Wearables",
-//       price: 2499,
-//       seller: "WatchHub India",
-//     },
-//     {
-//       id: 4,
-//       name: "Pigeon by Stovekraft Favourite Electric Kettle",
-//       sku: "KTLHZX7VNMKQPWRT",
-//       quantity: 1,
-//       scanned: 0,
-//       qrCode: "QR-KTLHZX7VNMKQPWRT",
-//       category: "Home & Kitchen",
-//       price: 549,
-//       seller: "HomeEssentials",
-//     },
-//   ]);
-
-//   // Available products for adding extra items
-//   const [availableProducts] = useState([
-//     {
-//       id: 101,
-//       name: "Complimentary USB Cable (Type-C)",
-//       sku: "FREECABLE001",
-//       category: "Accessories",
-//       price: 0,
-//       seller: "RetailNet",
-//       qrCode: "QR-FREECABLE001",
-//     },
-//     {
-//       id: 102,
-//       name: "Free Sample - Face Cream 50ml",
-//       sku: "FREESAMPLE002",
-//       category: "Beauty & Personal Care",
-//       price: 0,
-//       seller: "BeautyHub",
-//       qrCode: "QR-FREESAMPLE002",
-//     },
-//     {
-//       id: 103,
-//       name: "Promotional Pen Set (Pack of 3)",
-//       sku: "PROMOPEN003",
-//       category: "Stationery",
-//       price: 0,
-//       seller: "OfficeWorld",
-//       qrCode: "QR-PROMOPEN003",
-//     },
-//     {
-//       id: 104,
-//       name: "Gift Card - ₹100",
-//       sku: "GIFTCARD100",
-//       category: "Gift Cards",
-//       price: 100,
-//       seller: "RetailNet",
-//       qrCode: "QR-GIFTCARD100",
-//     },
-//     {
-//       id: 105,
-//       name: "Microfiber Cleaning Cloth",
-//       sku: "FREECLOTH005",
-//       category: "Accessories",
-//       price: 0,
-//       seller: "TechStore",
-//       qrCode: "QR-FREECLOTH005",
-//     },
-//     {
-//       id: 106,
-//       name: "Battery Pack AAA (4 pcs)",
-//       sku: "BATTERY006",
-//       category: "Electronics",
-//       price: 99,
-//       seller: "PowerPlus",
-//       qrCode: "QR-BATTERY006",
-//     },
-//     {
-//       id: 107,
-//       name: "Sticky Notes Set (Multicolor)",
-//       sku: "STICKYNOTE007",
-//       category: "Stationery",
-//       price: 0,
-//       seller: "OfficeWorld",
-//       qrCode: "QR-STICKYNOTE007",
-//     },
-//     {
-//       id: 108,
-//       name: "Phone Stand Holder",
-//       sku: "PHONESTAND008",
-//       category: "Accessories",
-//       price: 0,
-//       seller: "TechStore",
-//       qrCode: "QR-PHONESTAND008",
-//     },
-//     {
-//       id: 109,
-//       name: "Screen Guard for Mobile",
-//       sku: "SCREENGUARD009",
-//       category: "Accessories",
-//       price: 149,
-//       seller: "MobileHub",
-//       qrCode: "QR-SCREENGUARD009",
-//     },
-//     {
-//       id: 110,
-//       name: "Keychain - Premium Metal",
-//       sku: "KEYCHAIN010",
-//       category: "Accessories",
-//       price: 0,
-//       seller: "GiftZone",
-//       qrCode: "QR-KEYCHAIN010",
-//     },
-//   ]);
-
-//   // Realistic Delivery Partners
-//   const [deliveryPartners] = useState([
-//     {
-//       id: 1,
-//       name: "Rajesh Kumar",
-//       phone: "+91 98765 43210",
-//       vehicle: "Bike",
-//       vehicleNo: "DL 8C AX 1234",
-//       rating: 4.8,
-//       deliveries: 2847,
-//       status: "available",
-//       currentLocation: "Nehru Place Hub",
-//       avatar: "https://i.pravatar.cc/150?img=12",
-//     },
-//     {
-//       id: 2,
-//       name: "Amit Sharma",
-//       phone: "+91 98765 43211",
-//       vehicle: "Bike",
-//       vehicleNo: "DL 3C AB 5678",
-//       rating: 4.6,
-//       deliveries: 1923,
-//       status: "available",
-//       currentLocation: "Connaught Place Hub",
-//       avatar: "https://i.pravatar.cc/150?img=13",
-//     },
-//     {
-//       id: 3,
-//       name: "Suresh Verma",
-//       phone: "+91 98765 43212",
-//       vehicle: "Auto",
-//       vehicleNo: "DL 1L AC 9012",
-//       rating: 4.9,
-//       deliveries: 3456,
-//       status: "on_delivery",
-//       currentLocation: "Out for delivery",
-//       avatar: "https://i.pravatar.cc/150?img=14",
-//     },
-//     {
-//       id: 4,
-//       name: "Vikram Singh",
-//       phone: "+91 98765 43213",
-//       vehicle: "Bike",
-//       vehicleNo: "DL 5S AZ 3456",
-//       rating: 4.7,
-//       deliveries: 2134,
-//       status: "available",
-//       currentLocation: "Saket Hub",
-//       avatar: "https://i.pravatar.cc/150?img=15",
-//     },
-//     {
-//       id: 5,
-//       name: "Rahul Joshi",
-//       phone: "+91 98765 43214",
-//       vehicle: "Van",
-//       vehicleNo: "DL 7C BX 7890",
-//       rating: 4.5,
-//       deliveries: 1567,
-//       status: "available",
-//       currentLocation: "Dwarka Hub",
-//       avatar: "https://i.pravatar.cc/150?img=16",
-//     },
-//   ]);
-
-//   const [products, setProducts] = useState(orderProducts);
-//   const [bagDetails, setBagDetails] = useState({
-//     bagNo: "",
-//     status: "Not Started",
-//     sealed: false,
-//     bagQRCode: "",
-//     startTime: null,
-//     completeTime: null,
-//     weight: "0.5 kg",
-//     dimensions: "30x25x15 cm",
-//   });
-
-//   const [scanHistory, setScanHistory] = useState([]);
-//   const [nextExtraId, setNextExtraId] = useState(1000);
-
-//   useEffect(() => {
-//     const timer = setTimeout(() => {
-//       setLoading(false);
-//     }, 500);
-//     return () => clearTimeout(timer);
-//   }, []);
-
-//   // Fetch order data on mount to get order number
-//   useEffect(() => {
-//     const fetchOrderData = async () => {
-//       try {
-//         const token =
-//           localStorage.getItem("token") || localStorage.getItem("authToken");
-
-//         const headers = {};
-//         if (token) {
-//           headers["Authorization"] = `Bearer ${token}`;
-//         }
-
-//         const response = await fetch(
-//           `${BASE_URL}/api/checkout/vendor/order/${id}`,
-//           {
-//             method: "GET",
-//             credentials: "include",
-//             headers: headers,
-//           },
-//         );
-
-//         if (response.ok) {
-//           const data = await response.json();
-//           if (data.success) {
-//             setOrderData(data.data);
-//             console.log("Order data fetched:", data.data);
-//           }
-//         }
-//       } catch (error) {
-//         console.error("Error fetching order data:", error);
-//       }
-//     };
-
-//     if (id) {
-//       fetchOrderData();
-//     }
-//   }, [id]);
-
-//   // Calculate packing progress
-//   const totalItems = products.reduce((sum, p) => sum + p.quantity, 0);
-//   const scannedItems = products.reduce((sum, p) => sum + p.scanned, 0);
-//   const packingProgress = ((scannedItems / totalItems) * 100).toFixed(0);
-//   const isPackingComplete = scannedItems === totalItems;
-
-//   // Calculate order value
-//   const orderValue = products.reduce((sum, p) => sum + p.price * p.quantity, 0);
-
-//   // API Function to Update Order Status
-//   const updateOrderStatus = async (status) => {
-//     setIsUpdatingStatus(true);
-//     try {
-//       // Get token from localStorage
-//       const token =
-//         localStorage.getItem("token") || localStorage.getItem("authToken");
-
-//       const headers = {
-//         "Content-Type": "application/json",
-//       };
-
-//       if (token) {
-//         headers["Authorization"] = `Bearer ${token}`;
-//       }
-
-//       // Use orderNumber if available, otherwise use id
-//       const orderId = orderData?.orderNumber || id;
-
-//       // Log the request details for debugging
-//       console.log("Updating order status:", {
-//         orderId: orderId,
-//         status: status,
-//         url: `${BASE_URL}/api/checkout/vendor/order/${orderId}/status`,
-//       });
-
-//       const response = await fetch(
-//         `${BASE_URL}/api/checkout/vendor/order/${orderId}/status`,
-//         {
-//           method: "PUT",
-//           credentials: "include",
-//           headers: headers,
-//           body: JSON.stringify({
-//             status: status,
-//           }),
-//         },
-//       );
-
-//       // Log response for debugging
-//       console.log("Response status:", response.status);
-
-//       const data = await response.json();
-//       console.log("Response data:", data);
-
-//       if (!response.ok || !data.success) {
-//         throw new Error(
-//           data.message || `Failed to update order status: ${response.status}`,
-//         );
-//       }
-
-//       console.log("Order status updated successfully:", data);
-//       return { success: true, data: data.data };
-//     } catch (error) {
-//       console.error("Error updating order status:", error);
-//       alert(`Failed to update order status: ${error.message}`);
-//       return { success: false, error: error.message };
-//     } finally {
-//       setIsUpdatingStatus(false);
-//     }
-//   };
-
-//   // Handle Add Extra Item
-//   const handleAddExtraItem = (product, quantity) => {
-//     const newExtraItem = {
-//       ...product,
-//       id: nextExtraId,
-//       quantity: quantity,
-//       scanned: 0,
-//       isExtra: true,
-//     };
-
-//     setProducts([...products, newExtraItem]);
-//     setNextExtraId(nextExtraId + 1);
-
-//     const newScan = {
-//       id: scanHistory.length + 1,
-//       productName: product.name,
-//       sku: product.sku,
-//       time: new Date().toLocaleString(),
-//       status: "extra_added",
-//       operator: "Packing Operator #47",
-//     };
-//     setScanHistory([newScan, ...scanHistory]);
-
-//     alert(
-//       `✅ Extra Item Added!\n\n${product.name}\nQuantity: ${quantity}\n\nRemember to scan these items before sealing the bag.`,
-//     );
-//     setIsAddExtraItemModalOpen(false);
-//   };
-
-//   // Handle Remove Extra Item
-//   const handleRemoveExtraItem = (productId) => {
-//     const product = products.find((p) => p.id === productId);
-//     if (
-//       confirm(
-//         `🗑️ Remove extra item?\n\n${product.name}\n\nThis action cannot be undone.`,
-//       )
-//     ) {
-//       setProducts(products.filter((p) => p.id !== productId));
-//       alert(`✅ Extra item removed successfully!`);
-//     }
-//   };
-
-//   // Handle Item Scan
-//   const handleScanItem = () => {
-//     const scannedCode = scanInput.trim().toUpperCase();
-
-//     if (!scannedCode) {
-//       alert("⚠️ Please enter or scan a QR code!");
-//       return;
-//     }
-
-//     const productIndex = products.findIndex(
-//       (p) =>
-//         p.qrCode.toUpperCase() === scannedCode ||
-//         p.sku.toUpperCase() === scannedCode,
-//     );
-
-//     if (productIndex === -1) {
-//       alert("❌ Invalid QR Code! This item is not in this bag.");
-//       setScanInput("");
-//       return;
-//     }
-
-//     const product = products[productIndex];
-
-//     if (product.scanned >= product.quantity) {
-//       alert(
-//         `⚠️ ${product.name}\nAlready fully scanned! (${product.scanned}/${product.quantity})`,
-//       );
-//       setScanInput("");
-//       return;
-//     }
-
-//     const updatedProducts = [...products];
-//     updatedProducts[productIndex].scanned += 1;
-//     setProducts(updatedProducts);
-
-//     const newScan = {
-//       id: scanHistory.length + 1,
-//       productName: product.name,
-//       sku: product.sku,
-//       time: new Date().toLocaleString(),
-//       status: "scanned",
-//       operator: "Packing Operator #47",
-//     };
-//     setScanHistory([newScan, ...scanHistory]);
-
-//     if (scannedItems === 0) {
-//       setBagDetails({
-//         ...bagDetails,
-//         status: "Packing in Progress",
-//         startTime: new Date().toLocaleString(),
-//       });
-//     }
-
-//     alert(
-//       `✅ Item Scanned Successfully!\n${product.name}\nScanned: ${
-//         product.scanned + 1
-//       }/${product.quantity}${product.isExtra ? " (EXTRA ITEM)" : ""}`,
-//     );
-//     setScanInput("");
-//     setIsScanModalOpen(false);
-//   };
-
-//   // Handle Manual Increment/Decrement
-//   const handleManualUpdate = (productId, action) => {
-//     const updatedProducts = products.map((p) => {
-//       if (p.id === productId) {
-//         if (action === "increment" && p.scanned < p.quantity) {
-//           const newScanned = p.scanned + 1;
-//           const newScan = {
-//             id: scanHistory.length + 1,
-//             productName: p.name,
-//             sku: p.sku,
-//             time: new Date().toLocaleString(),
-//             status: "manual",
-//             operator: "Packing Operator #47",
-//           };
-//           setScanHistory([newScan, ...scanHistory]);
-//           return { ...p, scanned: newScanned };
-//         } else if (action === "decrement" && p.scanned > 0) {
-//           return { ...p, scanned: p.scanned - 1 };
-//         }
-//       }
-//       return p;
-//     });
-//     setProducts(updatedProducts);
-//   };
-
-//   // Handle Complete Packing & Seal Bag with API Integration
-//   const handleCompletePacking = async () => {
-//     if (!isPackingComplete) {
-//       alert("⚠️ Please scan all items before sealing the bag!");
-//       return;
-//     }
-
-//     const bagNumber = `BAG${Date.now().toString().slice(-8)}`;
-//     const qrCode = `FKMP${Date.now().toString().slice(-10)}`;
-
-//     // Update order status to "ready" via API
-//     const result = await updateOrderStatus("ready");
-
-//     if (!result.success) {
-//       alert(
-//         `❌ Failed to update order status!\n\nError: ${result.error}\n\nPlease try again.`,
-//       );
-//       return;
-//     }
-
-//     setBagDetails({
-//       ...bagDetails,
-//       bagNo: bagNumber,
-//       bagQRCode: qrCode,
-//       status: "Ready for Pickup",
-//       sealed: true,
-//       completeTime: new Date().toLocaleString(),
-//     });
-
-//     const extraItemsCount = products.filter((p) => p.isExtra).length;
-//     const extraItemsText =
-//       extraItemsCount > 0
-//         ? `\n\n📦 Includes ${extraItemsCount} extra item(s)`
-//         : "";
-
-//     alert(
-//       `✅ Bag Packed & Sealed Successfully!\n\nBag Number: ${bagNumber}\nQR Code: ${qrCode}${extraItemsText}\n\n🔄 Order status updated to "ready" in the system.\n\nBag is now ready for delivery partner assignment.`,
-//     );
-//   };
-
-//   // Handle Reset Packing
-//   const handleResetPacking = () => {
-//     if (confirm("⚠️ Are you sure you want to reset all packing progress?")) {
-//       setProducts(orderProducts);
-//       setBagDetails({
-//         bagNo: "",
-//         status: "Not Started",
-//         sealed: false,
-//         bagQRCode: "",
-//         startTime: null,
-//         completeTime: null,
-//         weight: "0.5 kg",
-//         dimensions: "30x25x15 cm",
-//       });
-//       setScanHistory([]);
-//       setSelectedPartner(null);
-//       setAssignmentStatus("pending");
-//       setNextExtraId(1000);
-//       alert("🔄 Packing reset successfully!");
-//     }
-//   };
-
-//   // Handle Assign Delivery Partner
-//   const handleAssignPartner = () => {
-//     if (!bagDetails.sealed) {
-//       alert("⚠️ Please complete and seal the bag first!");
-//       return;
-//     }
-//     setIsDeliveryModalOpen(true);
-//   };
-
-//   // Handle Confirm Assignment
-//   const handleConfirmAssignment = () => {
-//     if (!selectedPartner) {
-//       alert("⚠️ Please select a delivery partner!");
-//       return;
-//     }
-
-//     setAssignmentStatus("assigned");
-//     setIsDeliveryModalOpen(false);
-
-//     alert(
-//       `✅ Delivery Partner Assigned!\n\n` +
-//         `Partner: ${selectedPartner.name}\n` +
-//         `Phone: ${selectedPartner.phone}\n` +
-//         `Vehicle: ${selectedPartner.vehicle} (${selectedPartner.vehicleNo})\n` +
-//         `Bag: ${bagDetails.bagNo}\n\n` +
-//         `The delivery partner will arrive at the hub shortly.`,
-//     );
-//   };
-
-//   // Handle Mark as Picked Up
-//   const handleMarkPickedUp = () => {
-//     if (assignmentStatus !== "assigned") {
-//       alert("⚠️ Please assign a delivery partner first!");
-//       return;
-//     }
-
-//     if (
-//       confirm(`🚚 Confirm that ${selectedPartner.name} has picked up the bag?`)
-//     ) {
-//       setAssignmentStatus("picked_up");
-//       alert(
-//         `✅ Bag Picked Up!\n\n` +
-//           `Bag ${bagDetails.bagNo} has been picked up by ${selectedPartner.name}.\n` +
-//           `The package is now out for delivery.`,
-//       );
-//     }
-//   };
-
-//   // Filter available partners
-//   const availablePartners = deliveryPartners.filter(
-//     (p) =>
-//       p.status === "available" &&
-//       p.name.toLowerCase().includes(searchPartner.toLowerCase()),
-//   );
-
-//   const handleGoBack = () => {
-//     navigate(`/order/${id}`);
-//   };
-
-//   if (loading) {
-//     return (
-//       <div className="w-full min-h-screen p-6 animate-pulse bg-gray-50">
-//         <div className="bg-gradient-to-r from-orange-200 to-red-200 rounded-lg h-40 mb-6"></div>
-//         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-//           {[1, 2, 3, 4].map((i) => (
-//             <div key={i} className="bg-gray-200 rounded-lg h-32"></div>
-//           ))}
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   const extraItemsCount = products.filter((p) => p.isExtra).length;
-
-//   return (
-//     <DashboardLayout>
-//       <div className="w-full min-h-screen ml-4 p-2 bg-gray-0">
-//         {/* Header */}
-//         <div className="bg-white rounded-lg shadow-lg p-6 mb-6 border-l-4 border-orange-500">
-//           <button
-//             onClick={handleGoBack}
-//             className="mb-4 flex items-center gap-2 text-gray-700 hover:text-orange-500 font-semibold transition-colors"
-//           >
-//             <ArrowLeft size={20} />
-//             Back to Order Details
-//           </button>
-//           <div className="flex items-center gap-4">
-//             <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-lg">
-//               <Package className="text-white" size={32} />
-//             </div>
-//             <div>
-//               <h1 className="text-3xl font-bold text-gray-900">
-//                 Bag Packing & QR Scanning
-//               </h1>
-//               <p className="text-gray-600 mt-1 font-medium">
-//                 Order ID:{" "}
-//                 <span className="text-orange-500 font-bold">
-//                   {id || "OD8038403974"}
-//                 </span>
-//                 <span className="mx-2">•</span>
-//                 <span className="text-gray-500">
-//                   ₹{orderValue.toLocaleString("en-IN")}
-//                 </span>
-//                 {extraItemsCount > 0 && (
-//                   <>
-//                     <span className="mx-2">•</span>
-//                     <span className="text-purple-600 font-bold">
-//                       +{extraItemsCount} Extra Item
-//                       {extraItemsCount > 1 ? "s" : ""}
-//                     </span>
-//                   </>
-//                 )}
-//               </p>
-//             </div>
-//           </div>
-//         </div>
-
-//         {/* Progress Stats */}
-//         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-//           <StatCard
-//             icon={<Package className="text-orange-500" size={32} />}
-//             label="Total Items"
-//             value={totalItems}
-//             color="orange"
-//           />
-//           <StatCard
-//             icon={<CheckCircle className="text-green-500" size={32} />}
-//             label="Scanned"
-//             value={scannedItems}
-//             color="green"
-//           />
-//           <StatCard
-//             icon={<Settings className="text-blue-500" size={32} />}
-//             label="Progress"
-//             value={`${packingProgress}%`}
-//             color="blue"
-//           />
-//           <StatCard
-//             icon={
-//               bagDetails.sealed ? (
-//                 <CheckCircle className="text-purple-500" size={32} />
-//               ) : (
-//                 <Clock className="text-purple-500" size={32} />
-//               )
-//             }
-//             label="Status"
-//             value={bagDetails.status}
-//             color="purple"
-//             small
-//           />
-//         </div>
-
-//         {/* Progress Bar */}
-//         <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-//           <div className="flex justify-between items-center mb-3">
-//             <h3 className="font-bold text-gray-900 text-lg">
-//               Packing Progress
-//             </h3>
-//             <span className="font-bold text-orange-500">
-//               {scannedItems}/{totalItems} Items
-//             </span>
-//           </div>
-//           <div className="w-full bg-gray-200 rounded-full h-8 overflow-hidden shadow-inner">
-//             <div
-//               className="bg-gradient-to-r from-orange-500 to-orange-600 h-full transition-all duration-500 flex items-center justify-center"
-//               style={{ width: `${packingProgress}%` }}
-//             >
-//               {packingProgress > 10 && (
-//                 <span className="text-white font-bold text-sm">
-//                   {packingProgress}%
-//                 </span>
-//               )}
-//             </div>
-//           </div>
-//         </div>
-
-//         {/* Tabs */}
-//         <div className="bg-white rounded-lg shadow-md mb-6">
-//           <div className="flex border-b overflow-x-auto">
-//             <TabButton
-//               active={activeTab === "packing"}
-//               onClick={() => setActiveTab("packing")}
-//               icon={<Package size={20} />}
-//               label="Item Packing"
-//             />
-//             <TabButton
-//               active={activeTab === "history"}
-//               onClick={() => setActiveTab("history")}
-//               icon={<History size={20} />}
-//               label="Scan History"
-//             />
-//             <TabButton
-//               active={activeTab === "bag"}
-//               onClick={() => setActiveTab("bag")}
-//               icon={<QrCode size={20} />}
-//               label="Bag Details"
-//             />
-//             <TabButton
-//               active={activeTab === "delivery"}
-//               onClick={() => setActiveTab("delivery")}
-//               icon={<Truck size={20} />}
-//               label="Delivery Partner"
-//             />
-//           </div>
-
-//           <div className="p-6">
-//             {activeTab === "packing" && (
-//               <PackingTab
-//                 products={products}
-//                 bagDetails={bagDetails}
-//                 setIsScanModalOpen={setIsScanModalOpen}
-//                 handleManualUpdate={handleManualUpdate}
-//                 handleRemoveExtraItem={handleRemoveExtraItem}
-//                 setIsAddExtraItemModalOpen={setIsAddExtraItemModalOpen}
-//               />
-//             )}
-
-//             {activeTab === "history" && (
-//               <HistoryTab scanHistory={scanHistory} />
-//             )}
-
-//             {activeTab === "bag" && (
-//               <BagDetailsTab
-//                 bagDetails={bagDetails}
-//                 id={id}
-//                 orderValue={orderValue}
-//                 totalItems={totalItems}
-//               />
-//             )}
-
-//             {activeTab === "delivery" && (
-//               <DeliveryTab
-//                 assignmentStatus={assignmentStatus}
-//                 selectedPartner={selectedPartner}
-//                 bagDetails={bagDetails}
-//                 handleAssignPartner={handleAssignPartner}
-//                 handleMarkPickedUp={handleMarkPickedUp}
-//                 id={id}
-//                 totalItems={totalItems}
-//                 orderValue={orderValue}
-//               />
-//             )}
-//           </div>
-//         </div>
-
-//         {/* Action Buttons */}
-//         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-//           <button
-//             onClick={() => navigate(`/orders/${id}/add-extra-items`)}
-//             disabled={bagDetails.sealed || isUpdatingStatus}
-//             className={`${
-//               bagDetails.sealed || isUpdatingStatus
-//                 ? "bg-gray-400 cursor-not-allowed"
-//                 : "bg-purple-500 hover:bg-purple-600"
-//             } text-white px-6 py-5 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all text-lg flex items-center justify-center gap-2`}
-//           >
-//             <Plus size={24} />
-//             Add Extra
-//           </button>
-//           <button
-//             onClick={() => setIsScanModalOpen(true)}
-//             disabled={bagDetails.sealed || isUpdatingStatus}
-//             className={`${
-//               bagDetails.sealed || isUpdatingStatus
-//                 ? "bg-gray-400 cursor-not-allowed"
-//                 : "bg-orange-500 hover:bg-orange-600"
-//             } text-white px-6 py-5 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all text-lg flex items-center justify-center gap-2`}
-//           >
-//             <QrCode size={24} />
-//             Scan Item
-//           </button>
-//           <button
-//             onClick={handleCompletePacking}
-//             disabled={
-//               !isPackingComplete || bagDetails.sealed || isUpdatingStatus
-//             }
-//             className={`${
-//               !isPackingComplete || bagDetails.sealed || isUpdatingStatus
-//                 ? "bg-gray-400 cursor-not-allowed"
-//                 : "bg-green-600 hover:bg-green-700"
-//             } text-white px-6 py-5 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all text-lg flex items-center justify-center gap-2`}
-//           >
-//             {isUpdatingStatus ? (
-//               <>
-//                 <RefreshCw size={24} className="animate-spin" />
-//                 Updating...
-//               </>
-//             ) : (
-//               <>
-//                 <CheckCircle size={24} />
-//                 {bagDetails.sealed ? "Bag Sealed" : "Seal Bag"}
-//               </>
-//             )}
-//           </button>
-//           <button
-//             onClick={handleAssignPartner}
-//             disabled={!bagDetails.sealed || assignmentStatus !== "pending"}
-//             className={`${
-//               !bagDetails.sealed || assignmentStatus !== "pending"
-//                 ? "bg-gray-400 cursor-not-allowed"
-//                 : "bg-blue-600 hover:bg-blue-700"
-//             } text-white px-6 py-5 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all text-lg flex items-center justify-center gap-2`}
-//           >
-//             <Truck size={24} />
-//             {assignmentStatus === "pending"
-//               ? "Assign Partner"
-//               : "Partner Assigned"}
-//           </button>
-//           <button
-//             onClick={handleResetPacking}
-//             disabled={isUpdatingStatus}
-//             className={`${
-//               isUpdatingStatus
-//                 ? "bg-gray-400 cursor-not-allowed"
-//                 : "bg-red-600 hover:bg-red-700"
-//             } text-white px-6 py-5 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all text-lg flex items-center justify-center gap-2`}
-//           >
-//             <RefreshCw size={24} />
-//             Reset
-//           </button>
-//         </div>
-
-//         {/* Modals */}
-//         <ScanModal
-//           isOpen={isScanModalOpen}
-//           onClose={() => {
-//             setIsScanModalOpen(false);
-//             setScanInput("");
-//           }}
-//           scanInput={scanInput}
-//           setScanInput={setScanInput}
-//           onSubmit={handleScanItem}
-//           products={products}
-//         />
-
-//         <DeliveryPartnerModal
-//           isOpen={isDeliveryModalOpen}
-//           onClose={() => {
-//             setIsDeliveryModalOpen(false);
-//             setSelectedPartner(null);
-//             setSearchPartner("");
-//           }}
-//           searchPartner={searchPartner}
-//           setSearchPartner={setSearchPartner}
-//           availablePartners={availablePartners}
-//           selectedPartner={selectedPartner}
-//           setSelectedPartner={setSelectedPartner}
-//           onConfirm={handleConfirmAssignment}
-//           bagDetails={bagDetails}
-//           orderId={id || "OD8038403974"}
-//           totalItems={totalItems}
-//           orderValue={orderValue}
-//         />
-
-//         <AddExtraItemModal
-//           isOpen={isAddExtraItemModalOpen}
-//           onClose={() => setIsAddExtraItemModalOpen(false)}
-//           onAddItem={handleAddExtraItem}
-//           availableProducts={availableProducts}
-//         />
-//       </div>
-//     </DashboardLayout>
-//   );
-// };
-
-// export default BagQRScan;
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
@@ -952,6 +16,14 @@ import {
   X,
   MapPin,
   Navigation,
+  ChevronRight,
+  AlertCircle,
+  ScanLine,
+  Box,
+  User,
+  Phone,
+  Star,
+  Bike,
 } from "lucide-react";
 import {
   StatCard,
@@ -965,6 +37,135 @@ import {
   AddExtraItemModal,
 } from "../../pages/OrderManagement/BagQRScan";
 
+/* ─────────────── design tokens ─────────────── */
+const PRIMARY = "#FF7B1D";
+
+/* ─────────────── small shared components ─────────────── */
+const SectionCard = ({
+  title,
+  icon: Icon,
+  accentColor = "orange",
+  children,
+  className = "",
+}) => {
+  const bars = {
+    orange: { top: "border-t-[#FF7B1D]", hdr: "from-[#FF7B1D] to-orange-400" },
+    green: {
+      top: "border-t-emerald-500",
+      hdr: "from-emerald-500 to-emerald-400",
+    },
+    blue: { top: "border-t-blue-500", hdr: "from-blue-500 to-blue-400" },
+    purple: {
+      top: "border-t-violet-500",
+      hdr: "from-violet-500 to-violet-400",
+    },
+  };
+  const c = bars[accentColor] || bars.orange;
+  return (
+    <div
+      className={`bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 border-t-4 ${c.top} ${className}`}
+    >
+      <div
+        className={`bg-gradient-to-r ${c.hdr} px-5 py-3.5 flex items-center gap-2`}
+      >
+        {Icon && <Icon className="w-4 h-4 text-white opacity-90" />}
+        <span className="text-sm font-bold text-white">{title}</span>
+      </div>
+      {children}
+    </div>
+  );
+};
+
+const StatPill = ({ icon: Icon, label, value, color }) => {
+  const colors = {
+    orange: {
+      bg: "bg-orange-50",
+      icon: "text-[#FF7B1D]",
+      val: "text-[#FF7B1D]",
+      border: "border-orange-100",
+    },
+    green: {
+      bg: "bg-emerald-50",
+      icon: "text-emerald-600",
+      val: "text-emerald-700",
+      border: "border-emerald-100",
+    },
+    blue: {
+      bg: "bg-blue-50",
+      icon: "text-blue-600",
+      val: "text-blue-700",
+      border: "border-blue-100",
+    },
+    purple: {
+      bg: "bg-violet-50",
+      icon: "text-violet-600",
+      val: "text-violet-700",
+      border: "border-violet-100",
+    },
+  };
+  const c = colors[color] || colors.orange;
+  return (
+    <div
+      className={`${c.bg} border ${c.border} rounded-2xl p-4 flex items-center gap-3`}
+    >
+      <div
+        className={`w-10 h-10 rounded-xl ${c.bg} flex items-center justify-center flex-shrink-0 border ${c.border}`}
+      >
+        <Icon className={`w-5 h-5 ${c.icon}`} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-0.5">
+          {label}
+        </p>
+        <p className={`text-lg font-bold ${c.val} leading-tight truncate`}>
+          {value}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+const TabBtn = ({ active, onClick, icon: Icon, label, badge }) => (
+  <button
+    onClick={onClick}
+    className={`flex items-center gap-2 px-5 py-3 text-xs font-semibold transition-all duration-200 border-b-2 whitespace-nowrap ${
+      active
+        ? "border-[#FF7B1D] text-[#FF7B1D] bg-orange-50/60"
+        : "border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+    }`}
+  >
+    <Icon className="w-4 h-4" />
+    {label}
+    {badge != null && (
+      <span
+        className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${active ? "bg-[#FF7B1D] text-white" : "bg-gray-200 text-gray-500"}`}
+      >
+        {badge}
+      </span>
+    )}
+  </button>
+);
+
+/* ─────────────── skeleton ─────────────── */
+const PageSkeleton = () => (
+  <DashboardLayout>
+    <div className="p-5 space-y-5 animate-pulse">
+      <div className="h-24 bg-white rounded-2xl border border-gray-100 shadow-sm" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className="h-20 bg-orange-50 rounded-2xl border border-orange-100"
+          />
+        ))}
+      </div>
+      <div className="h-16 bg-white rounded-2xl border border-gray-100 shadow-sm" />
+      <div className="h-64 bg-white rounded-2xl border border-gray-100 shadow-sm" />
+    </div>
+  </DashboardLayout>
+);
+
+/* ─────────────── main ─────────────── */
 const BagQRScan = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -980,15 +181,15 @@ const BagQRScan = () => {
   const [assignmentStatus, setAssignmentStatus] = useState("pending");
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isScanningItem, setIsScanningItem] = useState(false);
-  const [isDeliveryAmountModalOpen, setIsDeliveryAmountModalOpen] = useState(false);
+  const [isDeliveryAmountModalOpen, setIsDeliveryAmountModalOpen] =
+    useState(false);
   const [distance, setDistance] = useState(null);
   const [expectedTime, setExpectedTime] = useState(null);
   const [showWaitingAnimation, setShowWaitingAnimation] = useState(false);
-  const [countdown, setCountdown] = useState(5); // 5 seconds
+  const [countdown, setCountdown] = useState(5);
   const countdownIntervalRef = useRef(null);
   const redirectTimeoutRef = useRef(null);
 
-  // Available products for adding extra items
   const [availableProducts] = useState([
     {
       id: 101,
@@ -1035,54 +236,8 @@ const BagQRScan = () => {
       seller: "TechStore",
       qrCode: "QR-FREECLOTH005",
     },
-    {
-      id: 106,
-      name: "Battery Pack AAA (4 pcs)",
-      sku: "BATTERY006",
-      category: "Electronics",
-      price: 99,
-      seller: "PowerPlus",
-      qrCode: "QR-BATTERY006",
-    },
-    {
-      id: 107,
-      name: "Sticky Notes Set (Multicolor)",
-      sku: "STICKYNOTE007",
-      category: "Stationery",
-      price: 0,
-      seller: "OfficeWorld",
-      qrCode: "QR-STICKYNOTE007",
-    },
-    {
-      id: 108,
-      name: "Phone Stand Holder",
-      sku: "PHONESTAND008",
-      category: "Accessories",
-      price: 0,
-      seller: "TechStore",
-      qrCode: "QR-PHONESTAND008",
-    },
-    {
-      id: 109,
-      name: "Screen Guard for Mobile",
-      sku: "SCREENGUARD009",
-      category: "Accessories",
-      price: 149,
-      seller: "MobileHub",
-      qrCode: "QR-SCREENGUARD009",
-    },
-    {
-      id: 110,
-      name: "Keychain - Premium Metal",
-      sku: "KEYCHAIN010",
-      category: "Accessories",
-      price: 0,
-      seller: "GiftZone",
-      qrCode: "QR-KEYCHAIN010",
-    },
   ]);
 
-  // Realistic Delivery Partners
   const [deliveryPartners] = useState([
     {
       id: 1,
@@ -1132,18 +287,6 @@ const BagQRScan = () => {
       currentLocation: "Saket Hub",
       avatar: "https://i.pravatar.cc/150?img=15",
     },
-    {
-      id: 5,
-      name: "Rahul Joshi",
-      phone: "+91 98765 43214",
-      vehicle: "Van",
-      vehicleNo: "DL 7C BX 7890",
-      rating: 4.5,
-      deliveries: 1567,
-      status: "available",
-      currentLocation: "Dwarka Hub",
-      avatar: "https://i.pravatar.cc/150?img=16",
-    },
   ]);
 
   const [products, setProducts] = useState([]);
@@ -1157,55 +300,35 @@ const BagQRScan = () => {
     weight: "0.5 kg",
     dimensions: "30x25x15 cm",
   });
-
   const [scanHistory, setScanHistory] = useState([]);
   const [nextExtraId, setNextExtraId] = useState(1000);
 
-  // Helper function to get auth headers
   const getAuthHeaders = () => {
     const token =
       localStorage.getItem("token") || localStorage.getItem("authToken");
-    const headers = {
-      "Content-Type": "application/json",
-    };
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
     return headers;
   };
 
-  // Fetch order data and items on mount
   useEffect(() => {
     const fetchOrderData = async () => {
       try {
         setLoading(true);
         const headers = getAuthHeaders();
-
-        // Fetch order details using the ID from URL params
         const orderResponse = await fetch(
           `${BASE_URL}/api/checkout/vendor/order/${id}`,
-          {
-            method: "GET",
-            credentials: "include",
-            headers: headers,
-          },
+          { method: "GET", credentials: "include", headers },
         );
-
-        if (!orderResponse.ok) {
+        if (!orderResponse.ok)
           throw new Error(`Failed to fetch order: ${orderResponse.status}`);
-        }
-
         const orderData = await orderResponse.json();
-        if (!orderData.success || !orderData.data) {
+        if (!orderData.success || !orderData.data)
           throw new Error("Invalid order data received");
-        }
-
         setOrderData(orderData.data);
-
-        // Transform items from order data
         if (orderData.data.items && Array.isArray(orderData.data.items)) {
-          const transformedProducts = orderData.data.items.map(
-            (item, index) => ({
+          setProducts(
+            orderData.data.items.map((item, index) => ({
               id: index + 1,
               productId: item.product?._id || item._id,
               name: item.productName || "Unknown Product",
@@ -1217,9 +340,8 @@ const BagQRScan = () => {
               price: item.salePrice || item.unitPrice || 0,
               seller: item.vendor?.storeName || "Unknown Seller",
               thumbnail: item.thumbnail?.url || item.image?.url || null,
-            }),
+            })),
           );
-          setProducts(transformedProducts);
         }
       } catch (error) {
         alert(`Failed to load order data: ${error.message}`);
@@ -1227,147 +349,74 @@ const BagQRScan = () => {
         setLoading(false);
       }
     };
-
-    if (id) {
-      fetchOrderData();
-    }
+    if (id) fetchOrderData();
   }, [id]);
 
-  // Calculate packing progress
   const totalItems = products.reduce((sum, p) => sum + p.quantity, 0);
   const scannedItems = products.reduce((sum, p) => sum + p.scanned, 0);
   const packingProgress =
     totalItems > 0 ? ((scannedItems / totalItems) * 100).toFixed(0) : 0;
   const isPackingComplete = totalItems > 0 && scannedItems === totalItems;
-
-  // Calculate order value
   const orderValue = products.reduce((sum, p) => sum + p.price * p.quantity, 0);
+  const extraItemsCount = products.filter((p) => p.isExtra).length;
 
-  // API Function to scan QR code (check if product exists)
   const scanQRCode = async (productId) => {
     try {
       const headers = getAuthHeaders();
-
       const response = await fetch(`${BASE_URL}/api/product/scan-qr`, {
         method: "POST",
         credentials: "include",
-        headers: headers,
-        body: JSON.stringify({
-          productId: productId,
-        }),
+        headers,
+        body: JSON.stringify({ productId }),
       });
-
       const data = await response.json();
-
-      if (!response.ok || !data.success) {
+      if (!response.ok || !data.success)
         throw new Error(data.message || "Failed to scan QR code");
-      }
-
       return { success: true, exists: data.exists };
     } catch (error) {
       return { success: false, error: error.message };
     }
   };
 
-  // API Function to Add Items to Order
   const addItemsToOrder = async (itemsToAdd) => {
     try {
       const headers = getAuthHeaders();
-
-      // Use MongoDB _id for the API call
       const mongoId = orderData?._id || id;
-
       const response = await fetch(
         `${BASE_URL}/api/checkout/vendor/order/${mongoId}/items`,
         {
           method: "POST",
           credentials: "include",
-          headers: headers,
-          body: JSON.stringify({
-            items: itemsToAdd,
-          }),
+          headers,
+          body: JSON.stringify({ items: itemsToAdd }),
         },
       );
-
       const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to add items to order");
-      }
-
+      if (!response.ok || !data.success)
+        throw new Error(data.message || "Failed to add items");
       return { success: true, data: data.data };
     } catch (error) {
       return { success: false, error: error.message };
     }
   };
 
-  // API Function to Update Order Status
   const updateOrderStatus = async (status) => {
     try {
       const headers = getAuthHeaders();
-
-      // IMPORTANT: Use MongoDB _id for the API call, not orderNumber
       const mongoId = orderData?._id || id;
-
-      const requestBody = {
-        status: status,
-      };
-
       const response = await fetch(
         `${BASE_URL}/api/checkout/vendor/order/${mongoId}/status`,
         {
           method: "PUT",
           credentials: "include",
-          headers: headers,
-          body: JSON.stringify(requestBody),
+          headers,
+          body: JSON.stringify({ status }),
         },
       );
-
       const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(
-          data.message || `Failed to update order status: ${response.status}`,
-        );
-      }
-
-      // Update local orderData state with the new data from response
-      if (data.data) {
-        setOrderData(data.data);
-      }
-
-      // Auto-generate PDF if status is updated to "order_placed"
-      if (status && status.toLowerCase() === "order_placed" && data.data?.orderNumber) {
-        try {
-          console.log("========================================");
-          console.log("📄 AUTO-GENERATING INVOICE PDF (from status update):");
-          console.log("Order Number:", data.data.orderNumber);
-          console.log("Status:", status);
-          console.log("API Endpoint:", `${BASE_URL}/api/invoice/order/${data.data.orderNumber}/generate-pdf`);
-          console.log("========================================");
-
-          const pdfResponse = await fetch(
-            `${BASE_URL}/api/invoice/order/${data.data.orderNumber}/generate-pdf`,
-            {
-              method: "POST",
-              credentials: "include",
-              headers: headers,
-            },
-          );
-
-          const pdfResult = await pdfResponse.json();
-
-          if (pdfResponse.ok && pdfResult.success) {
-            console.log("✅ Invoice PDF generated successfully:", pdfResult);
-          } else {
-            console.warn("⚠️ Failed to generate invoice PDF:", pdfResult.message || "Unknown error");
-          }
-        } catch (pdfError) {
-          console.error("❌ Error generating invoice PDF:", pdfError);
-          // Don't throw error, just log it - status update was successful
-        }
-      }
-
+      if (!response.ok || !data.success)
+        throw new Error(data.message || `Failed to update status`);
+      if (data.data) setOrderData(data.data);
       return { success: true, data: data.data };
     } catch (error) {
       return { success: false, error: error.message };
@@ -1376,133 +425,80 @@ const BagQRScan = () => {
     }
   };
 
-  // Handle Add Extra Item with API
   const handleAddExtraItem = async (product, quantity) => {
     try {
-      // Get token from localStorage
       const token =
         localStorage.getItem("token") || localStorage.getItem("authToken");
-
       if (!token) {
-        alert("⚠️ Authentication required. Please login again.");
+        alert("⚠️ Authentication required.");
         return;
       }
-
-      // Get orderId from orderData (MongoDB _id) or params
-      // API requires MongoDB _id, not orderNumber
       const orderId = orderData?._id || id;
-      
-      if (!orderId) {
-        alert("⚠️ Order ID not found. Please wait for order data to load or refresh the page.");
-        return;
-      }
-
-      // Get productId from product object (MongoDB _id required for API)
       const productId = product.productId || product._id;
-      
       if (!productId) {
-        alert("⚠️ Product ID not found. This product may not be available in the system.\n\nPlease select a product with a valid Product ID.");
-        console.error("Product object missing productId:", product);
+        alert("⚠️ Product ID not found.");
         return;
       }
-      
-      // Validate productId format (should be MongoDB ObjectId)
-      if (typeof productId !== 'string' || productId.length < 10) {
-        alert("⚠️ Invalid Product ID format. Please select a valid product.");
-        return;
-      }
-
       const headers = {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       };
-
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
-      const apiUrl = `${BASE_URL}/api/checkout/vendor/order/${orderId}/items`;
-
-      const requestBody = {
-        items: [
-          {
-            productId: productId,
-            quantity: quantity,
-          },
-        ],
-      };
-
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        credentials: "include",
-        headers: headers,
-        body: JSON.stringify(requestBody),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || `Failed to add extra item: ${response.status}`);
-      }
-
-      // API call successful - update local state
-      const newExtraItem = {
-        ...product,
-        id: nextExtraId,
-        quantity: quantity,
-        scanned: 0,
-        isExtra: true,
-        productId: productId,
-      };
-
-      // Add to local state
-      setProducts([...products, newExtraItem]);
-      setNextExtraId(nextExtraId + 1);
-
-      const newScan = {
-        id: scanHistory.length + 1,
-        productName: product.name,
-        sku: product.sku,
-        time: new Date().toLocaleString(),
-        status: "extra_added",
-        operator: "Packing Operator",
-      };
-      setScanHistory([newScan, ...scanHistory]);
-
-      alert(
-        `✅ Extra Item Added Successfully!\n\n${product.name}\nQuantity: ${quantity}\n\nRemember to scan these items before sealing the bag.`,
+      const response = await fetch(
+        `${BASE_URL}/api/checkout/vendor/order/${orderId}/items`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers,
+          body: JSON.stringify({ items: [{ productId, quantity }] }),
+        },
       );
+      const result = await response.json();
+      if (!response.ok || !result.success)
+        throw new Error(result.message || "Failed to add extra item");
+      setProducts([
+        ...products,
+        {
+          ...product,
+          id: nextExtraId,
+          quantity,
+          scanned: 0,
+          isExtra: true,
+          productId,
+        },
+      ]);
+      setNextExtraId(nextExtraId + 1);
+      setScanHistory([
+        {
+          id: scanHistory.length + 1,
+          productName: product.name,
+          sku: product.sku,
+          time: new Date().toLocaleString(),
+          status: "extra_added",
+          operator: "Packing Operator",
+        },
+        ...scanHistory,
+      ]);
+      alert(`✅ Extra Item Added!\n\n${product.name}\nQty: ${quantity}`);
       setIsAddExtraItemModalOpen(false);
-
-      // Optionally refresh order data to get updated items
     } catch (error) {
-      alert(`❌ Failed to add extra item: ${error.message}\n\nPlease try again.`);
+      alert(`❌ Failed to add extra item: ${error.message}`);
     }
   };
 
-  // Handle Remove Extra Item
   const handleRemoveExtraItem = (productId) => {
     const product = products.find((p) => p.id === productId);
-    if (
-      window.confirm(
-        `🗑️ Remove extra item?\n\n${product.name}\n\nThis action cannot be undone.`,
-      )
-    ) {
+    if (window.confirm(`Remove: ${product.name}?`)) {
       setProducts(products.filter((p) => p.id !== productId));
-      alert(`✅ Extra item removed successfully!`);
     }
   };
 
-  // Handle Item Scan with API Integration
   const handleScanItem = async () => {
     const scannedCode = scanInput.trim().toUpperCase();
-
     if (!scannedCode) {
       alert("⚠️ Please enter or scan a QR code!");
       return;
     }
-
     setIsScanningItem(true);
-
     try {
       const productIndex = products.findIndex(
         (p) =>
@@ -1511,101 +507,65 @@ const BagQRScan = () => {
           p.productId === scannedCode ||
           `QR-${p.productId}`.toUpperCase() === scannedCode,
       );
-
       if (productIndex === -1) {
-        alert("❌ Invalid QR Code! This item is not in this order.");
+        alert("❌ Invalid QR Code! Item not in this order.");
         setScanInput("");
         return;
       }
-
       const product = products[productIndex];
-
       if (product.scanned >= product.quantity) {
-        alert(
-          `⚠️ ${product.name}\nAlready fully scanned! (${product.scanned}/${product.quantity})`,
-        );
+        alert(`⚠️ Already fully scanned!`);
         setScanInput("");
         return;
       }
-
-      // Call API to verify QR code (if not extra item)
-      if (!product.isExtra && product.productId) {
-        const scanResult = await scanQRCode(product.productId);
-        if (!scanResult.success || !scanResult.exists) {
-          alert(
-            `❌ QR Scan verification failed: ${scanResult.error || "Product not found"}\n\nTrying manual update...`,
-          );
-        }
-      }
-
-      // Update local state
       const updatedProducts = [...products];
       updatedProducts[productIndex].scanned += 1;
       setProducts(updatedProducts);
-
-      const newScan = {
-        id: scanHistory.length + 1,
-        productName: product.name,
-        sku: product.sku,
-        time: new Date().toLocaleString(),
-        status: "scanned",
-        operator: "Packing Operator",
-      };
-      setScanHistory([newScan, ...scanHistory]);
-
-      // Update bag status on first scan
-      if (scannedItems === 0) {
+      setScanHistory([
+        {
+          id: scanHistory.length + 1,
+          productName: product.name,
+          sku: product.sku,
+          time: new Date().toLocaleString(),
+          status: "scanned",
+          operator: "Packing Operator",
+        },
+        ...scanHistory,
+      ]);
+      if (scannedItems === 0)
         setBagDetails({
           ...bagDetails,
           status: "Packing in Progress",
           startTime: new Date().toLocaleString(),
         });
-      }
-
-      alert(
-        `✅ Item Scanned Successfully!\n${product.name}\nScanned: ${
-          product.scanned + 1
-        }/${product.quantity}${product.isExtra ? " (EXTRA ITEM)" : ""}`,
-      );
       setScanInput("");
       setIsScanModalOpen(false);
     } catch (error) {
-      console.error("Error during scan:", error);
-      alert(`❌ Error during scan: ${error.message}`);
+      alert(`❌ Error: ${error.message}`);
     } finally {
       setIsScanningItem(false);
     }
   };
 
-  // Handle Manual Increment/Decrement
   const handleManualUpdate = async (productId, action) => {
     const productIndex = products.findIndex((p) => p.id === productId);
     if (productIndex === -1) return;
-
     const product = products[productIndex];
-
     if (action === "increment" && product.scanned < product.quantity) {
-      // Call API if not extra item
-      if (!product.isExtra && product.productId) {
-        const scanResult = await scanQRCode(product.productId);
-        if (!scanResult.success) {
-          console.warn("API scan failed, updating locally anyway");
-        }
-      }
-
       const updatedProducts = [...products];
       updatedProducts[productIndex].scanned += 1;
       setProducts(updatedProducts);
-
-      const newScan = {
-        id: scanHistory.length + 1,
-        productName: product.name,
-        sku: product.sku,
-        time: new Date().toLocaleString(),
-        status: "manual",
-        operator: "Packing Operator",
-      };
-      setScanHistory([newScan, ...scanHistory]);
+      setScanHistory([
+        {
+          id: scanHistory.length + 1,
+          productName: product.name,
+          sku: product.sku,
+          time: new Date().toLocaleString(),
+          status: "manual",
+          operator: "Packing Operator",
+        },
+        ...scanHistory,
+      ]);
     } else if (action === "decrement" && product.scanned > 0) {
       const updatedProducts = [...products];
       updatedProducts[productIndex].scanned -= 1;
@@ -1613,218 +573,100 @@ const BagQRScan = () => {
     }
   };
 
-  // Calculate distance using Haversine formula (open-source, no API key needed)
   const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Earth's radius in kilometers
+    const R = 6371;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLon = ((lon2 - lon1) * Math.PI) / 180;
     const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.sin(dLat / 2) ** 2 +
       Math.cos((lat1 * Math.PI) / 180) *
         Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c; // Distance in kilometers
-    return distance;
+        Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   };
 
-  // Format distance for display
-  const formatDistance = (distanceInKm) => {
-    if (distanceInKm < 1) {
-      return `${Math.round(distanceInKm * 1000)} m`;
-    }
-    return `${distanceInKm.toFixed(2)} km`;
+  const formatDistance = (d) =>
+    d < 1 ? `${Math.round(d * 1000)} m` : `${d.toFixed(2)} km`;
+  const calculateEstimatedTime = (d) => {
+    const mins = Math.round((d / 30) * 60);
+    if (mins < 60) return `${mins} min`;
+    return `${Math.floor(mins / 60)} hr${mins % 60 > 0 ? ` ${mins % 60} min` : ""}`;
   };
 
-  // Calculate estimated time based on distance (assuming average speed of 30 km/h in city)
-  const calculateEstimatedTime = (distanceInKm) => {
-    const averageSpeed = 30; // km/h (city driving speed)
-    const timeInHours = distanceInKm / averageSpeed;
-    const timeInMinutes = Math.round(timeInHours * 60);
-    
-    if (timeInMinutes < 60) {
-      return `${timeInMinutes} min`;
-    }
-    const hours = Math.floor(timeInMinutes / 60);
-    const minutes = timeInMinutes % 60;
-    return minutes > 0 ? `${hours} hr ${minutes} min` : `${hours} hr`;
-  };
-
-  // Calculate distance and time using lat/long
   useEffect(() => {
     if (isDeliveryAmountModalOpen && orderData) {
-      console.log("========================================");
-      console.log("📍 CALCULATING DISTANCE AND TIME");
-      console.log("========================================");
-      console.log("Order Data:", orderData);
-      
-      // Set initial loading state
       setDistance("Calculating...");
       setExpectedTime("Calculating...");
-      
       try {
-        // Get vendor/store latitude and longitude
-        let vendorLat = null;
-        let vendorLng = null;
-        
-        if (orderData.items && orderData.items[0]?.vendor?.storeAddress) {
-          const storeAddr = orderData.items[0].vendor.storeAddress;
-          vendorLat = parseFloat(storeAddr.latitude || storeAddr.lat);
-          vendorLng = parseFloat(storeAddr.longitude || storeAddr.lng || storeAddr.lon);
-          console.log("Vendor coordinates:", { vendorLat, vendorLng });
-        } else if (orderData.vendor?.storeAddress) {
-          const storeAddr = orderData.vendor.storeAddress;
-          vendorLat = parseFloat(storeAddr.latitude || storeAddr.lat);
-          vendorLng = parseFloat(storeAddr.longitude || storeAddr.lng || storeAddr.lon);
-          console.log("Vendor coordinates (alt path):", { vendorLat, vendorLng });
+        let vLat = null,
+          vLng = null,
+          sLat = null,
+          sLng = null;
+        const storeAddr =
+          orderData.items?.[0]?.vendor?.storeAddress ||
+          orderData.vendor?.storeAddress;
+        if (storeAddr) {
+          vLat = parseFloat(storeAddr.latitude || storeAddr.lat);
+          vLng = parseFloat(
+            storeAddr.longitude || storeAddr.lng || storeAddr.lon,
+          );
         }
-        
-        // Get shipping address latitude and longitude
-        let shippingLat = null;
-        let shippingLng = null;
-        
-        if (orderData.shippingAddress) {
-          shippingLat = parseFloat(orderData.shippingAddress.latitude || orderData.shippingAddress.lat);
-          shippingLng = parseFloat(orderData.shippingAddress.longitude || orderData.shippingAddress.lng || orderData.shippingAddress.lon);
-          console.log("Shipping coordinates:", { shippingLat, shippingLng });
-        } else if (orderData.deliveryAddress) {
-          shippingLat = parseFloat(orderData.deliveryAddress.latitude || orderData.deliveryAddress.lat);
-          shippingLng = parseFloat(orderData.deliveryAddress.longitude || orderData.deliveryAddress.lng || orderData.deliveryAddress.lon);
-          console.log("Delivery coordinates (alt path):", { shippingLat, shippingLng });
+        const shipAddr = orderData.shippingAddress || orderData.deliveryAddress;
+        if (shipAddr) {
+          sLat = parseFloat(shipAddr.latitude || shipAddr.lat);
+          sLng = parseFloat(shipAddr.longitude || shipAddr.lng || shipAddr.lon);
         }
-
-        // Check if we have valid coordinates
-        const hasValidVendorCoords = vendorLat && vendorLng && !isNaN(vendorLat) && !isNaN(vendorLng);
-        const hasValidShippingCoords = shippingLat && shippingLng && !isNaN(shippingLat) && !isNaN(shippingLng);
-        
-        if (!hasValidVendorCoords || !hasValidShippingCoords) {
-          const missingParts = [];
-          if (!hasValidVendorCoords) missingParts.push("vendor coordinates");
-          if (!hasValidShippingCoords) missingParts.push("shipping coordinates");
-          
-          console.error(`❌ Latitude/Longitude not available or invalid: Missing ${missingParts.join(" and ")}`);
-          console.error("Vendor:", { vendorLat, vendorLng });
-          console.error("Shipping:", { shippingLat, shippingLng });
+        const validV = vLat && vLng && !isNaN(vLat) && !isNaN(vLng);
+        const validS = sLat && sLng && !isNaN(sLat) && !isNaN(sLng);
+        if (!validV || !validS) {
           setDistance("N/A");
           setExpectedTime("N/A");
           return;
         }
-
-        // Calculate distance using Haversine formula
-        const distanceInKm = calculateHaversineDistance(
-          vendorLat,
-          vendorLng,
-          shippingLat,
-          shippingLng
-        );
-        console.log("Calculated distance (km):", distanceInKm);
-
-        // Format and set distance
-        const formattedDistance = formatDistance(distanceInKm);
-        setDistance(formattedDistance);
-        console.log("Formatted distance:", formattedDistance);
-
-        // Calculate and set estimated time
-        const estimatedTime = calculateEstimatedTime(distanceInKm);
-        setExpectedTime(estimatedTime);
-        console.log("Estimated time:", estimatedTime);
-        console.log("✅ Distance and time calculated successfully");
-        console.log("========================================");
-      } catch (error) {
-        console.error("❌ Error calculating distance and time:", error);
+        const dist = calculateHaversineDistance(vLat, vLng, sLat, sLng);
+        setDistance(formatDistance(dist));
+        setExpectedTime(calculateEstimatedTime(dist));
+      } catch (_) {
         setDistance("N/A");
         setExpectedTime("N/A");
       }
     } else {
-      // Reset when modal closes
       setDistance(null);
       setExpectedTime(null);
     }
   }, [isDeliveryAmountModalOpen, orderData]);
 
-  // Cleanup intervals on unmount
   useEffect(() => {
     return () => {
-      if (countdownIntervalRef.current) {
+      if (countdownIntervalRef.current)
         clearInterval(countdownIntervalRef.current);
-      }
-      if (redirectTimeoutRef.current) {
-        clearTimeout(redirectTimeoutRef.current);
-      }
+      if (redirectTimeoutRef.current) clearTimeout(redirectTimeoutRef.current);
     };
   }, []);
 
-
-  // Handle Complete Packing & Seal Bag - Show delivery amount input first
   const handleCompletePacking = () => {
     if (!isPackingComplete) {
-      alert("⚠️ Please scan all items before sealing the bag!");
+      alert("⚠️ Please scan all items first!");
       return;
     }
-    // Open delivery amount modal
     setIsDeliveryAmountModalOpen(true);
   };
 
-  // Handle Seal Bag - Save distance and expected time, update status after 15 seconds
   const handleSealBag = async () => {
     setIsDeliveryAmountModalOpen(false);
     setIsUpdatingStatus(true);
-
     try {
       const bagNumber = `BAG${Date.now().toString().slice(-8)}`;
       const qrCode = `FKMP${Date.now().toString().slice(-10)}`;
-
-      // Check if there are extra items to add to the order
       const extraItems = products.filter((p) => p.isExtra);
       if (extraItems.length > 0) {
-        const itemsToAdd = extraItems.map((item) => ({
-          productId: item.productId || item.id.toString(),
-          quantity: item.quantity,
-        }));
-
-        const addResult = await addItemsToOrder(itemsToAdd);
-        if (!addResult.success) {
-          const proceed = window.confirm(
-            `⚠️ Failed to add extra items to order!\n\nError: ${addResult.error}\n\nDo you want to seal the bag anyway?\n(Extra items won't be recorded in the backend)`,
-          );
-          if (!proceed) {
-            setIsUpdatingStatus(false);
-            return;
-          }
-        }
+        await addItemsToOrder(
+          extraItems.map((item) => ({
+            productId: item.productId || item.id.toString(),
+            quantity: item.quantity,
+          })),
+        );
       }
-
-      // Extract numeric distance value (remove "km" or "m" suffix)
-      let distanceValue = null;
-      if (distance && distance !== "N/A" && distance !== "Calculating...") {
-        const distanceStr = distance.toString().replace(/[^\d.]/g, '');
-        distanceValue = parseFloat(distanceStr);
-      }
-
-      // Extract numeric expected time value (convert to minutes)
-      let expectedTimeValue = null;
-      if (expectedTime && expectedTime !== "N/A" && expectedTime !== "Calculating...") {
-        // Parse time string like "15 min" or "1 hr 30 min"
-        const timeStr = expectedTime.toString().toLowerCase();
-        let totalMinutes = 0;
-        
-        // Extract hours
-        const hourMatch = timeStr.match(/(\d+)\s*hr/);
-        if (hourMatch) {
-          totalMinutes += parseInt(hourMatch[1]) * 60;
-        }
-        
-        // Extract minutes
-        const minMatch = timeStr.match(/(\d+)\s*min/);
-        if (minMatch) {
-          totalMinutes += parseInt(minMatch[1]);
-        }
-        
-        expectedTimeValue = totalMinutes > 0 ? totalMinutes : null;
-      }
-
-      // Update bag details immediately
       setBagDetails({
         ...bagDetails,
         bagNo: bagNumber,
@@ -1832,50 +674,19 @@ const BagQRScan = () => {
         status: "Ready for Pickup",
         sealed: true,
         completeTime: new Date().toLocaleString(),
-        distance: distanceValue,
-        expectedTime: expectedTimeValue,
       });
-
-      const extraItemsCount = products.filter((p) => p.isExtra).length;
-      const extraItemsText =
-        extraItemsCount > 0
-          ? `\n\n📦 Includes ${extraItemsCount} extra item(s)`
-          : "";
-
-      // Update order status after 15 seconds delay
       setTimeout(async () => {
-        try {
-          // Update order status to "ready" via API (without deliveryAmount)
-          const result = await updateOrderStatus("ready");
-
-          if (!result.success) {
-            console.error("Failed to update order status:", result.error);
-            // Don't show alert, just log the error
-          }
-        } catch (error) {
-          console.error("Error updating order status:", error);
-        }
-      }, 15000); // 15 seconds delay
-
-      // Show waiting animation
+        await updateOrderStatus("ready");
+      }, 15000);
       setShowWaitingAnimation(true);
-      setCountdown(5); // Reset countdown to 5 seconds
-      
-      // Clear any existing intervals/timeouts
-      if (countdownIntervalRef.current) {
+      setCountdown(5);
+      if (countdownIntervalRef.current)
         clearInterval(countdownIntervalRef.current);
-      }
-      if (redirectTimeoutRef.current) {
-        clearTimeout(redirectTimeoutRef.current);
-      }
-      
-      // Countdown timer
+      if (redirectTimeoutRef.current) clearTimeout(redirectTimeoutRef.current);
       countdownIntervalRef.current = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
-            if (countdownIntervalRef.current) {
-              clearInterval(countdownIntervalRef.current);
-            }
+            clearInterval(countdownIntervalRef.current);
             setShowWaitingAnimation(false);
             navigate("/vendor/orders");
             return 0;
@@ -1883,16 +694,11 @@ const BagQRScan = () => {
           return prev - 1;
         });
       }, 1000);
-      
-      // Set timeout to redirect after 5 seconds (5000 ms) as backup
       redirectTimeoutRef.current = setTimeout(() => {
-        if (countdownIntervalRef.current) {
-          clearInterval(countdownIntervalRef.current);
-        }
+        clearInterval(countdownIntervalRef.current);
         setShowWaitingAnimation(false);
         navigate("/vendor/orders");
-      }, 5000); // 5 seconds
-      
+      }, 5000);
       setIsUpdatingStatus(false);
     } catch (error) {
       alert(`❌ Failed to seal bag: ${error.message}`);
@@ -1900,12 +706,8 @@ const BagQRScan = () => {
     }
   };
 
-  // Handle Reset Packing
   const handleResetPacking = () => {
-    if (
-      window.confirm("⚠️ Are you sure you want to reset all packing progress?")
-    ) {
-      // Reset to original fetched products
+    if (window.confirm("⚠️ Reset all packing progress?")) {
       setProducts(
         products.map((p) => ({ ...p, scanned: 0 })).filter((p) => !p.isExtra),
       );
@@ -1923,183 +725,172 @@ const BagQRScan = () => {
       setSelectedPartner(null);
       setAssignmentStatus("pending");
       setNextExtraId(1000);
-      alert("🔄 Packing reset successfully!");
     }
   };
 
-  // Handle Assign Delivery Partner
   const handleAssignPartner = () => {
     if (!bagDetails.sealed) {
-      alert("⚠️ Please complete and seal the bag first!");
+      alert("⚠️ Please seal the bag first!");
       return;
     }
     setIsDeliveryModalOpen(true);
   };
 
-  // Handle Confirm Assignment
   const handleConfirmAssignment = () => {
     if (!selectedPartner) {
       alert("⚠️ Please select a delivery partner!");
       return;
     }
-
     setAssignmentStatus("assigned");
     setIsDeliveryModalOpen(false);
-
     alert(
-      `✅ Delivery Partner Assigned!\n\n` +
-        `Partner: ${selectedPartner.name}\n` +
-        `Phone: ${selectedPartner.phone}\n` +
-        `Vehicle: ${selectedPartner.vehicle} (${selectedPartner.vehicleNo})\n` +
-        `Bag: ${bagDetails.bagNo}\n\n` +
-        `The delivery partner will arrive at the hub shortly.`,
+      `✅ ${selectedPartner.name} assigned!\nVehicle: ${selectedPartner.vehicle} (${selectedPartner.vehicleNo})`,
     );
   };
 
-  // Handle Mark as Picked Up
   const handleMarkPickedUp = () => {
     if (assignmentStatus !== "assigned") {
-      alert("⚠️ Please assign a delivery partner first!");
+      alert("⚠️ Assign a delivery partner first!");
       return;
     }
-
-    if (
-      window.confirm(
-        `🚚 Confirm that ${selectedPartner.name} has picked up the bag?`,
-      )
-    ) {
+    if (window.confirm(`Confirm ${selectedPartner.name} picked up the bag?`)) {
       setAssignmentStatus("picked_up");
-      alert(
-        `✅ Bag Picked Up!\n\n` +
-          `Bag ${bagDetails.bagNo} has been picked up by ${selectedPartner.name}.\n` +
-          `The package is now out for delivery.`,
-      );
     }
   };
 
-  // Filter available partners
   const availablePartners = deliveryPartners.filter(
     (p) =>
       p.status === "available" &&
       p.name.toLowerCase().includes(searchPartner.toLowerCase()),
   );
 
-  const handleGoBack = () => {
-    navigate(`/order/${id}`);
-  };
+  if (loading) return <PageSkeleton />;
 
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <div className="w-full min-h-screen p-6 animate-pulse bg-gray-50">
-          <div className="bg-gradient-to-r from-orange-200 to-red-200 rounded-lg h-40 mb-6"></div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-gray-200 rounded-lg h-32"></div>
-            ))}
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  const extraItemsCount = products.filter((p) => p.isExtra).length;
+  const progressPercent = Number(packingProgress);
 
   return (
     <DashboardLayout>
-      <div className="w-full min-h-screen ml-4 p-2 bg-gray-50">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6 border-l-4 border-orange-500">
-          <button
-            onClick={handleGoBack}
-            className="mb-4 flex items-center gap-2 text-gray-700 hover:text-orange-500 font-semibold transition-colors"
-          >
-            <ArrowLeft size={20} />
-            Back to Order Details
-          </button>
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-lg">
-              <Package className="text-white" size={32} />
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .card-animate { animation: fadeSlideIn 0.28s ease forwards; }
+        @keyframes spin-slow { to { transform: rotate(360deg); } }
+        .spin-slow { animation: spin-slow 2s linear infinite; }
+      `}</style>
+
+      <div className="p-5 space-y-5 max-w-full">
+        {/* ── Header ── */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden border-t-4 border-t-[#FF7B1D] card-animate">
+          <div className="px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate(`/order/${id}`)}
+                className="w-8 h-8 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-[#FF7B1D] hover:bg-orange-100 transition-colors flex-shrink-0"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <div>
+                <h1 className="text-lg font-bold text-gray-800">
+                  Bag Packing & QR Scanning
+                </h1>
+                <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                  <span className="font-mono bg-orange-50 text-[#FF7B1D] border border-orange-200 px-2.5 py-0.5 rounded-lg text-xs font-bold">
+                    {orderData?.orderNumber || id}
+                  </span>
+                  <span className="text-gray-300 text-xs">·</span>
+                  <span className="text-xs text-gray-500 font-medium">
+                    ₹{orderValue.toLocaleString("en-IN")}
+                  </span>
+                  {extraItemsCount > 0 && (
+                    <>
+                      <span className="text-gray-300 text-xs">·</span>
+                      <span className="inline-flex items-center gap-1 bg-violet-50 text-violet-600 border border-violet-100 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                        +{extraItemsCount} Extra
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Bag Packing & QR Scanning
-              </h1>
-              <p className="text-gray-600 mt-1 font-medium">
-                Order ID:{" "}
-                <span className="text-orange-500 font-bold">
-                  {orderData?.orderNumber || id}
-                </span>
-                <span className="mx-2">•</span>
-                <span className="text-gray-500">
-                  ₹{orderValue.toLocaleString("en-IN")}
-                </span>
-                {extraItemsCount > 0 && (
-                  <>
-                    <span className="mx-2">•</span>
-                    <span className="text-purple-600 font-bold">
-                      +{extraItemsCount} Extra Item
-                      {extraItemsCount > 1 ? "s" : ""}
-                    </span>
-                  </>
-                )}
-              </p>
-            </div>
+
+            {/* Seal status chip */}
+            {bagDetails.sealed ? (
+              <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-full text-xs font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Bag
+                Sealed
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-full text-xs font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />{" "}
+                {bagDetails.status}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Progress Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <StatCard
-            icon={<Package className="text-orange-500" size={32} />}
+        {/* ── Stat Pills ── */}
+        <div
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4 card-animate"
+          style={{ animationDelay: "40ms" }}
+        >
+          <StatPill
+            icon={Package}
             label="Total Items"
             value={totalItems}
             color="orange"
           />
-          <StatCard
-            icon={<CheckCircle className="text-green-500" size={32} />}
+          <StatPill
+            icon={CheckCircle}
             label="Scanned"
             value={scannedItems}
             color="green"
           />
-          <StatCard
-            icon={<Settings className="text-blue-500" size={32} />}
+          <StatPill
+            icon={Settings}
             label="Progress"
             value={`${packingProgress}%`}
             color="blue"
           />
-          <StatCard
-            icon={
-              bagDetails.sealed ? (
-                <CheckCircle className="text-purple-500" size={32} />
-              ) : (
-                <Clock className="text-purple-500" size={32} />
-              )
-            }
+          <StatPill
+            icon={bagDetails.sealed ? CheckCircle : Clock}
             label="Status"
             value={bagDetails.status}
             color="purple"
-            small
           />
         </div>
 
-        {/* Progress Bar */}
-        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="font-bold text-gray-900 text-lg">
-              Packing Progress
-            </h3>
-            <span className="font-bold text-orange-500">
-              {scannedItems}/{totalItems} Items
-            </span>
+        {/* ── Progress Bar ── */}
+        <div
+          className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 card-animate"
+          style={{ animationDelay: "80ms" }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+              <span className="text-sm font-semibold text-gray-700">
+                Packing Progress
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-lg font-bold">
+                {scannedItems} / {totalItems}
+              </span>
+              {isPackingComplete && (
+                <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  <CheckCircle className="w-2.5 h-2.5" /> Complete
+                </span>
+              )}
+            </div>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-8 overflow-hidden shadow-inner">
+          <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
             <div
-              className="bg-gradient-to-r from-orange-500 to-orange-600 h-full transition-all duration-500 flex items-center justify-center"
-              style={{ width: `${packingProgress}%` }}
+              className="h-full rounded-full bg-gradient-to-r from-[#FF7B1D] to-orange-400 transition-all duration-700 ease-out relative"
+              style={{ width: `${progressPercent}%` }}
             >
-              {packingProgress > 10 && (
-                <span className="text-white font-bold text-sm">
+              {progressPercent > 12 && (
+                <span className="absolute inset-0 flex items-center justify-center text-[9px] text-white font-bold">
                   {packingProgress}%
                 </span>
               )}
@@ -2107,36 +898,43 @@ const BagQRScan = () => {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-md mb-6">
-          <div className="flex border-b overflow-x-auto">
-            <TabButton
+        {/* ── Tab Card ── */}
+        <div
+          className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden card-animate"
+          style={{ animationDelay: "120ms" }}
+        >
+          {/* Tab Bar */}
+          <div className="flex border-b border-gray-100 overflow-x-auto px-1 bg-gray-50/40">
+            <TabBtn
               active={activeTab === "packing"}
               onClick={() => setActiveTab("packing")}
-              icon={<Package size={20} />}
+              icon={Package}
               label="Item Packing"
+              badge={products.length}
             />
-            <TabButton
+            <TabBtn
               active={activeTab === "history"}
               onClick={() => setActiveTab("history")}
-              icon={<History size={20} />}
+              icon={History}
               label="Scan History"
+              badge={scanHistory.length || null}
             />
-            <TabButton
+            <TabBtn
               active={activeTab === "bag"}
               onClick={() => setActiveTab("bag")}
-              icon={<QrCode size={20} />}
+              icon={QrCode}
               label="Bag Details"
             />
-            <TabButton
+            <TabBtn
               active={activeTab === "delivery"}
               onClick={() => setActiveTab("delivery")}
-              icon={<Truck size={20} />}
+              icon={Truck}
               label="Delivery Partner"
             />
           </div>
 
-          <div className="p-6">
+          {/* Tab Content */}
+          <div className="p-5">
             {activeTab === "packing" && (
               <PackingTab
                 products={products}
@@ -2147,11 +945,9 @@ const BagQRScan = () => {
                 setIsAddExtraItemModalOpen={setIsAddExtraItemModalOpen}
               />
             )}
-
             {activeTab === "history" && (
               <HistoryTab scanHistory={scanHistory} />
             )}
-
             {activeTab === "bag" && (
               <BagDetailsTab
                 bagDetails={bagDetails}
@@ -2160,7 +956,6 @@ const BagQRScan = () => {
                 totalItems={totalItems}
               />
             )}
-
             {activeTab === "delivery" && (
               <DeliveryTab
                 assignmentStatus={assignmentStatus}
@@ -2176,237 +971,240 @@ const BagQRScan = () => {
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        {/* ── Action Buttons ── */}
+        <div
+          className="grid grid-cols-1 sm:grid-cols-3 gap-3 card-animate"
+          style={{ animationDelay: "160ms" }}
+        >
+          {/* Add Extra */}
           <button
             onClick={() => setIsAddExtraItemModalOpen(true)}
             disabled={bagDetails.sealed || isUpdatingStatus}
-            className={`${
+            className={`flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl text-sm font-bold transition-all duration-200 ${
               bagDetails.sealed || isUpdatingStatus
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-purple-500 hover:bg-purple-600"
-            } text-white px-6 py-5 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all text-lg flex items-center justify-center gap-2`}
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
+                : "bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-700 hover:to-violet-600 text-white shadow-sm hover:shadow-md"
+            }`}
           >
-            <Plus size={24} />
-            Add Extra
+            <Plus className="w-4 h-4" /> Add Extra Item
           </button>
+
+          {/* Scan */}
           <button
             onClick={() => setIsScanModalOpen(true)}
             disabled={bagDetails.sealed || isUpdatingStatus || isScanningItem}
-            className={`${
+            className={`flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl text-sm font-bold transition-all duration-200 ${
               bagDetails.sealed || isUpdatingStatus || isScanningItem
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-orange-500 hover:bg-orange-600"
-            } text-white px-6 py-5 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all text-lg flex items-center justify-center gap-2`}
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
+                : "bg-gradient-to-r from-[#FF7B1D] to-orange-400 hover:from-orange-500 hover:to-orange-500 text-white shadow-sm shadow-orange-200 hover:shadow-orange-300 hover:shadow-md"
+            }`}
           >
             {isScanningItem ? (
               <>
-                <RefreshCw size={24} className="animate-spin" />
-                Scanning...
+                <RefreshCw className="w-4 h-4 animate-spin" /> Scanning...
               </>
             ) : (
               <>
-                <QrCode size={24} />
-                Scan Item
+                <ScanLine className="w-4 h-4" /> Scan QR Item
               </>
             )}
           </button>
+
+          {/* Seal */}
           <button
             onClick={handleCompletePacking}
             disabled={
               !isPackingComplete || bagDetails.sealed || isUpdatingStatus
             }
-            className={`${
+            className={`flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl text-sm font-bold transition-all duration-200 ${
               !isPackingComplete || bagDetails.sealed || isUpdatingStatus
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-green-600 hover:bg-green-700"
-            } text-white px-6 py-5 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all text-lg flex items-center justify-center gap-2`}
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
+                : "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-sm hover:shadow-md"
+            }`}
           >
             {isUpdatingStatus ? (
               <>
-                <RefreshCw size={24} className="animate-spin" />
-                Updating...
+                <RefreshCw className="w-4 h-4 animate-spin" /> Updating...
+              </>
+            ) : bagDetails.sealed ? (
+              <>
+                <CheckCircle className="w-4 h-4" /> Bag Sealed
               </>
             ) : (
               <>
-                <CheckCircle size={24} />
-                {bagDetails.sealed ? "Bag Sealed" : "Seal Bag"}
+                <CheckCircle className="w-4 h-4" /> Seal Bag
               </>
             )}
           </button>
         </div>
-
-        {/* Modals */}
-        <ScanModal
-          isOpen={isScanModalOpen}
-          onClose={() => {
-            setIsScanModalOpen(false);
-            setScanInput("");
-          }}
-          scanInput={scanInput}
-          setScanInput={setScanInput}
-          onSubmit={handleScanItem}
-          products={products}
-          isScanning={isScanningItem}
-        />
-
-        <DeliveryPartnerModal
-          isOpen={isDeliveryModalOpen}
-          onClose={() => {
-            setIsDeliveryModalOpen(false);
-            setSelectedPartner(null);
-            setSearchPartner("");
-          }}
-          searchPartner={searchPartner}
-          setSearchPartner={setSearchPartner}
-          availablePartners={availablePartners}
-          selectedPartner={selectedPartner}
-          setSelectedPartner={setSelectedPartner}
-          onConfirm={handleConfirmAssignment}
-          bagDetails={bagDetails}
-          orderId={orderData?.orderNumber || id}
-          totalItems={totalItems}
-          orderValue={orderValue}
-        />
-
-        <AddExtraItemModal
-          isOpen={isAddExtraItemModalOpen}
-          onClose={() => setIsAddExtraItemModalOpen(false)}
-          onAddItem={handleAddExtraItem}
-          orderId={id}
-        />
-
-        {/* Delivery Amount Modal with Map */}
-        {isDeliveryAmountModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl p-6 border-t-4 border-green-500 my-8">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                  <MapPin size={28} className="text-green-500" />
-                  Delivery Route Information
-                </h3>
-                <button
-                  onClick={() => {
-                    setIsDeliveryAmountModalOpen(false);
-                    setDistance(null);
-                    setExpectedTime(null);
-                  }}
-                  className="text-gray-500 hover:text-gray-700 transition-colors"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              {/* Distance and Time Info */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Navigation className="text-blue-600" size={20} />
-                    <span className="text-sm font-semibold text-blue-700">Distance</span>
-                  </div>
-                  <p className="text-2xl font-bold text-blue-900">{distance || "Calculating..."}</p>
-                </div>
-                <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Clock className="text-green-600" size={20} />
-                    <span className="text-sm font-semibold text-green-700">Expected Time</span>
-                  </div>
-                  <p className="text-2xl font-bold text-green-900">{expectedTime || "Calculating..."}</p>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setIsDeliveryAmountModalOpen(false);
-                    setDistance(null);
-                    setExpectedTime(null);
-                  }}
-                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 rounded-lg font-bold transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSealBag}
-                  disabled={isUpdatingStatus}
-                  className={`flex-1 ${
-                    isUpdatingStatus
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700"
-                  } text-white px-4 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2`}
-                >
-                  {isUpdatingStatus ? (
-                    <>
-                      <RefreshCw size={20} className="animate-spin" />
-                      Sealing...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle size={20} />
-                      Seal Bag
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Waiting Animation Modal */}
-        {showWaitingAnimation && (
-          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[100] p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 border-t-4 border-orange-500 animate-pulse">
-              <div className="text-center">
-                {/* Animated Icon */}
-                <div className="mb-6 flex justify-center">
-                  <div className="relative">
-                    <div className="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center animate-bounce">
-                      <Clock className="text-orange-500" size={48} />
-                    </div>
-                    <div className="absolute inset-0 border-4 border-orange-300 rounded-full animate-ping opacity-75"></div>
-                  </div>
-                </div>
-
-                {/* Title */}
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                  ⏳ Waiting for Assignment
-                </h3>
-
-                {/* Message */}
-                <p className="text-gray-700 mb-6 leading-relaxed">
-                  Please wait for <span className="font-bold text-orange-600">5 seconds</span>. Someone will accept the order, or else it will be assigned automatically.
-                </p>
-
-                {/* Countdown Timer */}
-                <div className="mb-6">
-                  <div className="inline-flex items-center justify-center bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-full shadow-lg">
-                    <Clock className="mr-2" size={20} />
-                    <span className="text-xl font-bold">
-                      {countdown < 60 
-                        ? `${countdown}s` 
-                        : `${Math.floor(countdown / 60)}:${(countdown % 60).toString().padStart(2, '0')}`
-                      }
-                    </span>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-                  <div
-                    className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-1000"
-                    style={{ width: `${((5 - countdown) / 5) * 100}%` }}
-                  ></div>
-                </div>
-
-                {/* Info Text */}
-                <p className="text-sm text-gray-500">
-                  You will be redirected automatically...
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* ── Existing Modals (unchanged logic) ── */}
+      <ScanModal
+        isOpen={isScanModalOpen}
+        onClose={() => {
+          setIsScanModalOpen(false);
+          setScanInput("");
+        }}
+        scanInput={scanInput}
+        setScanInput={setScanInput}
+        onSubmit={handleScanItem}
+        products={products}
+        isScanning={isScanningItem}
+      />
+
+      <DeliveryPartnerModal
+        isOpen={isDeliveryModalOpen}
+        onClose={() => {
+          setIsDeliveryModalOpen(false);
+          setSelectedPartner(null);
+          setSearchPartner("");
+        }}
+        searchPartner={searchPartner}
+        setSearchPartner={setSearchPartner}
+        availablePartners={availablePartners}
+        selectedPartner={selectedPartner}
+        setSelectedPartner={setSelectedPartner}
+        onConfirm={handleConfirmAssignment}
+        bagDetails={bagDetails}
+        orderId={orderData?.orderNumber || id}
+        totalItems={totalItems}
+        orderValue={orderValue}
+      />
+
+      <AddExtraItemModal
+        isOpen={isAddExtraItemModalOpen}
+        onClose={() => setIsAddExtraItemModalOpen(false)}
+        onAddItem={handleAddExtraItem}
+        orderId={id}
+      />
+
+      {/* ── Delivery Route Modal ── */}
+      {isDeliveryAmountModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 border-t-4 border-t-emerald-500 my-8">
+            <div className="flex justify-between items-center mb-5">
+              <div>
+                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-emerald-500" /> Delivery Route
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Distance & estimated time to destination
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setIsDeliveryAmountModalOpen(false);
+                  setDistance(null);
+                  setExpectedTime(null);
+                }}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Navigation className="w-3.5 h-3.5 text-blue-500" />
+                  <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">
+                    Distance
+                  </span>
+                </div>
+                <p className="text-2xl font-bold text-blue-800">
+                  {distance || "Calculating..."}
+                </p>
+              </div>
+              <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Clock className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">
+                    ETA
+                  </span>
+                </div>
+                <p className="text-2xl font-bold text-emerald-800">
+                  {expectedTime || "Calculating..."}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-2.5">
+              <button
+                onClick={() => {
+                  setIsDeliveryAmountModalOpen(false);
+                  setDistance(null);
+                  setExpectedTime(null);
+                }}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSealBag}
+                disabled={isUpdatingStatus}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                  isUpdatingStatus
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-sm"
+                }`}
+              >
+                {isUpdatingStatus ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" /> Sealing...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-4 h-4" /> Seal Bag
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Waiting / Countdown Modal ── */}
+      {showWaitingAnimation && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 border-t-4 border-t-[#FF7B1D] text-center card-animate">
+            {/* Animated icon */}
+            <div className="flex justify-center mb-5">
+              <div className="relative w-20 h-20">
+                <div className="absolute inset-0 rounded-full bg-orange-50 flex items-center justify-center">
+                  <Clock className="w-9 h-9 text-[#FF7B1D]" />
+                </div>
+                <div className="absolute inset-0 border-4 border-orange-200 rounded-full animate-ping opacity-60" />
+              </div>
+            </div>
+
+            <h3 className="text-lg font-bold text-gray-800 mb-2">
+              Waiting for Assignment
+            </h3>
+            <p className="text-sm text-gray-500 mb-5 leading-relaxed">
+              Someone will accept the order, or it will be assigned
+              automatically.
+            </p>
+
+            {/* Countdown pill */}
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-[#FF7B1D] to-orange-400 text-white px-5 py-2.5 rounded-full shadow-sm shadow-orange-200 mb-5">
+              <Clock className="w-4 h-4" />
+              <span className="text-lg font-bold">{countdown}s</span>
+            </div>
+
+            {/* Progress bar */}
+            <div className="w-full bg-gray-100 rounded-full h-1.5 mb-3">
+              <div
+                className="bg-gradient-to-r from-[#FF7B1D] to-orange-400 h-full rounded-full transition-all duration-1000"
+                style={{ width: `${((5 - countdown) / 5) * 100}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-gray-400 font-medium">
+              Redirecting automatically...
+            </p>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 };

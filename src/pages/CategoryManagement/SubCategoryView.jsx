@@ -9,20 +9,26 @@ import {
   X,
   Tag,
   Loader2,
-  AlertCircle,
+  ChevronRight,
+  Calendar,
+  Hash,
+  User,
 } from "lucide-react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { BASE_URL } from "../../api/api";
 
 const API_BASE_URL = `${BASE_URL}/api`;
 
-// Edit SubCategory Modal Component
+/* ─────────────────────────────────────────────
+   EDIT MODAL
+───────────────────────────────────────────── */
 const EditSubCategoryModal = ({
   isOpen,
   onClose,
   subCategory,
   onSave,
   categories,
+  loadingCategories,
 }) => {
   const [formData, setFormData] = useState({
     name: "",
@@ -36,14 +42,17 @@ const EditSubCategoryModal = ({
 
   useEffect(() => {
     if (subCategory) {
-      // Normalize category ID to string
-      const categoryId = subCategory.category?._id?.toString() || subCategory.category?._id || subCategory.category || "";
-      console.log("Setting form data - Category ID:", categoryId, "Type:", typeof categoryId);
+      const categoryId =
+        subCategory.category?._id?.toString() ||
+        subCategory.category?._id ||
+        subCategory.category ||
+        "";
       setFormData({
         name: subCategory.name || "",
         category: categoryId,
         description: subCategory.description || "",
-        isActive: subCategory.isActive !== undefined ? subCategory.isActive : true,
+        isActive:
+          subCategory.isActive !== undefined ? subCategory.isActive : true,
       });
       setImagePreview(subCategory.image?.url || "");
     }
@@ -51,30 +60,22 @@ const EditSubCategoryModal = ({
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+    setSelectedFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result);
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-
     const formDataToSend = new FormData();
     formDataToSend.append("name", formData.name);
     formDataToSend.append("category", formData.category);
     formDataToSend.append("description", formData.description);
     formDataToSend.append("isActive", formData.isActive);
-
-    if (selectedFile) {
-      formDataToSend.append("image", selectedFile);
-    }
-
+    if (selectedFile) formDataToSend.append("image", selectedFile);
     await onSave(formDataToSend);
     setSaving(false);
     onClose();
@@ -83,21 +84,31 @@ const EditSubCategoryModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between z-10">
-          <h2 className="text-xl font-bold text-black">Edit Sub Category</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-100">
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10 rounded-t-2xl">
+          <div>
+            <h2 className="text-lg font-bold text-gray-800">
+              Edit Sub Category
+            </h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Update subcategory details
+            </p>
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-black transition"
+            disabled={saving}
+            className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
           >
-            <X className="w-6 h-6" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {/* Name */}
           <div>
-            <label className="block text-sm font-semibold text-black mb-2">
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
               Sub Category Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -106,59 +117,54 @@ const EditSubCategoryModal = ({
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#FF7B1D] text-black"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-[#FF7B1D] transition-all"
+              placeholder="Enter sub category name"
               required
+              disabled={saving}
             />
           </div>
 
+          {/* Parent Category */}
           <div>
-            <label className="block text-sm font-semibold text-black mb-2">
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
               Parent Category <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.category}
-              onChange={(e) => {
-                const selectedValue = e.target.value;
-                console.log("Category selected in edit - Value:", selectedValue);
-                setFormData({ ...formData, category: selectedValue });
-              }}
-              className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#FF7B1D] text-black"
+              onChange={(e) =>
+                setFormData({ ...formData, category: e.target.value })
+              }
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-[#FF7B1D] transition-all"
               required
+              disabled={saving}
             >
               <option value="">Select Category</option>
               {loadingCategories ? (
-                <option value="" disabled>Loading categories...</option>
+                <option value="" disabled>
+                  Loading categories...
+                </option>
               ) : categories.length === 0 ? (
-                <option value="" disabled>No categories available</option>
+                <option value="" disabled>
+                  No categories available
+                </option>
               ) : (
                 categories.map((cat, index) => {
-                  // Get the already normalized _id (should be string now)
                   let catId = cat._id || String(index);
-                  const catName = cat.name || cat.categoryName || `Category ${index + 1}`;
-                  
-                  // Final safety check - ensure it's a string and not "[object Object]"
-                  if (typeof catId === 'object' && catId !== null) {
-                    catId = catId.$oid || catId.toString?.() || catId._id || catId.id || String(index);
+                  if (typeof catId === "object" && catId !== null) {
+                    catId =
+                      catId.$oid ||
+                      catId.toString?.() ||
+                      catId._id ||
+                      catId.id ||
+                      String(index);
                   }
-                  
-                  // If it's still "[object Object]", use index
-                  if (String(catId) === '[object Object]' || !catId) {
-                    console.warn(`Edit modal - Invalid ID for category ${catName}, using index`);
+                  if (String(catId) === "[object Object]" || !catId)
                     catId = String(index);
-                  }
-                  
-                  // Ensure it's a string
                   const finalId = String(catId);
-                  
-                  console.log(`Edit modal - Rendering option ${index + 1}:`, { 
-                    name: catName, 
-                    id: finalId,
-                    idType: typeof finalId,
-                    isValid: /^[0-9a-fA-F]{24}$/.test(finalId) || finalId === String(index)
-                  });
-                  
+                  const catName =
+                    cat.name || cat.categoryName || `Category ${index + 1}`;
                   return (
-                    <option key={finalId || index} value={finalId}>
+                    <option key={finalId} value={finalId}>
                       {catName}
                     </option>
                   );
@@ -167,8 +173,9 @@ const EditSubCategoryModal = ({
             </select>
           </div>
 
+          {/* Description */}
           <div>
-            <label className="block text-sm font-semibold text-black mb-2">
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
               Description <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -177,22 +184,25 @@ const EditSubCategoryModal = ({
                 setFormData({ ...formData, description: e.target.value })
               }
               rows="4"
-              className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#FF7B1D] text-black resize-none"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-[#FF7B1D] transition-all resize-none"
+              placeholder="Enter description"
               required
+              disabled={saving}
             />
           </div>
 
+          {/* Image Upload */}
           <div>
-            <label className="block text-sm font-semibold text-black mb-2">
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
               Sub Category Image
             </label>
             <div className="space-y-3">
               {imagePreview && (
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 p-3 bg-orange-50 rounded-xl border border-orange-100">
                   <img
                     src={imagePreview}
                     alt="Preview"
-                    className="w-24 h-24 rounded-lg object-cover border-2 border-[#FF7B1D]"
+                    className="w-20 h-20 rounded-xl object-cover border-2 border-[#FF7B1D]"
                   />
                   <button
                     type="button"
@@ -200,43 +210,41 @@ const EditSubCategoryModal = ({
                       setImagePreview("");
                       setSelectedFile(null);
                     }}
-                    className="text-red-600 hover:text-red-700 text-sm font-medium"
+                    disabled={saving}
+                    className="text-xs font-semibold text-red-500 hover:text-red-700 transition-colors"
                   >
                     Remove Image
                   </button>
                 </div>
               )}
-
-              <div className="relative">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                  id="image-upload"
-                />
-                <label
-                  htmlFor="image-upload"
-                  className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded cursor-pointer hover:border-[#FF7B1D] transition"
-                >
-                  <div className="text-center">
-                    <Package className="w-8 h-8 text-[#FF7B1D] mx-auto mb-2" />
-                    <p className="text-sm text-black font-medium">
-                      {selectedFile
-                        ? selectedFile.name
-                        : "Click to upload image"}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      PNG, JPG, GIF up to 10MB
-                    </p>
-                  </div>
-                </label>
-              </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+                id="sub-image-upload"
+                disabled={saving}
+              />
+              <label
+                htmlFor="sub-image-upload"
+                className={`flex items-center justify-center w-full px-4 py-4 border-2 border-dashed border-gray-200 rounded-xl transition-all ${saving ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-[#FF7B1D] hover:bg-orange-50"}`}
+              >
+                <div className="text-center">
+                  <Package className="w-7 h-7 text-[#FF7B1D] mx-auto mb-1.5" />
+                  <p className="text-xs font-semibold text-gray-700">
+                    {selectedFile ? selectedFile.name : "Click to upload image"}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    PNG, JPG, GIF up to 10MB
+                  </p>
+                </div>
+              </label>
             </div>
           </div>
 
+          {/* Status */}
           <div>
-            <label className="block text-sm font-semibold text-black mb-2">
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
               Status <span className="text-red-500">*</span>
             </label>
             <select
@@ -247,32 +255,33 @@ const EditSubCategoryModal = ({
                   isActive: e.target.value === "true",
                 })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#FF7B1D] text-black"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-[#FF7B1D] transition-all"
               required
+              disabled={saving}
             >
               <option value="true">Active</option>
               <option value="false">Inactive</option>
             </select>
           </div>
 
-          <div className="flex gap-3 pt-4">
+          {/* Actions */}
+          <div className="flex gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-2 border border-gray-300 text-black rounded hover:bg-gray-100 transition font-medium"
               disabled={saving}
+              className="flex-1 px-6 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-6 py-2 bg-[#FF7B1D] text-white rounded hover:bg-orange-600 transition font-medium disabled:opacity-50 flex items-center justify-center gap-2"
               disabled={saving}
+              className="flex-1 px-6 py-2.5 bg-gradient-to-r from-[#FF7B1D] to-orange-400 text-white rounded-xl text-sm font-semibold hover:from-orange-500 hover:to-orange-500 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm shadow-orange-200"
             >
               {saving ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
+                  <Loader2 className="w-4 h-4 animate-spin" /> Saving...
                 </>
               ) : (
                 "Save Changes"
@@ -285,7 +294,9 @@ const EditSubCategoryModal = ({
   );
 };
 
-// Delete Confirmation Modal
+/* ─────────────────────────────────────────────
+   DELETE MODAL
+───────────────────────────────────────────── */
 const DeleteConfirmModal = ({
   isOpen,
   onClose,
@@ -294,18 +305,17 @@ const DeleteConfirmModal = ({
   deleting,
 }) => {
   if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="bg-white rounded-sm shadow-2xl w-full max-w-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-gray-100">
         <div className="p-6">
-          <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-sm">
-            <Trash2 className="w-6 h-6 text-red-600" />
+          <div className="flex items-center justify-center w-14 h-14 mx-auto mb-4 bg-red-50 rounded-2xl border border-red-100">
+            <Trash2 className="w-7 h-7 text-red-500" />
           </div>
-          <h2 className="text-xl font-bold text-black text-center mb-2">
+          <h2 className="text-lg font-bold text-gray-800 text-center mb-1">
             Delete Sub Category
           </h2>
-          <p className="text-black text-center mb-6">
+          <p className="text-sm text-gray-500 text-center mb-6">
             Are you sure you want to delete{" "}
             <span className="font-semibold text-[#FF7B1D]">
               "{subCategoryName}"
@@ -315,20 +325,19 @@ const DeleteConfirmModal = ({
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-6 py-2 border border-gray-300 text-black rounded hover:bg-gray-100 transition font-medium"
               disabled={deleting}
+              className="flex-1 px-6 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all"
             >
               Cancel
             </button>
             <button
               onClick={onConfirm}
-              className="flex-1 px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition font-medium disabled:opacity-50 flex items-center justify-center gap-2"
               disabled={deleting}
+              className="flex-1 px-6 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {deleting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Deleting...
+                  <Loader2 className="w-4 h-4 animate-spin" /> Deleting...
                 </>
               ) : (
                 "Delete"
@@ -341,6 +350,49 @@ const DeleteConfirmModal = ({
   );
 };
 
+/* ─────────────────────────────────────────────
+   STAT CARD
+───────────────────────────────────────────── */
+const StatCard = ({ icon: Icon, label, value, accent = false }) => (
+  <div
+    className={`flex flex-col items-center justify-center gap-1.5 p-4 rounded-2xl border transition-all
+    ${accent ? "bg-orange-50 border-orange-100" : "bg-gray-50 border-gray-100"}`}
+  >
+    <div
+      className={`w-9 h-9 rounded-xl flex items-center justify-center mb-0.5
+      ${accent ? "bg-orange-100" : "bg-white border border-gray-200"}`}
+    >
+      <Icon
+        style={{ width: 18, height: 18 }}
+        className={accent ? "text-[#FF7B1D]" : "text-gray-500"}
+      />
+    </div>
+    <p className="text-sm font-bold text-gray-800 text-center leading-tight">
+      {value}
+    </p>
+    <p className="text-xs text-gray-500 font-medium text-center leading-tight">
+      {label}
+    </p>
+  </div>
+);
+
+/* ─────────────────────────────────────────────
+   DETAIL ROW (right panel)
+───────────────────────────────────────────── */
+const DetailRow = ({ label, value, mono = false }) => (
+  <div className="flex flex-col gap-0.5 p-3 bg-gray-50 rounded-xl border border-gray-100">
+    <p className="text-xs text-gray-400 font-medium">{label}</p>
+    <p
+      className={`text-sm font-semibold text-gray-800 break-all ${mono ? "font-mono" : ""}`}
+    >
+      {value || "N/A"}
+    </p>
+  </div>
+);
+
+/* ─────────────────────────────────────────────
+   MAIN PAGE
+───────────────────────────────────────────── */
 const SubCategoryView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -353,18 +405,14 @@ const SubCategoryView = () => {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState(null);
 
-  // Get authorization headers
   const getAuthHeaders = () => {
     const token =
       localStorage.getItem("token") || localStorage.getItem("authToken");
     const headers = {};
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
+    if (token) headers["Authorization"] = `Bearer ${token}`;
     return headers;
   };
 
-  // Fetch subcategory details
   useEffect(() => {
     fetchSubCategory();
     fetchCategories();
@@ -380,23 +428,15 @@ const SubCategoryView = () => {
         headers: getAuthHeaders(),
       });
       const result = await response.json();
-
       if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401)
           setError("Unauthorized. Please login again.");
-        } else if (response.status === 404) {
-          setError("Sub Category not found");
-        } else {
-          setError(result.message || "Failed to fetch subcategory");
-        }
+        else if (response.status === 404) setError("Sub Category not found");
+        else setError(result.message || "Failed to fetch subcategory");
         return;
       }
-
-      if (result.success) {
-        setSubCategory(result.data);
-      } else {
-        setError("Failed to fetch subcategory");
-      }
+      if (result.success) setSubCategory(result.data);
+      else setError("Failed to fetch subcategory");
     } catch (err) {
       setError("Error connecting to server: " + err.message);
     } finally {
@@ -413,194 +453,106 @@ const SubCategoryView = () => {
         headers: getAuthHeaders(),
       });
       const result = await response.json();
-
-      console.log("=== EDIT MODAL - CATEGORIES API RESPONSE ===");
-      console.log("Full response:", JSON.stringify(result, null, 2));
-
-      // Try multiple possible response structures
       let categoriesList = [];
       if (result.success) {
-        if (Array.isArray(result.data)) {
-          categoriesList = result.data;
-        } else if (Array.isArray(result.categories)) {
+        if (Array.isArray(result.data)) categoriesList = result.data;
+        else if (Array.isArray(result.categories))
           categoriesList = result.categories;
-        } else if (Array.isArray(result)) {
-          categoriesList = result;
-        }
+        else if (Array.isArray(result)) categoriesList = result;
       } else if (Array.isArray(result)) {
         categoriesList = result;
       }
-      
-      console.log("Edit modal - Extracted categories list:", categoriesList);
-      console.log("Edit modal - Number of categories:", categoriesList.length);
-      
-      if (categoriesList.length === 0) {
-        console.error("Edit modal - No categories found!");
-        setCategories([]);
-        return;
-      }
-      
-      // Normalize categories - convert _id to string and ensure name exists
       const normalizedCategories = categoriesList.map((cat, index) => {
-        // Handle MongoDB ObjectId object - it might be an object with $oid or just an object
-        let catId = '';
-        
+        let catId = "";
         if (cat._id) {
-          // If _id is already a string
-          if (typeof cat._id === 'string') {
-            catId = cat._id;
-          }
-          // If _id is an object
-          else if (typeof cat._id === 'object' && cat._id !== null) {
-            // Try BSON format first ($oid)
-            if (cat._id.$oid) {
-              catId = cat._id.$oid;
-            }
-            // Try toString method
-            else if (typeof cat._id.toString === 'function') {
+          if (typeof cat._id === "string") catId = cat._id;
+          else if (typeof cat._id === "object" && cat._id !== null) {
+            if (cat._id.$oid) catId = cat._id.$oid;
+            else {
               try {
                 catId = cat._id.toString();
-                // If toString returns "[object Object]", it's not a proper ObjectId
-                if (catId === '[object Object]') {
-                  // Try accessing common ObjectId properties
-                  catId = cat._id._id || cat._id.id || cat._id.str || cat._id.value;
-                  // If still not found, try to get the hex string from ObjectId
-                  if (!catId && cat._id.toHexString) {
+                if (catId === "[object Object]") {
+                  catId =
+                    cat._id._id ||
+                    cat._id.id ||
+                    cat._id.str ||
+                    cat._id.value ||
+                    "";
+                  if (!catId && cat._id.toHexString)
                     catId = cat._id.toHexString();
-                  }
-                  // Last resort - try JSON and extract
-                  if (!catId || catId === '[object Object]') {
-                    const jsonStr = JSON.stringify(cat._id);
-                    // Try to extract hex string from JSON
-                    const hexMatch = jsonStr.match(/"([0-9a-fA-F]{24})"/);
-                    if (hexMatch) {
-                      catId = hexMatch[1];
-                    } else {
-                      // Use index as fallback
-                      catId = String(index);
-                    }
+                  if (!catId || catId === "[object Object]") {
+                    const m = JSON.stringify(cat._id).match(
+                      /"([0-9a-fA-F]{24})"/,
+                    );
+                    catId = m ? m[1] : String(index);
                   }
                 }
-              } catch (e) {
-                console.error('Edit modal - Error converting _id:', e);
+              } catch {
                 catId = String(index);
               }
             }
-            // Try accessing properties directly
-            else {
-              catId = cat._id._id || cat._id.id || cat._id.str || cat._id.value || String(index);
-            }
-          }
-          // Fallback
-          else {
-            catId = String(cat._id);
-          }
+          } else catId = String(cat._id);
         } else if (cat.id) {
-          if (typeof cat.id === 'string') {
-            catId = cat.id;
-          } else if (typeof cat.id === 'object' && cat.id !== null) {
-            catId = cat.id.$oid || cat.id.toString?.() || cat.id._id || cat.id.id || String(index);
-          } else {
-            catId = String(cat.id);
-          }
-        } else {
+          catId = typeof cat.id === "string" ? cat.id : String(cat.id);
+        } else catId = String(index);
+        if (
+          catId === "[object Object]" ||
+          !catId ||
+          catId === "undefined" ||
+          catId === "null"
+        )
           catId = String(index);
-        }
-        
-        // Ensure catId is a valid string (not "[object Object]")
-        if (catId === '[object Object]' || !catId || catId === 'undefined' || catId === 'null') {
-          console.warn(`Edit modal - Invalid category ID for ${cat.name}, using index:`, catId);
-          catId = String(index);
-        }
-        
-        const catName = cat.name || cat.categoryName || cat.category || `Category ${index + 1}`;
-        
-        console.log(`Edit modal - Category ${index + 1}:`, {
-          name: catName,
-          id: catId,
-          idType: typeof catId,
-          _idRaw: cat._id,
-          _idType: typeof cat._id,
-          _idIsObject: typeof cat._id === 'object',
-          _idKeys: typeof cat._id === 'object' ? Object.keys(cat._id || {}) : 'N/A'
-        });
-        
         return {
           ...cat,
           _id: catId,
-          name: catName
+          name: cat.name || cat.categoryName || `Category ${index + 1}`,
         };
       });
-      
-      console.log("Edit modal - Normalized categories:", normalizedCategories);
-      console.log("Edit modal - Setting categories state with", normalizedCategories.length, "items");
-      
       setCategories(normalizedCategories);
-    } catch (err) {
-      console.error("Edit modal - Error fetching categories:", err);
+    } catch {
       setCategories([]);
     } finally {
       setLoadingCategories(false);
     }
   };
 
-  const handleEdit = () => {
-    setIsEditModalOpen(true);
-  };
-
   const handleSaveEdit = async (formDataToSend) => {
     try {
-      // Validate category ID before sending
-      const categoryValue = formDataToSend.get('category');
+      const categoryValue = formDataToSend.get("category");
       if (categoryValue && !/^[0-9a-fA-F]{24}$/.test(categoryValue)) {
-        alert("Please select a valid category. The selected category ID is not in the correct format.");
+        alert("Please select a valid category.");
         return;
       }
-
-      console.log("Updating subcategory with form data:", {
-        name: formDataToSend.get('name'),
-        category: categoryValue,
-        description: formDataToSend.get('description'),
-        isActive: formDataToSend.get('isActive'),
-      });
-
       const response = await fetch(`${API_BASE_URL}/subcategory/${id}`, {
         method: "PUT",
         credentials: "include",
-        headers: {
-          ...getAuthHeaders(),
-        },
+        headers: { ...getAuthHeaders() },
         body: formDataToSend,
       });
-      
       const result = await response.json();
-      console.log("Update response:", result);
-
       if (!response.ok) {
-        // Handle validation errors from express-validator
-        if (result.errors && Array.isArray(result.errors) && result.errors.length > 0) {
-          const errorMessages = result.errors.map(err => err.msg || err.message).join('\n');
-          alert(errorMessages || "Validation failed. Please check your input.");
-        } else {
-          alert(result.message || result.error || "Failed to update subcategory");
-        }
+        if (
+          result.errors &&
+          Array.isArray(result.errors) &&
+          result.errors.length > 0
+        ) {
+          alert(
+            result.errors.map((e) => e.msg || e.message).join("\n") ||
+              "Validation failed.",
+          );
+        } else
+          alert(
+            result.message || result.error || "Failed to update subcategory",
+          );
         return;
       }
-
       if (result.success) {
         alert("Sub Category updated successfully!");
-        fetchSubCategory(); // Refresh data
-      } else {
-        alert(result.message || "Failed to update subcategory");
-      }
+        fetchSubCategory();
+      } else alert(result.message || "Failed to update subcategory");
     } catch (err) {
-      console.error("Error updating subcategory:", err);
       alert("Error updating subcategory: " + err.message);
     }
-  };
-
-  const handleDeleteClick = () => {
-    setIsDeleteModalOpen(true);
   };
 
   const handleConfirmDelete = async () => {
@@ -612,13 +564,11 @@ const SubCategoryView = () => {
         headers: getAuthHeaders(),
       });
       const result = await response.json();
-
       if (!response.ok) {
         alert(result.message || "Failed to delete subcategory");
         setDeleting(false);
         return;
       }
-
       if (result.success) {
         alert(`Sub Category "${subCategory.name}" deleted successfully!`);
         setIsDeleteModalOpen(false);
@@ -633,19 +583,74 @@ const SubCategoryView = () => {
     }
   };
 
-  const statusColors = {
-    true: "bg-green-100 text-green-800 border-green-300",
-    false: "bg-gray-100 text-gray-800 border-gray-300",
+  const formatDate = (d) => {
+    if (!d) return "N/A";
+    try {
+      return new Date(d).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return "N/A";
+    }
+  };
+  const formatDateTime = (d) => {
+    if (!d) return "N/A";
+    try {
+      return new Date(d).toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "N/A";
+    }
   };
 
+  const NO_IMAGE =
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect width='150' height='150' fill='%23f3f4f6'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='13' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E";
+
+  /* ── Loading ── */
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <Loader2 className="w-12 h-12 animate-spin text-[#FF7B1D] mx-auto mb-4" />
-              <p className="text-gray-600">Loading subcategory details...</p>
+        <div className="w-full max-w-full mx-auto px-1 py-3">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-gray-100 rounded-xl w-48" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="lg:col-span-2 space-y-4">
+                <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
+                  <div className="flex gap-5">
+                    <div className="w-28 h-28 bg-gray-100 rounded-2xl" />
+                    <div className="flex-1 space-y-3">
+                      <div className="h-7 bg-gray-100 rounded-xl w-1/2" />
+                      <div className="h-4 bg-gray-100 rounded-xl w-1/4" />
+                      <div className="h-4 bg-gray-100 rounded-xl w-3/4" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 pt-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-24 bg-gray-100 rounded-2xl" />
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-white rounded-2xl border border-gray-100 p-6">
+                  <div className="h-6 bg-gray-100 rounded-xl w-32 mb-4" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="h-16 bg-gray-100 rounded-xl" />
+                    <div className="h-16 bg-gray-100 rounded-xl" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-3">
+                <div className="h-6 bg-gray-100 rounded-xl w-24 mb-2" />
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-14 bg-gray-100 rounded-xl" />
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -653,25 +658,34 @@ const SubCategoryView = () => {
     );
   }
 
-  if (error) {
+  /* ── Error / Not Found ── */
+  if (error || !subCategory) {
     return (
       <DashboardLayout>
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="bg-white rounded-sm shadow-md p-10 text-center">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <p className="text-black text-lg mb-4">{error}</p>
+        <div className="w-full max-w-full mx-auto px-1 py-3">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-red-50 rounded-2xl flex items-center justify-center border border-red-100">
+              <Package className="w-8 h-8 text-red-400" />
+            </div>
+            <p className="text-gray-800 text-base font-bold mb-1">
+              {error || "Sub Category not found"}
+            </p>
+            <p className="text-gray-400 text-sm mb-6">
+              The sub category you're looking for doesn't exist or has been
+              removed.
+            </p>
             <div className="flex gap-3 justify-center">
               <button
                 onClick={() => navigate("/category/create-sub")}
-                className="bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-700"
+                className="bg-gradient-to-r from-[#FF7B1D] to-orange-400 text-white px-6 py-2 rounded-xl text-sm font-semibold hover:from-orange-500 hover:to-orange-500 transition-all shadow-sm shadow-orange-200"
               >
                 Back to Sub Categories
               </button>
               <button
                 onClick={fetchSubCategory}
-                className="bg-[#FF7B1D] text-white px-6 py-2 rounded hover:bg-orange-600"
+                className="bg-white border border-gray-200 text-gray-700 px-6 py-2 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all"
               >
-                Retry
+                Try Again
               </button>
             </div>
           </div>
@@ -680,214 +694,247 @@ const SubCategoryView = () => {
     );
   }
 
-  if (!subCategory) {
-    return (
-      <DashboardLayout>
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="bg-white rounded-sm shadow-md p-10 text-center">
-            <p className="text-black text-lg mb-4">Sub Category not found</p>
-            <button
-              onClick={() => navigate("/category/create-sub")}
-              className="bg-[#FF7B1D] text-white px-6 py-2 rounded hover:bg-orange-600"
-            >
-              Back to Sub Categories
-            </button>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
+  /* ── Main ── */
   return (
     <DashboardLayout>
-      <div className="max-w-7xl ml-4 mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeSlideIn 0.3s ease forwards; }
+      `}</style>
+
+      <div className="w-full max-w-full mx-auto px-1 py-3 space-y-4 fade-in">
+        {/* ── Breadcrumb / Actions ── */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <button
             onClick={() => navigate("/category/create-sub")}
-            className="flex items-center gap-2 text-black hover:text-[#FF7B1D] transition font-medium"
+            className="flex items-center gap-1.5 text-gray-500 hover:text-[#FF7B1D] text-sm font-semibold transition-colors group"
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back to Sub Categories</span>
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+            Back to Sub Categories
+            <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
+            <span className="text-gray-800 truncate max-w-[200px]">
+              {subCategory.name}
+            </span>
           </button>
 
-          <div className="flex gap-3">
+          <div className="flex items-center gap-2">
             <button
-              onClick={handleEdit}
-              className="flex items-center gap-2 bg-[#FF7B1D] text-white px-5 py-2 rounded hover:bg-orange-600 transition"
+              onClick={() => setIsEditModalOpen(true)}
+              className="flex items-center gap-2 bg-gradient-to-r from-[#FF7B1D] to-orange-400 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:from-orange-500 hover:to-orange-500 transition-all shadow-sm shadow-orange-200"
             >
-              <Edit className="w-4 h-4" />
+              <Edit className="w-3.5 h-3.5" />
               Edit
             </button>
             <button
-              onClick={handleDeleteClick}
-              className="flex items-center gap-2 bg-black text-white px-5 py-2 rounded hover:bg-gray-800 transition"
+              onClick={() => setIsDeleteModalOpen(true)}
+              className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-5 py-2 rounded-xl text-sm font-semibold hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
               Delete
             </button>
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Main Info */}
-          <div className="lg:col-span-2 space-y-6">
+        {/* ── Content Grid ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* LEFT — Main info (2 cols) */}
+          <div className="lg:col-span-2 space-y-4">
             {/* Basic Information Card */}
-            <div className="bg-white rounded-sm shadow-md p-6 border border-gray-200">
-              <div className="flex flex-col md:flex-row items-start gap-6 mb-6">
-                {subCategory.image?.url ? (
-                  <img
-                    src={subCategory.image.url}
-                    alt={subCategory.name}
-                    className="w-32 h-32 rounded-sm object-cover border-2 border-[#FF7B1D] mx-auto md:mx-0"
-                  />
-                ) : (
-                  <div className="w-32 h-32 rounded-sm bg-gray-200 border-2 border-[#FF7B1D] mx-auto md:mx-0 flex items-center justify-center">
-                    <Package className="w-12 h-12 text-gray-400" />
-                  </div>
-                )}
-                <div className="flex-1 w-full">
-                  <div className="flex flex-col sm:flex-row items-start justify-between mb-3 gap-3">
-                    <div>
-                      <h1 className="text-2xl md:text-3xl font-bold text-black mb-2">
-                        {subCategory.name}
-                      </h1>
-                      <p className="text-black text-sm font-medium mb-1">
-                        Code:{" "}
-                        <span className="text-[#FF7B1D]">
-                          {subCategory.code || subCategory._id}
-                        </span>
-                      </p>
-                      <p className="text-black text-sm flex items-center gap-2">
-                        <Tag className="w-4 h-4 text-[#FF7B1D]" />
-                        Parent:{" "}
-                        <span className="font-semibold">
-                          {subCategory.category?.name || "N/A"}
-                        </span>
-                      </p>
-                    </div>
-                    <span
-                      className={`px-4 py-1 rounded-sm text-sm font-semibold border ${
-                        statusColors[subCategory.isActive]
-                      }`}
-                    >
-                      {subCategory.isActive ? "Active" : "Inactive"}
-                    </span>
-                  </div>
-                  <p className="text-black leading-relaxed">
-                    {subCategory.description}
-                  </p>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              {/* Card header bar */}
+              <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+                  <span className="text-sm font-semibold text-gray-700">
+                    Sub Category Details
+                  </span>
                 </div>
+                <span
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border
+                  ${
+                    subCategory.isActive
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200 ring-1 ring-emerald-100"
+                      : "bg-gray-100 text-gray-500 border-gray-200"
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${subCategory.isActive ? "bg-emerald-500" : "bg-gray-400"}`}
+                  />
+                  {subCategory.isActive ? "Active" : "Inactive"}
+                </span>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-6 border-t border-gray-300">
-                <div className="text-center bg-white p-3 rounded border border-gray-200">
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <Layers className="w-5 h-5 text-[#FF7B1D]" />
-                    <p className="text-xl md:text-2xl font-bold text-black">
-                      {subCategory.category?.name || "N/A"}
+              <div className="p-6">
+                {/* Image + Info row */}
+                <div className="flex flex-col md:flex-row items-start gap-6 mb-6">
+                  {/* Image */}
+                  <div className="shrink-0 mx-auto md:mx-0">
+                    <div className="w-32 h-32 rounded-2xl border-2 border-dashed border-orange-200 bg-orange-50 p-1">
+                      <img
+                        src={subCategory.image?.url || NO_IMAGE}
+                        alt={subCategory.name}
+                        className="w-full h-full rounded-xl object-cover"
+                        onError={(e) => {
+                          e.target.src = NO_IMAGE;
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 w-full">
+                    <h1 className="text-2xl font-bold text-gray-800 mb-1">
+                      {subCategory.name}
+                    </h1>
+
+                    {/* Code tag */}
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                      <span className="inline-flex items-center gap-1 bg-gray-50 border border-gray-200 text-gray-500 text-xs font-mono px-2.5 py-1 rounded-lg">
+                        <Hash className="w-3 h-3 text-[#FF7B1D]" />
+                        {subCategory.code || subCategory._id || "N/A"}
+                      </span>
+                      {subCategory.category?.name && (
+                        <span className="inline-flex items-center gap-1 bg-blue-50 border border-blue-100 text-blue-600 text-xs font-semibold px-2.5 py-1 rounded-lg">
+                          <Tag className="w-3 h-3" />
+                          {subCategory.category.name}
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-sm text-gray-500 leading-relaxed">
+                      {subCategory.description || "No description available"}
                     </p>
                   </div>
-                  <p className="text-xs md:text-sm text-black">
-                    Parent Category
-                  </p>
                 </div>
-                <div className="text-center bg-white p-3 rounded border border-gray-200">
-                  <p className="text-xs md:text-sm text-black font-medium mb-1">
-                    Created
-                  </p>
-                  <p className="text-xs md:text-sm font-bold text-black">
-                    {new Date(subCategory.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="text-center bg-white p-3 rounded border border-gray-200">
-                  <p className="text-xs md:text-sm text-black font-medium mb-1">
-                    Last Updated
-                  </p>
-                  <p className="text-xs md:text-sm font-bold text-black">
-                    {new Date(subCategory.updatedAt).toLocaleDateString()}
-                  </p>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-3 gap-3 pt-6 border-t border-gray-100">
+                  <StatCard
+                    icon={Layers}
+                    label="Parent Category"
+                    value={subCategory.category?.name || "N/A"}
+                    accent
+                  />
+                  <StatCard
+                    icon={Calendar}
+                    label="Created"
+                    value={formatDate(subCategory.createdAt)}
+                  />
+                  <StatCard
+                    icon={Calendar}
+                    label="Last Updated"
+                    value={formatDate(subCategory.updatedAt)}
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Created By Information */}
-            <div className="bg-white rounded-sm shadow-md p-6 border border-gray-200">
-              <h2 className="text-xl font-bold text-black mb-4">Created By</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gray-50 p-4 rounded border border-gray-200">
-                  <p className="text-sm text-gray-600 mb-1">Name</p>
-                  <p className="text-black font-semibold">
-                    {subCategory.createdBy?.name || "N/A"}
+            {/* Created By Card */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2 bg-gradient-to-r from-gray-50 to-white">
+                <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+                <span className="text-sm font-semibold text-gray-700">
+                  Created By
+                </span>
+              </div>
+              <div className="p-6">
+                {subCategory.createdBy ? (
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center text-[#FF7B1D] font-bold text-lg shrink-0">
+                      {subCategory.createdBy.name?.charAt(0).toUpperCase() || (
+                        <User style={{ width: 18, height: 18 }} />
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
+                      <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                        <p className="text-xs text-gray-400 mb-0.5">Name</p>
+                        <p className="text-sm font-semibold text-gray-800">
+                          {subCategory.createdBy.name || "N/A"}
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                        <p className="text-xs text-gray-400 mb-0.5">Email</p>
+                        <p className="text-sm font-semibold text-gray-800 break-all">
+                          {subCategory.createdBy.email || "N/A"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">
+                    No creator info available
                   </p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded border border-gray-200">
-                  <p className="text-sm text-gray-600 mb-1">Email</p>
-                  <p className="text-black font-semibold">
-                    {subCategory.createdBy?.email || "N/A"}
-                  </p>
-                </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Right Column - Additional Info */}
+          {/* RIGHT — Details panel (1 col) */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-sm shadow-md p-6 sticky top-6 border border-gray-200">
-              <h2 className="text-xl font-bold text-black mb-4 pb-3 border-b-2 border-[#FF7B1D]">
-                Details
-              </h2>
-              <div className="space-y-4">
-                <div className="p-3 bg-gray-50 rounded border border-gray-200">
-                  <p className="text-sm text-gray-600 mb-1">Sub Category Code</p>
-                  <p className="text-black font-semibold text-sm break-all">
-                    {subCategory.code || subCategory._id}
-                  </p>
-                </div>
-                <div className="p-3 bg-gray-50 rounded border border-gray-200">
-                  <p className="text-sm text-gray-600 mb-1">
-                    Parent Category Code
-                  </p>
-                  <p className="text-black font-semibold text-sm break-all">
-                    {subCategory.category?.code || subCategory.category?._id || "N/A"}
-                  </p>
-                </div>
-                <div className="p-3 bg-gray-50 rounded border border-gray-200">
-                  <p className="text-sm text-gray-600 mb-1">Status</p>
-                  <p
-                    className={`font-semibold text-sm ${
-                      subCategory.isActive ? "text-green-600" : "text-gray-600"
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden sticky top-4">
+              {/* Card header bar */}
+              <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2 bg-gradient-to-r from-[#FF7B1D] to-orange-400">
+                <span className="text-sm font-bold text-white tracking-wide">
+                  Details
+                </span>
+              </div>
+
+              <div className="p-4 space-y-3">
+                <DetailRow
+                  label="Sub Category Code"
+                  value={subCategory.code || subCategory._id}
+                  mono
+                />
+                <DetailRow
+                  label="Parent Category Code"
+                  value={
+                    subCategory.category?.code ||
+                    subCategory.category?._id ||
+                    "N/A"
+                  }
+                  mono
+                />
+                <div className="flex flex-col gap-0.5 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <p className="text-xs text-gray-400 font-medium">Status</p>
+                  <span
+                    className={`inline-flex items-center gap-1.5 w-fit px-2.5 py-1 rounded-full text-xs font-semibold border mt-0.5
+                    ${
+                      subCategory.isActive
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : "bg-gray-100 text-gray-500 border-gray-200"
                     }`}
                   >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${subCategory.isActive ? "bg-emerald-500" : "bg-gray-400"}`}
+                    />
                     {subCategory.isActive ? "Active" : "Inactive"}
-                  </p>
+                  </span>
                 </div>
-                <div className="p-3 bg-gray-50 rounded border border-gray-200">
-                  <p className="text-sm text-gray-600 mb-1">Created At</p>
-                  <p className="text-black font-semibold text-sm">
-                    {new Date(subCategory.createdAt).toLocaleString()}
-                  </p>
-                </div>
-                <div className="p-3 bg-gray-50 rounded border border-gray-200">
-                  <p className="text-sm text-gray-600 mb-1">Updated At</p>
-                  <p className="text-black font-semibold text-sm">
-                    {new Date(subCategory.updatedAt).toLocaleString()}
-                  </p>
-                </div>
+                <DetailRow
+                  label="Created At"
+                  value={formatDateTime(subCategory.createdAt)}
+                />
+                <DetailRow
+                  label="Updated At"
+                  value={formatDateTime(subCategory.updatedAt)}
+                />
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Modals */}
+      {/* ── Modals ── */}
       <EditSubCategoryModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         subCategory={subCategory}
         onSave={handleSaveEdit}
         categories={categories}
+        loadingCategories={loadingCategories}
       />
       <DeleteConfirmModal
         isOpen={isDeleteModalOpen}

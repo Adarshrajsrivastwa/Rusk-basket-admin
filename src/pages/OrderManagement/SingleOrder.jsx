@@ -3,10 +3,197 @@ import DashboardLayout from "../../components/DashboardLayout";
 import { useParams, useNavigate } from "react-router-dom";
 import AssignDeliveryBoyModal from "../../components/AssignDeliveryBoyModal";
 import { BASE_URL } from "../../api/api";
-import { Truck, X, Clock, User, Phone } from "lucide-react";
+import {
+  Truck,
+  X,
+  Clock,
+  User,
+  Phone,
+  Package,
+  MapPin,
+  CreditCard,
+  FileText,
+  ChevronRight,
+  AlertCircle,
+  CheckCircle,
+  QrCode,
+  Download,
+  Image,
+} from "lucide-react";
 
 const API_BASE_URL = `${BASE_URL}/api`;
 
+/* ─────────────────────────── helpers ─────────────────────────── */
+const StatusBadge = ({ status }) => {
+  if (!status) return null;
+  const s = status.toLowerCase().replace(/_/g, " ");
+  const map = {
+    order_placed: {
+      cls: "bg-amber-50 text-amber-700 border border-amber-200 ring-1 ring-amber-100",
+      dot: "bg-amber-500",
+      label: "Order Placed",
+    },
+    pending: {
+      cls: "bg-amber-50 text-amber-700 border border-amber-200 ring-1 ring-amber-100",
+      dot: "bg-amber-500",
+      label: "Pending",
+    },
+    confirmed: {
+      cls: "bg-emerald-50 text-emerald-700 border border-emerald-200 ring-1 ring-emerald-100",
+      dot: "bg-emerald-500",
+      label: "Confirmed",
+    },
+    delivered: {
+      cls: "bg-blue-50 text-blue-700 border border-blue-200 ring-1 ring-blue-100",
+      dot: "bg-blue-500",
+      label: "Delivered",
+    },
+    ready: {
+      cls: "bg-orange-50 text-orange-700 border border-orange-200 ring-1 ring-orange-100",
+      dot: "bg-orange-500",
+      label: "Ready",
+    },
+  };
+  const cfg = map[status.toLowerCase()] ||
+    map[s] || {
+      cls: "bg-gray-100 text-gray-600 border border-gray-200",
+      dot: "bg-gray-400",
+      label: status,
+    };
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.cls}`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+      {cfg.label}
+    </span>
+  );
+};
+
+const InfoRow = ({ label, value, accent = false }) => (
+  <div className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0 group">
+    <span className="text-xs text-gray-400 font-medium">{label}</span>
+    <span
+      className={`text-xs font-semibold text-right max-w-[55%] truncate ${accent ? "text-[#FF7B1D]" : "text-gray-700"}`}
+    >
+      {value ?? "—"}
+    </span>
+  </div>
+);
+
+const PriceRow = ({
+  label,
+  value,
+  accent = false,
+  large = false,
+  isDiscount = false,
+  isCashback = false,
+}) => (
+  <div className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+    <span
+      className={`font-medium text-gray-600 ${large ? "text-sm font-bold" : "text-xs"}`}
+    >
+      {label}
+    </span>
+    <span
+      className={`font-bold ${large ? "text-lg" : "text-sm"} ${
+        accent
+          ? "text-[#FF7B1D]"
+          : isDiscount
+            ? "text-red-500"
+            : isCashback
+              ? "text-emerald-600"
+              : "text-gray-800"
+      }`}
+    >
+      {isDiscount && value > 0 ? "-" : ""}₹
+      {Math.abs(
+        typeof value === "number" ? value : parseFloat(value) || 0,
+      ).toLocaleString()}
+    </span>
+  </div>
+);
+
+const SectionCard = ({
+  title,
+  icon: Icon,
+  children,
+  accentColor = "orange",
+  className = "",
+}) => {
+  const colors = {
+    orange: {
+      header: "from-[#FF7B1D] to-orange-400",
+      bar: "border-t-[#FF7B1D]",
+    },
+    red: { header: "from-red-500 to-red-400", bar: "border-t-red-500" },
+    blue: { header: "from-blue-500 to-blue-400", bar: "border-t-blue-500" },
+    green: {
+      header: "from-emerald-500 to-emerald-400",
+      bar: "border-t-emerald-500",
+    },
+  };
+  const c = colors[accentColor] || colors.orange;
+  return (
+    <div
+      className={`bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 border-t-4 ${c.bar} ${className}`}
+    >
+      <div
+        className={`bg-gradient-to-r ${c.header} px-5 py-3.5 flex items-center gap-2`}
+      >
+        {Icon && <Icon className="w-4 h-4 text-white opacity-90" />}
+        <span className="text-sm font-bold text-white">{title}</span>
+      </div>
+      {children}
+    </div>
+  );
+};
+
+const ImageCard = ({ title, subtitle, icon: Icon, imageUrl }) => {
+  const [imgError, setImgError] = useState(false);
+  return (
+    <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 border-t-4 border-t-[#FF7B1D]">
+      <div className="bg-gradient-to-r from-[#FF7B1D] to-orange-400 px-5 py-3.5 flex items-center gap-2">
+        {Icon && <Icon className="w-4 h-4 text-white opacity-90" />}
+        <span className="text-sm font-bold text-white">{title}</span>
+      </div>
+      <div className="h-48 bg-gray-50 relative flex items-center justify-center overflow-hidden">
+        {imageUrl && !imgError ? (
+          <img
+            src={imageUrl}
+            alt={title}
+            className="w-full h-full object-cover"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center border-2 border-dashed border-orange-200">
+              {Icon && <Icon className="w-6 h-6 text-orange-300" />}
+            </div>
+            <p className="text-xs text-gray-400 font-medium">{subtitle}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ─────────────────────────── skeleton ─────────────────────────── */
+const SkeletonCard = () => (
+  <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm animate-pulse border-t-4 border-t-orange-200">
+    <div className="h-[46px] bg-gradient-to-r from-orange-100 to-orange-50" />
+    <div className="p-5 space-y-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="flex justify-between">
+          <div className="h-3 w-24 bg-gray-100 rounded-full" />
+          <div className="h-3 w-28 bg-gray-100 rounded-full" />
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+/* ─────────────────────────── main component ─────────────────────────── */
 const SingleOrder = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -20,208 +207,66 @@ const SingleOrder = () => {
   const [selectedRider, setSelectedRider] = useState(null);
   const [assignmentNotes, setAssignmentNotes] = useState("");
   const [assigningRider, setAssigningRider] = useState(false);
-  const pdfGeneratedRef = useRef(false); // Track if PDF has been generated for this order
+  const pdfGeneratedRef = useRef(false);
 
-  // Fetch order data from API
   useEffect(() => {
     const fetchOrderData = async () => {
       try {
         setLoading(true);
         setError(null);
-
-        console.log("========================================");
-        console.log("📦 FETCHING ORDER DATA:");
-        console.log("Order ID from params:", id);
-        console.log(
-          "API Endpoint:",
-          `${API_BASE_URL}/checkout/vendor/order/${id}`,
-        );
-        console.log("========================================");
-
-        // Get token from localStorage
         const token =
           localStorage.getItem("token") || localStorage.getItem("authToken");
-
-        const headers = {
-          "Content-Type": "application/json",
-        };
-
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-
+        const headers = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
         const response = await fetch(
           `${API_BASE_URL}/checkout/vendor/order/${id}`,
           {
             method: "GET",
             credentials: "include",
-            headers: headers,
+            headers,
           },
         );
-
-        console.log("========================================");
-        console.log("📡 API RESPONSE:");
-        console.log("Response Status:", response.status);
-        console.log("Response OK:", response.ok);
-        console.log("========================================");
-
         const result = await response.json();
-
-        console.log("========================================");
-        console.log("📦 PARSED RESPONSE DATA:");
-        console.log("Full Response (JSON):", JSON.stringify(result, null, 2));
-        console.log("----------------------------------------");
-        console.log("Result type:", typeof result);
-        console.log("Result keys:", Object.keys(result));
-        console.log("Result.success:", result.success);
-        console.log("Result.message:", result.message);
-        console.log("----------------------------------------");
-        console.log("Result.data:", result.data);
-        console.log("Result.data type:", typeof result.data);
-        if (result.data) {
-          console.log("Result.data keys:", Object.keys(result.data));
-          console.log("Result.data._id:", result.data._id);
-          console.log("Result.data.orderNumber:", result.data.orderNumber);
-          console.log("Result.data.status:", result.data.status);
-          console.log("Result.data.createdAt:", result.data.createdAt);
-          console.log("Result.data.deliveryImage:", result.data.deliveryImage);
-          console.log(
-            "Result.data.deliveryImage?.url:",
-            result.data.deliveryImage?.url,
-          );
-          console.log(
-            "Result.data.deliveredImage:",
-            result.data.deliveredImage,
-          );
-          console.log(
-            "Result.data.deliveredImage?.url:",
-            result.data.deliveredImage?.url,
-          );
-          console.log("Result.data.riderInfo:", result.data.riderInfo);
-          console.log(
-            "Result.data (Full JSON):",
-            JSON.stringify(result.data, null, 2),
-          );
-        }
-        console.log("========================================");
-
-        if (!response.ok || !result.success) {
+        if (!response.ok || !result.success)
           throw new Error(result.message || "Failed to fetch order data");
-        }
-
-        // Transform API response to match component structure
-        const transformedData = transformOrderData(result.data);
-
-        console.log("========================================");
-        console.log("🔄 TRANSFORMED ORDER DATA:");
-        console.log(
-          "Transformed Data (JSON):",
-          JSON.stringify(transformedData, null, 2),
-        );
-        console.log("----------------------------------------");
-        console.log("Transformed Data Keys:", Object.keys(transformedData));
-        console.log("Transformed Data._id:", transformedData._id);
-        console.log("Transformed Data.id:", transformedData.id);
-        console.log("Transformed Data.date:", transformedData.date);
-        console.log("Transformed Data.status:", transformedData.status);
-        console.log("Transformed Data.vendor:", transformedData.vendor);
-        console.log("Transformed Data.buyer:", transformedData.buyer);
-        console.log("Transformed Data.products:", transformedData.products);
-        console.log(
-          "Transformed Data.deliveryImage:",
-          transformedData.deliveryImage,
-        );
-        console.log(
-          "Transformed Data.deliveredImage:",
-          transformedData.deliveredImage,
-        );
-        console.log("========================================");
-
-        setOrderData(transformedData);
+        setOrderData(transformOrderData(result.data));
       } catch (err) {
-        console.error("Error fetching order:", err);
         setError(err.message || "Failed to load order data");
       } finally {
         setLoading(false);
       }
     };
-
-    if (id) {
-      fetchOrderData();
-    }
+    if (id) fetchOrderData();
   }, [id]);
 
-  // Auto-generate PDF when order status becomes "order_placed"
   useEffect(() => {
     const generateInvoicePDF = async () => {
-      // Check if order data exists, status is "order_placed", and PDF hasn't been generated yet
       if (
-        orderData &&
-        orderData.status &&
-        orderData.status.toLowerCase() === "order_placed" &&
+        orderData?.status?.toLowerCase() === "order_placed" &&
         !pdfGeneratedRef.current &&
         orderData.id
       ) {
         try {
-          console.log("========================================");
-          console.log("📄 AUTO-GENERATING INVOICE PDF:");
-          console.log("Order Number:", orderData.id);
-          console.log("Status:", orderData.status);
-          console.log(
-            "API Endpoint:",
-            `${API_BASE_URL}/invoice/order/${orderData.id}/generate-pdf`,
-          );
-          console.log("========================================");
-
-          // Get token from localStorage
           const token =
             localStorage.getItem("token") || localStorage.getItem("authToken");
-
-          const headers = {
-            "Content-Type": "application/json",
-          };
-
-          if (token) {
-            headers["Authorization"] = `Bearer ${token}`;
-          }
-
+          const headers = { "Content-Type": "application/json" };
+          if (token) headers["Authorization"] = `Bearer ${token}`;
           const response = await fetch(
             `${API_BASE_URL}/invoice/order/${orderData.id}/generate-pdf`,
-            {
-              method: "POST",
-              credentials: "include",
-              headers: headers,
-            },
+            { method: "POST", credentials: "include", headers },
           );
-
           const result = await response.json();
-
-          if (response.ok && result.success) {
-            console.log("✅ Invoice PDF generated successfully:", result);
-            pdfGeneratedRef.current = true; // Mark as generated to avoid duplicate calls
-          } else {
-            console.warn(
-              "⚠️ Failed to generate invoice PDF:",
-              result.message || "Unknown error",
-            );
-            // Don't mark as generated if it failed, so it can retry
-          }
-        } catch (err) {
-          console.error("❌ Error generating invoice PDF:", err);
-          // Don't mark as generated if it failed, so it can retry
-        }
+          if (response.ok && result.success) pdfGeneratedRef.current = true;
+        } catch (_) {}
       }
     };
-
     generateInvoicePDF();
   }, [orderData]);
 
-  // Reset PDF generation flag when order ID changes
   useEffect(() => {
     pdfGeneratedRef.current = false;
   }, [id]);
 
-  // Transform API response to component structure
   const transformOrderData = (apiData) => {
     const orderDate = new Date(apiData.createdAt);
     const formattedDate = orderDate.toLocaleDateString("en-GB", {
@@ -234,14 +279,11 @@ const SingleOrder = () => {
       minute: "2-digit",
       hour12: true,
     });
-
-    // Extract vendor info from first item (assuming all items from same vendor)
     const firstItem = apiData.items[0];
     const vendorInfo = firstItem?.vendor || {};
-
     return {
       id: apiData.orderNumber || apiData._id,
-      _id: apiData._id, // Keep MongoDB _id for invoice navigation
+      _id: apiData._id,
       date: formattedDate,
       time: formattedTime,
       vendor: {
@@ -259,7 +301,7 @@ const SingleOrder = () => {
       },
       buyer: {
         id: apiData.user?._id || "N/A",
-        name: "Customer", // Not provided in API
+        name: "Customer",
         userType: "Customer",
         mobile: apiData.user?.contactNumber || "N/A",
         altMobile: apiData.shippingAddress?.phone || "N/A",
@@ -270,15 +312,15 @@ const SingleOrder = () => {
         turnover: 0,
       },
       deliveryAddress: {
-        contactPerson: "Customer", // Not provided in API
+        contactPerson: "Customer",
         mobile: apiData.shippingAddress?.phone || "N/A",
         altMobile: apiData.user?.contactNumber || "N/A",
         address1: apiData.shippingAddress?.line1 || "N/A",
         address2: apiData.shippingAddress?.line2 || "",
         city: apiData.shippingAddress?.city || "N/A",
         pinCode: apiData.shippingAddress?.pinCode || "N/A",
-        distance: "N/A", // Calculate if needed
-        expectedTime: "N/A", // Not provided in API
+        distance: "N/A",
+        expectedTime: "N/A",
       },
       products: apiData.items.map((item) => ({
         name:
@@ -286,8 +328,8 @@ const SingleOrder = () => {
         quantity: item.quantity,
         amount: item.totalPrice,
         sku: item.sku || "N/A",
-        stock: "N/A", // Not provided in API
-        rating: 0, // Not provided in API
+        stock: "N/A",
+        rating: 0,
         thumbnail:
           item.thumbnail?.url ||
           item.product?.thumbnail?.url ||
@@ -328,131 +370,71 @@ const SingleOrder = () => {
                 apiData.rider?.whatsappNumber ||
                 apiData.riderDetails?.whatsappNumber ||
                 "N/A",
-              email: "N/A",
-              verified: false,
-              rating: 0,
               deliveryAmount:
                 apiData.riderAmount || apiData.deliveryAmount || 0,
             }
           : null,
       notes: apiData.notes || "",
-      rawApiData: apiData, // Keep raw data for reference
+      rawApiData: apiData,
     };
   };
 
-  // Function to navigate to Bag & QR Scan page
-  const handleBagQRScan = () => {
-    navigate(`/orders/${orderData.id}/bag-qr-scan`);
-  };
-
-  // Fetch vendors with riders who have no orders
   const fetchVendorsWithRiders = async () => {
     try {
       setLoadingRiders(true);
       const token =
         localStorage.getItem("token") || localStorage.getItem("authToken");
-      const headers = {
-        "Content-Type": "application/json",
-      };
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
       const response = await fetch(
         `${API_BASE_URL}/analytics/vendor/riders/no-orders`,
         {
           method: "GET",
           credentials: "include",
-          headers: headers,
+          headers,
         },
       );
-
       const result = await response.json();
-
-      if (result.success && result.data) {
-        setVendorsWithRiders(result.data.vendors || []);
-      } else {
-        setVendorsWithRiders([]);
-      }
-    } catch (error) {
-      console.error("Error fetching vendors with riders:", error);
+      setVendorsWithRiders(
+        result.success && result.data ? result.data.vendors || [] : [],
+      );
+    } catch (_) {
       setVendorsWithRiders([]);
     } finally {
       setLoadingRiders(false);
     }
   };
 
-  // Handle assign rider
   const handleAssignRider = async () => {
     if (!selectedRider) {
       alert("⚠️ Please select a rider!");
       return;
     }
-
     try {
       setAssigningRider(true);
       const token =
         localStorage.getItem("token") || localStorage.getItem("authToken");
-      const headers = {
-        "Content-Type": "application/json",
-      };
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
-      const payload = {
-        riderId: selectedRider.riderId,
-        assignmentNotes: assignmentNotes || undefined,
-      };
-
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
       const response = await fetch(
         `${API_BASE_URL}/vendor/orders/${id}/assign-rider`,
         {
           method: "PUT",
           credentials: "include",
-          headers: headers,
-          body: JSON.stringify(payload),
+          headers,
+          body: JSON.stringify({
+            riderId: selectedRider.riderId,
+            assignmentNotes: assignmentNotes || undefined,
+          }),
         },
       );
-
-      // Check if response is ok
-      if (!response.ok) {
-        // Try to parse error response as JSON first
-        let errorMessage = `Server error: ${response.status} ${response.statusText}`;
-        const contentType = response.headers.get("content-type");
-
-        if (contentType && contentType.includes("application/json")) {
-          try {
-            const errorData = await response.json();
-            errorMessage = errorData.message || errorData.error || errorMessage;
-          } catch (e) {
-            // If JSON parsing fails, use default message
-          }
-        } else {
-          // If response is HTML (error page), read as text to extract error
-          try {
-            const text = await response.text();
-            // Try to extract error message from HTML if possible
-            if (text.includes("Error") || text.includes("error")) {
-              errorMessage = `Server error (${response.status}): Please check the server logs or contact support.`;
-            }
-          } catch (e) {
-            // Use default error message
-          }
-        }
-
-        throw new Error(errorMessage);
-      }
-
-      // Parse JSON response only if status is ok
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
       const result = await response.json();
-
       if (result.success) {
         alert("✅ Rider assigned successfully!");
         setShowAssignRiderModal(false);
         setSelectedRider(null);
         setAssignmentNotes("");
-        // Refresh order data
         window.location.reload();
       } else {
         alert(
@@ -460,85 +442,58 @@ const SingleOrder = () => {
         );
       }
     } catch (error) {
-      console.error("Error assigning rider:", error);
-
-      // Provide user-friendly error message
-      let errorMessage = "Failed to assign rider. ";
-      if (error.message.includes("500")) {
-        errorMessage +=
-          "Server error occurred. Please try again later or contact support.";
-      } else if (error.message.includes("Network")) {
-        errorMessage += "Network error. Please check your connection.";
-      } else {
-        errorMessage += error.message || "Unknown error occurred.";
-      }
-
-      alert(`❌ ${errorMessage}`);
+      alert(`❌ Failed to assign rider. ${error.message}`);
     } finally {
       setAssigningRider(false);
     }
   };
 
-  // Fetch vendors when modal opens
   useEffect(() => {
-    if (showAssignRiderModal) {
-      fetchVendorsWithRiders();
-    }
+    if (showAssignRiderModal) fetchVendorsWithRiders();
   }, [showAssignRiderModal]);
 
-  const SkeletonLoader = () => (
-    <div className="w-full space-y-4 p-4 animate-pulse">
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border-l-4 border-[#FF7B1D]">
-        <div className="h-8 w-48 bg-gray-200 rounded"></div>
-        <div className="flex gap-3">
-          <div className="h-10 w-32 bg-gray-200 rounded-lg"></div>
-          <div className="h-10 w-48 bg-gray-200 rounded-lg"></div>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            className="bg-white rounded-lg shadow-md p-4 h-[380px] space-y-3 border-t-4 border-[#FF7B1D]"
-          >
-            <div className="h-6 w-2/3 bg-gray-200 rounded"></div>
-            {Array.from({ length: 10 }).map((_, j) => (
-              <div key={j} className="h-3 w-full bg-gray-100 rounded"></div>
+  const shouldShowActionButtons = () => {
+    const allowed = ["order_placed", "pending", "new order", "confirmed"];
+    return allowed.includes(orderData?.status?.toLowerCase());
+  };
+
+  /* ── loading ── */
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="p-5 space-y-5">
+          <div className="h-24 bg-white rounded-2xl border border-gray-100 shadow-sm animate-pulse" />
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <SkeletonCard key={i} />
             ))}
           </div>
-        ))}
-      </div>
-    </div>
-  );
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
-  if (loading) return <SkeletonLoader />;
-
+  /* ── error ── */
   if (error) {
     return (
       <DashboardLayout>
-        <div className="p-4">
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className="text-2xl">⚠️</span>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">
-                  Error Loading Order
-                </h3>
-                <div className="mt-2 text-sm text-red-700">
-                  <p>{error}</p>
-                </div>
-                <div className="mt-4">
-                  <button
-                    onClick={() => window.location.reload()}
-                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm font-semibold"
-                  >
-                    Retry
-                  </button>
-                </div>
-              </div>
+        <div className="p-5">
+          <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-8 flex flex-col items-center text-center">
+            <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mb-4">
+              <AlertCircle className="w-7 h-7 text-red-400" />
             </div>
+            <p className="font-bold text-gray-800 mb-1">Error Loading Order</p>
+            <p className="text-sm text-gray-400 mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-gradient-to-r from-[#FF7B1D] to-orange-400 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:from-orange-500 hover:to-orange-500 transition-all"
+            >
+              Retry
+            </button>
           </div>
         </div>
       </DashboardLayout>
@@ -548,179 +503,101 @@ const SingleOrder = () => {
   if (!orderData) {
     return (
       <DashboardLayout>
-        <div className="p-4">
-          <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
-            <p className="text-yellow-800 font-semibold">Order not found</p>
+        <div className="p-5">
+          <div className="bg-white rounded-2xl border border-amber-100 shadow-sm p-8 flex flex-col items-center text-center">
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center mb-4">
+              <Package className="w-7 h-7 text-amber-300" />
+            </div>
+            <p className="font-bold text-gray-700">Order not found</p>
           </div>
         </div>
       </DashboardLayout>
     );
   }
 
-  // Check if buttons should be shown based on order status
-  const shouldShowActionButtons = () => {
-    const allowedStatuses = [
-      "order_placed",
-      "pending",
-      "new order",
-      "confirmed",
-    ];
-    return allowedStatuses.includes(orderData.status.toLowerCase());
-  };
-
   return (
     <DashboardLayout>
-      <div className="w-full min-h-screen ml-4 p-4">
-        {/* Header Section */}
-        <div className="bg-white rounded-sm shadow-sm p-6 mb-6 border-l-4 border-[#FF7B1D]">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .card-animate { animation: fadeSlideIn 0.28s ease forwards; }
+      `}</style>
+
+      <div className="p-5 space-y-5 max-w-full">
+        {/* ── Header Bar ── */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden border-t-4 border-t-[#FF7B1D] card-animate">
+          <div className="px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="text-xl font-bold text-gray-800 mb-1">
                 Order Details
               </h1>
-              <div className="flex items-center gap-3 text-sm text-gray-700">
-                <span className="font-bold text-[#FF7B1D]">
-                  Order ID: {orderData.id}
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="font-mono bg-orange-50 text-[#FF7B1D] border border-orange-200 px-2.5 py-1 rounded-lg font-bold">
+                  {orderData.id}
                 </span>
-                <span className="w-1.5 h-1.5 bg-[#FF7B1D] rounded-full"></span>
-                <span className="font-semibold">{orderData.date}</span>
-                <span className="w-1.5 h-1.5 bg-[#FF7B1D] rounded-full"></span>
-                <span className="font-semibold">{orderData.time}</span>
+                <span className="text-gray-300">·</span>
+                <span className="text-gray-500 font-medium">
+                  {orderData.date}
+                </span>
+                <span className="text-gray-300">·</span>
+                <span className="text-gray-500 font-medium">
+                  {orderData.time}
+                </span>
+                <span className="text-gray-300">·</span>
+                <StatusBadge status={orderData.status} />
+                {orderData.status?.toLowerCase() === "ready" &&
+                  !orderData.rider && (
+                    <button
+                      onClick={() => setShowAssignRiderModal(true)}
+                      className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded-full text-xs font-semibold transition-all"
+                    >
+                      <Truck className="w-3 h-3" /> Assign Rider
+                    </button>
+                  )}
               </div>
-              {orderData.status && (
-                <div className="mt-2 flex items-center gap-3 flex-wrap">
-                  <span
-                    className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
-                      orderData.status.toLowerCase() === "pending" ||
-                      orderData.status.toLowerCase() === "order_placed"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : orderData.status.toLowerCase() === "confirmed"
-                          ? "bg-green-100 text-green-800"
-                          : orderData.status.toLowerCase() === "delivered"
-                            ? "bg-blue-100 text-blue-800"
-                            : orderData.status.toLowerCase() === "ready"
-                              ? "bg-orange-100 text-orange-800"
-                              : "bg-gray-100 text-gray-800"
-                    }`}
-                  >
-                    Status: {orderData.status.toUpperCase().replace(/_/g, " ")}
-                  </span>
-                  {/* Show Assign Rider button if status is ready and no rider assigned */}
-                  {orderData.status.toLowerCase() === "ready" &&
-                    !orderData.rider && (
-                      <button
-                        onClick={() => setShowAssignRiderModal(true)}
-                        className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-2"
-                      >
-                        <Truck size={14} />
-                        Assign Rider
-                      </button>
-                    )}
-                </div>
-              )}
             </div>
             {shouldShowActionButtons() && (
-              <div className="flex gap-3 flex-wrap">
-                {/* <button
-                  className="bg-[#FF7B1D] hover:bg-[#E66A0D] text-white px-6 py-3 font-bold rounded-sm shadow-sm hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                  onClick={() => setIsModalOpen(true)}
-                >
-                  Assign Delivery Partner
-                </button> */}
+              <div className="flex gap-2 flex-wrap">
                 <button
-                  onClick={handleBagQRScan}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 font-bold rounded-sm shadow-sm hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
+                  onClick={() =>
+                    navigate(`/orders/${orderData.id}/bag-qr-scan`)
+                  }
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect x="3" y="3" width="7" height="7" />
-                    <rect x="14" y="3" width="7" height="7" />
-                    <rect x="14" y="14" width="7" height="7" />
-                    <rect x="3" y="14" width="7" height="7" />
-                  </svg>
-                  Bag & QR Scan
+                  <QrCode className="w-4 h-4" /> Bag & QR Scan
                 </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
-          {/* Buyer Information */}
-          <div className="bg-white rounded-sm shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden border-t-4 border-[#FF7B1D]">
-            <div className="bg-[#FF7B1D] p-4 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
-              <h2 className="font-bold text-white text-base relative z-10">
-                👤 Buyer Information
-              </h2>
-            </div>
-            <div className="p-4 h-[320px] overflow-y-auto">
-              <div className="space-y-2.5 text-xs">
+        {/* ── Top 4-col Grid ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          {/* Buyer */}
+          <div className="card-animate" style={{ animationDelay: "40ms" }}>
+            <SectionCard title="Buyer Information" icon={User}>
+              <div className="px-5 py-3 h-72 overflow-y-auto">
                 <InfoRow label="User ID" value={orderData.buyer.id} />
-                <InfoRow label="Name" value={orderData.buyer.name} highlight />
-                <InfoRow
-                  label="User Type"
-                  value={orderData.buyer.userType}
-                  badge
-                />
+                <InfoRow label="Name" value={orderData.buyer.name} accent />
+                <InfoRow label="User Type" value={orderData.buyer.userType} />
                 <InfoRow label="Mobile" value={orderData.buyer.mobile} />
                 <InfoRow
                   label="Alt. Mobile"
                   value={orderData.buyer.altMobile}
                 />
                 <InfoRow label="Email" value={orderData.buyer.email} />
-                {orderData.buyer.registrationDate !== "N/A" && (
-                  <InfoRow
-                    label="Registration"
-                    value={orderData.buyer.registrationDate}
-                  />
-                )}
-                {orderData.buyer.totalOrders > 0 && (
-                  <InfoRow
-                    label="Total Orders"
-                    value={orderData.buyer.totalOrders}
-                    badge
-                  />
-                )}
-                {orderData.buyer.leaderboardPosition > 0 && (
-                  <InfoRow
-                    label="Leaderboard"
-                    value={`#${orderData.buyer.leaderboardPosition}`}
-                  />
-                )}
-                {orderData.buyer.turnover > 0 && (
-                  <InfoRow
-                    label="Turnover"
-                    value={`₹${orderData.buyer.turnover.toLocaleString()}`}
-                    highlight
-                  />
-                )}
               </div>
-            </div>
+            </SectionCard>
           </div>
 
-          {/* Vendor Information */}
-          <div className="bg-white rounded-sm shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden border-t-4 border-[#FF7B1D]">
-            <div className="bg-[#FF7B1D] p-4 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
-              <h2 className="font-bold text-white text-base relative z-10">
-                🏪 Vendor Information
-              </h2>
-            </div>
-            <div className="p-4 h-[320px] overflow-y-auto">
-              <div className="space-y-2.5 text-xs">
+          {/* Vendor */}
+          <div className="card-animate" style={{ animationDelay: "80ms" }}>
+            <SectionCard title="Vendor Information" icon={Package}>
+              <div className="px-5 py-3 h-72 overflow-y-auto">
                 <InfoRow label="Vendor ID" value={orderData.vendor.id} />
-                <InfoRow label="Name" value={orderData.vendor.name} highlight />
+                <InfoRow label="Name" value={orderData.vendor.name} accent />
                 <InfoRow
                   label="Auth. Person"
                   value={orderData.vendor.authorizedPerson}
@@ -732,52 +609,27 @@ const SingleOrder = () => {
                 />
                 <InfoRow label="WhatsApp" value={orderData.vendor.whatsapp} />
                 <InfoRow label="Email" value={orderData.vendor.email} />
-                {orderData.vendor.registrationDate !== "N/A" && (
-                  <InfoRow
-                    label="Registration"
-                    value={orderData.vendor.registrationDate}
-                  />
-                )}
-                {orderData.vendor.totalOrders > 0 && (
-                  <InfoRow
-                    label="Total Orders"
-                    value={orderData.vendor.totalOrders}
-                    badge
-                  />
-                )}
-                {orderData.vendor.leaderboardPosition > 0 && (
-                  <InfoRow
-                    label="Leaderboard"
-                    value={`#${orderData.vendor.leaderboardPosition}`}
-                  />
-                )}
-                {orderData.vendor.turnover > 0 && (
-                  <InfoRow
-                    label="Turnover"
-                    value={`₹${orderData.vendor.turnover.toLocaleString()}`}
-                    highlight
-                  />
-                )}
               </div>
-            </div>
+            </SectionCard>
           </div>
 
           {/* Products */}
-          <div className="lg:col-span-2 bg-white rounded-sm shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden border-t-4 border-[#FF7B1D]">
-            <div className="bg-[#FF7B1D] p-4 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
-              <h2 className="font-bold text-white text-base relative z-10">
-                📦 Products Ordered
-              </h2>
-            </div>
-            <div className="p-4 h-[320px] overflow-y-auto">
-              <div className="space-y-3">
+          <div
+            className="lg:col-span-2 card-animate"
+            style={{ animationDelay: "120ms" }}
+          >
+            <SectionCard
+              title={`Products Ordered (${orderData.products.length})`}
+              icon={Package}
+            >
+              <div className="px-5 py-3 h-72 overflow-y-auto space-y-2.5">
                 {orderData.products.map((product, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center gap-3 border-2 border-gray-200 rounded-sm p-3 bg-white hover:border-[#FF7B1D] hover:shadow-md transition-all"
+                    className="flex items-center gap-3 border border-gray-100 rounded-xl p-2.5 bg-white hover:border-orange-200 hover:bg-orange-50/30 transition-all duration-150 group"
                   >
-                    <div className="w-[90px] h-[80px] bg-gradient-to-br from-orange-50 to-orange-100 rounded-sm flex items-center justify-center flex-shrink-0 border-2 border-[#FF7B1D] overflow-hidden">
+                    {/* Thumbnail */}
+                    <div className="w-14 h-14 rounded-xl bg-orange-50 border-2 border-orange-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
                       {product.thumbnail ? (
                         <img
                           src={product.thumbnail}
@@ -785,408 +637,361 @@ const SingleOrder = () => {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <span className="text-4xl">📦</span>
+                        <Package className="w-6 h-6 text-orange-300" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-gray-900 mb-1 line-clamp-1">
+                      <p className="text-xs font-bold text-gray-800 truncate mb-1.5">
                         {product.name}
                       </p>
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-gray-700 mb-2">
-                        <span>
-                          Qty:{" "}
-                          <strong className="text-black">
-                            {product.quantity}
-                          </strong>
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                          Qty: {product.quantity}
                         </span>
-                        <span>
-                          Amount:{" "}
-                          <strong className="text-[#FF7B1D]">
-                            ₹{product.amount}
-                          </strong>
+                        <span className="inline-flex items-center gap-1 bg-orange-50 text-[#FF7B1D] border border-orange-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          ₹{product.amount}
                         </span>
-                        <span>
-                          SKU:{" "}
-                          <strong className="text-black">{product.sku}</strong>
-                        </span>
-                        {product.stock !== "N/A" && (
-                          <span>
-                            Stock:{" "}
-                            <strong className="text-[#FF7B1D]">
-                              {product.stock}
-                            </strong>
+                        {product.sku !== "N/A" && (
+                          <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-600 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-blue-100">
+                            {product.sku}
                           </span>
                         )}
-                      </div>
-                      <div className="flex gap-1.5 flex-wrap">
-                        {/* <button className="bg-[#FF7B1D] hover:bg-[#E66A0D] text-white px-3 py-1 text-xs font-bold rounded transition">
-                          View
-                        </button> */}
-                        {product.stock !== "N/A" && (
-                          <span className="bg-green-600 text-white px-3 py-1 text-xs font-bold rounded">
-                            {product.stock} Stock
-                          </span>
-                        )}
-                        {product.rating > 0 && (
-                          <span className="bg-gray-900 text-white px-3 py-1 text-xs font-bold rounded">
-                            ⭐ {product.rating}
-                          </span>
-                        )}
-                        {/* <button className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 text-xs font-bold rounded transition">
-                          Remove
-                        </button> */}
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between mt-4 pt-3 border-t-2 border-[#FF7B1D] flex-wrap gap-2">
-                <div className="bg-[#FF7B1D] text-white px-4 py-2 rounded-sm text-xs font-bold shadow-md">
+              {/* Footer strip */}
+              <div className="px-5 py-3 border-t border-gray-100 flex items-center gap-2 flex-wrap bg-gray-50/50">
+                <span className="inline-flex items-center gap-1.5 bg-[#FF7B1D] text-white text-xs font-bold px-3 py-1.5 rounded-lg">
                   Cart: ₹{orderData.cartValue.toLocaleString()}
-                </div>
-                <div className="bg-gray-900 text-white px-4 py-2 rounded-sm text-xs font-bold shadow-md">
-                  Items: {orderData.products.length}
-                </div>
-                <div className="bg-red-600 text-white px-4 py-2 rounded-sm text-xs font-bold shadow-md">
+                </span>
+                <span className="inline-flex items-center gap-1.5 bg-gray-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg">
+                  {orderData.products.length} Items
+                </span>
+                <span className="inline-flex items-center gap-1.5 bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg">
                   {orderData.payment.mode}
-                </div>
+                </span>
               </div>
-            </div>
+            </SectionCard>
           </div>
         </div>
 
-        {/* Order & Rider */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5">
-          <div className="bg-white rounded-sm shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden border-t-4 border-[#FF7B1D]">
-            <div className="bg-[#FF7B1D] p-4 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
-              <h2 className="font-bold text-white text-base relative z-10">
-                📍 Delivery Address
-              </h2>
-            </div>
-            <div className="p-5">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                <div className="col-span-2 bg-orange-50 border-2 border-[#FF7B1D] rounded-sm p-3">
-                  <p className="text-xs text-[#FF7B1D] font-bold mb-1">
-                    Order ID
+        {/* ── Delivery + Rider Row ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Delivery Address */}
+          <div className="card-animate" style={{ animationDelay: "160ms" }}>
+            <SectionCard title="Delivery Address" icon={MapPin}>
+              <div className="px-5 py-4 space-y-1">
+                <InfoRow label="Order ID" value={orderData.id} accent />
+                <InfoRow
+                  label="Contact"
+                  value={orderData.deliveryAddress.contactPerson}
+                />
+                <InfoRow
+                  label="Mobile"
+                  value={orderData.deliveryAddress.mobile}
+                />
+                <InfoRow
+                  label="Alt. Mobile"
+                  value={orderData.deliveryAddress.altMobile}
+                />
+                <InfoRow
+                  label="Coupon"
+                  value={orderData.couponCode || "Not Applied"}
+                />
+                {/* Address block */}
+                <div className="mt-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
+                  <p className="text-[10px] text-gray-400 font-semibold mb-1 uppercase tracking-wider">
+                    Shipping Address
                   </p>
-                  <p className="font-bold text-gray-900">{orderData.id}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600 mb-1 font-semibold">
-                    Contact Person
-                  </p>
-                  <p className="font-bold text-black">
-                    {orderData.deliveryAddress.contactPerson}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600 mb-1 font-semibold">
-                    Mobile
-                  </p>
-                  <p className="font-bold text-black">
-                    {orderData.deliveryAddress.mobile}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600 mb-1 font-semibold">
-                    Alt. Mobile
-                  </p>
-                  <p className="font-bold text-black">
-                    {orderData.deliveryAddress.altMobile}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600 mb-1 font-semibold">
-                    Coupon Code
-                  </p>
-                  <p className="font-bold text-black">
-                    {orderData.couponCode || "Not Applied"}
-                  </p>
-                </div>
-                <div className="col-span-2 bg-gray-50 rounded-sm p-3 border-2 border-gray-200">
-                  <p className="text-xs text-gray-600 mb-2 font-bold">
-                    Delivery Address
-                  </p>
-                  <p className="text-sm text-gray-900 leading-relaxed font-semibold">
+                  <p className="text-xs text-gray-700 font-semibold leading-relaxed">
                     {orderData.deliveryAddress.address1}
-                    {orderData.deliveryAddress.address2 && (
-                      <>, {orderData.deliveryAddress.address2}</>
-                    )}
+                    {orderData.deliveryAddress.address2 &&
+                      `, ${orderData.deliveryAddress.address2}`}
                     <br />
-                    {orderData.deliveryAddress.city} -{" "}
+                    {orderData.deliveryAddress.city} –{" "}
                     {orderData.deliveryAddress.pinCode}
                   </p>
                 </div>
-                {orderData.deliveryAddress.distance !== "N/A" && (
-                  <div className="bg-orange-50 border-2 border-[#FF7B1D] rounded-sm p-3 text-center">
-                    <p className="text-xs text-[#FF7B1D] font-bold">Distance</p>
-                    <p className="font-bold text-black text-lg">
-                      {orderData.deliveryAddress.distance}
-                    </p>
-                  </div>
-                )}
-                {orderData.deliveryAddress.expectedTime !== "N/A" && (
-                  <div className="bg-green-50 border-2 border-green-500 rounded-sm p-3 text-center">
-                    <p className="text-xs text-green-600 font-bold">ETA</p>
-                    <p className="font-bold text-black text-lg">
-                      {orderData.deliveryAddress.expectedTime}
-                    </p>
-                  </div>
-                )}
                 {orderData.notes && (
-                  <div className="col-span-2 bg-blue-50 border-2 border-blue-300 rounded-sm p-3">
-                    <p className="text-xs text-blue-600 mb-1 font-bold">
+                  <div className="mt-2 bg-blue-50 rounded-xl px-4 py-3 border border-blue-100">
+                    <p className="text-[10px] text-blue-500 font-semibold mb-1 uppercase tracking-wider">
                       Order Notes
                     </p>
-                    <p className="text-sm text-gray-900 font-semibold">
+                    <p className="text-xs text-gray-700 font-semibold">
                       {orderData.notes}
                     </p>
                   </div>
                 )}
               </div>
-            </div>
+            </SectionCard>
           </div>
 
-          <div className="bg-white rounded-sm shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden border-t-4 border-red-500">
-            <div className="bg-red-600 p-4 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
-              <h2 className="font-bold text-white text-base relative z-10">
-                🚚 Delivery Partner
-              </h2>
-            </div>
-            <div className="p-5">
-              {orderData.rider ? (
-                <div className="space-y-3 text-sm">
-                  <InfoRow
-                    label="Rider Name"
-                    value={orderData.rider.name}
-                    highlight
-                  />
-                  <InfoRow label="Mobile" value={orderData.rider.mobile} />
-                  <InfoRow
-                    label="Delivery Amount"
-                    value={`₹${orderData.rider.deliveryAmount || 0}`}
-                    highlight
-                  />
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-10 text-center">
-                  <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-4 border-4 border-red-200">
-                    <span className="text-4xl">⚠️</span>
+          {/* Rider */}
+          <div className="card-animate" style={{ animationDelay: "200ms" }}>
+            <SectionCard
+              title="Delivery Partner"
+              icon={Truck}
+              accentColor="red"
+            >
+              <div className="px-5 py-4">
+                {orderData.rider ? (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-3 mb-4 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                        <User className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-800">
+                          {orderData.rider.name}
+                        </p>
+                        <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          Assigned
+                        </span>
+                      </div>
+                    </div>
+                    <InfoRow label="Mobile" value={orderData.rider.mobile} />
+                    <InfoRow
+                      label="WhatsApp"
+                      value={orderData.rider.whatsapp}
+                    />
+                    <InfoRow
+                      label="Delivery Amount"
+                      value={`₹${orderData.rider.deliveryAmount || 0}`}
+                      accent
+                    />
                   </div>
-                  <p className="text-gray-900 font-bold text-base">
-                    No rider assigned yet
-                  </p>
-                  <p className="text-xs text-gray-600 mt-2 font-semibold">
-                    Rider will be assigned automatically or manually
-                  </p>
-                </div>
-              )}
-            </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-10 text-center">
+                    <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mb-3 border-2 border-dashed border-red-200">
+                      <Truck className="w-6 h-6 text-red-300" />
+                    </div>
+                    <p className="text-sm font-bold text-gray-700 mb-1">
+                      No rider assigned yet
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Rider will be assigned automatically or manually
+                    </p>
+                  </div>
+                )}
+              </div>
+            </SectionCard>
           </div>
         </div>
 
-        {/* Pricing */}
-        <div className="bg-white rounded-sm shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden mt-5 border-t-4 border-[#FF7B1D]">
-          <div className="bg-[#FF7B1D] p-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
-            <h2 className="font-bold text-white text-base relative z-10">
-              💳 Pricing & Invoice
-            </h2>
-          </div>
-          <div className="p-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-              <div className="space-y-3 text-sm">
-                <PriceRow
-                  label="Product Value"
-                  value={orderData.payment.productValue}
-                />
-                {orderData.payment.handlingCost > 0 && (
+        {/* ── Pricing ── */}
+        <div className="card-animate" style={{ animationDelay: "240ms" }}>
+          <SectionCard title="Pricing & Invoice" icon={CreditCard}>
+            <div className="px-5 py-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10">
+                <div>
                   <PriceRow
-                    label="Handling Cost"
-                    value={orderData.payment.handlingCost}
+                    label="Product Value"
+                    value={orderData.payment.productValue}
                   />
-                )}
-                <PriceRow label="Tax (GST)" value={orderData.payment.tax} />
-                {orderData.payment.discount > 0 && (
+                  {orderData.payment.handlingCost > 0 && (
+                    <PriceRow
+                      label="Handling Cost"
+                      value={orderData.payment.handlingCost}
+                    />
+                  )}
+                  <PriceRow label="Tax (GST)" value={orderData.payment.tax} />
+                  {orderData.payment.discount > 0 && (
+                    <PriceRow
+                      label="Discount"
+                      value={orderData.payment.discount}
+                      isDiscount
+                    />
+                  )}
+                </div>
+                <div>
                   <PriceRow
-                    label="Discount"
-                    value={-orderData.payment.discount}
-                    isDiscount
+                    label="Delivery Cost"
+                    value={orderData.payment.deliveryCost}
                   />
-                )}
-              </div>
-              <div className="space-y-3 text-sm">
-                <PriceRow
-                  label="Delivery Cost"
-                  value={orderData.payment.deliveryCost}
-                />
-                {orderData.payment.additional > 0 && (
-                  <PriceRow
-                    label="Additional"
-                    value={orderData.payment.additional}
-                  />
-                )}
-                {orderData.payment.cashback > 0 && (
-                  <PriceRow
-                    label="Cashback"
-                    value={orderData.payment.cashback}
-                    isCashback
-                  />
-                )}
-                <div className="pt-3 mt-2 border-t-4 border-[#FF7B1D]">
-                  <PriceRow
-                    label="Total Amount"
-                    value={orderData.payment.total}
-                    highlight
-                    large
-                  />
+                  {orderData.payment.additional > 0 && (
+                    <PriceRow
+                      label="Additional"
+                      value={orderData.payment.additional}
+                    />
+                  )}
+                  {orderData.payment.cashback > 0 && (
+                    <PriceRow
+                      label="Cashback"
+                      value={orderData.payment.cashback}
+                      isCashback
+                    />
+                  )}
+                  <div className="pt-2 mt-1 border-t-2 border-[#FF7B1D]">
+                    <PriceRow
+                      label="Total Amount"
+                      value={orderData.payment.total}
+                      accent
+                      large
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          </SectionCard>
         </div>
 
-        {/* Buttons */}
-        <div className="flex justify-center mt-5">
+        {/* ── Invoice Button ── */}
+        <div
+          className="flex justify-center card-animate"
+          style={{ animationDelay: "270ms" }}
+        >
           <button
             onClick={() => {
-              // Use MongoDB _id from orderData or fallback to id from params
               const orderId = orderData?._id || id;
-              if (orderId) {
+              if (orderId)
                 navigate(`/invoice/view/${orderId}`, {
-                  state: { orderId: orderId },
+                  state: { orderId },
                   replace: false,
                 });
-              } else {
-                alert("Order ID not available");
-              }
+              else alert("Order ID not available");
             }}
-            className="bg-[#FF7B1D] hover:bg-[#E66A0D] text-white px-6 py-4 rounded-sm font-bold shadow-sm hover:shadow-2xl transition-all duration-200 transform hover:scale-105 text-base"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-[#FF7B1D] to-orange-400 hover:from-orange-500 hover:to-orange-500 text-white px-7 py-3 rounded-xl font-bold text-sm shadow-sm shadow-orange-200 hover:shadow-orange-300 transition-all"
           >
-            🧾 Download Invoice
+            <Download className="w-4 h-4" /> Download Invoice
           </button>
         </div>
 
-        {/* Images */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-5">
+        {/* ── Images ── */}
+        <div
+          className="grid grid-cols-1 sm:grid-cols-3 gap-4 card-animate"
+          style={{ animationDelay: "300ms" }}
+        >
           <ImageCard
             title="Delivery Image"
-            subtitle="Image by Delivery Partner"
-            color="orange"
-            icon="📦"
+            subtitle="No image uploaded"
+            icon={Package}
             imageUrl={orderData.deliveryImage}
           />
           <ImageCard
             title="Delivered Image"
-            subtitle="Image by Delivery Partner"
-            color="orange"
-            icon="🚚"
+            subtitle="No image uploaded"
+            icon={Truck}
             imageUrl={orderData.deliveredImage}
           />
           <ImageCard
             title="Additional Documents"
-            subtitle="Extra attachments"
-            color="gray"
-            icon="📄"
+            subtitle="No attachments"
+            icon={FileText}
+            imageUrl={null}
           />
         </div>
       </div>
 
+      {/* ── Assign Delivery Boy Modal ── */}
       <AssignDeliveryBoyModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />
 
-      {/* Assign Rider Modal */}
+      {/* ── Assign Rider Modal ── */}
       {showAssignRiderModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl p-6 border-t-4 border-green-500 my-8">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <Truck size={28} className="text-green-500" />
-                Assign Rider
-              </h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-6 border-t-4 border-t-emerald-500 my-8">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center mb-5">
+              <div>
+                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <Truck className="w-5 h-5 text-emerald-500" /> Assign Rider
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Select an available rider for this order
+                </p>
+              </div>
               <button
                 onClick={() => {
                   setShowAssignRiderModal(false);
                   setSelectedRider(null);
                   setAssignmentNotes("");
                 }}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
               >
-                <X size={24} />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {loadingRiders ? (
               <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
-                <span className="ml-3 text-gray-600">Loading riders...</span>
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500" />
+                <span className="ml-3 text-sm text-gray-500">
+                  Loading riders...
+                </span>
               </div>
             ) : vendorsWithRiders.length === 0 ? (
               <div className="text-center py-12">
-                <Clock size={48} className="mx-auto text-gray-400 mb-4" />
-                <p className="text-lg font-semibold text-gray-700 mb-2">
+                <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-3">
+                  <Clock className="w-6 h-6 text-gray-300" />
+                </div>
+                <p className="text-sm font-bold text-gray-600 mb-1">
                   No riders available
                 </p>
-                <p className="text-gray-500">
-                  Please wait for some time. Riders will be available soon.
+                <p className="text-xs text-gray-400">
+                  Please wait — riders will be available soon.
                 </p>
               </div>
             ) : (
               <>
-                <div className="mb-6 max-h-96 overflow-y-auto">
-                  {vendorsWithRiders.map((vendor, vendorIndex) => (
+                <div className="mb-5 max-h-80 overflow-y-auto space-y-4 pr-1">
+                  {vendorsWithRiders.map((vendor, vi) => (
                     <div
-                      key={vendor.vendorId || vendorIndex}
-                      className="mb-4 border-2 border-gray-200 rounded-lg p-4"
+                      key={vendor.vendorId || vi}
+                      className="border border-gray-100 rounded-xl p-4"
                     >
                       <div className="flex items-center gap-2 mb-3">
-                        <User size={20} className="text-orange-500" />
-                        <h4 className="font-bold text-gray-900">
+                        <div className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center">
+                          <User className="w-3.5 h-3.5 text-[#FF7B1D]" />
+                        </div>
+                        <span className="text-sm font-bold text-gray-800">
                           {vendor.vendorName || vendor.storeName}
-                        </h4>
-                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                        </span>
+                        <span className="text-[10px] bg-orange-50 text-orange-600 border border-orange-200 px-2 py-0.5 rounded-full font-semibold ml-auto">
                           {vendor.totalRidersWithNoOrders ||
                             vendor.riders?.length ||
                             0}{" "}
                           riders
                         </span>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {vendor.riders && vendor.riders.length > 0 ? (
-                          vendor.riders.map((rider, riderIndex) => (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {vendor.riders?.length > 0 ? (
+                          vendor.riders.map((rider, ri) => (
                             <div
-                              key={rider.riderId || riderIndex}
+                              key={rider.riderId || ri}
                               onClick={() => setSelectedRider(rider)}
-                              className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                              className={`p-3 border-2 rounded-xl cursor-pointer transition-all ${
                                 selectedRider?.riderId === rider.riderId
-                                  ? "border-green-500 bg-green-50"
-                                  : "border-gray-200 hover:border-green-300 hover:bg-green-50"
+                                  ? "border-emerald-500 bg-emerald-50"
+                                  : "border-gray-100 hover:border-emerald-300 hover:bg-emerald-50/40"
                               }`}
                             >
-                              <div className="flex items-center gap-2 mb-2">
-                                <User size={16} className="text-gray-600" />
-                                <span className="font-semibold text-gray-900">
-                                  {rider.fullName}
-                                </span>
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                  <User className="w-3.5 h-3.5 text-gray-500" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-bold text-gray-800 truncate">
+                                    {rider.fullName}
+                                  </p>
+                                  <p className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
+                                    <Phone className="w-2.5 h-2.5" />{" "}
+                                    {rider.mobileNumber}
+                                  </p>
+                                </div>
                                 {selectedRider?.riderId === rider.riderId && (
-                                  <span className="ml-auto text-green-600">
-                                    ✓
-                                  </span>
+                                  <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                                 )}
-                              </div>
-                              <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <Phone size={14} />
-                                <span>{rider.mobileNumber}</span>
                               </div>
                             </div>
                           ))
                         ) : (
-                          <p className="text-gray-500 text-sm">
-                            No riders available for this vendor
+                          <p className="text-xs text-gray-400 col-span-2">
+                            No riders available
                           </p>
                         )}
                       </div>
@@ -1195,58 +1000,56 @@ const SingleOrder = () => {
                 </div>
 
                 {selectedRider && (
-                  <div className="mb-6 p-4 bg-green-50 border-2 border-green-200 rounded-lg">
-                    <p className="text-sm font-semibold text-gray-700 mb-2">
-                      Selected Rider:
-                    </p>
-                    <p className="font-bold text-green-700">
-                      {selectedRider.fullName} - {selectedRider.mobileNumber}
+                  <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                    <p className="text-xs font-semibold text-emerald-700">
+                      Selected: {selectedRider.fullName} —{" "}
+                      {selectedRider.mobileNumber}
                     </p>
                   </div>
                 )}
 
-                <div className="mb-6">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <div className="mb-5">
+                  <label className="block text-xs font-semibold text-gray-700 mb-2">
                     Assignment Notes (Optional)
                   </label>
                   <textarea
                     value={assignmentNotes}
                     onChange={(e) => setAssignmentNotes(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:outline-none"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm text-gray-700 focus:border-emerald-400 focus:outline-none resize-none transition-colors"
                     placeholder="Add any notes about this assignment..."
-                    rows={3}
+                    rows={2}
                   />
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex gap-2.5">
                   <button
                     onClick={() => {
                       setShowAssignRiderModal(false);
                       setSelectedRider(null);
                       setAssignmentNotes("");
                     }}
-                    className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 rounded-lg font-bold transition-all"
+                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleAssignRider}
                     disabled={!selectedRider || assigningRider}
-                    className={`flex-1 ${
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                       !selectedRider || assigningRider
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-green-600 hover:bg-green-700"
-                    } text-white px-4 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2`}
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-sm"
+                    }`}
                   >
                     {assigningRider ? (
                       <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />{" "}
                         Assigning...
                       </>
                     ) : (
                       <>
-                        <Truck size={20} />
-                        Assign Rider
+                        <Truck className="w-4 h-4" /> Assign Rider
                       </>
                     )}
                   </button>
@@ -1257,94 +1060,6 @@ const SingleOrder = () => {
         </div>
       )}
     </DashboardLayout>
-  );
-};
-
-const InfoRow = ({ label, value, highlight = false, badge = false }) => (
-  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-    <span className="text-gray-700 font-semibold">{label}:</span>
-    <span
-      className={`${
-        highlight
-          ? "font-bold text-[#FF7B1D]"
-          : badge
-            ? "font-bold text-black bg-orange-50 px-2 py-1 rounded"
-            : "font-semibold text-gray-900"
-      } text-right`}
-    >
-      {value}
-    </span>
-  </div>
-);
-
-const PriceRow = ({
-  label,
-  value,
-  highlight = false,
-  large = false,
-  isDiscount = false,
-  isCashback = false,
-}) => (
-  <div className="flex justify-between items-center">
-    <span
-      className={`${highlight ? "font-bold" : "font-semibold"} ${
-        large ? "text-lg" : "text-sm"
-      } text-gray-800`}
-    >
-      {label}:
-    </span>
-    <span
-      className={`${
-        highlight
-          ? "font-bold text-[#FF7B1D]"
-          : isDiscount
-            ? "font-bold text-red-600"
-            : isCashback
-              ? "font-bold text-green-600"
-              : "font-bold text-black"
-      } ${large ? "text-2xl" : "text-base"}`}
-    >
-      {isDiscount && value > 0 ? "-" : ""}₹
-      {Math.abs(
-        typeof value === "number" ? value : parseFloat(value) || 0,
-      ).toLocaleString()}
-    </span>
-  </div>
-);
-
-const ImageCard = ({ title, subtitle, color, icon, imageUrl }) => {
-  const [imageError, setImageError] = useState(false);
-  const colors = {
-    orange: "bg-gradient-to-br from-orange-100 to-orange-200 border-[#FF7B1D]",
-    gray: "bg-gradient-to-br from-gray-100 to-gray-200 border-gray-400",
-  };
-
-  return (
-    <div
-      className={`${colors[color]} border-4 h-64 rounded-sm flex flex-col items-center justify-center text-center p-4 hover:shadow-2xl transition-all duration-300 transform hover:scale-105 overflow-hidden relative`}
-    >
-      {imageUrl && !imageError ? (
-        <>
-          <img
-            src={imageUrl}
-            alt={title}
-            className="w-full h-full object-cover absolute inset-0"
-            onError={() => setImageError(true)}
-          />
-          <div className="absolute inset-0 bg-black bg-opacity-30 flex flex-col items-center justify-center text-white z-10">
-            <div className="text-4xl mb-2">{icon}</div>
-            <p className="font-bold text-white text-base">{title}</p>
-            <p className="text-xs text-white mt-1 font-semibold">{subtitle}</p>
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="text-6xl mb-3">{icon}</div>
-          <p className="font-bold text-gray-900 text-base">{title}</p>
-          <p className="text-sm text-gray-700 mt-2 font-semibold">{subtitle}</p>
-        </>
-      )}
-    </div>
   );
 };
 

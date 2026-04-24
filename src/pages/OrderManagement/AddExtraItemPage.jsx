@@ -2,19 +2,26 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import { BASE_URL } from "../../api/api";
-import { ArrowLeft, Search, Package, Plus, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Search,
+  Package,
+  Plus,
+  X,
+  CheckCircle,
+  ShoppingBag,
+} from "lucide-react";
 
 const AddExtraItemPage = () => {
-  const { id } = useParams(); // Order ID from URL
+  const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchBy, setSearchBy] = useState("all");
-  const [selectedProducts, setSelectedProducts] = useState({}); // { productId: quantity }
+  const [selectedProducts, setSelectedProducts] = useState({});
   const [addingItems, setAddingItems] = useState(false);
 
-  // Fetch vendor products
   useEffect(() => {
     fetchVendorProducts();
   }, []);
@@ -24,49 +31,38 @@ const AddExtraItemPage = () => {
       setLoading(true);
       const token =
         localStorage.getItem("token") || localStorage.getItem("authToken");
-
       if (!token) {
-        alert("⚠️ Authentication required. Please login again.");
+        alert("Authentication required. Please login again.");
         navigate("/login");
         return;
       }
-
-      const headers = {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      };
-
       const response = await fetch(`${BASE_URL}/api/vendor/products`, {
         method: "GET",
-        headers: headers,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         credentials: "include",
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch products: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
       const result = await response.json();
-
-      if (result.success && result.data && Array.isArray(result.data)) {
-        const transformedProducts = result.data.map((product) => ({
-          _id: product._id,
-          productId: product._id,
-          name: product.productName || "Unnamed Product",
-          sku: product.skuHsn || "N/A",
-          category: product.category?.name || "General",
-          price: product.salePrice || product.regularPrice || 0,
-          thumbnail: product.thumbnail?.url || product.images?.[0]?.url || null,
-          inventory: product.inventory || 0,
-        }));
-
-        setProducts(transformedProducts);
+      if (result.success && Array.isArray(result.data)) {
+        setProducts(
+          result.data.map((p) => ({
+            _id: p._id,
+            productId: p._id,
+            name: p.productName || "Unnamed Product",
+            sku: p.skuHsn || "N/A",
+            category: p.category?.name || "General",
+            price: p.salePrice || p.regularPrice || 0,
+            thumbnail: p.thumbnail?.url || p.images?.[0]?.url || null,
+            inventory: p.inventory || 0,
+          })),
+        );
       } else {
-        console.error("Invalid API response format:", result);
         setProducts([]);
       }
     } catch (error) {
-      console.error("Error fetching vendor products:", error);
       alert(`Failed to load products: ${error.message}`);
       setProducts([]);
     } finally {
@@ -74,83 +70,66 @@ const AddExtraItemPage = () => {
     }
   };
 
-  // Filter products based on search
   const filteredProducts = products.filter((product) => {
-    const query = searchQuery.toLowerCase();
-    if (!query) return true;
-
-    switch (searchBy) {
-      case "sku":
-        return product.sku.toLowerCase().includes(query);
-      case "category":
-        return product.category.toLowerCase().includes(query);
-      case "name":
-        return product.name.toLowerCase().includes(query);
-      default:
-        return (
-          product.name.toLowerCase().includes(query) ||
-          product.sku.toLowerCase().includes(query) ||
-          product.category.toLowerCase().includes(query)
-        );
-    }
+    const q = searchQuery.toLowerCase();
+    if (!q) return true;
+    if (searchBy === "sku") return product.sku.toLowerCase().includes(q);
+    if (searchBy === "category")
+      return product.category.toLowerCase().includes(q);
+    if (searchBy === "name") return product.name.toLowerCase().includes(q);
+    return (
+      product.name.toLowerCase().includes(q) ||
+      product.sku.toLowerCase().includes(q) ||
+      product.category.toLowerCase().includes(q)
+    );
   });
 
-  // Handle product selection
   const handleProductSelect = (productId) => {
     setSelectedProducts((prev) => {
-      const newSelected = { ...prev };
-      if (newSelected[productId]) {
-        delete newSelected[productId];
-      } else {
-        newSelected[productId] = 1; // Default quantity 1
-      }
-      return newSelected;
+      const next = { ...prev };
+      if (next[productId]) delete next[productId];
+      else next[productId] = 1;
+      return next;
     });
   };
 
-  // Handle quantity change
-  const handleQuantityChange = (productId, quantity) => {
-    const qty = parseInt(quantity) || 1;
+  const handleQty = (productId, val, e) => {
+    e?.stopPropagation();
+    const qty = parseInt(val) || 1;
     if (qty < 1) return;
-
-    setSelectedProducts((prev) => ({
-      ...prev,
-      [productId]: qty,
-    }));
+    setSelectedProducts((prev) => ({ ...prev, [productId]: qty }));
   };
 
-  // Handle add items to order
+  const inc = (id, e) => {
+    e.stopPropagation();
+    setSelectedProducts((p) => ({ ...p, [id]: (p[id] || 1) + 1 }));
+  };
+  const dec = (id, e) => {
+    e.stopPropagation();
+    setSelectedProducts((p) => {
+      const cur = p[id] || 1;
+      if (cur <= 1) return p;
+      return { ...p, [id]: cur - 1 };
+    });
+  };
+
   const handleAddItems = async () => {
     const selectedItems = Object.keys(selectedProducts);
-    if (selectedItems.length === 0) {
-      alert("⚠️ Please select at least one product!");
+    if (!selectedItems.length) {
+      alert("Please select at least one product!");
       return;
     }
-
     try {
       setAddingItems(true);
-
       const token =
         localStorage.getItem("token") || localStorage.getItem("authToken");
-
       if (!token) {
-        alert("⚠️ Authentication required. Please login again.");
+        alert("Authentication required.");
         return;
       }
 
-      // Get orderId - need to fetch order data first or get from context
-      // For now, using the id from params (orderNumber)
-      // We need MongoDB _id, so we might need to fetch order details first
-      const orderId = id;
-
-      if (!orderId) {
-        alert("⚠️ Order ID not found. Please go back and try again.");
-        return;
-      }
-
-      // First, fetch order to get MongoDB _id
       const orderResponse = await fetch(
-        `${BASE_URL}/api/checkout/vendor/order/${orderId}`,
+        `${BASE_URL}/api/checkout/vendor/order/${id}`,
         {
           method: "GET",
           credentials: "include",
@@ -160,292 +139,487 @@ const AddExtraItemPage = () => {
           },
         },
       );
-
-      if (!orderResponse.ok) {
-        throw new Error("Failed to fetch order details");
-      }
-
+      if (!orderResponse.ok) throw new Error("Failed to fetch order details");
       const orderResult = await orderResponse.json();
-      const mongoOrderId = orderResult.data?._id || orderId;
+      const mongoOrderId = orderResult.data?._id || id;
 
       const items = selectedItems.map((productId) => ({
-        productId: productId,
+        productId,
         quantity: selectedProducts[productId],
       }));
 
-      const requestBody = {
-        items: items,
-      };
-
-      const apiUrl = `${BASE_URL}/api/checkout/vendor/order/${mongoOrderId}/items`;
-
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `${BASE_URL}/api/checkout/vendor/order/${mongoOrderId}/items`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ items }),
         },
-        body: JSON.stringify(requestBody),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || `Failed to add items: ${response.status}`);
-      }
-
-      alert(
-        `✅ Items Added Successfully!\n\n${selectedItems.length} product(s) added to the order.`,
       );
+      const result = await response.json();
+      if (!response.ok || !result.success)
+        throw new Error(result.message || "Failed to add items");
 
-      // Navigate back to bag QR scan page
-      navigate(`/orders/${orderId}/bag-qr-scan`);
+      alert(`${selectedItems.length} product(s) added successfully!`);
+      navigate(`/orders/${id}/bag-qr-scan`);
     } catch (error) {
-      console.error("Error adding items:", error);
-      alert(`❌ Failed to add items: ${error.message}\n\nPlease try again.`);
+      alert(`Failed to add items: ${error.message}`);
     } finally {
       setAddingItems(false);
     }
   };
 
+  const selectedCount = Object.keys(selectedProducts).length;
+
+  const filterTabs = [
+    { key: "all", label: "All" },
+    { key: "name", label: "Name" },
+    { key: "sku", label: "SKU" },
+    { key: "category", label: "Category" },
+  ];
+
+  // Skeleton loader
+  const TableSkeleton = () => (
+    <tbody>
+      {Array.from({ length: 8 }).map((_, idx) => (
+        <tr key={idx} className="border-b border-gray-100">
+          {Array.from({ length: 7 }).map((__, j) => (
+            <td key={j} className="px-4 py-3.5">
+              <div
+                className={`h-3.5 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full animate-pulse ${
+                  j === 0
+                    ? "w-8"
+                    : j === 1
+                      ? "w-10"
+                      : j === 6
+                        ? "w-20 ml-auto"
+                        : "w-[70%]"
+                }`}
+              />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </tbody>
+  );
+
   return (
     <DashboardLayout>
-      <div className="w-full min-h-screen p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .row-animate { animation: fadeSlideIn 0.25s ease forwards; }
+        .action-btn {
+          width: 30px; height: 30px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 8px;
+          transition: all 0.18s ease;
+        }
+        .action-btn:hover { transform: translateY(-1px); }
+      `}</style>
+
+      <div className="w-full px-1 mt-3">
+        {/* ── Page Header ── */}
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(`/orders/${id}/bag-qr-scan`)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="w-9 h-9 rounded-xl border border-gray-200 bg-white hover:bg-orange-50 hover:border-orange-200 hover:text-[#FF7B1D] text-gray-600 flex items-center justify-center transition-all shadow-sm"
             >
-              <ArrowLeft className="w-6 h-6 text-gray-700" />
+              <ArrowLeft className="w-4 h-4" />
             </button>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Add Extra Items to Order
-            </h1>
-          </div>
-        </div>
-
-        {/* Info Box */}
-        <div className="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-lg mb-6">
-          <div className="flex items-start gap-3">
-            <Package className="w-5 h-5 text-purple-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-gray-700">
-              <strong>Add complimentary items, free gifts, or additional products</strong> that
-              weren't in the original order. Select products and specify quantities, then click
-              "Add to Order".
-            </p>
-          </div>
-        </div>
-
-        {/* Search and Filter */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Filter Buttons */}
-            <div className="flex gap-2 flex-wrap">
-              {[
-                { key: "all", label: "All" },
-                { key: "name", label: "Product Name" },
-                { key: "sku", label: "SKU" },
-                { key: "category", label: "Category" },
-              ].map((filter) => (
-                <button
-                  key={filter.key}
-                  onClick={() => setSearchBy(filter.key)}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                    searchBy === filter.key
-                      ? "bg-purple-500 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Search Bar */}
-            <div className="flex-1 flex items-center border border-gray-300 rounded-lg overflow-hidden">
-              <Search className="w-5 h-5 text-gray-400 ml-3" />
-              <input
-                type="text"
-                placeholder="Search by name, SKU, or category..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 px-4 py-2 focus:outline-none"
-              />
+            <div>
+              <h1 className="text-lg font-bold text-gray-800">
+                Add Extra Items
+              </h1>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Order <span className="font-mono text-gray-500">{id}</span>
+              </p>
             </div>
           </div>
+
+          {selectedCount > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 font-medium">
+                <span className="font-bold text-[#FF7B1D]">
+                  {selectedCount}
+                </span>{" "}
+                product{selectedCount !== 1 ? "s" : ""} selected
+              </span>
+              <button
+                onClick={() => setSelectedProducts({})}
+                className="h-8 px-3 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+              >
+                Clear
+              </button>
+              <button
+                onClick={handleAddItems}
+                disabled={addingItems}
+                className={`h-8 px-4 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                  addingItems
+                    ? "bg-gray-300 cursor-not-allowed text-white"
+                    : "bg-[#FF7B1D] hover:bg-orange-500 text-white shadow-sm shadow-orange-200"
+                }`}
+              >
+                {addingItems ? (
+                  <>
+                    <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-3.5 h-3.5" /> Add to Order
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Products List */}
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mx-auto"></div>
-            <p className="text-gray-600 mt-4">Loading products...</p>
+        {/* ── Info Banner ── */}
+        <div className="mb-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-violet-50 border border-violet-100">
+          <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
+            <ShoppingBag className="w-3.5 h-3.5 text-violet-600" />
           </div>
-        ) : filteredProducts.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-            <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600 font-semibold">No products found</p>
-            <p className="text-gray-500 text-sm mt-2">
-              {searchQuery
-                ? "Try adjusting your search criteria"
-                : "No products available"}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            {filteredProducts.map((product) => {
-              const isSelected = !!selectedProducts[product.productId];
-              const quantity = selectedProducts[product.productId] || 1;
+          <p className="text-xs text-violet-700 font-medium">
+            Add complimentary items, free gifts, or additional products not in
+            the original order. Select products, set quantities, then click{" "}
+            <strong>Add to Order</strong>.
+          </p>
+        </div>
 
-              return (
-                <div
-                  key={product.productId}
-                  className={`bg-white rounded-lg shadow-sm border-2 p-4 transition-all cursor-pointer ${
-                    isSelected
-                      ? "border-purple-500 bg-purple-50"
-                      : "border-gray-200 hover:border-purple-300"
-                  }`}
-                  onClick={() => handleProductSelect(product.productId)}
-                >
-                  <div className="flex items-start gap-3">
-                    {/* Product Image/Icon */}
-                    <div className="flex-shrink-0">
-                      {product.thumbnail ? (
-                        <img
-                          src={product.thumbnail}
-                          alt={product.name}
-                          className="w-16 h-16 object-cover rounded-lg"
-                        />
-                      ) : (
-                        <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
-                          <Package className="w-8 h-8 text-gray-400" />
+        {/* ── Toolbar ── */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-3">
+          {/* Filter tabs */}
+          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+            {filterTabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setSearchBy(tab.key)}
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
+                  searchBy === tab.key
+                    ? "bg-white text-[#FF7B1D] shadow-sm shadow-orange-100"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Search */}
+          <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden h-[38px] w-full lg:w-[380px] shadow-sm bg-white">
+            <input
+              type="text"
+              placeholder={`Search by ${searchBy === "all" ? "name, SKU or category" : searchBy}...`}
+              className="flex-1 px-4 text-sm text-gray-700 focus:outline-none h-full placeholder:text-gray-400"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <button className="bg-[#FF7B1D] hover:bg-orange-500 text-white text-sm font-medium px-5 h-full transition-colors flex items-center justify-center">
+              <Search className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* ── Table Card ── */}
+        <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+          {/* Card Header */}
+          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+              <span className="text-sm font-semibold text-gray-700">
+                Product Catalogue
+              </span>
+            </div>
+            {!loading && (
+              <span className="text-xs text-gray-400 font-medium">
+                {filteredProducts.length} of {products.length} products
+              </span>
+            )}
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gradient-to-r from-[#FF7B1D] to-orange-400">
+                  {[
+                    "S.N",
+                    "Product",
+                    "SKU",
+                    "Category",
+                    "Price",
+                    "Stock",
+                    "Actions",
+                  ].map((h, i) => (
+                    <th
+                      key={h}
+                      className={`px-4 py-3.5 text-left text-xs font-bold text-white tracking-wider uppercase opacity-90 ${
+                        i === 6 ? "text-right pr-5" : ""
+                      }`}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+
+              {loading ? (
+                <TableSkeleton />
+              ) : filteredProducts.length === 0 ? (
+                <tbody>
+                  <tr>
+                    <td colSpan="7" className="py-20 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center">
+                          <Package className="w-8 h-8 text-orange-300" />
                         </div>
-                      )}
-                    </div>
-
-                    {/* Product Details */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-gray-900 mb-1 truncate">
-                        {product.name}
-                      </h3>
-                      <div className="space-y-1 text-sm text-gray-600">
-                        <p>
-                          <strong>SKU:</strong> {product.sku}
+                        <p className="text-gray-400 text-sm font-medium">
+                          No products found
                         </p>
-                        <p>
-                          <strong>Price:</strong> ₹{product.price}
-                        </p>
-                        <p>
-                          <strong>Category:</strong> {product.category}
-                        </p>
-                        <p>
-                          <strong>Stock:</strong> {product.inventory}
+                        <p className="text-gray-300 text-xs">
+                          {searchQuery
+                            ? "Try adjusting your search"
+                            : "No products available"}
                         </p>
                       </div>
+                    </td>
+                  </tr>
+                </tbody>
+              ) : (
+                <tbody>
+                  {filteredProducts.map((product, idx) => {
+                    const isSelected = !!selectedProducts[product.productId];
+                    const qty = selectedProducts[product.productId] || 1;
 
-                      {/* Quantity Input (only if selected) */}
-                      {isSelected && (
-                        <div className="mt-3 flex items-center gap-2">
-                          <label className="text-sm font-semibold text-gray-700">
-                            Quantity:
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleQuantityChange(
-                                  product.productId,
-                                  quantity - 1,
-                                );
-                              }}
-                              className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded flex items-center justify-center font-bold"
+                    return (
+                      <tr
+                        key={product.productId}
+                        onClick={() => handleProductSelect(product.productId)}
+                        className={`row-animate border-b border-gray-50 transition-colors duration-150 group cursor-pointer ${
+                          isSelected
+                            ? "bg-orange-50/60"
+                            : "hover:bg-orange-50/40"
+                        }`}
+                        style={{ animationDelay: `${idx * 20}ms` }}
+                      >
+                        {/* S.N */}
+                        <td className="px-4 py-3.5">
+                          <span
+                            className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold transition-colors ${
+                              isSelected
+                                ? "bg-[#FF7B1D] text-white"
+                                : "bg-gray-100 text-gray-500 group-hover:bg-orange-100 group-hover:text-[#FF7B1D]"
+                            }`}
+                          >
+                            {isSelected ? (
+                              <CheckCircle className="w-3.5 h-3.5" />
+                            ) : (
+                              idx + 1
+                            )}
+                          </span>
+                        </td>
+
+                        {/* Product */}
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl border border-gray-100 bg-gray-50 flex-shrink-0 overflow-hidden">
+                              {product.thumbnail ? (
+                                <img
+                                  src={product.thumbnail}
+                                  alt={product.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Package className="w-4 h-4 text-gray-300" />
+                                </div>
+                              )}
+                            </div>
+                            <span
+                              className={`font-medium text-sm ${
+                                isSelected ? "text-[#FF7B1D]" : "text-gray-800"
+                              }`}
                             >
-                              -
-                            </button>
-                            <input
-                              type="number"
-                              min="1"
-                              value={quantity}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                handleQuantityChange(
-                                  product.productId,
-                                  e.target.value,
-                                );
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                              className="w-16 px-2 py-1 border border-gray-300 rounded text-center text-sm font-semibold"
-                            />
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleQuantityChange(
-                                  product.productId,
-                                  quantity + 1,
-                                );
-                              }}
-                              className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded flex items-center justify-center font-bold"
-                            >
-                              +
-                            </button>
+                              {product.name}
+                            </span>
                           </div>
-                        </div>
-                      )}
-                    </div>
+                        </td>
 
-                    {/* Selection Indicator */}
-                    {isSelected && (
-                      <div className="flex-shrink-0">
-                        <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                          <Plus className="w-4 h-4 text-white" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                        {/* SKU */}
+                        <td className="px-4 py-3.5">
+                          <span className="font-mono text-xs bg-gray-50 border border-gray-200 px-2 py-1 rounded-md text-gray-600 group-hover:border-orange-200 group-hover:bg-orange-50 transition-colors">
+                            {product.sku}
+                          </span>
+                        </td>
+
+                        {/* Category */}
+                        <td className="px-4 py-3.5">
+                          <span className="inline-block bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full border border-blue-100">
+                            {product.category}
+                          </span>
+                        </td>
+
+                        {/* Price */}
+                        <td className="px-4 py-3.5">
+                          <span className="text-sm font-bold text-gray-800">
+                            ₹{product.price.toLocaleString("en-IN")}
+                          </span>
+                        </td>
+
+                        {/* Stock */}
+                        <td className="px-4 py-3.5">
+                          <span
+                            className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
+                              product.inventory > 10
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : product.inventory > 0
+                                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                                  : "bg-red-50 text-red-700 border-red-200"
+                            }`}
+                          >
+                            {product.inventory}
+                          </span>
+                        </td>
+
+                        {/* Actions / Qty */}
+                        <td className="px-4 py-3.5 pr-5">
+                          <div className="flex items-center justify-end gap-2">
+                            {isSelected ? (
+                              // Quantity stepper when selected
+                              <div
+                                className="flex items-center gap-1.5"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <button
+                                  onClick={(e) => dec(product.productId, e)}
+                                  disabled={qty <= 1}
+                                  className="w-7 h-7 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center font-bold text-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                >
+                                  −
+                                </button>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={qty}
+                                  onChange={(e) =>
+                                    handleQty(
+                                      product.productId,
+                                      e.target.value,
+                                      e,
+                                    )
+                                  }
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-12 h-7 border border-orange-300 rounded-lg text-center text-xs font-bold focus:border-[#FF7B1D] focus:outline-none bg-white"
+                                />
+                                <button
+                                  onClick={(e) => inc(product.productId, e)}
+                                  className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 flex items-center justify-center font-bold text-sm transition-all"
+                                >
+                                  +
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleProductSelect(product.productId);
+                                  }}
+                                  className="w-7 h-7 rounded-lg bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-all"
+                                  title="Remove"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              // Add button when not selected
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleProductSelect(product.productId);
+                                }}
+                                className="action-btn bg-orange-50 text-[#FF7B1D] hover:bg-orange-100"
+                                title="Add product"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              )}
+            </table>
           </div>
-        )}
+        </div>
 
-        {/* Action Buttons */}
-        {Object.keys(selectedProducts).length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 p-4 shadow-lg">
-            <div className="max-w-7xl mx-auto flex items-center justify-between">
-              <div className="text-sm text-gray-600">
-                <strong className="text-purple-600">
-                  {Object.keys(selectedProducts).length}
-                </strong>{" "}
-                product(s) selected
+        {/* ── Sticky Footer Bar ── */}
+        {selectedCount > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 shadow-lg px-6 py-3">
+            <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+              {/* Selected pills */}
+              <div className="flex items-center gap-3 overflow-x-auto flex-1 min-w-0">
+                <span className="text-xs font-semibold text-gray-500 whitespace-nowrap flex-shrink-0">
+                  <span className="text-[#FF7B1D] font-bold">
+                    {selectedCount}
+                  </span>{" "}
+                  selected:
+                </span>
+                <div className="flex gap-2 overflow-x-auto pb-0.5">
+                  {Object.keys(selectedProducts).map((productId) => {
+                    const p = products.find((x) => x.productId === productId);
+                    return p ? (
+                      <span
+                        key={productId}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-50 border border-orange-200 text-xs font-medium text-orange-700 whitespace-nowrap flex-shrink-0"
+                      >
+                        {p.name.split(" ").slice(0, 2).join(" ")} ×
+                        {selectedProducts[productId]}
+                        <button
+                          onClick={() => handleProductSelect(productId)}
+                          className="text-orange-400 hover:text-red-500 transition-colors ml-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ) : null;
+                  })}
+                </div>
               </div>
-              <div className="flex gap-3">
+
+              {/* Action buttons */}
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={() => setSelectedProducts({})}
-                  className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition-all"
+                  className="h-9 px-4 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-all"
                 >
-                  Clear Selection
+                  Clear All
                 </button>
                 <button
                   onClick={handleAddItems}
                   disabled={addingItems}
-                  className={`px-6 py-3 font-semibold rounded-lg transition-all flex items-center gap-2 ${
+                  className={`h-9 px-5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
                     addingItems
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-purple-500 hover:bg-purple-600 text-white"
+                      ? "bg-gray-300 cursor-not-allowed text-white"
+                      : "bg-[#FF7B1D] hover:bg-orange-500 text-white shadow-sm shadow-orange-200"
                   }`}
                 >
                   {addingItems ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                      <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
                       Adding...
                     </>
                   ) : (
                     <>
-                      <Plus className="w-5 h-5" />
-                      Add to Order
+                      <Plus className="w-3.5 h-3.5" />
+                      Add {selectedCount} Item{selectedCount !== 1 ? "s" : ""}{" "}
+                      to Order
                     </>
                   )}
                 </button>
@@ -453,6 +627,9 @@ const AddExtraItemPage = () => {
             </div>
           </div>
         )}
+
+        {/* Bottom padding when footer bar is visible */}
+        {selectedCount > 0 && <div className="h-20" />}
       </div>
     </DashboardLayout>
   );

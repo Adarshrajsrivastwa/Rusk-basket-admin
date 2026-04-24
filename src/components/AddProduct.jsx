@@ -1,2359 +1,56 @@
-// import React, { useState } from "react";
-// import { Upload } from "lucide-react";
-
-// export default function AddProductPopup({ isOpen, onClose }) {
-//   const [formData, setFormData] = useState({
-//     title: "",
-//     description: "",
-//     sku: "",
-//     inventory: "",
-//     category: "",
-//     subCategory: "",
-//     actualPrice: "",
-//     mrp: "",
-//     sellPrice: "",
-//     tags: "",
-//     mainImage: null,
-//     galleryImages: Array(5).fill(null),
-//   });
-
-//   const handleChange = (e) => {
-//     const { name, value } = e.target;
-//     setFormData((prev) => ({ ...prev, [name]: value }));
-//   };
-
-//   const handleMainImageUpload = (e) => {
-//     const file = e.target.files[0];
-//     if (file) setFormData((prev) => ({ ...prev, mainImage: file }));
-//   };
-
-//   const handleGalleryUpload = (index, e) => {
-//     const file = e.target.files[0];
-//     if (file) {
-//       const newGallery = [...formData.galleryImages];
-//       newGallery[index] = file;
-//       setFormData((prev) => ({ ...prev, galleryImages: newGallery }));
-//     }
-//   };
-
-//   const handleSubmit = (e) => {
-//     e.preventDefault();
-//     console.log("Form Data:", formData);
-//     alert("Product submitted! Check console for details.");
-//     onClose(); // Close modal after submission
-//   };
-
-//   if (!isOpen) return null;
-
-//   return (
-//     <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-2">
-//       <div className="bg-white w-full max-w-[1100px] rounded-md shadow-lg relative border border-gray-300 max-h-[90vh] flex flex-col">
-//         {/* Close Button */}
-//         <button
-//           onClick={onClose}
-//           className="absolute top-2 right-2 text-orange-500 hover:text-red-600 text-lg font-bold"
-//         >
-//           ✕
-//         </button>
-
-//         {/* Header */}
-//         <h2 className="text-[14px] font-bold border-b border-gray-300 pb-2 pt-3 px-5">
-//           Add Product
-//         </h2>
-
-//         {/* Scrollable Form */}
-//         <div className="overflow-y-auto px-5 py-4">
-//           <form className="space-y-4 text-[13px]" onSubmit={handleSubmit}>
-//             {/* Product Title + Main Image */}
-//             <div className="grid grid-cols-1 lg:grid-cols-[2.2fr,1fr] gap-4">
-//               <div className="flex flex-col space-y-3">
-//                 <div>
-//                   <label className="block font-semibold mb-1">
-//                     Product Title
-//                   </label>
-//                   <input
-//                     type="text"
-//                     name="title"
-//                     value={formData.title}
-//                     onChange={handleChange}
-//                     placeholder="Enter product title recommended upto 100 words"
-//                     className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                   />
-//                 </div>
-//                 <div className="flex flex-col flex-1">
-//                   <label className="block font-semibold mb-1">
-//                     Product Description
-//                   </label>
-//                   <textarea
-//                     name="description"
-//                     value={formData.description}
-//                     onChange={handleChange}
-//                     rows="10"
-//                     placeholder="Write Product Description"
-//                     className="flex-1 w-full border border-orange-400 rounded-sm p-2 resize-none focus:outline-none text-[13px] min-h-[200px] lg:h-[260px]"
-//                   ></textarea>
-//                 </div>
-//               </div>
-
-//               {/* Upload Main Image */}
-//               <div className="flex flex-col justify-end">
-//                 <label className="block font-semibold mb-1">
-//                   Upload Main Image
-//                 </label>
-//                 <div className="flex items-center justify-center border border-orange-400 rounded-sm h-[250px] sm:h-[280px] lg:h-[330px] relative">
-//                   {formData.mainImage ? (
-//                     <img
-//                       src={URL.createObjectURL(formData.mainImage)}
-//                       alt="Main"
-//                       className="object-contain h-full w-full"
-//                     />
-//                   ) : (
-//                     <Upload size={60} className="text-orange-500" />
-//                   )}
-//                   <input
-//                     type="file"
-//                     accept="image/*"
-//                     onChange={handleMainImageUpload}
-//                     className="absolute inset-0 opacity-0 cursor-pointer"
-//                   />
-//                 </div>
-//               </div>
-//             </div>
-
-//             {/* SKU / Inventory / Category / Subcategory */}
-//             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-//               <div>
-//                 <label className="block font-semibold mb-1">SKU/HSN</label>
-//                 <input
-//                   type="text"
-//                   name="sku"
-//                   value={formData.sku}
-//                   onChange={handleChange}
-//                   placeholder="Enter Product HSN/SKU Code"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                 />
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">Inventory</label>
-//                 <input
-//                   type="number"
-//                   name="inventory"
-//                   value={formData.inventory}
-//                   onChange={handleChange}
-//                   placeholder="Enter Inventory"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                 />
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">
-//                   Select Category
-//                 </label>
-//                 <select
-//                   name="category"
-//                   value={formData.category}
-//                   onChange={handleChange}
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                 >
-//                   <option value="">Select Category</option>
-//                 </select>
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">
-//                   Select Sub-Category
-//                 </label>
-//                 <select
-//                   name="subCategory"
-//                   value={formData.subCategory}
-//                   onChange={handleChange}
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                 >
-//                   <option value="">Select Sub-Category</option>
-//                 </select>
-//               </div>
-//             </div>
-
-//             {/* Price Section */}
-//             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-//               <div>
-//                 <label className="block font-semibold mb-1">Actual Price</label>
-//                 <input
-//                   type="number"
-//                   name="actualPrice"
-//                   value={formData.actualPrice}
-//                   onChange={handleChange}
-//                   placeholder="Enter Rupees in INR"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                 />
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">MRP*</label>
-//                 <input
-//                   type="number"
-//                   name="mrp"
-//                   value={formData.mrp}
-//                   onChange={handleChange}
-//                   placeholder="Enter Rupees in INR"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                 />
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">Sell Price*</label>
-//                 <input
-//                   type="number"
-//                   name="sellPrice"
-//                   value={formData.sellPrice}
-//                   onChange={handleChange}
-//                   placeholder="Enter Rupees in INR"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                 />
-//               </div>
-//             </div>
-
-//             {/* Product Gallery + Tags */}
-//             <div className="grid grid-cols-1 lg:grid-cols-[4fr,1fr] gap-4">
-//               <div>
-//                 <label className="block font-semibold mb-1">
-//                   Product Gallery
-//                 </label>
-//                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-//                   {formData.galleryImages.map((img, i) => (
-//                     <div
-//                       key={i}
-//                       className="border border-orange-400 rounded-sm h-[120px] sm:h-[130px] md:h-[150px] flex items-center justify-center relative hover:border-orange-600 transition"
-//                     >
-//                       {img ? (
-//                         <img
-//                           src={URL.createObjectURL(img)}
-//                           alt={`Gallery ${i}`}
-//                           className="object-contain h-full w-full"
-//                         />
-//                       ) : (
-//                         <Upload size={35} className="text-orange-500" />
-//                       )}
-//                       <input
-//                         type="file"
-//                         accept="image/*"
-//                         onChange={(e) => handleGalleryUpload(i, e)}
-//                         className="absolute inset-0 opacity-0 cursor-pointer"
-//                       />
-//                     </div>
-//                   ))}
-//                 </div>
-//               </div>
-
-//               <div>
-//                 <label className="block font-semibold mb-1">Tag</label>
-//                 <textarea
-//                   name="tags"
-//                   value={formData.tags}
-//                   onChange={handleChange}
-//                   placeholder="Write Multiple Tags for Searching"
-//                   rows="5"
-//                   className="w-full border border-orange-400 rounded-sm p-2 resize-none focus:outline-none text-[13px] min-h-[120px] sm:min-h-[130px] md:min-h-[150px]"
-//                 ></textarea>
-//               </div>
-//             </div>
-
-//             {/* Submit Button */}
-//             <div className="flex justify-end mt-3">
-//               <button
-//                 type="submit"
-//                 className="bg-green-700 hover:bg-green-800 text-white px-6 py-2 rounded-sm text-[13px] font-semibold"
-//               >
-//                 Submit
-//               </button>
-//             </div>
-//           </form>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-// import React, { useState, useEffect } from "react";
-// import { Upload, Loader2, CheckCircle, AlertCircle } from "lucide-react";
-
-// export default function AddProductPopup({ isOpen, onClose, onSuccess }) {
-//   const [formData, setFormData] = useState({
-//     productName: "",
-//     productType: "quantity",
-//     productTypeValue: "",
-//     productTypeUnit: "kg",
-//     category: "",
-//     subCategory: "",
-//     description: "",
-//     skuHsn: "",
-//     inventory: "",
-//     actualPrice: "",
-//     regularPrice: "",
-//     salePrice: "",
-//     cashback: "",
-//     tags: "",
-//     images: Array(5).fill(null),
-//   });
-
-//   const [categories, setCategories] = useState([]);
-//   const [subCategories, setSubCategories] = useState([]);
-//   const [filteredSubCategories, setFilteredSubCategories] = useState([]);
-//   const [loadingCategories, setLoadingCategories] = useState(false);
-//   const [loadingSubCategories, setLoadingSubCategories] = useState(false);
-//   const [isSubmitting, setIsSubmitting] = useState(false);
-//   const [submitStatus, setSubmitStatus] = useState(null);
-//   const [errorMessage, setErrorMessage] = useState("");
-
-//   // Fetch categories on component mount
-//   useEffect(() => {
-//     if (isOpen) {
-//       fetchCategories();
-//       fetchSubCategories();
-//     }
-//   }, [isOpen]);
-
-//   // Filter subcategories based on selected category
-//   useEffect(() => {
-//     if (formData.category) {
-//       const selectedCategory = categories.find(
-//         (cat) => cat._id === formData.category
-//       );
-//       if (selectedCategory) {
-//         const filtered = subCategories.filter(
-//           (sub) =>
-//             sub.category === formData.category ||
-//             sub.category === selectedCategory._id ||
-//             sub.categoryName === selectedCategory.name ||
-//             sub.categoryName === selectedCategory.categoryName
-//         );
-//         setFilteredSubCategories(filtered);
-//       } else {
-//         setFilteredSubCategories([]);
-//       }
-//     } else {
-//       setFilteredSubCategories([]);
-//     }
-//   }, [formData.category, subCategories, categories]);
-
-//   const fetchCategories = async () => {
-//     setLoadingCategories(true);
-//     try {
-//       const baseURL = getBaseURL();
-//       const authToken =
-//         localStorage.getItem("authToken") || localStorage.getItem("token");
-
-//       const response = await fetch(`${baseURL}/api/category`, {
-//         headers: {
-//           ...(authToken && { Authorization: `Bearer ${authToken}` }),
-//         },
-//       });
-//       if (!response.ok) throw new Error("Failed to fetch categories");
-
-//       const data = await response.json();
-//       setCategories(data.data || []);
-//     } catch (err) {
-//       console.error("Error fetching categories:", err);
-//     } finally {
-//       setLoadingCategories(false);
-//     }
-//   };
-
-//   const fetchSubCategories = async () => {
-//     setLoadingSubCategories(true);
-//     try {
-//       const baseURL = getBaseURL();
-//       const authToken =
-//         localStorage.getItem("authToken") || localStorage.getItem("token");
-
-//       const response = await fetch(`${baseURL}api/subcategory`, {
-//         headers: {
-//           ...(authToken && { Authorization: `Bearer ${authToken}` }),
-//         },
-//       });
-//       if (!response.ok) throw new Error("Failed to fetch sub-categories");
-
-//       const data = await response.json();
-//       setSubCategories(data.data || []);
-//     } catch (err) {
-//       console.error("Error fetching sub-categories:", err);
-//     } finally {
-//       setLoadingSubCategories(false);
-//     }
-//   };
-
-//   const handleChange = (e) => {
-//     const { name, value } = e.target;
-//     setFormData((prev) => ({ ...prev, [name]: value }));
-//     setSubmitStatus(null);
-
-//     // Reset subcategory when category changes
-//     if (name === "category") {
-//       setFormData((prev) => ({ ...prev, subCategory: "" }));
-//     }
-//   };
-
-//   const handleImageUpload = (index, e) => {
-//     const file = e.target.files[0];
-//     if (file) {
-//       // Validate file type
-//       if (!file.type.startsWith("image/")) {
-//         alert("Please upload an image file.");
-//         return;
-//       }
-
-//       // Validate file size (max 5MB)
-//       if (file.size > 5 * 1024 * 1024) {
-//         alert("Image size should be less than 5MB");
-//         return;
-//       }
-
-//       const newImages = [...formData.images];
-//       newImages[index] = file;
-//       setFormData((prev) => ({ ...prev, images: newImages }));
-//     }
-//   };
-
-//   const validateForm = () => {
-//     if (!formData.productName.trim()) {
-//       setErrorMessage("Product Name is required");
-//       return false;
-//     }
-//     if (formData.productName.length > 200) {
-//       setErrorMessage("Product name cannot be more than 200 characters");
-//       return false;
-//     }
-//     if (
-//       !formData.productTypeValue ||
-//       parseFloat(formData.productTypeValue) < 0
-//     ) {
-//       setErrorMessage(
-//         "Product type value is required and must be greater than or equal to 0"
-//       );
-//       return false;
-//     }
-//     if (!formData.productTypeUnit.trim()) {
-//       setErrorMessage("Product type unit is required");
-//       return false;
-//     }
-//     if (!formData.category) {
-//       setErrorMessage("Category is required");
-//       return false;
-//     }
-//     if (!formData.subCategory) {
-//       setErrorMessage("Sub category is required");
-//       return false;
-//     }
-//     if (formData.description && formData.description.length > 5000) {
-//       setErrorMessage("Description cannot be more than 5000 characters");
-//       return false;
-//     }
-//     if (!formData.actualPrice || parseFloat(formData.actualPrice) < 0) {
-//       setErrorMessage(
-//         "Actual Price is required and must be greater than or equal to 0"
-//       );
-//       return false;
-//     }
-//     if (!formData.regularPrice || parseFloat(formData.regularPrice) < 0) {
-//       setErrorMessage(
-//         "Regular Price is required and must be greater than or equal to 0"
-//       );
-//       return false;
-//     }
-//     if (!formData.salePrice || parseFloat(formData.salePrice) < 0) {
-//       setErrorMessage(
-//         "Sale Price is required and must be greater than or equal to 0"
-//       );
-//       return false;
-//     }
-//     if (formData.cashback && parseFloat(formData.cashback) < 0) {
-//       setErrorMessage("Cashback must be greater than or equal to 0");
-//       return false;
-//     }
-//     if (formData.skuHsn && formData.skuHsn.length > 50) {
-//       setErrorMessage("SKU/HSN code cannot be more than 50 characters");
-//       return false;
-//     }
-//     if (!formData.tags.trim()) {
-//       setErrorMessage("Tags are required");
-//       return false;
-//     }
-//     // Validate tags format
-//     const tagsArray = formData.tags
-//       .split(",")
-//       .map((tag) => tag.trim())
-//       .filter((tag) => tag.length > 0);
-//     if (tagsArray.length === 0) {
-//       setErrorMessage("At least one tag is required");
-//       return false;
-//     }
-//     if (tagsArray.length > 20) {
-//       setErrorMessage("Maximum 20 tags allowed");
-//       return false;
-//     }
-
-//     // Check if at least one image is uploaded
-//     const hasImages = formData.images.some((img) => img !== null);
-//     if (!hasImages) {
-//       setErrorMessage("At least one product image is required");
-//       return false;
-//     }
-
-//     return true;
-//   };
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     setSubmitStatus(null);
-//     setErrorMessage("");
-
-//     if (!validateForm()) {
-//       setSubmitStatus("error");
-//       return;
-//     }
-
-//     setIsSubmitting(true);
-
-//     try {
-//       const baseURL = getBaseURL();
-//       const authToken =
-//         localStorage.getItem("authToken") || localStorage.getItem("token");
-
-//       const formDataToSend = new FormData();
-
-//       // Append all form fields according to API requirements
-//       formDataToSend.append("productName", formData.productName.trim());
-//       formDataToSend.append("productType", formData.productType);
-//       formDataToSend.append(
-//         "productTypeValue",
-//         parseFloat(formData.productTypeValue)
-//       );
-//       formDataToSend.append("productTypeUnit", formData.productTypeUnit.trim());
-//       formDataToSend.append("category", formData.category); // Should be MongoId
-//       formDataToSend.append("subCategory", formData.subCategory); // Should be MongoId
-
-//       if (formData.description && formData.description.trim()) {
-//         formDataToSend.append("description", formData.description.trim());
-//       }
-
-//       if (formData.skuHsn && formData.skuHsn.trim()) {
-//         formDataToSend.append("skuHsn", formData.skuHsn.trim());
-//       }
-
-//       if (formData.inventory) {
-//         formDataToSend.append("inventory", parseFloat(formData.inventory));
-//       }
-
-//       formDataToSend.append("actualPrice", parseFloat(formData.actualPrice));
-//       formDataToSend.append("regularPrice", parseFloat(formData.regularPrice));
-//       formDataToSend.append("salePrice", parseFloat(formData.salePrice));
-
-//       if (formData.cashback) {
-//         formDataToSend.append("cashback", parseFloat(formData.cashback));
-//       }
-
-//       formDataToSend.append("tags", formData.tags.trim());
-
-//       // Append images (only non-null files)
-//       // uploadMultiple middleware expects all images with the same field name
-//       const imageFiles = formData.images.filter((img) => img !== null);
-//       imageFiles.forEach((file) => {
-//         formDataToSend.append("images", file);
-//       });
-
-//       console.log("Submitting product data...");
-
-//       const headers = {};
-//       if (authToken) {
-//         headers.Authorization = `Bearer ${authToken}`;
-//       }
-
-//       const response = await fetch(`${baseURL}/api/product/add`, {
-//         method: "POST",
-//         headers: headers,
-//         body: formDataToSend,
-//       });
-
-//       const result = await response.json();
-
-//       if (response.ok && result.success) {
-//         setSubmitStatus("success");
-//         console.log("✅ Product added successfully:", result);
-
-//         // Call success callback if provided
-//         if (onSuccess) {
-//           onSuccess(result.data);
-//         }
-
-//         // Reset form and close modal after delay
-//         setTimeout(() => {
-//           resetForm();
-//           onClose();
-//         }, 2000);
-//       } else {
-//         setSubmitStatus("error");
-//         // Handle validation errors from API
-//         if (result.errors && Array.isArray(result.errors)) {
-//           const errorMessages = result.errors
-//             .map((err) => err.msg || err.message)
-//             .join(", ");
-//           setErrorMessage(
-//             errorMessages ||
-//               result.error ||
-//               "Failed to add product. Please try again."
-//           );
-//         } else {
-//           setErrorMessage(
-//             result.error ||
-//               result.message ||
-//               "Failed to add product. Please try again."
-//           );
-//         }
-//         console.error("Error response:", result);
-//       }
-//     } catch (error) {
-//       setSubmitStatus("error");
-//       setErrorMessage(
-//         "Network error. Please check your connection and try again."
-//       );
-//       console.error("Submit error:", error);
-//     } finally {
-//       setIsSubmitting(false);
-//     }
-//   };
-
-//   const resetForm = () => {
-//     setFormData({
-//       productName: "",
-//       productType: "quantity",
-//       productTypeValue: "",
-//       productTypeUnit: "kg",
-//       category: "",
-//       subCategory: "",
-//       description: "",
-//       skuHsn: "",
-//       inventory: "",
-//       actualPrice: "",
-//       regularPrice: "",
-//       salePrice: "",
-//       cashback: "",
-//       tags: "",
-//       images: Array(5).fill(null),
-//     });
-//     setSubmitStatus(null);
-//     setErrorMessage("");
-//   };
-
-//   if (!isOpen) return null;
-
-//   return (
-//     <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-2">
-//       <div className="bg-white w-full max-w-[1100px] rounded-md shadow-lg relative border border-gray-300 max-h-[90vh] flex flex-col">
-//         <button
-//           onClick={onClose}
-//           className="absolute top-2 right-2 text-orange-500 hover:text-red-600 text-lg font-bold z-10"
-//           disabled={isSubmitting}
-//         >
-//           ✕
-//         </button>
-
-//         <h2 className="text-[14px] font-bold border-b border-gray-300 pb-2 pt-3 px-5">
-//           Add Product
-//         </h2>
-
-//         {submitStatus === "success" && (
-//           <div className="mx-5 mt-4 p-3 bg-green-50 border border-green-300 rounded-sm flex items-center gap-2">
-//             <CheckCircle size={18} className="text-green-600" />
-//             <span className="text-green-700 text-[13px] font-medium">
-//               Product added successfully!
-//             </span>
-//           </div>
-//         )}
-
-//         {submitStatus === "error" && errorMessage && (
-//           <div className="mx-5 mt-4 p-3 bg-red-50 border border-red-300 rounded-sm flex items-center gap-2">
-//             <AlertCircle size={18} className="text-red-600" />
-//             <span className="text-red-700 text-[13px] font-medium">
-//               {errorMessage}
-//             </span>
-//           </div>
-//         )}
-
-//         <div className="overflow-y-auto px-5 py-4">
-//           <div className="space-y-4 text-[13px]">
-//             <div>
-//               <label className="block font-semibold mb-1">
-//                 Product Name <span className="text-red-500">*</span>
-//               </label>
-//               <input
-//                 type="text"
-//                 name="productName"
-//                 value={formData.productName}
-//                 onChange={handleChange}
-//                 placeholder="Enter product name"
-//                 className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                 disabled={isSubmitting}
-//                 maxLength={200}
-//               />
-//             </div>
-
-//             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-//               <div>
-//                 <label className="block font-semibold mb-1">
-//                   Product Type <span className="text-red-500">*</span>
-//                 </label>
-//                 <select
-//                   name="productType"
-//                   value={formData.productType}
-//                   onChange={handleChange}
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                   disabled={isSubmitting}
-//                 >
-//                   <option value="quantity">Quantity</option>
-//                   <option value="weight">Weight</option>
-//                   <option value="volume">Volume</option>
-//                 </select>
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">
-//                   Product Type Value <span className="text-red-500">*</span>
-//                 </label>
-//                 <input
-//                   type="number"
-//                   name="productTypeValue"
-//                   value={formData.productTypeValue}
-//                   onChange={handleChange}
-//                   placeholder="Enter value"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                   disabled={isSubmitting}
-//                   min="0"
-//                   step="0.01"
-//                 />
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">
-//                   Product Type Unit <span className="text-red-500">*</span>
-//                 </label>
-//                 <input
-//                   type="text"
-//                   name="productTypeUnit"
-//                   value={formData.productTypeUnit}
-//                   onChange={handleChange}
-//                   placeholder="Enter unit (e.g., kg, g, l, ml, pcs)"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                   disabled={isSubmitting}
-//                 />
-//               </div>
-//             </div>
-
-//             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-//               <div>
-//                 <label className="block font-semibold mb-1">
-//                   Select Category <span className="text-red-500">*</span>
-//                 </label>
-//                 <select
-//                   name="category"
-//                   value={formData.category}
-//                   onChange={handleChange}
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                   disabled={isSubmitting || loadingCategories}
-//                 >
-//                   <option value="">
-//                     {loadingCategories ? "Loading..." : "Select Category"}
-//                   </option>
-//                   {categories.map((cat) => (
-//                     <option key={cat._id} value={cat._id}>
-//                       {cat.name || cat.categoryName}
-//                     </option>
-//                   ))}
-//                 </select>
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">
-//                   Select Sub-Category <span className="text-red-500">*</span>
-//                 </label>
-//                 <select
-//                   name="subCategory"
-//                   value={formData.subCategory}
-//                   onChange={handleChange}
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                   disabled={
-//                     isSubmitting || !formData.category || loadingSubCategories
-//                   }
-//                 >
-//                   <option value="">
-//                     {loadingSubCategories
-//                       ? "Loading..."
-//                       : !formData.category
-//                       ? "Select Category First"
-//                       : "Select Sub-Category"}
-//                   </option>
-//                   {filteredSubCategories.map((sub) => (
-//                     <option key={sub._id} value={sub._id}>
-//                       {sub.name || sub.subCategoryName}
-//                     </option>
-//                   ))}
-//                 </select>
-//               </div>
-//             </div>
-
-//             <div>
-//               <label className="block font-semibold mb-1">
-//                 Product Images <span className="text-red-500">*</span>
-//               </label>
-//               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-//                 {formData.images.map((img, i) => (
-//                   <div
-//                     key={i}
-//                     className="border border-orange-400 rounded-sm h-[120px] sm:h-[130px] md:h-[150px] flex items-center justify-center relative hover:border-orange-600 transition"
-//                   >
-//                     {img ? (
-//                       <img
-//                         src={URL.createObjectURL(img)}
-//                         alt={`Image ${i + 1}`}
-//                         className="object-contain h-full w-full"
-//                       />
-//                     ) : (
-//                       <Upload size={35} className="text-orange-500" />
-//                     )}
-//                     <input
-//                       type="file"
-//                       accept="image/*"
-//                       onChange={(e) => handleImageUpload(i, e)}
-//                       className="absolute inset-0 opacity-0 cursor-pointer"
-//                       disabled={isSubmitting}
-//                     />
-//                   </div>
-//                 ))}
-//               </div>
-//               <p className="text-xs text-gray-500 mt-1">
-//                 Max file size: 5MB per image. At least one image is required.
-//               </p>
-//             </div>
-
-//             <div>
-//               <label className="block font-semibold mb-1">
-//                 Product Description
-//               </label>
-//               <textarea
-//                 name="description"
-//                 value={formData.description}
-//                 onChange={handleChange}
-//                 rows="6"
-//                 placeholder="Write product description"
-//                 className="w-full border border-orange-400 rounded-sm p-2 resize-none focus:outline-none text-[13px]"
-//                 disabled={isSubmitting}
-//                 maxLength={5000}
-//               ></textarea>
-//             </div>
-
-//             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-//               <div>
-//                 <label className="block font-semibold mb-1">SKU/HSN</label>
-//                 <input
-//                   type="text"
-//                   name="skuHsn"
-//                   value={formData.skuHsn}
-//                   onChange={handleChange}
-//                   placeholder="Enter Product HSN/SKU Code"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                   disabled={isSubmitting}
-//                   maxLength={50}
-//                 />
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">Inventory</label>
-//                 <input
-//                   type="number"
-//                   name="inventory"
-//                   value={formData.inventory}
-//                   onChange={handleChange}
-//                   placeholder="Enter Inventory"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                   disabled={isSubmitting}
-//                   min="0"
-//                 />
-//               </div>
-//             </div>
-
-//             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-//               <div>
-//                 <label className="block font-semibold mb-1">Actual Price</label>
-//                 <input
-//                   type="number"
-//                   name="actualPrice"
-//                   value={formData.actualPrice}
-//                   onChange={handleChange}
-//                   placeholder="Enter Rupees in INR"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                   disabled={isSubmitting}
-//                   min="0"
-//                   step="0.01"
-//                 />
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">
-//                   Regular Price <span className="text-red-500">*</span>
-//                 </label>
-//                 <input
-//                   type="number"
-//                   name="regularPrice"
-//                   value={formData.regularPrice}
-//                   onChange={handleChange}
-//                   placeholder="Enter Rupees in INR"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                   disabled={isSubmitting}
-//                   min="0"
-//                   step="0.01"
-//                 />
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">
-//                   Sale Price <span className="text-red-500">*</span>
-//                 </label>
-//                 <input
-//                   type="number"
-//                   name="salePrice"
-//                   value={formData.salePrice}
-//                   onChange={handleChange}
-//                   placeholder="Enter Rupees in INR"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                   disabled={isSubmitting}
-//                   min="0"
-//                   step="0.01"
-//                 />
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">Cashback</label>
-//                 <input
-//                   type="number"
-//                   name="cashback"
-//                   value={formData.cashback}
-//                   onChange={handleChange}
-//                   placeholder="Enter Cashback Amount"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                   disabled={isSubmitting}
-//                   min="0"
-//                   step="0.01"
-//                 />
-//               </div>
-//             </div>
-
-//             <div>
-//               <label className="block font-semibold mb-1">
-//                 Tags <span className="text-red-500">*</span>
-//               </label>
-//               <textarea
-//                 name="tags"
-//                 value={formData.tags}
-//                 onChange={handleChange}
-//                 placeholder="Use for product search - separate tags with commas (e.g., fresh, organic, healthy)"
-//                 rows="3"
-//                 className="w-full border border-orange-400 rounded-sm p-2 resize-none focus:outline-none text-[13px]"
-//                 disabled={isSubmitting}
-//                 maxLength={500}
-//               ></textarea>
-//             </div>
-
-//             <div className="flex justify-end mt-3">
-//               <button
-//                 onClick={handleSubmit}
-//                 disabled={isSubmitting}
-//                 className="bg-green-700 hover:bg-green-800 text-white px-6 py-2 rounded-sm text-[13px] font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
-//               >
-//                 {isSubmitting ? (
-//                   <>
-//                     <Loader2 size={16} className="animate-spin" />
-//                     Submitting...
-//                   </>
-//                 ) : (
-//                   "Submit"
-//                 )}
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-// import React, { useState, useEffect, useRef } from "react";
-// import { Upload, X, Check } from "lucide-react";
-// import api from "../api/api";
-
-// export default function AddProductPopup({
-//   isOpen,
-//   onClose,
-//   onSuccess,
-//   isEditMode = false,
-//   editingProduct = null,
-// }) {
-//   const [formData, setFormData] = useState({
-//     productName: "",
-//     description: "",
-//     skuHsn: "",
-//     inventory: "",
-//     category: "",
-//     subCategory: "",
-//     actualPrice: "",
-//     regularPrice: "",
-//     salePrice: "",
-//     cashback: "",
-//     tax: "",
-//     productType: "",
-//     productTypeValue: "",
-//     productTypeUnit: "",
-//     tags: [],
-//     images: [],
-//     existingImages: [],
-//     vendorId: "",
-//   });
-
-//   const [tagInput, setTagInput] = useState("");
-//   const [categories, setCategories] = useState([]);
-//   const [subCategories, setSubCategories] = useState([]);
-//   const [vendors, setVendors] = useState([]);
-//   const [vendorsLoading, setVendorsLoading] = useState(false);
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState("");
-//   const [categoriesLoading, setCategoriesLoading] = useState(false);
-//   const [subCategoriesLoading, setSubCategoriesLoading] = useState(false);
-
-//   // Crop modal state
-//   const [showCropModal, setShowCropModal] = useState(false);
-//   const [cropImage, setCropImage] = useState(null);
-//   const [cropArea, setCropArea] = useState({ x: 0, y: 0, width: 0, height: 0 });
-//   const [isDragging, setIsDragging] = useState(false);
-//   const [isResizing, setIsResizing] = useState(false);
-//   const [resizeHandle, setResizeHandle] = useState(null);
-//   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-//   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
-//   const cropContainerRef = useRef(null);
-//   const cropBoxRef = useRef(null);
-//   const imageRef = useRef(null);
-//   const pendingImageIndex = useRef(null); // Track which image slot we're cropping
-
-//   // FIX: This ref prevents the category→subCategory and productType→unit
-//   // side-effect useEffects from firing during edit initialization, which
-//   // was causing those fields to get wiped right after being set.
-//   const isInitializingRef = useRef(false);
-
-//   const userRole = localStorage.getItem("userRole") || "";
-//   const isAdmin = userRole === "admin";
-
-//   const productTypeOptions = [
-//     { value: "", label: "Select Type" },
-//     { value: "weight", label: "Weight" },
-//     { value: "volume", label: "Volume" },
-//     { value: "count", label: "Count" },
-//     { value: "piece", label: "Piece" },
-//   ];
-
-//   const getUnitOptions = () => {
-//     switch (formData.productType) {
-//       case "weight":
-//         return [
-//           { value: "", label: "Select Unit" },
-//           { value: "kg", label: "Kilogram (kg)" },
-//           { value: "g", label: "Gram (g)" },
-//           { value: "mg", label: "Milligram (mg)" },
-//           { value: "lb", label: "Pound (lb)" },
-//           { value: "oz", label: "Ounce (oz)" },
-//         ];
-//       case "volume":
-//         return [
-//           { value: "", label: "Select Unit" },
-//           { value: "l", label: "Liter (l)" },
-//           { value: "ml", label: "Milliliter (ml)" },
-//           { value: "gallon", label: "Gallon" },
-//         ];
-//       case "count":
-//       case "piece":
-//         return [
-//           { value: "", label: "Select Unit" },
-//           { value: "piece", label: "Piece" },
-//           { value: "dozen", label: "Dozen" },
-//           { value: "pack", label: "Pack" },
-//           { value: "box", label: "Box" },
-//         ];
-//       default:
-//         return [{ value: "", label: "Select Type First" }];
-//     }
-//   };
-
-//   // ─── Helper: extract a valid 24-char hex ObjectId from any format ──────────
-//   const extractId = (id) => {
-//     if (!id) return "";
-//     if (typeof id === "string") {
-//       if (/^[0-9a-fA-F]{24}$/.test(id)) return id;
-//     }
-//     if (typeof id === "object" && id !== null) {
-//       if (id.$oid && /^[0-9a-fA-F]{24}$/.test(id.$oid)) return id.$oid;
-//       if (typeof id.toHexString === "function") {
-//         try {
-//           const h = id.toHexString();
-//           if (/^[0-9a-fA-F]{24}$/.test(h)) return h;
-//         } catch (_) {}
-//       }
-//       for (const key of ["_id", "id", "str"]) {
-//         if (id[key] && /^[0-9a-fA-F]{24}$/.test(String(id[key])))
-//           return String(id[key]);
-//       }
-//       try {
-//         const m = JSON.stringify(id).match(/"([0-9a-fA-F]{24})"/);
-//         if (m) return m[1];
-//       } catch (_) {}
-//     }
-//     return "";
-//   };
-
-//   const fetchVendors = async () => {
-//     if (!isAdmin) return;
-//     setVendorsLoading(true);
-//     try {
-//       const response = await api.get("/api/vendor");
-//       if (response.data.success) setVendors(response.data.data || []);
-//     } catch (err) {
-//       console.error("Error fetching vendors:", err);
-//     } finally {
-//       setVendorsLoading(false);
-//     }
-//   };
-
-//   // ─── Main initialization effect ────────────────────────────────────────────
-//   useEffect(() => {
-//     if (!isOpen) return;
-
-//     fetchCategories();
-//     if (isAdmin && !isEditMode) fetchVendors();
-
-//     if (isEditMode && editingProduct) {
-//       // Block side-effect useEffects while we initialize
-//       isInitializingRef.current = true;
-
-//       const categoryId = extractId(editingProduct.category);
-//       const subCategoryId = extractId(editingProduct.subCategory);
-
-//       const newFormData = {
-//         productName: editingProduct.name || editingProduct.productName || "",
-//         description: editingProduct.description || "",
-//         skuHsn: editingProduct.sku || editingProduct.skuHsn || "N/A",
-//         inventory:
-//           editingProduct.inventory != null
-//             ? String(editingProduct.inventory)
-//             : "0",
-//         category: categoryId,
-//         subCategory: subCategoryId,
-//         actualPrice:
-//           editingProduct.actualPrice != null
-//             ? String(editingProduct.actualPrice)
-//             : "0",
-//         regularPrice:
-//           editingProduct.regularPrice != null
-//             ? String(editingProduct.regularPrice)
-//             : "0",
-//         salePrice:
-//           editingProduct.salePrice != null
-//             ? String(editingProduct.salePrice)
-//             : "0",
-//         cashback:
-//           editingProduct.cashback != null
-//             ? String(editingProduct.cashback)
-//             : "0",
-//         tax: editingProduct.tax != null ? String(editingProduct.tax) : "0",
-//         // Set all three productType fields together so the unit is never wiped
-//         productType: editingProduct.productType?.type || "",
-//         productTypeValue:
-//           editingProduct.productType?.value != null
-//             ? String(editingProduct.productType.value)
-//             : "",
-//         productTypeUnit: editingProduct.productType?.unit || "",
-//         tags: Array.isArray(editingProduct.tags) ? editingProduct.tags : [],
-//         images: [],
-//         existingImages: Array.isArray(editingProduct.images)
-//           ? editingProduct.images
-//           : [],
-//         vendorId: "",
-//       };
-
-//       setFormData(newFormData);
-//       setTagInput("");
-
-//       // Load subcategories for the category, then restore the selected subCategory
-//       // and lift the init flag — done inside the promise so timing is correct.
-//       if (categoryId && /^[0-9a-fA-F]{24}$/.test(categoryId)) {
-//         fetchSubCategories(categoryId)
-//           .then(() => {
-//             // Restore subCategory in case the category useEffect already cleared it
-//             setFormData((prev) => ({ ...prev, subCategory: subCategoryId }));
-//           })
-//           .catch(() => {})
-//           .finally(() => {
-//             isInitializingRef.current = false;
-//           });
-//       } else {
-//         isInitializingRef.current = false;
-//       }
-//     } else {
-//       isInitializingRef.current = false;
-//       setFormData({
-//         productName: "",
-//         description: "",
-//         skuHsn: "",
-//         inventory: "",
-//         category: "",
-//         subCategory: "",
-//         actualPrice: "",
-//         regularPrice: "",
-//         salePrice: "",
-//         cashback: "",
-//         tax: "",
-//         productType: "",
-//         productTypeValue: "",
-//         productTypeUnit: "",
-//         tags: [],
-//         images: [],
-//         existingImages: [],
-//         vendorId: "",
-//       });
-//       setTagInput("");
-//     }
-//   }, [isOpen, isEditMode, editingProduct]);
-
-//   // ─── Category → SubCategory side effect ────────────────────────────────────
-//   // Guarded: skipped during edit initialization so it can't wipe subCategory.
-//   useEffect(() => {
-//     if (isInitializingRef.current) return;
-
-//     if (!formData.category) {
-//       setSubCategories([]);
-//       setFormData((prev) => ({ ...prev, subCategory: "" }));
-//       return;
-//     }
-
-//     const categoryIdStr = extractId(formData.category) || formData.category;
-//     if (!/^[0-9a-fA-F]{24}$/.test(categoryIdStr)) {
-//       setSubCategories([]);
-//       setFormData((prev) => ({ ...prev, subCategory: "" }));
-//       return;
-//     }
-
-//     // Real user selection: clear subCategory and reload subcategories
-//     setFormData((prev) => ({ ...prev, subCategory: "" }));
-//     fetchSubCategories(categoryIdStr);
-//   }, [formData.category]);
-
-//   // ─── ProductType → Unit side effect ────────────────────────────────────────
-//   // Guarded: during edit init productType is set together with productTypeUnit,
-//   // so we must NOT clear the unit here.
-//   useEffect(() => {
-//     if (isInitializingRef.current) return;
-//     if (formData.productType) {
-//       setFormData((prev) => ({ ...prev, productTypeUnit: "" }));
-//     }
-//   }, [formData.productType]);
-
-//   // ─── Data fetchers ──────────────────────────────────────────────────────────
-//   const fetchCategories = async () => {
-//     setCategoriesLoading(true);
-//     try {
-//       const response = await api.get("/api/category");
-//       if (response.data.success) {
-//         setCategories(response.data.data);
-//       } else {
-//         throw new Error(response.data.message || "Failed to load categories");
-//       }
-//     } catch (err) {
-//       console.error("Error fetching categories:", err);
-//       setError("Failed to load categories");
-//     } finally {
-//       setCategoriesLoading(false);
-//     }
-//   };
-
-//   const fetchSubCategories = async (categoryId) => {
-//     setSubCategoriesLoading(true);
-//     try {
-//       const categoryIdStr =
-//         typeof categoryId === "string" ? categoryId : extractId(categoryId);
-
-//       if (!categoryIdStr || !/^[0-9a-fA-F]{24}$/.test(categoryIdStr)) {
-//         setSubCategories([]);
-//         return [];
-//       }
-
-//       const response = await api.get(
-//         `/api/subcategory/by-category/${categoryIdStr}`,
-//       );
-
-//       if (response.data.success) {
-//         const normalized = (response.data.data || [])
-//           .map((subCat) => {
-//             const id = extractId(subCat._id || subCat.id);
-//             if (!id) return null;
-//             return {
-//               ...subCat,
-//               _id: id,
-//               name: subCat.name || subCat.subCategoryName || "Unnamed",
-//             };
-//           })
-//           .filter(Boolean);
-
-//         setSubCategories(normalized);
-//         return normalized;
-//       } else {
-//         throw new Error(
-//           response.data.message || "Failed to load subcategories",
-//         );
-//       }
-//     } catch (err) {
-//       console.error("Error fetching subcategories:", err);
-//       setError("Failed to load subcategories");
-//       return [];
-//     } finally {
-//       setSubCategoriesLoading(false);
-//     }
-//   };
-
-//   // ─── Form handlers ──────────────────────────────────────────────────────────
-//   const handleChange = (e) => {
-//     const { name, value } = e.target;
-//     let processedValue = value;
-
-//     if ((name === "category" || name === "subCategory") && value) {
-//       processedValue = /^[0-9a-fA-F]{24}$/.test(value)
-//         ? value
-//         : extractId(value) || "";
-//     }
-
-//     setFormData((prev) => ({ ...prev, [name]: processedValue }));
-//     if (error) setError("");
-//   };
-
-//   const handleImageUpload = (e) => {
-//     const files = Array.from(e.target.files);
-//     const totalImages = formData.images.length + formData.existingImages.length;
-//     const remainingSlots = 6 - totalImages;
-
-//     if (files.length > 0) {
-//       const file = files[0]; // Process one at a time for cropping
-//       if (!file.type.startsWith("image/")) {
-//         alert("Please upload a valid image file.");
-//         return;
-//       }
-
-//       // Open crop modal for first file
-//       const reader = new FileReader();
-//       reader.onloadend = () => {
-//         setCropImage(reader.result);
-//         pendingImageIndex.current = formData.images.length; // Track which slot
-//         setShowCropModal(true);
-//       };
-//       reader.readAsDataURL(file);
-
-//       // Reset file input
-//       e.target.value = "";
-//     }
-//   };
-
-//   // ================= INITIALIZE CROP AREA (1:1) =================
-//   useEffect(() => {
-//     if (showCropModal && cropImage && cropContainerRef.current) {
-//       const container = cropContainerRef.current;
-//       const containerWidth = container.clientWidth;
-//       const containerHeight = container.clientHeight;
-
-//       // 1:1 aspect ratio (square)
-//       const aspectRatio = 1;
-//       let cropSize = Math.min(containerWidth * 0.8, containerHeight * 0.8, 500);
-
-//       const x = (containerWidth - cropSize) / 2;
-//       const y = (containerHeight - cropSize) / 2;
-
-//       setCropArea({ x, y, width: cropSize, height: cropSize });
-
-//       // Load image to get actual dimensions
-//       const img = new Image();
-//       img.onload = () => {
-//         // Image loaded
-//       };
-//       img.src = cropImage;
-//     }
-//   }, [showCropModal, cropImage]);
-
-//   // ================= HANDLE CROP BOX DRAG & RESIZE =================
-//   const handleMouseDown = (e) => {
-//     if (e.target.classList.contains('resize-handle')) {
-//       const handle = e.target.dataset.handle;
-//       setIsResizing(true);
-//       setResizeHandle(handle);
-//       setResizeStart({
-//         x: e.clientX,
-//         y: e.clientY,
-//         width: cropArea.width,
-//         height: cropArea.height,
-//         cropX: cropArea.x,
-//         cropY: cropArea.y,
-//       });
-//       e.stopPropagation();
-//       return;
-//     }
-
-//     if (e.target === cropBoxRef.current || cropBoxRef.current?.contains(e.target)) {
-//       setIsDragging(true);
-//       setDragStart({
-//         x: e.clientX - cropArea.x,
-//         y: e.clientY - cropArea.y,
-//       });
-//     }
-//   };
-
-//   const handleMouseMove = (e) => {
-//     if (!cropContainerRef.current) return;
-
-//     const container = cropContainerRef.current;
-//     const rect = container.getBoundingClientRect();
-//     const aspectRatio = 1; // 1:1
-
-//     // Handle resize
-//     if (isResizing && resizeHandle) {
-//       const deltaX = e.clientX - resizeStart.x;
-//       const deltaY = e.clientY - resizeStart.y;
-
-//       let newSize = resizeStart.width;
-//       let newX = resizeStart.cropX;
-//       let newY = resizeStart.cropY;
-
-//       // Calculate resize based on handle position (for square, all corners work similarly)
-//       if (resizeHandle === 'se' || resizeHandle === 'sw' || resizeHandle === 'ne' || resizeHandle === 'nw') {
-//         const scale = Math.max(
-//           Math.abs(resizeStart.width + deltaX) / resizeStart.width,
-//           Math.abs(resizeStart.height + deltaY) / resizeStart.height
-//         );
-//         newSize = resizeStart.width * scale;
-
-//         // Adjust position based on corner
-//         if (resizeHandle === 'sw' || resizeHandle === 'nw') {
-//           newX = resizeStart.cropX + resizeStart.width - newSize;
-//         }
-//         if (resizeHandle === 'ne' || resizeHandle === 'nw') {
-//           newY = resizeStart.cropY + resizeStart.height - newSize;
-//         }
-//       }
-
-//       // Constrain to container bounds
-//       const maxSize = Math.min(container.clientWidth, container.clientHeight);
-//       const minSize = 100;
-
-//       if (newSize > maxSize) newSize = maxSize;
-//       if (newSize < minSize) newSize = minSize;
-
-//       // Adjust position if resizing from left or top
-//       if (resizeHandle === 'sw' || resizeHandle === 'nw') {
-//         newX = Math.max(0, Math.min(newX, container.clientWidth - newSize));
-//       }
-//       if (resizeHandle === 'ne' || resizeHandle === 'nw') {
-//         newY = Math.max(0, Math.min(newY, container.clientHeight - newSize));
-//       }
-
-//       // Ensure crop box stays within bounds
-//       if (newX + newSize > container.clientWidth) {
-//         newX = container.clientWidth - newSize;
-//       }
-//       if (newY + newSize > container.clientHeight) {
-//         newY = container.clientHeight - newSize;
-//       }
-
-//       setCropArea({
-//         x: Math.max(0, newX),
-//         y: Math.max(0, newY),
-//         width: newSize,
-//         height: newSize,
-//       });
-//       return;
-//     }
-
-//     // Handle drag
-//     if (isDragging) {
-//       const newX = e.clientX - rect.left - dragStart.x;
-//       const newY = e.clientY - rect.top - dragStart.y;
-
-//       const maxX = container.clientWidth - cropArea.width;
-//       const maxY = container.clientHeight - cropArea.height;
-
-//       setCropArea({
-//         ...cropArea,
-//         x: Math.max(0, Math.min(newX, maxX)),
-//         y: Math.max(0, Math.min(newY, maxY)),
-//       });
-//     }
-//   };
-
-//   const handleMouseUp = () => {
-//     setIsDragging(false);
-//     setIsResizing(false);
-//     setResizeHandle(null);
-//   };
-
-//   // ================= APPLY CROP =================
-//   const applyCrop = () => {
-//     if (!cropImage || !imageRef.current) return;
-
-//     const img = new Image();
-//     img.onload = () => {
-//       const canvas = document.createElement("canvas");
-//       const ctx = canvas.getContext("2d");
-
-//       // Calculate scale factor
-//       const container = cropContainerRef.current;
-//       const scaleX = img.width / container.clientWidth;
-//       const scaleY = img.height / container.clientHeight;
-
-//       // Calculate actual crop coordinates
-//       const cropX = (cropArea.x * scaleX);
-//       const cropY = (cropArea.y * scaleY);
-//       const cropSize = (cropArea.width * scaleX);
-
-//       // Set canvas size to 1:1 ratio (e.g., 1000x1000)
-//       const outputSize = 1000;
-//       canvas.width = outputSize;
-//       canvas.height = outputSize;
-
-//       // Draw cropped and scaled image
-//       ctx.drawImage(
-//         img,
-//         cropX, cropY, cropSize, cropSize,
-//         0, 0, outputSize, outputSize
-//       );
-
-//       // Convert to blob and add to form data
-//       canvas.toBlob((blob) => {
-//         const file = new File([blob], "product.jpg", { type: "image/jpeg" });
-
-//         // Add to images array at the tracked index
-//         setFormData((prev) => {
-//           const newImages = [...prev.images];
-//           newImages[pendingImageIndex.current] = file;
-//           return { ...prev, images: newImages };
-//         });
-
-//         setShowCropModal(false);
-//         setCropImage(null);
-//         pendingImageIndex.current = null;
-//       }, "image/jpeg", 0.9);
-//     };
-//     img.src = cropImage;
-//   };
-
-//   // ================= CANCEL CROP =================
-//   const cancelCrop = () => {
-//     setShowCropModal(false);
-//     setCropImage(null);
-//     pendingImageIndex.current = null;
-//   };
-
-//   const removeNewImage = (index) => {
-//     setFormData((prev) => ({
-//       ...prev,
-//       images: prev.images.filter((_, i) => i !== index),
-//     }));
-//   };
-
-//   const removeExistingImage = (index) => {
-//     setFormData((prev) => ({
-//       ...prev,
-//       existingImages: prev.existingImages.filter((_, i) => i !== index),
-//     }));
-//   };
-
-//   const handleTagInputChange = (e) => setTagInput(e.target.value);
-
-//   const handleTagInputKeyDown = (e) => {
-//     if (e.key === "Enter" && tagInput.trim()) {
-//       e.preventDefault();
-//       addTag(tagInput.trim());
-//     }
-//   };
-
-//   const addTag = (tag) => {
-//     if (tag && !formData.tags.includes(tag)) {
-//       setFormData((prev) => ({ ...prev, tags: [...prev.tags, tag] }));
-//       setTagInput("");
-//     }
-//   };
-
-//   const removeTag = (indexToRemove) => {
-//     setFormData((prev) => ({
-//       ...prev,
-//       tags: prev.tags.filter((_, index) => index !== indexToRemove),
-//     }));
-//   };
-
-//   const handleSubmit = async () => {
-//     setLoading(true);
-//     setError("");
-
-//     if (
-//       !formData.productName ||
-//       !formData.description ||
-//       !formData.skuHsn ||
-//       !formData.inventory ||
-//       !formData.category ||
-//       !formData.subCategory ||
-//       !formData.actualPrice ||
-//       !formData.regularPrice ||
-//       !formData.salePrice ||
-//       !formData.productType ||
-//       !formData.productTypeValue ||
-//       !formData.productTypeUnit
-//     ) {
-//       setError(
-//         "Please fill in all required fields including product type, value, and unit",
-//       );
-//       setLoading(false);
-//       return;
-//     }
-
-//     if (isAdmin && !isEditMode && !formData.vendorId) {
-//       setError("Please select a vendor");
-//       setLoading(false);
-//       return;
-//     }
-
-//     if (isEditMode) {
-//       if (
-//         formData.images.length === 0 &&
-//         formData.existingImages.length === 0
-//       ) {
-//         setError(
-//           "Please upload at least one product image or keep existing images",
-//         );
-//         setLoading(false);
-//         return;
-//       }
-//     } else {
-//       if (formData.images.length === 0) {
-//         setError("Please upload at least one product image");
-//         setLoading(false);
-//         return;
-//       }
-//     }
-
-//     try {
-//       const formDataToSend = new FormData();
-
-//       const categoryId = extractId(formData.category) || formData.category;
-//       const subCategoryId =
-//         extractId(formData.subCategory) || formData.subCategory;
-
-//       if (!categoryId || !/^[0-9a-fA-F]{24}$/.test(categoryId)) {
-//         setError("Please select a valid category");
-//         setLoading(false);
-//         return;
-//       }
-
-//       if (!subCategoryId || !/^[0-9a-fA-F]{24}$/.test(subCategoryId)) {
-//         setError("Please select a valid sub-category");
-//         setLoading(false);
-//         return;
-//       }
-
-//       formDataToSend.append("productName", formData.productName);
-//       formDataToSend.append("description", formData.description || "");
-//       formDataToSend.append("skuHsn", formData.skuHsn || "");
-//       formDataToSend.append("inventory", formData.inventory || "0");
-//       formDataToSend.append("category", categoryId);
-//       formDataToSend.append("subCategory", subCategoryId);
-//       formDataToSend.append("actualPrice", formData.actualPrice);
-//       formDataToSend.append("regularPrice", formData.regularPrice);
-//       formDataToSend.append("salePrice", formData.salePrice);
-
-//       const cashbackValue = formData.cashback
-//         ? parseFloat(formData.cashback)
-//         : 0;
-//       if (cashbackValue < 0) {
-//         setError("Cashback must be >= 0");
-//         setLoading(false);
-//         return;
-//       }
-//       formDataToSend.append("cashback", cashbackValue.toString());
-
-//       const taxValue = formData.tax ? parseFloat(formData.tax) : 0;
-//       if (taxValue < 0 || taxValue > 100) {
-//         setError("Tax must be between 0 and 100");
-//         setLoading(false);
-//         return;
-//       }
-//       formDataToSend.append("tax", taxValue.toString());
-
-//       if (isAdmin && !isEditMode && formData.vendorId) {
-//         formDataToSend.append("vendorId", formData.vendorId);
-//       }
-
-//       if (formData.productType)
-//         formDataToSend.append("productType", formData.productType);
-//       if (formData.productTypeValue)
-//         formDataToSend.append("productTypeValue", formData.productTypeValue);
-//       if (formData.productTypeUnit)
-//         formDataToSend.append("productTypeUnit", formData.productTypeUnit);
-
-//       if (formData.tags.length > 0) {
-//         formDataToSend.append("tags", formData.tags.join(","));
-//       }
-
-//       formData.images.forEach((image) => {
-//         if (image instanceof File) formDataToSend.append("images", image);
-//       });
-
-//       if (isEditMode && formData.existingImages.length > 0) {
-//         formDataToSend.append(
-//           "existingImages",
-//           JSON.stringify(formData.existingImages),
-//         );
-//       }
-
-//       let productId =
-//         editingProduct?.id || editingProduct?._id || editingProduct?.productId;
-//       if (productId && typeof productId === "object") {
-//         productId = extractId(productId) || productId.toString();
-//       }
-//       productId = productId?.toString() || productId;
-
-//       const apiEndpoint = isEditMode
-//         ? isAdmin
-//           ? `/api/admin/products/${productId}`
-//           : `/api/product/update/${productId}`
-//         : `/api/product/add`;
-
-//       const config = { headers: { "Content-Type": undefined } };
-
-//       const response = isEditMode
-//         ? await api.put(apiEndpoint, formDataToSend, config)
-//         : await api.post(apiEndpoint, formDataToSend, config);
-
-//       const result = response.data;
-
-//       if (response.status === 401)
-//         throw new Error("Session expired. Please log in again.");
-//       if (response.status === 403)
-//         throw new Error("Access denied. You may not have permission.");
-//       if (response.status === 400)
-//         throw new Error(
-//           result.message || "Invalid product data. Please check all fields.",
-//         );
-//       if (!result.success)
-//         throw new Error(
-//           result.message ||
-//             `Failed to ${isEditMode ? "update" : "add"} product`,
-//         );
-
-//       alert(`Product ${isEditMode ? "updated" : "added"} successfully!`);
-
-//       if (onSuccess) onSuccess(result.data);
-
-//       setFormData({
-//         productName: "",
-//         description: "",
-//         skuHsn: "",
-//         inventory: "",
-//         category: "",
-//         subCategory: "",
-//         actualPrice: "",
-//         regularPrice: "",
-//         salePrice: "",
-//         cashback: "",
-//         tax: "",
-//         productType: "",
-//         productTypeValue: "",
-//         productTypeUnit: "",
-//         tags: [],
-//         images: [],
-//         existingImages: [],
-//         vendorId: "",
-//       });
-//       setTagInput("");
-
-//       setTimeout(() => onClose(), 300);
-//     } catch (err) {
-//       console.error(
-//         `Error ${isEditMode ? "updating" : "submitting"} product:`,
-//         err,
-//       );
-//       setError(
-//         err.response?.data?.message ||
-//           err.message ||
-//           `Failed to ${
-//             isEditMode ? "update" : "submit"
-//           } product. Please try again.`,
-//       );
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   if (!isOpen) return null;
-
-//   const totalImages = formData.images.length + formData.existingImages.length;
-
-//   return (
-//     <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-2">
-//       <div className="bg-white w-full max-w-[1100px] rounded-md shadow-lg relative border border-gray-300 max-h-[90vh] flex flex-col">
-//         <button
-//           onClick={onClose}
-//           className="absolute top-2 right-2 text-orange-500 hover:text-red-600 text-lg font-bold z-10"
-//         >
-//           ✕
-//         </button>
-
-//         <h2 className="text-[14px] font-bold border-b border-gray-300 pb-2 pt-3 px-5">
-//           {isEditMode ? "Edit Product" : "Add Product"}
-//         </h2>
-
-//         {error && (
-//           <div className="mx-5 mt-3 p-3 bg-red-50 border border-red-300 text-red-700 rounded-sm text-[13px]">
-//             {error}
-//           </div>
-//         )}
-
-//         <div className="overflow-y-auto px-5 py-4">
-//           <div className="space-y-4 text-[13px]">
-//             {/* Product Name, Description, Image Upload */}
-//             <div className="grid grid-cols-1 lg:grid-cols-[2.2fr,1fr] gap-4">
-//               <div className="flex flex-col space-y-3">
-//                 <div>
-//                   <label className="block font-semibold mb-1">
-//                     Product Name *
-//                   </label>
-//                   <input
-//                     type="text"
-//                     name="productName"
-//                     value={formData.productName}
-//                     onChange={handleChange}
-//                     placeholder="Enter product name"
-//                     className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                   />
-//                 </div>
-//                 <div className="flex flex-col flex-1">
-//                   <label className="block font-semibold mb-1">
-//                     Product Description *
-//                   </label>
-//                   <textarea
-//                     name="description"
-//                     value={formData.description}
-//                     onChange={handleChange}
-//                     rows="10"
-//                     placeholder="Write Product Description"
-//                     className="flex-1 w-full border border-orange-400 rounded-sm p-2 resize-none focus:outline-none text-[13px] min-h-[200px] lg:h-[260px]"
-//                   ></textarea>
-//                 </div>
-//               </div>
-
-//               {/* Image Upload Section */}
-//               <div className="flex flex-col justify-end">
-//                 <label className="block font-semibold mb-1">
-//                   Upload Images ({totalImages}/6)
-//                 </label>
-//                 <p className="text-xs text-orange-600 font-medium mb-2 bg-orange-50 border border-orange-200 rounded-sm px-2 py-1">
-//                   ⚠️ Only 1:1 (Square) ratio allowed - Images will be automatically cropped
-//                 </p>
-//                 <div className="border border-orange-400 rounded-sm h-[250px] sm:h-[280px] lg:h-[330px] overflow-y-auto p-2">
-//                   <div className="grid grid-cols-2 gap-2">
-//                     {formData.existingImages.map((img, index) => (
-//                       <div
-//                         key={`existing-${index}`}
-//                         className="relative border border-gray-300 rounded-sm h-[100px]"
-//                       >
-//                         <img
-//                           src={img.url || img}
-//                           alt={`Existing ${index + 1}`}
-//                           className="object-cover h-full w-full rounded-sm"
-//                         />
-//                         <button
-//                           type="button"
-//                           onClick={() => removeExistingImage(index)}
-//                           className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
-//                         >
-//                           ✕
-//                         </button>
-//                         <span className="absolute bottom-1 left-1 bg-blue-500 text-white text-[10px] px-1 rounded">
-//                           Existing
-//                         </span>
-//                       </div>
-//                     ))}
-//                     {formData.images.map((img, index) => (
-//                       <div
-//                         key={`new-${index}`}
-//                         className="relative border border-gray-300 rounded-sm h-[100px]"
-//                       >
-//                         <img
-//                           src={URL.createObjectURL(img)}
-//                           alt={`New ${index + 1}`}
-//                           className="object-cover h-full w-full rounded-sm"
-//                         />
-//                         <button
-//                           type="button"
-//                           onClick={() => removeNewImage(index)}
-//                           className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
-//                         >
-//                           ✕
-//                         </button>
-//                         <span className="absolute bottom-1 left-1 bg-green-500 text-white text-[10px] px-1 rounded">
-//                           New
-//                         </span>
-//                       </div>
-//                     ))}
-//                     {totalImages < 6 && (
-//                       <label className="border border-dashed border-orange-400 rounded-sm h-[100px] flex items-center justify-center cursor-pointer hover:border-orange-600">
-//                         <Upload size={30} className="text-orange-500" />
-//                         <input
-//                           type="file"
-//                           accept="image/*"
-//                           multiple
-//                           onChange={handleImageUpload}
-//                           className="hidden"
-//                         />
-//                       </label>
-//                     )}
-//                   </div>
-//                 </div>
-//               </div>
-//             </div>
-
-//             {/* Vendor Selection (Admin only) */}
-//             {isAdmin && !isEditMode && (
-//               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-//                 <div>
-//                   <label className="block font-semibold mb-1">
-//                     Select Vendor *
-//                   </label>
-//                   <select
-//                     name="vendorId"
-//                     value={formData.vendorId}
-//                     onChange={handleChange}
-//                     className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                     required
-//                   >
-//                     <option value="">Select a vendor</option>
-//                     {vendorsLoading ? (
-//                       <option>Loading vendors...</option>
-//                     ) : (
-//                       vendors.map((vendor) => (
-//                         <option key={vendor._id} value={vendor._id}>
-//                           {vendor.vendorName ||
-//                             vendor.storeName ||
-//                             vendor.contactNumber}{" "}
-//                           - {vendor.storeName || "Store"}
-//                         </option>
-//                       ))
-//                     )}
-//                   </select>
-//                 </div>
-//               </div>
-//             )}
-
-//             {/* HSN, Stock, Category, Sub-Category */}
-//             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-//               <div>
-//                 <label className="block font-semibold mb-1">HSN *</label>
-//                 <input
-//                   type="text"
-//                   name="skuHsn"
-//                   value={formData.skuHsn}
-//                   onChange={handleChange}
-//                   placeholder="Enter Product HSN Code"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                 />
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">Stock *</label>
-//                 <input
-//                   type="number"
-//                   name="inventory"
-//                   value={formData.inventory}
-//                   onChange={handleChange}
-//                   placeholder="Enter Stock"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                 />
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">
-//                   Select Category *
-//                 </label>
-//                 <select
-//                   name="category"
-//                   value={formData.category}
-//                   onChange={handleChange}
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                   disabled={categoriesLoading}
-//                 >
-//                   <option value="">
-//                     {categoriesLoading ? "Loading..." : "Select Category"}
-//                   </option>
-//                   {categories.map((cat) => (
-//                     <option key={cat._id} value={cat._id}>
-//                       {cat.name}
-//                       {cat.totalProducts > 0
-//                         ? ` (${cat.totalProducts} products)`
-//                         : ""}
-//                     </option>
-//                   ))}
-//                 </select>
-//                 {categoriesLoading && (
-//                   <p className="text-xs text-gray-500 mt-1">
-//                     Loading categories...
-//                   </p>
-//                 )}
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">
-//                   Select Sub-Category *
-//                 </label>
-//                 <select
-//                   name="subCategory"
-//                   value={formData.subCategory}
-//                   onChange={handleChange}
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                   disabled={!formData.category || subCategoriesLoading}
-//                 >
-//                   <option value="">
-//                     {subCategoriesLoading
-//                       ? "Loading..."
-//                       : "Select Sub-Category"}
-//                   </option>
-//                   {subCategories.map((sub) => (
-//                     <option key={sub._id} value={sub._id}>
-//                       {sub.name}
-//                     </option>
-//                   ))}
-//                 </select>
-//                 {subCategoriesLoading && (
-//                   <p className="text-xs text-gray-500 mt-1">
-//                     Loading subcategories...
-//                   </p>
-//                 )}
-//               </div>
-//             </div>
-
-//             {/* Pricing Fields */}
-//             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-//               <div>
-//                 <label className="block font-semibold mb-1">
-//                   Actual Price *
-//                 </label>
-//                 <input
-//                   type="number"
-//                   name="actualPrice"
-//                   value={formData.actualPrice}
-//                   onChange={handleChange}
-//                   placeholder="Enter Rupees in INR"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                 />
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">
-//                   Regular Price (MRP) *
-//                 </label>
-//                 <input
-//                   type="number"
-//                   name="regularPrice"
-//                   value={formData.regularPrice}
-//                   onChange={handleChange}
-//                   placeholder="Enter Rupees in INR"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                 />
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">Sale Price *</label>
-//                 <input
-//                   type="number"
-//                   name="salePrice"
-//                   value={formData.salePrice}
-//                   onChange={handleChange}
-//                   placeholder="Enter Rupees in INR"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                 />
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">Cashback</label>
-//                 <input
-//                   type="number"
-//                   name="cashback"
-//                   value={formData.cashback}
-//                   onChange={handleChange}
-//                   placeholder="Enter Cashback Amount"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                 />
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">Tax (%)</label>
-//                 <input
-//                   type="number"
-//                   name="tax"
-//                   value={formData.tax}
-//                   onChange={handleChange}
-//                   placeholder="Enter Tax Percentage"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                 />
-//               </div>
-//             </div>
-
-//             {/* Product Type Fields */}
-//             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-//               <div>
-//                 <label className="block font-semibold mb-1">Product Type</label>
-//                 <select
-//                   name="productType"
-//                   value={formData.productType}
-//                   onChange={handleChange}
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                 >
-//                   {productTypeOptions.map((option) => (
-//                     <option key={option.value} value={option.value}>
-//                       {option.label}
-//                     </option>
-//                   ))}
-//                 </select>
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">
-//                   Product Type Value
-//                 </label>
-//                 <input
-//                   type="number"
-//                   name="productTypeValue"
-//                   value={formData.productTypeValue}
-//                   onChange={handleChange}
-//                   placeholder="e.g., 1, 500, 2"
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                 />
-//               </div>
-//               <div>
-//                 <label className="block font-semibold mb-1">
-//                   Product Type Unit
-//                 </label>
-//                 <select
-//                   name="productTypeUnit"
-//                   value={formData.productTypeUnit}
-//                   onChange={handleChange}
-//                   className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-//                   disabled={!formData.productType}
-//                 >
-//                   {getUnitOptions().map((option) => (
-//                     <option key={option.value} value={option.value}>
-//                       {option.label}
-//                     </option>
-//                   ))}
-//                 </select>
-//               </div>
-//             </div>
-
-//             {/* Tags */}
-//             <div className="grid grid-cols-1 gap-4">
-//               <div>
-//                 <label className="block font-semibold mb-1 flex items-center gap-2">
-//                   <span className="text-orange-500">🏷️</span> Tags
-//                   <span className="text-gray-400 text-xs font-normal">
-//                     (Press Enter to add)
-//                   </span>
-//                 </label>
-//                 <div className="border border-orange-400 rounded-sm p-2 min-h-[80px] focus-within:ring-2 focus-within:ring-orange-300">
-//                   <div className="flex flex-wrap gap-2 mb-2">
-//                     {formData.tags.map((tag, index) => (
-//                       <span
-//                         key={index}
-//                         className="inline-flex items-center gap-1 bg-orange-500 text-white px-3 py-1 rounded-full text-[12px] font-medium"
-//                       >
-//                         {tag}
-//                         <button
-//                           type="button"
-//                           onClick={() => removeTag(index)}
-//                           className="hover:bg-orange-600 rounded-full p-0.5 transition-colors"
-//                         >
-//                           <X size={14} />
-//                         </button>
-//                       </span>
-//                     ))}
-//                   </div>
-//                   <input
-//                     type="text"
-//                     value={tagInput}
-//                     onChange={handleTagInputChange}
-//                     onKeyDown={handleTagInputKeyDown}
-//                     placeholder={
-//                       formData.tags.length === 0
-//                         ? "Add tags (e.g., fruits, apple, fresh, organic)"
-//                         : "Add more..."
-//                     }
-//                     className="w-full focus:outline-none text-[13px] bg-transparent"
-//                   />
-//                 </div>
-//               </div>
-//             </div>
-
-//             {/* Submit Button */}
-//             <div className="flex justify-end mt-3">
-//               <button
-//                 onClick={handleSubmit}
-//                 disabled={loading}
-//                 className={`${
-//                   loading
-//                     ? "bg-green-400 cursor-not-allowed"
-//                     : "bg-green-700 hover:bg-green-800"
-//                 } text-white px-6 py-2 rounded-sm text-[13px] font-semibold transition-colors`}
-//               >
-//                 {loading
-//                   ? isEditMode
-//                     ? "Updating..."
-//                     : "Submitting..."
-//                   : isEditMode
-//                     ? "Update Product"
-//                     : "Add Product"}
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* CROP MODAL - 1:1 Aspect Ratio */}
-//       {showCropModal && (
-//         <div
-//           className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black bg-opacity-75"
-//           onMouseMove={handleMouseMove}
-//           onMouseUp={handleMouseUp}
-//           onMouseLeave={handleMouseUp}
-//         >
-//           <div className="relative bg-white w-full max-w-4xl p-6 rounded-lg shadow-2xl">
-//             <div className="flex justify-between items-center mb-4">
-//               <h3 className="text-xl font-bold text-gray-800">
-//                 Crop Product Image (1:1 Aspect Ratio - Square)
-//               </h3>
-//               <button
-//                 onClick={cancelCrop}
-//                 className="text-gray-400 hover:text-gray-600"
-//               >
-//                 <X size={24} />
-//               </button>
-//             </div>
-
-//             <div
-//               ref={cropContainerRef}
-//               className="relative w-full bg-gray-900 rounded-lg overflow-hidden"
-//               style={{ height: "500px", position: "relative" }}
-//               onMouseDown={handleMouseDown}
-//             >
-//               <img
-//                 ref={imageRef}
-//                 src={cropImage}
-//                 alt="Crop"
-//                 className="w-full h-full object-contain"
-//               />
-
-//               {/* Overlay */}
-//               <div className="absolute inset-0">
-//                 <div
-//                   className="absolute bg-black bg-opacity-50"
-//                   style={{
-//                     top: 0,
-//                     left: 0,
-//                     right: 0,
-//                     height: `${cropArea.y}px`,
-//                   }}
-//                 />
-//                 <div
-//                   className="absolute bg-black bg-opacity-50"
-//                   style={{
-//                     top: `${cropArea.y + cropArea.height}px`,
-//                     left: 0,
-//                     right: 0,
-//                     bottom: 0,
-//                   }}
-//                 />
-//                 <div
-//                   className="absolute bg-black bg-opacity-50"
-//                   style={{
-//                     top: `${cropArea.y}px`,
-//                     left: 0,
-//                     width: `${cropArea.x}px`,
-//                     height: `${cropArea.height}px`,
-//                   }}
-//                 />
-//                 <div
-//                   className="absolute bg-black bg-opacity-50"
-//                   style={{
-//                     top: `${cropArea.y}px`,
-//                     right: 0,
-//                     width: `${cropContainerRef.current ? cropContainerRef.current.clientWidth - cropArea.x - cropArea.width : 0}px`,
-//                     height: `${cropArea.height}px`,
-//                   }}
-//                 />
-//               </div>
-
-//               {/* Crop Box */}
-//               <div
-//                 ref={cropBoxRef}
-//                 className="absolute border-2 border-white cursor-move"
-//                 style={{
-//                   left: `${cropArea.x}px`,
-//                   top: `${cropArea.y}px`,
-//                   width: `${cropArea.width}px`,
-//                   height: `${cropArea.height}px`,
-//                   boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.5)",
-//                 }}
-//               >
-//                 {/* Resize handles - Top Left */}
-//                 <div
-//                   className="resize-handle absolute -top-2 -left-2 w-6 h-6 bg-white border-2 border-blue-500 rounded-full cursor-nwse-resize hover:bg-blue-100 transition-colors"
-//                   data-handle="nw"
-//                   title="Resize (1:1)"
-//                 />
-
-//                 {/* Resize handles - Top Right */}
-//                 <div
-//                   className="resize-handle absolute -top-2 -right-2 w-6 h-6 bg-white border-2 border-blue-500 rounded-full cursor-nesw-resize hover:bg-blue-100 transition-colors"
-//                   data-handle="ne"
-//                   title="Resize (1:1)"
-//                 />
-
-//                 {/* Resize handles - Bottom Left */}
-//                 <div
-//                   className="resize-handle absolute -bottom-2 -left-2 w-6 h-6 bg-white border-2 border-blue-500 rounded-full cursor-nesw-resize hover:bg-blue-100 transition-colors"
-//                   data-handle="sw"
-//                   title="Resize (1:1)"
-//                 />
-
-//                 {/* Resize handles - Bottom Right */}
-//                 <div
-//                   className="resize-handle absolute -bottom-2 -right-2 w-6 h-6 bg-white border-2 border-blue-500 rounded-full cursor-nwse-resize hover:bg-blue-100 transition-colors"
-//                   data-handle="se"
-//                   title="Resize (1:1)"
-//                 />
-
-//                 {/* Aspect ratio indicator */}
-//                 <div className="absolute -bottom-8 left-0 right-0 text-center text-white text-sm font-semibold bg-black bg-opacity-50 px-2 py-1 rounded">
-//                   1:1 Square (Drag corners to resize)
-//                 </div>
-//               </div>
-//             </div>
-
-//             <div className="flex justify-end gap-3 mt-4">
-//               <button
-//                 onClick={cancelCrop}
-//                 className="px-5 py-2 bg-gray-200 text-gray-700 rounded-sm hover:bg-gray-300 transition-colors"
-//               >
-//                 Cancel
-//               </button>
-//               <button
-//                 onClick={applyCrop}
-//                 className="px-5 py-2 bg-orange-500 text-white rounded-sm hover:bg-orange-600 transition-colors flex items-center gap-2"
-//               >
-//                 <Check size={16} />
-//                 Apply Crop
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
 import React, { useState, useEffect, useRef } from "react";
-import { Upload, X, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Upload,
+  X,
+  Check,
+  ImageIcon,
+  Tag,
+  DollarSign,
+  Layers,
+  Package,
+  Store,
+  ChevronDown,
+  Hash,
+  BoxIcon,
+  Percent,
+  Zap,
+  AlertCircle,
+} from "lucide-react";
 import api from "../api/api";
+
+/* ── Section Card (mirrors AllProduct card style) ── */
+const SectionCard = ({ icon: Icon, title, accent, children }) => (
+  <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+    <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2 bg-gradient-to-r from-gray-50 to-white">
+      <div
+        className={`w-2 h-2 rounded-full flex-shrink-0 ${accent || "bg-[#FF7B1D]"}`}
+      />
+      {Icon && <Icon className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />}
+      <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">
+        {title}
+      </span>
+    </div>
+    <div className="p-5">{children}</div>
+  </div>
+);
+
+/* ── Styled Input ── */
+const Field = ({ label, required, children, hint }) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+      {label}
+      {required && <span className="text-[#FF7B1D] ml-0.5">*</span>}
+    </label>
+    {children}
+    {hint && <p className="text-[10px] text-gray-400">{hint}</p>}
+  </div>
+);
+
+const inputCls =
+  "w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 bg-white placeholder:text-gray-400 transition-all";
+
+const selectCls =
+  "w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 bg-white transition-all appearance-none";
 
 export default function AddProductPopup({
   isOpen,
@@ -2393,7 +90,7 @@ export default function AddProductPopup({
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [subCategoriesLoading, setSubCategoriesLoading] = useState(false);
 
-  // ── Crop modal state ──────────────────────────────────────────────────────
+  /* ── Crop modal state ── */
   const [showCropModal, setShowCropModal] = useState(false);
   const [cropImage, setCropImage] = useState(null);
   const [cropArea, setCropArea] = useState({ x: 0, y: 0, width: 0, height: 0 });
@@ -2410,11 +107,8 @@ export default function AddProductPopup({
   const cropContainerRef = useRef(null);
   const cropBoxRef = useRef(null);
   const imageRef = useRef(null);
-
-  // ── FIX: Queue-based multi-image cropping ─────────────────────────────────
-  const imageQueueRef = useRef([]); // pending File objects to crop
-  const pendingImageIndex = useRef(null); // slot index in formData.images
-
+  const imageQueueRef = useRef([]);
+  const pendingImageIndex = useRef(null);
   const isInitializingRef = useRef(false);
 
   const userRole = localStorage.getItem("userRole") || "";
@@ -2489,28 +183,23 @@ export default function AddProductPopup({
     if (!isAdmin) return;
     setVendorsLoading(true);
     try {
-      const response = await api.get("/api/vendor");
-      if (response.data.success) setVendors(response.data.data || []);
+      const r = await api.get("/api/vendor");
+      if (r.data.success) setVendors(r.data.data || []);
     } catch (err) {
-      console.error("Error fetching vendors:", err);
+      console.error(err);
     } finally {
       setVendorsLoading(false);
     }
   };
 
-  // ── Main init effect ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!isOpen) return;
-
     fetchCategories();
     if (isAdmin && !isEditMode) fetchVendors();
-
     if (isEditMode && editingProduct) {
       isInitializingRef.current = true;
-
       const categoryId = extractId(editingProduct.category);
       const subCategoryId = extractId(editingProduct.subCategory);
-
       const newFormData = {
         productName: editingProduct.name || editingProduct.productName || "",
         description: editingProduct.description || "",
@@ -2551,10 +240,8 @@ export default function AddProductPopup({
           : [],
         vendorId: "",
       };
-
       setFormData(newFormData);
       setTagInput("");
-
       if (categoryId && /^[0-9a-fA-F]{24}$/.test(categoryId)) {
         fetchSubCategories(categoryId)
           .then(() => {
@@ -2597,35 +284,31 @@ export default function AddProductPopup({
     if (isInitializingRef.current) return;
     if (!formData.category) {
       setSubCategories([]);
-      setFormData((prev) => ({ ...prev, subCategory: "" }));
+      setFormData((p) => ({ ...p, subCategory: "" }));
       return;
     }
-    const categoryIdStr = extractId(formData.category) || formData.category;
-    if (!/^[0-9a-fA-F]{24}$/.test(categoryIdStr)) {
+    const id = extractId(formData.category) || formData.category;
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
       setSubCategories([]);
-      setFormData((prev) => ({ ...prev, subCategory: "" }));
+      setFormData((p) => ({ ...p, subCategory: "" }));
       return;
     }
-    setFormData((prev) => ({ ...prev, subCategory: "" }));
-    fetchSubCategories(categoryIdStr);
+    setFormData((p) => ({ ...p, subCategory: "" }));
+    fetchSubCategories(id);
   }, [formData.category]);
 
   useEffect(() => {
     if (isInitializingRef.current) return;
-    if (formData.productType) {
-      setFormData((prev) => ({ ...prev, productTypeUnit: "" }));
-    }
+    if (formData.productType)
+      setFormData((p) => ({ ...p, productTypeUnit: "" }));
   }, [formData.productType]);
 
   const fetchCategories = async () => {
     setCategoriesLoading(true);
     try {
-      const response = await api.get("/api/category");
-      if (response.data.success) setCategories(response.data.data);
-      else
-        throw new Error(response.data.message || "Failed to load categories");
-    } catch (err) {
-      console.error("Error fetching categories:", err);
+      const r = await api.get("/api/category");
+      if (r.data.success) setCategories(r.data.data);
+    } catch {
       setError("Failed to load categories");
     } finally {
       setCategoriesLoading(false);
@@ -2635,36 +318,29 @@ export default function AddProductPopup({
   const fetchSubCategories = async (categoryId) => {
     setSubCategoriesLoading(true);
     try {
-      const categoryIdStr =
+      const id =
         typeof categoryId === "string" ? categoryId : extractId(categoryId);
-      if (!categoryIdStr || !/^[0-9a-fA-F]{24}$/.test(categoryIdStr)) {
+      if (!id || !/^[0-9a-fA-F]{24}$/.test(id)) {
         setSubCategories([]);
         return [];
       }
-      const response = await api.get(
-        `/api/subcategory/by-category/${categoryIdStr}`,
-      );
-      if (response.data.success) {
-        const normalized = (response.data.data || [])
-          .map((subCat) => {
-            const id = extractId(subCat._id || subCat.id);
-            if (!id) return null;
+      const r = await api.get(`/api/subcategory/by-category/${id}`);
+      if (r.data.success) {
+        const norm = (r.data.data || [])
+          .map((s) => {
+            const sid = extractId(s._id || s.id);
+            if (!sid) return null;
             return {
-              ...subCat,
-              _id: id,
-              name: subCat.name || subCat.subCategoryName || "Unnamed",
+              ...s,
+              _id: sid,
+              name: s.name || s.subCategoryName || "Unnamed",
             };
           })
           .filter(Boolean);
-        setSubCategories(normalized);
-        return normalized;
-      } else {
-        throw new Error(
-          response.data.message || "Failed to load subcategories",
-        );
+        setSubCategories(norm);
+        return norm;
       }
-    } catch (err) {
-      console.error("Error fetching subcategories:", err);
+    } catch {
       setError("Failed to load subcategories");
       return [];
     } finally {
@@ -2674,31 +350,22 @@ export default function AddProductPopup({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    let processedValue = value;
-    if ((name === "category" || name === "subCategory") && value) {
-      processedValue = /^[0-9a-fA-F]{24}$/.test(value)
-        ? value
-        : extractId(value) || "";
-    }
-    setFormData((prev) => ({ ...prev, [name]: processedValue }));
+    let v = value;
+    if ((name === "category" || name === "subCategory") && value)
+      v = /^[0-9a-fA-F]{24}$/.test(value) ? value : extractId(value) || "";
+    setFormData((p) => ({ ...p, [name]: v }));
     if (error) setError("");
   };
 
-  // ── FIX: Queue all selected files, open crop one-by-one ──────────────────
   const openNextCrop = (currentImages, queue) => {
     if (queue.length === 0) return;
-
     const totalImages = currentImages.length;
-    const totalExisting = formData.existingImages.length;
-    if (totalImages + totalExisting >= 6) return; // max reached
-
+    if (totalImages + formData.existingImages.length >= 6) return;
     const nextFile = queue[0];
-    const remaining = queue.slice(1);
-    imageQueueRef.current = remaining;
-
+    imageQueueRef.current = queue.slice(1);
     const reader = new FileReader();
     reader.onloadend = () => {
-      pendingImageIndex.current = totalImages; // append at end
+      pendingImageIndex.current = totalImages;
       setCropImage(reader.result);
       setShowCropModal(true);
     };
@@ -2709,43 +376,33 @@ export default function AddProductPopup({
     const files = Array.from(e.target.files).filter((f) =>
       f.type.startsWith("image/"),
     );
-    if (files.length === 0) return;
-
-    const totalExisting = formData.existingImages.length;
-    const totalCurrent = formData.images.length;
-    const available = 6 - totalExisting - totalCurrent;
+    if (!files.length) return;
+    const available =
+      6 - formData.existingImages.length - formData.images.length;
     const toProcess = files.slice(0, available);
-
-    if (toProcess.length === 0) {
+    if (!toProcess.length) {
       alert("Maximum 6 images allowed.");
       e.target.value = "";
       return;
     }
-
-    // Save queue and open first
     imageQueueRef.current = toProcess.slice(1);
     openNextCrop(formData.images, toProcess);
     e.target.value = "";
   };
 
-  // ── Crop area init (1:1) ──────────────────────────────────────────────────
   useEffect(() => {
     if (showCropModal && cropImage && cropContainerRef.current) {
-      const container = cropContainerRef.current;
-      const containerWidth = container.clientWidth;
-      const containerHeight = container.clientHeight;
-      const cropSize = Math.min(
-        containerWidth * 0.8,
-        containerHeight * 0.8,
-        500,
-      );
-      const x = (containerWidth - cropSize) / 2;
-      const y = (containerHeight - cropSize) / 2;
-      setCropArea({ x, y, width: cropSize, height: cropSize });
+      const c = cropContainerRef.current;
+      const size = Math.min(c.clientWidth * 0.8, c.clientHeight * 0.8, 500);
+      setCropArea({
+        x: (c.clientWidth - size) / 2,
+        y: (c.clientHeight - size) / 2,
+        width: size,
+        height: size,
+      });
     }
   }, [showCropModal, cropImage]);
 
-  // ── Drag & Resize handlers ────────────────────────────────────────────────
   const handleMouseDown = (e) => {
     if (e.target.classList.contains("resize-handle")) {
       setIsResizing(true);
@@ -2772,35 +429,27 @@ export default function AddProductPopup({
 
   const handleMouseMove = (e) => {
     if (!cropContainerRef.current) return;
-    const container = cropContainerRef.current;
-    const rect = container.getBoundingClientRect();
-
+    const c = cropContainerRef.current;
+    const rect = c.getBoundingClientRect();
     if (isResizing && resizeHandle) {
-      const deltaX = e.clientX - resizeStart.x;
-      const deltaY = e.clientY - resizeStart.y;
+      const dx = e.clientX - resizeStart.x;
+      const dy = e.clientY - resizeStart.y;
       let newSize = resizeStart.width;
       let newX = resizeStart.cropX;
       let newY = resizeStart.cropY;
-
       const scale = Math.max(
-        Math.abs(resizeStart.width + deltaX) / resizeStart.width,
-        Math.abs(resizeStart.height + deltaY) / resizeStart.height,
+        Math.abs(resizeStart.width + dx) / resizeStart.width,
+        Math.abs(resizeStart.height + dy) / resizeStart.height,
       );
       newSize = resizeStart.width * scale;
-
       if (resizeHandle === "sw" || resizeHandle === "nw")
         newX = resizeStart.cropX + resizeStart.width - newSize;
       if (resizeHandle === "ne" || resizeHandle === "nw")
         newY = resizeStart.cropY + resizeStart.height - newSize;
-
-      const maxSize = Math.min(container.clientWidth, container.clientHeight);
+      const maxSize = Math.min(c.clientWidth, c.clientHeight);
       newSize = Math.max(100, Math.min(newSize, maxSize));
-
-      if (newX + newSize > container.clientWidth)
-        newX = container.clientWidth - newSize;
-      if (newY + newSize > container.clientHeight)
-        newY = container.clientHeight - newSize;
-
+      if (newX + newSize > c.clientWidth) newX = c.clientWidth - newSize;
+      if (newY + newSize > c.clientHeight) newY = c.clientHeight - newSize;
       setCropArea({
         x: Math.max(0, newX),
         y: Math.max(0, newY),
@@ -2809,16 +458,13 @@ export default function AddProductPopup({
       });
       return;
     }
-
     if (isDragging) {
-      const newX = e.clientX - rect.left - dragStart.x;
-      const newY = e.clientY - rect.top - dragStart.y;
-      const maxX = container.clientWidth - cropArea.width;
-      const maxY = container.clientHeight - cropArea.height;
-      setCropArea((prev) => ({
-        ...prev,
-        x: Math.max(0, Math.min(newX, maxX)),
-        y: Math.max(0, Math.min(newY, maxY)),
+      const nx = e.clientX - rect.left - dragStart.x;
+      const ny = e.clientY - rect.top - dragStart.y;
+      setCropArea((p) => ({
+        ...p,
+        x: Math.max(0, Math.min(nx, c.clientWidth - p.width)),
+        y: Math.max(0, Math.min(ny, c.clientHeight - p.height)),
       }));
     }
   };
@@ -2829,63 +475,48 @@ export default function AddProductPopup({
     setResizeHandle(null);
   };
 
-  // ── Apply crop → save blob → open next in queue ───────────────────────────
   const applyCrop = () => {
     if (!cropImage || !imageRef.current) return;
-
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
-      const container = cropContainerRef.current;
-      const scaleX = img.width / container.clientWidth;
-      const scaleY = img.height / container.clientHeight;
-
-      const cropX = cropArea.x * scaleX;
-      const cropY = cropArea.y * scaleY;
-      const cropSize = cropArea.width * scaleX;
+      const c = cropContainerRef.current;
+      const scaleX = img.width / c.clientWidth;
+      const scaleY = img.height / c.clientHeight;
       const outputSize = 1000;
       canvas.width = outputSize;
       canvas.height = outputSize;
-
       ctx.drawImage(
         img,
-        cropX,
-        cropY,
-        cropSize,
-        cropSize,
+        cropArea.x * scaleX,
+        cropArea.y * scaleY,
+        cropArea.width * scaleX,
+        cropArea.width * scaleX,
         0,
         0,
         outputSize,
         outputSize,
       );
-
       canvas.toBlob(
         (blob) => {
           const file = new File([blob], `product-${Date.now()}.jpg`, {
             type: "image/jpeg",
           });
           const slotIndex = pendingImageIndex.current;
-
           setFormData((prev) => {
             const newImages = [...prev.images];
             newImages[slotIndex] = file;
-
-            // After state update, process next in queue
             setTimeout(() => {
-              if (imageQueueRef.current.length > 0) {
-                const totalExisting = prev.existingImages.length;
-                if (newImages.length + totalExisting < 6) {
-                  openNextCrop(newImages, imageQueueRef.current);
-                } else {
-                  imageQueueRef.current = [];
-                }
-              }
+              if (
+                imageQueueRef.current.length > 0 &&
+                newImages.length + prev.existingImages.length < 6
+              )
+                openNextCrop(newImages, imageQueueRef.current);
+              else imageQueueRef.current = [];
             }, 0);
-
             return { ...prev, images: newImages };
           });
-
           setShowCropModal(false);
           setCropImage(null);
           pendingImageIndex.current = null;
@@ -2898,53 +529,36 @@ export default function AddProductPopup({
   };
 
   const cancelCrop = () => {
-    imageQueueRef.current = []; // clear queue on cancel
+    imageQueueRef.current = [];
     setShowCropModal(false);
     setCropImage(null);
     pendingImageIndex.current = null;
   };
-
-  const removeNewImage = (index) => {
-    setFormData((prev) => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index),
+  const removeNewImage = (i) =>
+    setFormData((p) => ({
+      ...p,
+      images: p.images.filter((_, idx) => idx !== i),
     }));
-  };
-
-  const removeExistingImage = (index) => {
-    setFormData((prev) => ({
-      ...prev,
-      existingImages: prev.existingImages.filter((_, i) => i !== index),
+  const removeExistingImage = (i) =>
+    setFormData((p) => ({
+      ...p,
+      existingImages: p.existingImages.filter((_, idx) => idx !== i),
     }));
-  };
-
-  const handleTagInputChange = (e) => setTagInput(e.target.value);
 
   const handleTagInputKeyDown = (e) => {
     if (e.key === "Enter" && tagInput.trim()) {
       e.preventDefault();
-      addTag(tagInput.trim());
-    }
-  };
-
-  const addTag = (tag) => {
-    if (tag && !formData.tags.includes(tag)) {
-      setFormData((prev) => ({ ...prev, tags: [...prev.tags, tag] }));
+      if (!formData.tags.includes(tagInput.trim()))
+        setFormData((p) => ({ ...p, tags: [...p.tags, tagInput.trim()] }));
       setTagInput("");
     }
   };
-
-  const removeTag = (indexToRemove) => {
-    setFormData((prev) => ({
-      ...prev,
-      tags: prev.tags.filter((_, index) => index !== indexToRemove),
-    }));
-  };
+  const removeTag = (i) =>
+    setFormData((p) => ({ ...p, tags: p.tags.filter((_, idx) => idx !== i) }));
 
   const handleSubmit = async () => {
     setLoading(true);
     setError("");
-
     if (
       !formData.productName ||
       !formData.description ||
@@ -2965,38 +579,25 @@ export default function AddProductPopup({
       setLoading(false);
       return;
     }
-
     if (isAdmin && !isEditMode && !formData.vendorId) {
       setError("Please select a vendor");
       setLoading(false);
       return;
     }
-
-    if (isEditMode) {
-      if (
-        formData.images.length === 0 &&
-        formData.existingImages.length === 0
-      ) {
-        setError(
-          "Please upload at least one product image or keep existing images",
-        );
-        setLoading(false);
-        return;
-      }
-    } else {
-      if (formData.images.length === 0) {
-        setError("Please upload at least one product image");
-        setLoading(false);
-        return;
-      }
+    if (
+      isEditMode
+        ? formData.images.length === 0 && formData.existingImages.length === 0
+        : formData.images.length === 0
+    ) {
+      setError("Please upload at least one product image");
+      setLoading(false);
+      return;
     }
-
     try {
-      const formDataToSend = new FormData();
+      const fd = new FormData();
       const categoryId = extractId(formData.category) || formData.category;
       const subCategoryId =
         extractId(formData.subCategory) || formData.subCategory;
-
       if (!categoryId || !/^[0-9a-fA-F]{24}$/.test(categoryId)) {
         setError("Please select a valid category");
         setLoading(false);
@@ -3007,91 +608,64 @@ export default function AddProductPopup({
         setLoading(false);
         return;
       }
-
-      formDataToSend.append("productName", formData.productName);
-      formDataToSend.append("description", formData.description || "");
-      formDataToSend.append("skuHsn", formData.skuHsn || "");
-      formDataToSend.append("inventory", formData.inventory || "0");
-      formDataToSend.append("category", categoryId);
-      formDataToSend.append("subCategory", subCategoryId);
-      formDataToSend.append("actualPrice", formData.actualPrice);
-      formDataToSend.append("regularPrice", formData.regularPrice);
-      formDataToSend.append("salePrice", formData.salePrice);
-
-      const cashbackValue = formData.cashback
-        ? parseFloat(formData.cashback)
-        : 0;
-      if (cashbackValue < 0) {
+      fd.append("productName", formData.productName);
+      fd.append("description", formData.description || "");
+      fd.append("skuHsn", formData.skuHsn || "");
+      fd.append("inventory", formData.inventory || "0");
+      fd.append("category", categoryId);
+      fd.append("subCategory", subCategoryId);
+      fd.append("actualPrice", formData.actualPrice);
+      fd.append("regularPrice", formData.regularPrice);
+      fd.append("salePrice", formData.salePrice);
+      const cb = formData.cashback ? parseFloat(formData.cashback) : 0;
+      if (cb < 0) {
         setError("Cashback must be >= 0");
         setLoading(false);
         return;
       }
-      formDataToSend.append("cashback", cashbackValue.toString());
-
-      const taxValue = formData.tax ? parseFloat(formData.tax) : 0;
-      if (taxValue < 0 || taxValue > 100) {
+      fd.append("cashback", cb.toString());
+      const tx = formData.tax ? parseFloat(formData.tax) : 0;
+      if (tx < 0 || tx > 100) {
         setError("Tax must be between 0 and 100");
         setLoading(false);
         return;
       }
-      formDataToSend.append("tax", taxValue.toString());
-
+      fd.append("tax", tx.toString());
       if (isAdmin && !isEditMode && formData.vendorId)
-        formDataToSend.append("vendorId", formData.vendorId);
-
-      if (formData.productType)
-        formDataToSend.append("productType", formData.productType);
+        fd.append("vendorId", formData.vendorId);
+      if (formData.productType) fd.append("productType", formData.productType);
       if (formData.productTypeValue)
-        formDataToSend.append("productTypeValue", formData.productTypeValue);
+        fd.append("productTypeValue", formData.productTypeValue);
       if (formData.productTypeUnit)
-        formDataToSend.append("productTypeUnit", formData.productTypeUnit);
-
-      if (formData.tags.length > 0)
-        formDataToSend.append("tags", formData.tags.join(","));
-
-      formData.images.forEach((image) => {
-        if (image instanceof File) formDataToSend.append("images", image);
+        fd.append("productTypeUnit", formData.productTypeUnit);
+      if (formData.tags.length > 0) fd.append("tags", formData.tags.join(","));
+      formData.images.forEach((img) => {
+        if (img instanceof File) fd.append("images", img);
       });
-
       if (isEditMode && formData.existingImages.length > 0)
-        formDataToSend.append(
-          "existingImages",
-          JSON.stringify(formData.existingImages),
-        );
-
+        fd.append("existingImages", JSON.stringify(formData.existingImages));
       let productId =
         editingProduct?.id || editingProduct?._id || editingProduct?.productId;
       if (productId && typeof productId === "object")
         productId = extractId(productId) || productId.toString();
       productId = productId?.toString() || productId;
-
-      const apiEndpoint = isEditMode
+      const endpoint = isEditMode
         ? isAdmin
           ? `/api/admin/products/${productId}`
           : `/api/product/update/${productId}`
         : `/api/product/add`;
-
       const config = { headers: { "Content-Type": undefined } };
       const response = isEditMode
-        ? await api.put(apiEndpoint, formDataToSend, config)
-        : await api.post(apiEndpoint, formDataToSend, config);
-
+        ? await api.put(endpoint, fd, config)
+        : await api.post(endpoint, fd, config);
       const result = response.data;
-      if (response.status === 401)
-        throw new Error("Session expired. Please log in again.");
-      if (response.status === 403)
-        throw new Error("Access denied. You may not have permission.");
-      if (response.status === 400)
-        throw new Error(result.message || "Invalid product data.");
       if (!result.success)
         throw new Error(
           result.message ||
             `Failed to ${isEditMode ? "update" : "add"} product`,
         );
-
       alert(`Product ${isEditMode ? "updated" : "added"} successfully!`);
       if (onSuccess) onSuccess(result.data);
-
       setFormData({
         productName: "",
         description: "",
@@ -3115,10 +689,6 @@ export default function AddProductPopup({
       setTagInput("");
       setTimeout(() => onClose(), 300);
     } catch (err) {
-      console.error(
-        `Error ${isEditMode ? "updating" : "submitting"} product:`,
-        err,
-      );
       setError(
         err.response?.data?.message ||
           err.message ||
@@ -3133,440 +703,515 @@ export default function AddProductPopup({
 
   const totalImages = formData.images.length + formData.existingImages.length;
   const remainingSlots = 6 - totalImages;
+  const allImages = [
+    ...formData.existingImages.map((img) => ({
+      url: img.url || img,
+      saved: true,
+    })),
+    ...formData.images.map((img, i) => ({
+      url: URL.createObjectURL(img),
+      saved: false,
+      idx: i,
+    })),
+  ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-2">
-      <div className="bg-white w-full max-w-[1100px] rounded-md shadow-lg relative border border-gray-300 max-h-[90vh] flex flex-col">
-        <button
-          onClick={onClose}
-          className="absolute top-2 right-2 text-orange-500 hover:text-red-600 text-lg font-bold z-10"
-        >
-          ✕
-        </button>
+    <>
+      <style>{`
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-animate { animation: modalIn 0.25s cubic-bezier(0.16,1,0.3,1) forwards; }
+        .section-animate { animation: fadeSlideIn 0.2s ease forwards; }
+        .select-wrapper { position: relative; }
+        .select-wrapper::after { content: ''; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid #9ca3af; pointer-events: none; }
+      `}</style>
 
-        <h2 className="text-[14px] font-bold border-b border-gray-300 pb-2 pt-3 px-5">
-          {isEditMode ? "Edit Product" : "Add Product"}
-        </h2>
-
-        {error && (
-          <div className="mx-5 mt-3 p-3 bg-red-50 border border-red-300 text-red-700 rounded-sm text-[13px]">
-            {error}
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-3">
+        <div className="modal-animate bg-white w-full max-w-[1100px] rounded-2xl shadow-2xl border border-gray-100 max-h-[92vh] flex flex-col overflow-hidden">
+          {/* ── Header (mirrors AllProduct orange gradient table header) ── */}
+          <div className="bg-gradient-to-r from-[#FF7B1D] to-orange-400 px-6 py-4 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                <Package className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-white font-bold text-base leading-tight">
+                  {isEditMode ? "Edit Product" : "Add New Product"}
+                </h2>
+                <p className="text-orange-100 text-xs mt-0.5">
+                  {isEditMode
+                    ? "Update product information below"
+                    : "Fill in the details to list a new product"}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-        )}
 
-        <div className="overflow-y-auto px-5 py-4">
-          <div className="space-y-4 text-[13px]">
-            {/* Product Name, Description, Image Upload */}
-            <div className="grid grid-cols-1 lg:grid-cols-[2.2fr,1fr] gap-4">
-              <div className="flex flex-col space-y-3">
-                <div>
-                  <label className="block font-semibold mb-1">
-                    Product Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="productName"
-                    value={formData.productName}
-                    onChange={handleChange}
-                    placeholder="Enter product name"
-                    className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-                  />
-                </div>
-                <div className="flex flex-col flex-1">
-                  <label className="block font-semibold mb-1">
-                    Product Description *
-                  </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    rows="10"
-                    placeholder="Write Product Description"
-                    className="flex-1 w-full border border-orange-400 rounded-sm p-2 resize-none focus:outline-none text-[13px] min-h-[200px] lg:h-[260px]"
-                  />
-                </div>
+          {/* ── Error Bar ── */}
+          {error && (
+            <div className="mx-5 mt-4 flex items-start gap-3 p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex-shrink-0">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* ── Scrollable Body ── */}
+          <div className="overflow-y-auto px-5 py-4 space-y-4 flex-1">
+            {/* ── Row 1: Basic Info + Image Gallery ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr,340px] gap-4">
+              {/* Basic Info Card */}
+              <div
+                className="section-animate"
+                style={{ animationDelay: "0ms" }}
+              >
+                <SectionCard icon={Package} title="Basic Information">
+                  <div className="space-y-4">
+                    <Field label="Product Name" required>
+                      <input
+                        type="text"
+                        name="productName"
+                        value={formData.productName}
+                        onChange={handleChange}
+                        placeholder="Enter product name"
+                        className={inputCls}
+                      />
+                    </Field>
+                    <Field label="Description" required>
+                      <textarea
+                        name="description"
+                        value={formData.description}
+                        onChange={handleChange}
+                        rows={6}
+                        placeholder="Write a clear product description…"
+                        className={`${inputCls} resize-none min-h-[150px]`}
+                      />
+                    </Field>
+                  </div>
+                </SectionCard>
               </div>
 
-              {/* ── FIX: Improved Gallery Section ── */}
-              <div className="flex flex-col">
-                <label className="block font-semibold mb-1">
-                  Upload Images
-                  <span
-                    className={`ml-2 text-xs font-normal px-2 py-0.5 rounded-full ${totalImages >= 6 ? "bg-red-100 text-red-600" : "bg-orange-100 text-orange-600"}`}
-                  >
-                    {totalImages}/6
-                  </span>
-                </label>
+              {/* Image Gallery Card */}
+              <div
+                className="section-animate"
+                style={{ animationDelay: "40ms" }}
+              >
+                <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white h-full flex flex-col">
+                  <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+                      <ImageIcon className="w-3.5 h-3.5 text-gray-400" />
+                      <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">
+                        Images
+                      </span>
+                    </div>
+                    <span
+                      className={`text-xs font-semibold px-2.5 py-1 rounded-full ${totalImages >= 6 ? "bg-red-50 text-red-600 border border-red-100" : "bg-orange-50 text-orange-600 border border-orange-100"}`}
+                    >
+                      {totalImages} / 6
+                    </span>
+                  </div>
 
-                <p className="text-xs text-orange-600 font-medium mb-2 bg-orange-50 border border-orange-200 rounded-sm px-2 py-1">
-                  ⚠️ Only 1:1 (Square) ratio — images will be cropped
-                  automatically
-                </p>
+                  <div className="p-4 flex flex-col gap-3 flex-1">
+                    <p className="text-[10px] text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 font-medium">
+                      ⚠️ Images are auto-cropped to 1:1 square ratio
+                    </p>
 
-                {/* Gallery Grid */}
-                <div
-                  className="border border-orange-400 rounded-sm flex-1 overflow-y-auto p-2"
-                  style={{ minHeight: "280px", maxHeight: "330px" }}
-                >
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* Existing images */}
-                    {formData.existingImages.map((img, index) => (
-                      <div
-                        key={`existing-${index}`}
-                        className="relative border border-gray-200 rounded-sm overflow-hidden bg-gray-50"
-                        style={{ aspectRatio: "1/1" }}
-                      >
-                        <img
-                          src={img.url || img}
-                          alt={`Product ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all" />
-                        <button
-                          type="button"
-                          onClick={() => removeExistingImage(index)}
-                          className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow transition-colors"
+                    {/* Grid */}
+                    <div className="grid grid-cols-3 gap-2 flex-1">
+                      {allImages.map((img, i) => (
+                        <div
+                          key={i}
+                          className="relative rounded-xl overflow-hidden border border-gray-100 group"
+                          style={{ aspectRatio: "1/1" }}
                         >
-                          <X size={10} />
-                        </button>
-                        <span className="absolute bottom-1 left-1 bg-blue-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-medium">
-                          Saved
-                        </span>
-                      </div>
-                    ))}
+                          <img
+                            src={img.url}
+                            alt={`img-${i}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all" />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              img.saved
+                                ? removeExistingImage(
+                                    formData.existingImages.indexOf(
+                                      formData.existingImages[
+                                        i < formData.existingImages.length
+                                          ? i
+                                          : 0
+                                      ],
+                                    ),
+                                  )
+                                : removeNewImage(img.idx)
+                            }
+                            className="absolute top-1 right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow"
+                          >
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                          <span
+                            className={`absolute bottom-1 left-1 text-[9px] px-1.5 py-0.5 rounded-full font-bold ${img.saved ? "bg-blue-500 text-white" : "bg-emerald-500 text-white"}`}
+                          >
+                            {img.saved ? "Saved" : "New"}
+                          </span>
+                        </div>
+                      ))}
 
-                    {/* New images */}
-                    {formData.images.map((img, index) => (
-                      <div
-                        key={`new-${index}`}
-                        className="relative border border-orange-200 rounded-sm overflow-hidden bg-gray-50"
-                        style={{ aspectRatio: "1/1" }}
-                      >
-                        <img
-                          src={URL.createObjectURL(img)}
-                          alt={`New ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all" />
-                        <button
-                          type="button"
-                          onClick={() => removeNewImage(index)}
-                          className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow transition-colors"
+                      {/* Upload slot */}
+                      {totalImages < 6 && (
+                        <label
+                          className="rounded-xl border-2 border-dashed border-orange-200 hover:border-orange-400 bg-orange-50/50 hover:bg-orange-50 flex flex-col items-center justify-center cursor-pointer transition-all group"
+                          style={{ aspectRatio: "1/1" }}
                         >
-                          <X size={10} />
-                        </button>
-                        <span className="absolute bottom-1 left-1 bg-green-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-medium">
-                          New
-                        </span>
-                      </div>
-                    ))}
-
-                    {/* Upload button — only show if slots remain */}
-                    {totalImages < 6 && (
-                      <label
-                        className="border-2 border-dashed border-orange-300 hover:border-orange-500 rounded-sm flex flex-col items-center justify-center cursor-pointer hover:bg-orange-50 transition-all"
-                        style={{ aspectRatio: "1/1" }}
-                      >
-                        <Upload size={22} className="text-orange-400 mb-1" />
-                        <span className="text-[10px] text-orange-400 font-medium text-center leading-tight px-1">
-                          Add Photo
-                          <br />
-                          <span className="text-gray-400">
+                          <Upload className="w-5 h-5 text-orange-300 group-hover:text-orange-400 mb-1 transition-colors" />
+                          <span className="text-[9px] text-orange-400 font-semibold text-center leading-tight">
+                            Add
+                            <br />
                             {remainingSlots} left
                           </span>
-                        </span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={handleImageUpload}
-                          className="hidden"
-                        />
-                      </label>
-                    )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleImageUpload}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
 
-                    {/* Placeholder slots (empty visual) */}
-                    {Array.from({
-                      length: Math.max(0, Math.min(2, 6 - totalImages - 1)),
-                    }).map((_, i) => (
-                      <div
-                        key={`placeholder-${i}`}
-                        className="border border-dashed border-gray-200 rounded-sm bg-gray-50 flex items-center justify-center"
-                        style={{ aspectRatio: "1/1" }}
-                      >
-                        <span className="text-gray-300 text-xs">Empty</span>
+                      {/* Empty placeholders */}
+                      {Array.from({
+                        length: Math.max(
+                          0,
+                          6 - totalImages - (totalImages < 6 ? 1 : 0),
+                        ),
+                      }).map((_, i) => (
+                        <div
+                          key={`ph-${i}`}
+                          className="rounded-xl border border-dashed border-gray-100 bg-gray-50 flex items-center justify-center"
+                          style={{ aspectRatio: "1/1" }}
+                        >
+                          <span className="text-[10px] text-gray-200 font-medium">
+                            Empty
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Progress bar */}
+                    <div>
+                      <div className="flex justify-between text-[10px] text-gray-400 mb-1.5">
+                        <span className="font-medium">Gallery progress</span>
+                        <span>{totalImages} of 6 uploaded</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                <div className="mt-2">
-                  <div className="flex justify-between text-[10px] text-gray-500 mb-1">
-                    <span>Gallery</span>
-                    <span>{totalImages} of 6 uploaded</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1.5">
-                    <div
-                      className="h-1.5 rounded-full transition-all"
-                      style={{
-                        width: `${(totalImages / 6) * 100}%`,
-                        backgroundColor:
-                          totalImages >= 6 ? "#ef4444" : "#f97316",
-                      }}
-                    />
+                      <div className="w-full bg-gray-100 rounded-full h-1.5">
+                        <div
+                          className="h-1.5 rounded-full transition-all duration-500"
+                          style={{
+                            width: `${(totalImages / 6) * 100}%`,
+                            background:
+                              totalImages >= 6
+                                ? "#ef4444"
+                                : "linear-gradient(to right, #FF7B1D, #fb923c)",
+                          }}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Vendor Selection (Admin only) */}
+            {/* ── Vendor (Admin only) ── */}
             {isAdmin && !isEditMode && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-semibold mb-1">
-                    Select Vendor *
-                  </label>
-                  <select
-                    name="vendorId"
-                    value={formData.vendorId}
-                    onChange={handleChange}
-                    className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-                    required
-                  >
-                    <option value="">Select a vendor</option>
-                    {vendorsLoading ? (
-                      <option>Loading vendors...</option>
-                    ) : (
-                      vendors.map((vendor) => (
-                        <option key={vendor._id} value={vendor._id}>
-                          {vendor.vendorName ||
-                            vendor.storeName ||
-                            vendor.contactNumber}{" "}
-                          - {vendor.storeName || "Store"}
+              <div
+                className="section-animate"
+                style={{ animationDelay: "60ms" }}
+              >
+                <SectionCard icon={Store} title="Vendor" accent="bg-blue-500">
+                  <div className="select-wrapper">
+                    <select
+                      name="vendorId"
+                      value={formData.vendorId}
+                      onChange={handleChange}
+                      className={selectCls}
+                    >
+                      <option value="">
+                        {vendorsLoading
+                          ? "Loading vendors…"
+                          : "Select a vendor"}
+                      </option>
+                      {vendors.map((v) => (
+                        <option key={v._id} value={v._id}>
+                          {v.vendorName || v.storeName || v.contactNumber} —{" "}
+                          {v.storeName || "Store"}
                         </option>
-                      ))
-                    )}
-                  </select>
-                </div>
+                      ))}
+                    </select>
+                  </div>
+                </SectionCard>
               </div>
             )}
 
-            {/* HSN, Stock, Category, Sub-Category */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label className="block font-semibold mb-1">HSN *</label>
-                <input
-                  type="text"
-                  name="skuHsn"
-                  value={formData.skuHsn}
-                  onChange={handleChange}
-                  placeholder="Enter Product HSN Code"
-                  className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-                />
-              </div>
-              <div>
-                <label className="block font-semibold mb-1">Stock *</label>
-                <input
-                  type="number"
-                  name="inventory"
-                  value={formData.inventory}
-                  onChange={handleChange}
-                  placeholder="Enter Stock"
-                  className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-                />
-              </div>
-              <div>
-                <label className="block font-semibold mb-1">
-                  Select Category *
-                </label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-                  disabled={categoriesLoading}
-                >
-                  <option value="">
-                    {categoriesLoading ? "Loading..." : "Select Category"}
-                  </option>
-                  {categories.map((cat) => (
-                    <option key={cat._id} value={cat._id}>
-                      {cat.name}
-                      {cat.totalProducts > 0 ? ` (${cat.totalProducts})` : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block font-semibold mb-1">
-                  Select Sub-Category *
-                </label>
-                <select
-                  name="subCategory"
-                  value={formData.subCategory}
-                  onChange={handleChange}
-                  className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-                  disabled={!formData.category || subCategoriesLoading}
-                >
-                  <option value="">
-                    {subCategoriesLoading
-                      ? "Loading..."
-                      : "Select Sub-Category"}
-                  </option>
-                  {subCategories.map((sub) => (
-                    <option key={sub._id} value={sub._id}>
-                      {sub.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            {/* ── Classification ── */}
+            <div className="section-animate" style={{ animationDelay: "80ms" }}>
+              <SectionCard icon={Layers} title="Classification">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <Field label="HSN Code" required>
+                    <input
+                      type="text"
+                      name="skuHsn"
+                      value={formData.skuHsn}
+                      onChange={handleChange}
+                      placeholder="e.g. 0901"
+                      className={inputCls}
+                    />
+                  </Field>
+                  <Field label="Stock (units)" required>
+                    <input
+                      type="number"
+                      name="inventory"
+                      value={formData.inventory}
+                      onChange={handleChange}
+                      placeholder="0"
+                      className={inputCls}
+                    />
+                  </Field>
+                  <Field label="Category" required>
+                    <div className="select-wrapper">
+                      <select
+                        name="category"
+                        value={formData.category}
+                        onChange={handleChange}
+                        disabled={categoriesLoading}
+                        className={selectCls}
+                      >
+                        <option value="">
+                          {categoriesLoading ? "Loading…" : "Select Category"}
+                        </option>
+                        {categories.map((c) => (
+                          <option key={c._id} value={c._id}>
+                            {c.name}
+                            {c.totalProducts > 0 ? ` (${c.totalProducts})` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </Field>
+                  <Field label="Sub-Category" required>
+                    <div className="select-wrapper">
+                      <select
+                        name="subCategory"
+                        value={formData.subCategory}
+                        onChange={handleChange}
+                        disabled={!formData.category || subCategoriesLoading}
+                        className={`${selectCls} ${!formData.category ? "opacity-60 cursor-not-allowed" : ""}`}
+                      >
+                        <option value="">
+                          {subCategoriesLoading
+                            ? "Loading…"
+                            : "Select Sub-Category"}
+                        </option>
+                        {subCategories.map((s) => (
+                          <option key={s._id} value={s._id}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </Field>
+                </div>
+              </SectionCard>
             </div>
 
-            {/* Pricing Fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              {[
-                {
-                  label: "Actual Price *",
-                  name: "actualPrice",
-                  placeholder: "Enter INR",
-                },
-                {
-                  label: "Regular Price (MRP) *",
-                  name: "regularPrice",
-                  placeholder: "Enter INR",
-                },
-                {
-                  label: "Sale Price *",
-                  name: "salePrice",
-                  placeholder: "Enter INR",
-                },
-                {
-                  label: "Cashback",
-                  name: "cashback",
-                  placeholder: "Cashback Amount",
-                },
-                { label: "Tax (%)", name: "tax", placeholder: "Tax %" },
-              ].map(({ label, name, placeholder }) => (
-                <div key={name}>
-                  <label className="block font-semibold mb-1">{label}</label>
+            {/* ── Pricing ── */}
+            <div
+              className="section-animate"
+              style={{ animationDelay: "100ms" }}
+            >
+              <SectionCard
+                icon={DollarSign}
+                title="Pricing"
+                accent="bg-emerald-500"
+              >
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                  {[
+                    {
+                      label: "Actual Price",
+                      name: "actualPrice",
+                      placeholder: "₹ 0",
+                    },
+                    {
+                      label: "Regular Price (MRP)",
+                      name: "regularPrice",
+                      placeholder: "₹ 0",
+                    },
+                    {
+                      label: "Sale Price",
+                      name: "salePrice",
+                      placeholder: "₹ 0",
+                    },
+                    { label: "Cashback", name: "cashback", placeholder: "₹ 0" },
+                    { label: "Tax (%)", name: "tax", placeholder: "0" },
+                  ].map(({ label, name, placeholder }) => (
+                    <Field
+                      key={name}
+                      label={label}
+                      required={[
+                        "actualPrice",
+                        "regularPrice",
+                        "salePrice",
+                      ].includes(name)}
+                    >
+                      <input
+                        type="number"
+                        name={name}
+                        value={formData[name]}
+                        onChange={handleChange}
+                        placeholder={placeholder}
+                        className={inputCls}
+                      />
+                    </Field>
+                  ))}
+                </div>
+              </SectionCard>
+            </div>
+
+            {/* ── Product Type ── */}
+            <div
+              className="section-animate"
+              style={{ animationDelay: "120ms" }}
+            >
+              <SectionCard
+                icon={BoxIcon}
+                title="Product Type"
+                accent="bg-purple-500"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <Field label="Type" required>
+                    <div className="select-wrapper">
+                      <select
+                        name="productType"
+                        value={formData.productType}
+                        onChange={handleChange}
+                        className={selectCls}
+                      >
+                        {productTypeOptions.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </Field>
+                  <Field label="Value" required hint="e.g. 500, 1, 2.5">
+                    <input
+                      type="number"
+                      name="productTypeValue"
+                      value={formData.productTypeValue}
+                      onChange={handleChange}
+                      placeholder="e.g. 500"
+                      className={inputCls}
+                    />
+                  </Field>
+                  <Field label="Unit" required>
+                    <div className="select-wrapper">
+                      <select
+                        name="productTypeUnit"
+                        value={formData.productTypeUnit}
+                        onChange={handleChange}
+                        disabled={!formData.productType}
+                        className={`${selectCls} ${!formData.productType ? "opacity-60 cursor-not-allowed" : ""}`}
+                      >
+                        {getUnitOptions().map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </Field>
+                </div>
+              </SectionCard>
+            </div>
+
+            {/* ── Tags ── */}
+            <div
+              className="section-animate"
+              style={{ animationDelay: "140ms" }}
+            >
+              <SectionCard icon={Tag} title="Tags" accent="bg-amber-500">
+                <div className="rounded-xl border border-gray-200 focus-within:ring-2 focus-within:ring-orange-200 focus-within:border-orange-300 bg-white p-3 min-h-[60px] transition-all">
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {formData.tags.map((tag, i) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 border border-orange-200 text-orange-700 text-xs font-semibold"
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => removeTag(i)}
+                          className="w-3.5 h-3.5 rounded-full hover:bg-orange-200 flex items-center justify-center transition-colors"
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
                   <input
-                    type="number"
-                    name={name}
-                    value={formData[name]}
-                    onChange={handleChange}
-                    placeholder={placeholder}
-                    className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={handleTagInputKeyDown}
+                    placeholder={
+                      formData.tags.length === 0
+                        ? "Type a tag and press Enter… (e.g. fresh, organic, fruits)"
+                        : "Add more tags…"
+                    }
+                    className="w-full text-sm text-gray-600 placeholder:text-gray-400 focus:outline-none bg-transparent"
                   />
                 </div>
-              ))}
+                <p className="text-[10px] text-gray-400 mt-2">
+                  Press{" "}
+                  <kbd className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-mono text-[10px]">
+                    Enter
+                  </kbd>{" "}
+                  to add each tag
+                </p>
+              </SectionCard>
             </div>
 
-            {/* Product Type Fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block font-semibold mb-1">Product Type</label>
-                <select
-                  name="productType"
-                  value={formData.productType}
-                  onChange={handleChange}
-                  className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-                >
-                  {productTypeOptions.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block font-semibold mb-1">
-                  Product Type Value
-                </label>
-                <input
-                  type="number"
-                  name="productTypeValue"
-                  value={formData.productTypeValue}
-                  onChange={handleChange}
-                  placeholder="e.g., 1, 500, 2"
-                  className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-                />
-              </div>
-              <div>
-                <label className="block font-semibold mb-1">
-                  Product Type Unit
-                </label>
-                <select
-                  name="productTypeUnit"
-                  value={formData.productTypeUnit}
-                  onChange={handleChange}
-                  className="w-full border border-orange-400 rounded-sm p-2 focus:outline-none text-[13px]"
-                  disabled={!formData.productType}
-                >
-                  {getUnitOptions().map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Tags */}
-            <div>
-              <label className="block font-semibold mb-1 flex items-center gap-2">
-                <span className="text-orange-500">🏷️</span> Tags
-                <span className="text-gray-400 text-xs font-normal">
-                  (Press Enter to add)
-                </span>
-              </label>
-              <div className="border border-orange-400 rounded-sm p-2 min-h-[80px] focus-within:ring-2 focus-within:ring-orange-300">
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {formData.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center gap-1 bg-orange-500 text-white px-3 py-1 rounded-full text-[12px] font-medium"
-                    >
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => removeTag(index)}
-                        className="hover:bg-orange-600 rounded-full p-0.5 transition-colors"
-                      >
-                        <X size={14} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-                <input
-                  type="text"
-                  value={tagInput}
-                  onChange={handleTagInputChange}
-                  onKeyDown={handleTagInputKeyDown}
-                  placeholder={
-                    formData.tags.length === 0
-                      ? "Add tags (e.g., fruits, apple, fresh)"
-                      : "Add more..."
-                  }
-                  className="w-full focus:outline-none text-[13px] bg-transparent"
-                />
-              </div>
-            </div>
-
-            {/* Submit */}
-            <div className="flex justify-end mt-3">
+            {/* ── Submit ── */}
+            <div className="flex justify-end gap-3 pb-2">
+              <button
+                onClick={onClose}
+                className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
+              >
+                Cancel
+              </button>
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className={`${loading ? "bg-green-400 cursor-not-allowed" : "bg-green-700 hover:bg-green-800"} text-white px-6 py-2 rounded-sm text-[13px] font-semibold transition-colors`}
+                className={`px-8 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow-sm shadow-orange-200 flex items-center gap-2 ${loading ? "bg-orange-300 cursor-not-allowed" : "bg-gradient-to-r from-[#FF7B1D] to-orange-400 hover:from-orange-500 hover:to-orange-500"}`}
               >
-                {loading
-                  ? isEditMode
-                    ? "Updating..."
-                    : "Submitting..."
-                  : isEditMode
-                    ? "Update Product"
-                    : "Add Product"}
+                {loading ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    {isEditMode ? "Updating…" : "Submitting…"}
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    {isEditMode ? "Update Product" : "Add Product"}
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -3576,153 +1221,138 @@ export default function AddProductPopup({
       {/* ── CROP MODAL ── */}
       {showCropModal && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black bg-opacity-75"
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
         >
-          <div className="relative bg-white w-full max-w-4xl p-6 rounded-lg shadow-2xl">
-            <div className="flex justify-between items-center mb-3">
+          <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+            {/* Crop header */}
+            <div className="bg-gradient-to-r from-[#FF7B1D] to-orange-400 px-6 py-4 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold text-gray-800">
-                  Crop Image (1:1 Square)
-                </h3>
-                {imageQueueRef.current.length > 0 && (
-                  <p className="text-xs text-orange-500 mt-0.5">
-                    +{imageQueueRef.current.length} more image
-                    {imageQueueRef.current.length > 1 ? "s" : ""} waiting...
-                  </p>
-                )}
+                <h3 className="text-white font-bold text-base">Crop Image</h3>
+                <p className="text-orange-100 text-xs mt-0.5">
+                  {imageQueueRef.current.length > 0
+                    ? `${imageQueueRef.current.length} more image${imageQueueRef.current.length > 1 ? "s" : ""} waiting…`
+                    : "Drag & resize the crop area • 1:1 square ratio enforced"}
+                </p>
               </div>
               <button
                 onClick={cancelCrop}
-                className="text-gray-400 hover:text-gray-600"
+                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
               >
-                <X size={24} />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
+            {/* Crop area */}
             <div
               ref={cropContainerRef}
-              className="relative w-full bg-gray-900 rounded-lg overflow-hidden"
-              style={{ height: "500px" }}
+              className="relative w-full bg-gray-900 overflow-hidden cursor-crosshair"
+              style={{ height: "480px" }}
               onMouseDown={handleMouseDown}
             >
               <img
                 ref={imageRef}
                 src={cropImage}
-                alt="Crop preview"
+                alt="Crop"
                 className="w-full h-full object-contain"
               />
-
-              {/* Dark overlay (4 sides) */}
+              {/* Overlays */}
               <div className="absolute inset-0 pointer-events-none">
-                <div
-                  className="absolute bg-black bg-opacity-50"
-                  style={{
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: `${cropArea.y}px`,
-                  }}
-                />
-                <div
-                  className="absolute bg-black bg-opacity-50"
-                  style={{
+                {[
+                  { top: 0, left: 0, right: 0, height: `${cropArea.y}px` },
+                  {
                     top: `${cropArea.y + cropArea.height}px`,
                     left: 0,
                     right: 0,
                     bottom: 0,
-                  }}
-                />
-                <div
-                  className="absolute bg-black bg-opacity-50"
-                  style={{
+                  },
+                  {
                     top: `${cropArea.y}px`,
                     left: 0,
                     width: `${cropArea.x}px`,
                     height: `${cropArea.height}px`,
-                  }}
-                />
-                <div
-                  className="absolute bg-black bg-opacity-50"
-                  style={{
+                  },
+                  {
                     top: `${cropArea.y}px`,
                     right: 0,
                     width: `${cropContainerRef.current ? cropContainerRef.current.clientWidth - cropArea.x - cropArea.width : 0}px`,
                     height: `${cropArea.height}px`,
-                  }}
-                />
+                  },
+                ].map((s, i) => (
+                  <div key={i} className="absolute bg-black/60" style={s} />
+                ))}
               </div>
-
               {/* Crop box */}
               <div
                 ref={cropBoxRef}
-                className="absolute border-2 border-white cursor-move"
+                className="absolute border-2 border-white cursor-move shadow-lg"
                 style={{
-                  left: `${cropArea.x}px`,
-                  top: `${cropArea.y}px`,
-                  width: `${cropArea.width}px`,
-                  height: `${cropArea.height}px`,
+                  left: cropArea.x,
+                  top: cropArea.y,
+                  width: cropArea.width,
+                  height: cropArea.height,
                 }}
               >
-                {/* Grid lines */}
+                {/* Rule-of-thirds grid */}
                 <div
                   className="absolute inset-0 pointer-events-none"
                   style={{
                     backgroundImage:
-                      "linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px)",
+                      "linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)",
                     backgroundSize: "33.33% 33.33%",
                   }}
                 />
-
+                {/* Handles */}
                 {[
                   {
                     pos: "-top-2.5 -left-2.5",
-                    handle: "nw",
-                    cursor: "cursor-nwse-resize",
+                    h: "nw",
+                    cur: "cursor-nwse-resize",
                   },
                   {
                     pos: "-top-2.5 -right-2.5",
-                    handle: "ne",
-                    cursor: "cursor-nesw-resize",
+                    h: "ne",
+                    cur: "cursor-nesw-resize",
                   },
                   {
                     pos: "-bottom-2.5 -left-2.5",
-                    handle: "sw",
-                    cursor: "cursor-nesw-resize",
+                    h: "sw",
+                    cur: "cursor-nesw-resize",
                   },
                   {
                     pos: "-bottom-2.5 -right-2.5",
-                    handle: "se",
-                    cursor: "cursor-nwse-resize",
+                    h: "se",
+                    cur: "cursor-nwse-resize",
                   },
-                ].map(({ pos, handle, cursor }) => (
+                ].map(({ pos, h, cur }) => (
                   <div
-                    key={handle}
-                    className={`resize-handle absolute ${pos} w-5 h-5 bg-white border-2 border-orange-500 rounded-full ${cursor} hover:bg-orange-50 transition-colors shadow`}
-                    data-handle={handle}
+                    key={h}
+                    className={`resize-handle absolute ${pos} w-5 h-5 bg-white border-2 border-[#FF7B1D] rounded-full ${cur} hover:bg-orange-50 shadow transition-colors`}
+                    data-handle={h}
                   />
                 ))}
               </div>
             </div>
 
-            <div className="flex justify-between items-center mt-4">
-              <p className="text-xs text-gray-500">
-                Drag to move • Drag corners to resize
+            {/* Crop footer */}
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-gray-50">
+              <p className="text-xs text-gray-400">
+                Drag to move the crop box • Drag corners to resize
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={cancelCrop}
-                  className="px-5 py-2 bg-gray-200 text-gray-700 rounded-sm hover:bg-gray-300 transition-colors text-sm"
+                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-gray-100 transition-all"
                 >
                   Cancel All
                 </button>
                 <button
                   onClick={applyCrop}
-                  className="px-5 py-2 bg-orange-500 text-white rounded-sm hover:bg-orange-600 transition-colors flex items-center gap-2 text-sm"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-[#FF7B1D] to-orange-400 hover:from-orange-500 hover:to-orange-500 text-white flex items-center gap-2 shadow-sm shadow-orange-200 transition-all"
                 >
-                  <Check size={16} />
+                  <Check className="w-3.5 h-3.5" />
                   {imageQueueRef.current.length > 0
                     ? `Crop & Next (${imageQueueRef.current.length} left)`
                     : "Apply Crop"}
@@ -3732,6 +1362,6 @@ export default function AddProductPopup({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

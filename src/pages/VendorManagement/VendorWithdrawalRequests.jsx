@@ -12,6 +12,7 @@ import {
   Wallet,
   ChevronLeft,
   ChevronRight,
+  TrendingUp,
 } from "lucide-react";
 
 const AdminVendorWithdrawalRequests = () => {
@@ -23,6 +24,8 @@ const AdminVendorWithdrawalRequests = () => {
   const [actionLoading, setActionLoading] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const fetchRequests = async () => {
     try {
@@ -68,6 +71,7 @@ const AdminVendorWithdrawalRequests = () => {
 
   useEffect(() => {
     fetchRequests();
+    setCurrentPage(1);
   }, [statusFilter]);
 
   const handleApprove = async (requestId) => {
@@ -153,22 +157,34 @@ const AdminVendorWithdrawalRequests = () => {
     );
   });
 
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredRequests.length / itemsPerPage),
+  );
+  const paginatedRequests = filteredRequests.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
+
+  const totalAmount = requests
+    .filter((r) => r.status === "approved")
+    .reduce((sum, r) => sum + parseFloat(r.amount || 0), 0);
+
   const statCards = [
     {
       label: "Total Requests",
       value: requests.length,
       icon: DollarSign,
-      color: "orange",
       iconColor: "text-orange-500",
       bg: "bg-orange-50",
       ring: "ring-orange-100",
       border: "border-orange-200",
+      textColor: "text-gray-800",
     },
     {
       label: "Pending",
       value: requests.filter((r) => r.status === "pending").length,
       icon: AlertCircle,
-      color: "amber",
       iconColor: "text-amber-500",
       bg: "bg-amber-50",
       ring: "ring-amber-100",
@@ -179,7 +195,6 @@ const AdminVendorWithdrawalRequests = () => {
       label: "Approved",
       value: requests.filter((r) => r.status === "approved").length,
       icon: CheckCircle,
-      color: "emerald",
       iconColor: "text-emerald-500",
       bg: "bg-emerald-50",
       ring: "ring-emerald-100",
@@ -190,7 +205,6 @@ const AdminVendorWithdrawalRequests = () => {
       label: "Rejected",
       value: requests.filter((r) => r.status === "rejected").length,
       icon: XCircle,
-      color: "red",
       iconColor: "text-red-400",
       bg: "bg-red-50",
       ring: "ring-red-100",
@@ -199,13 +213,15 @@ const AdminVendorWithdrawalRequests = () => {
     },
   ];
 
+  /* ── Sub-components ────────────────────────────────────────────────── */
   const StatusBadge = ({ status }) => {
     const s = (status || "pending").toLowerCase();
     const styles = {
       approved:
-        "bg-emerald-50 text-emerald-700 border-emerald-200 ring-emerald-100",
-      rejected: "bg-red-50 text-red-700 border-red-200 ring-red-100",
-      pending: "bg-amber-50 text-amber-700 border-amber-200 ring-amber-100",
+        "bg-emerald-50 text-emerald-700 border-emerald-200 ring-1 ring-emerald-100",
+      rejected: "bg-red-50 text-red-700 border-red-200 ring-1 ring-red-100",
+      pending:
+        "bg-amber-50 text-amber-700 border-amber-200 ring-1 ring-amber-100",
     };
     const dots = {
       approved: "bg-emerald-500",
@@ -214,7 +230,7 @@ const AdminVendorWithdrawalRequests = () => {
     };
     return (
       <span
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ring-1 ${styles[s] || "bg-gray-50 text-gray-600 border-gray-200 ring-gray-100"}`}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${styles[s] || "bg-gray-50 text-gray-600 border-gray-200 ring-1 ring-gray-100"}`}
       >
         <span
           className={`w-1.5 h-1.5 rounded-full ${dots[s] || "bg-gray-400"}`}
@@ -226,7 +242,7 @@ const AdminVendorWithdrawalRequests = () => {
 
   const TableSkeleton = () => (
     <tbody>
-      {Array.from({ length: 8 }).map((_, idx) => (
+      {Array.from({ length: itemsPerPage }).map((_, idx) => (
         <tr key={idx} className="border-b border-gray-100">
           {Array.from({ length: 9 }).map((__, j) => (
             <td key={j} className="px-4 py-3.5">
@@ -267,6 +283,7 @@ const AdminVendorWithdrawalRequests = () => {
     { key: "rejected", label: "Rejected" },
   ];
 
+  /* ── Render ─────────────────────────────────────────────────────────── */
   return (
     <DashboardLayout>
       <style>{`
@@ -316,9 +333,7 @@ const AdminVendorWithdrawalRequests = () => {
             >
               <div>
                 <p className="text-xs text-gray-400 font-medium">{label}</p>
-                <p
-                  className={`text-2xl font-bold mt-0.5 ${textColor || "text-gray-800"}`}
-                >
+                <p className={`text-2xl font-bold mt-0.5 ${textColor}`}>
                   {value}
                 </p>
               </div>
@@ -339,7 +354,10 @@ const AdminVendorWithdrawalRequests = () => {
           {tabs.map((tab) => (
             <button
               key={tab.key}
-              onClick={() => setStatusFilter(tab.key)}
+              onClick={() => {
+                setStatusFilter(tab.key);
+                setCurrentPage(1);
+              }}
               className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
                 statusFilter === tab.key
                   ? "bg-white text-[#FF7B1D] shadow-sm shadow-orange-100"
@@ -355,10 +373,13 @@ const AdminVendorWithdrawalRequests = () => {
         <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden h-[38px] w-full lg:w-[420px] shadow-sm bg-white">
           <input
             type="text"
-            placeholder="Search by vendor name, store, mobile, ID..."
+            placeholder="Search by vendor name, store, mobile, ID…"
             className="flex-1 px-4 text-sm text-gray-700 focus:outline-none h-full placeholder:text-gray-400"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
           />
           <button className="bg-[#FF7B1D] hover:bg-orange-500 text-white text-sm font-medium px-5 h-full transition-colors">
             Search
@@ -412,11 +433,11 @@ const AdminVendorWithdrawalRequests = () => {
 
             {loading ? (
               <TableSkeleton />
-            ) : filteredRequests.length === 0 ? (
+            ) : paginatedRequests.length === 0 ? (
               <EmptyState />
             ) : (
               <tbody>
-                {filteredRequests.map((request, idx) => {
+                {paginatedRequests.map((request, idx) => {
                   const requestId = request._id || request.requestId;
                   if (!requestId) return null;
                   return (
@@ -428,7 +449,7 @@ const AdminVendorWithdrawalRequests = () => {
                       {/* S.N */}
                       <td className="px-4 py-3.5">
                         <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">
-                          {idx + 1}
+                          {(currentPage - 1) * itemsPerPage + idx + 1}
                         </span>
                       </td>
 
@@ -473,7 +494,7 @@ const AdminVendorWithdrawalRequests = () => {
                       </td>
 
                       {/* Date */}
-                      <td className="px-4 py-3.5 text-gray-400 text-xs">
+                      <td className="px-4 py-3.5 text-gray-400 text-xs whitespace-nowrap">
                         {formatDate(request.createdAt)}
                       </td>
 
@@ -490,13 +511,13 @@ const AdminVendorWithdrawalRequests = () => {
                               if (vendorId) navigate(`/vendor/${vendorId}`);
                               else setError("Vendor ID not found.");
                             }}
-                            className="action-btn bg-orange-50 text-orange-500 hover:bg-orange-100 hover:text-orange-700"
+                            className="action-btn bg-emerald-50 text-emerald-500 hover:bg-emerald-100 hover:text-emerald-700"
                             title="View Vendor"
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
 
-                          {/* Approve / Reject — only pending */}
+                          {/* Approve / Reject — only for pending */}
                           {request.status === "pending" && requestId && (
                             <>
                               <button
@@ -544,8 +565,72 @@ const AdminVendorWithdrawalRequests = () => {
         </div>
       </div>
 
-      {/* ── Bottom spacing ── */}
-      <div className="mb-6" />
+      {/* ── Pagination ── */}
+      {!loading && filteredRequests.length > 0 && (
+        <div className="flex items-center justify-between px-1 mt-5 mb-6">
+          <p className="text-xs text-gray-400 font-medium">
+            Page{" "}
+            <span className="text-gray-600 font-semibold">{currentPage}</span>{" "}
+            of <span className="text-gray-600 font-semibold">{totalPages}</span>
+          </p>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" /> Prev
+            </button>
+
+            <div className="flex items-center gap-1">
+              {(() => {
+                const pages = [];
+                const visiblePages = new Set([
+                  1,
+                  2,
+                  totalPages - 1,
+                  totalPages,
+                  currentPage - 1,
+                  currentPage,
+                  currentPage + 1,
+                ]);
+                for (let i = 1; i <= totalPages; i++) {
+                  if (visiblePages.has(i)) pages.push(i);
+                  else if (pages[pages.length - 1] !== "...") pages.push("...");
+                }
+                return pages.map((page, idx) =>
+                  page === "..." ? (
+                    <span key={idx} className="px-1 text-gray-400 text-xs">
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-xl text-xs font-semibold transition-all ${
+                        currentPage === page
+                          ? "bg-[#FF7B1D] text-white shadow-sm shadow-orange-200"
+                          : "bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ),
+                );
+              })()}
+            </div>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              Next <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 };

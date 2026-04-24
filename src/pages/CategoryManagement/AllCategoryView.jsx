@@ -214,7 +214,7 @@ const AllCategoryView = () => {
       [cat.category, cat.id, cat.products]
         .join(" ")
         .toLowerCase()
-        .includes(searchQuery.toLowerCase())
+        .includes(searchQuery.toLowerCase()),
     );
 
   // Pagination
@@ -487,7 +487,7 @@ const AllCategoryView = () => {
                   >
                     {page}
                   </button>
-                )
+                ),
               );
             })()}
           </div>

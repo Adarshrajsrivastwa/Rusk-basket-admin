@@ -3,653 +3,778 @@ import { useParams, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import AddProduct from "../../components/AddProduct";
 import { BASE_URL } from "../../api/api";
-import { Edit } from "lucide-react";
+import {
+  Edit,
+  ArrowLeft,
+  Package,
+  Tag,
+  Layers,
+  ShoppingBag,
+  Store,
+  Zap,
+  CheckCircle,
+  Clock,
+  XCircle,
+  ImageIcon,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Hash,
+  Percent,
+  DollarSign,
+  BoxIcon,
+} from "lucide-react";
 
+/* ─────────────────────────────────────────────
+   Status badge — mirrors AllProduct's StatusBadge
+───────────────────────────────────────────── */
+const StatusBadge = ({ status }) => {
+  const s = (status || "pending").toLowerCase();
+  const map = {
+    approved: {
+      cls: "bg-emerald-50 text-emerald-700 border border-emerald-200 ring-1 ring-emerald-100",
+      dot: "bg-emerald-500",
+      label: "Approved",
+    },
+    pending: {
+      cls: "bg-amber-50 text-amber-700 border border-amber-200 ring-1 ring-amber-100",
+      dot: "bg-amber-500",
+      label: "Pending",
+    },
+    rejected: {
+      cls: "bg-red-50 text-red-700 border border-red-200 ring-1 ring-red-100",
+      dot: "bg-red-500",
+      label: "Rejected",
+    },
+  };
+  const { cls, dot, label } = map[s] || map.pending;
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${cls}`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+      {label}
+    </span>
+  );
+};
+
+/* ─────────────────────────────────────────────
+   Info Card — a section card matching AllProduct's table card
+───────────────────────────────────────────── */
+const InfoCard = ({ icon: Icon, title, children, accent }) => (
+  <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+    <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2 bg-gradient-to-r from-gray-50 to-white">
+      <div className={`w-2 h-2 rounded-full ${accent || "bg-[#FF7B1D]"}`} />
+      {Icon && <Icon className="w-3.5 h-3.5 text-gray-400" />}
+      <span className="text-sm font-semibold text-gray-700">{title}</span>
+    </div>
+    <div className="p-5">{children}</div>
+  </div>
+);
+
+/* ─────────────────────────────────────────────
+   Skeleton loader
+───────────────────────────────────────────── */
+const SkeletonLoader = () => (
+  <div className="max-w-[96%] mx-auto mt-4 mb-10 space-y-4 animate-pulse">
+    <div className="h-9 w-36 bg-gray-200 rounded-xl" />
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="lg:col-span-2 space-y-4">
+        {[200, 160, 140].map((h, i) => (
+          <div
+            key={i}
+            className="rounded-2xl border border-gray-100 overflow-hidden"
+          >
+            <div className="h-10 bg-gray-100" />
+            <div className="p-5 space-y-3">
+              {Array.from({ length: 4 }).map((_, j) => (
+                <div
+                  key={j}
+                  className={`h-4 bg-gray-200 rounded-full w-${j % 2 === 0 ? "3/4" : "1/2"}`}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="h-10 bg-gray-100" />
+          <div className="p-5">
+            <div className="aspect-square bg-gray-200 rounded-xl" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+/* ─────────────────────────────────────────────
+   Main Component
+───────────────────────────────────────────── */
 const SingleProduct = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [product, setProduct] = useState(null);
   const [error, setError] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [imgIdx, setImgIdx] = useState(0);
 
-  const vendors = ["Vendor 1", "Vendor 2", "Vendor 3"];
-
+  /* ── Fetch ── */
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         setLoading(true);
         setError(null);
-
-        // Get token from localStorage
         const token =
           localStorage.getItem("token") || localStorage.getItem("authToken");
-
         if (!token) {
           setError("Please login to view product details");
           setLoading(false);
           return;
         }
-
         const headers = {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         };
+        let found = null;
 
-        let foundProduct = null;
-
-        // Primary endpoint: /api/product/{id}
         try {
-          console.log("Fetching product with ID:", id);
-          const response = await fetch(`${BASE_URL}/api/product/${id}`, {
+          const res = await fetch(`${BASE_URL}/api/product/${id}`, {
             method: "GET",
-            headers: headers,
+            headers,
             credentials: "include",
           });
-
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.data) {
-              foundProduct = data.data;
-              console.log("Found product via /api/product endpoint:", foundProduct);
-            }
-          } else {
-            console.error("Product endpoint returned error:", response.status);
+          if (res.ok) {
+            const d = await res.json();
+            if (d.success && d.data) found = d.data;
           }
-        } catch (err) {
-          console.error("Error fetching product:", err);
-        }
+        } catch (_) {}
 
-        // Fallback: Try admin endpoint if primary fails
-        if (!foundProduct) {
+        if (!found) {
           try {
-            console.log("Trying admin endpoint as fallback");
-            const response = await fetch(
-              `${BASE_URL}/api/admin/products/${id}`,
-              {
-                method: "GET",
-                headers: headers,
-                credentials: "include",
-              },
-            );
-
-            if (response.ok) {
-              const data = await response.json();
-              if (data.success && data.data) {
-                foundProduct = data.data;
-                console.log("Found product via admin endpoint:", foundProduct);
-              }
+            const res = await fetch(`${BASE_URL}/api/admin/products/${id}`, {
+              method: "GET",
+              headers,
+              credentials: "include",
+            });
+            if (res.ok) {
+              const d = await res.json();
+              if (d.success && d.data) found = d.data;
             }
-          } catch (err) {
-            console.error("Admin endpoint error:", err);
-          }
+          } catch (_) {}
         }
 
-        // If product found, normalize and set it
-        if (foundProduct) {
-          const normalizedProduct = {
-            ...foundProduct,
-            // Ensure all fields are properly mapped
-            productNumber: foundProduct.productNumber || foundProduct._id,
-            productName: foundProduct.productName || "Unnamed Product",
-            description: foundProduct.description || "",
-            inventory: foundProduct.inventory || 0,
-            initialInventory: foundProduct.initialInventory || 0,
-            actualPrice: foundProduct.actualPrice || 0,
-            regularPrice: foundProduct.regularPrice || 0,
-            salePrice: foundProduct.salePrice || 0,
-            cashback: foundProduct.cashback || 0,
-            tax: foundProduct.tax || 0,
-            discountPercentage: foundProduct.discountPercentage || 0,
-            skuHsn: foundProduct.skuHsn || "N/A",
-            approvalStatus: foundProduct.approvalStatus || "pending",
-            isActive: foundProduct.isActive !== undefined ? foundProduct.isActive : true,
-            hasOffer: foundProduct.hasOffer !== undefined ? foundProduct.hasOffer : false,
-            // Handle thumbnail - can be object with url or direct string
-            thumbnail: foundProduct.thumbnail?.url || foundProduct.thumbnail || null,
-            // Handle images - ensure they have url property
-            images: foundProduct.images?.map(img => ({
+        if (found) {
+          const norm = {
+            ...found,
+            productNumber: found.productNumber || found._id,
+            productName: found.productName || "Unnamed Product",
+            description: found.description || "",
+            inventory: found.inventory || 0,
+            initialInventory: found.initialInventory || 0,
+            actualPrice: found.actualPrice || 0,
+            regularPrice: found.regularPrice || 0,
+            salePrice: found.salePrice || 0,
+            cashback: found.cashback || 0,
+            tax: found.tax || 0,
+            discountPercentage: found.discountPercentage || 0,
+            skuHsn: found.skuHsn || "N/A",
+            approvalStatus: found.approvalStatus || "pending",
+            isActive: found.isActive !== undefined ? found.isActive : true,
+            hasOffer: found.hasOffer !== undefined ? found.hasOffer : false,
+            thumbnail: found.thumbnail?.url || found.thumbnail || null,
+            images: (found.images || []).map((img) => ({
               url: img.url || img,
               publicId: img.publicId,
-              mediaType: img.mediaType || "image"
-            })) || [],
-            // Handle category
-            category: foundProduct.category || null,
-            // Handle subCategory
-            subCategory: foundProduct.subCategory || null,
-            // Handle vendor
-            vendor: foundProduct.vendor || null,
-            // Handle productType
-            productType: foundProduct.productType || null,
-            // Handle skus
-            skus: foundProduct.skus || [],
-            // Handle tags
-            tags: foundProduct.tags || [],
-            // Handle offer
-            offer: foundProduct.offer || null,
+              mediaType: img.mediaType || "image",
+            })),
+            category: found.category || null,
+            subCategory: found.subCategory || null,
+            vendor: found.vendor || null,
+            productType: found.productType || null,
+            skus: found.skus || [],
+            tags: found.tags || [],
+            offer: found.offer || null,
           };
-
-          setProduct(normalizedProduct);
-
-          // Set first image as selected by default
-          if (normalizedProduct.images && normalizedProduct.images.length > 0) {
-            setSelectedImage(normalizedProduct.images[0].url);
-          } else if (normalizedProduct.thumbnail) {
-            setSelectedImage(normalizedProduct.thumbnail);
-          }
+          setProduct(norm);
+          const allImgs = [
+            ...norm.images.map((i) => i.url),
+            ...(norm.thumbnail ? [norm.thumbnail] : []),
+          ];
+          if (allImgs.length > 0) setSelectedImage(allImgs[0]);
         } else {
-          // Product not found
-          console.error("Product not found with ID:", id);
-          setError(
-            `Product not found with ID: ${id}. This product may have been deleted or the ID is incorrect.`,
-          );
+          setError(`Product not found with ID: ${id}.`);
         }
       } catch (err) {
-        console.error("Error fetching product:", err);
         setError(err.message || "Error fetching product. Please try again.");
       } finally {
         setLoading(false);
       }
     };
-
-    if (id) {
-      fetchProduct();
-    } else {
+    if (id) fetchProduct();
+    else {
       setError("No product ID provided");
       setLoading(false);
     }
   }, [id]);
 
-  // ✅ Skeleton Loader
-  const SkeletonLoader = () => (
-    <div className="max-w-[96%] mx-auto mt-4 mb-10 animate-pulse">
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        <div className="flex flex-wrap gap-2 w-full">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-8 bg-gray-200 rounded w-[100px]"></div>
-          ))}
-          <div className="h-8 bg-gray-200 rounded w-40 mt-2"></div>
-        </div>
-        <div className="ml-auto flex flex-wrap gap-2 items-center w-full md:w-auto mt-2">
-          <div className="h-8 bg-gray-200 rounded w-full md:w-[400px]"></div>
-          <div className="h-8 bg-gray-200 rounded w-32"></div>
-        </div>
-      </div>
+  const formatDate = (d) =>
+    d
+      ? new Date(d).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })
+      : "N/A";
+  const formatPrice = (p) => `₹${(p || 0).toLocaleString("en-IN")}`;
 
-      <div className="bg-white border border-gray-300 p-4 rounded shadow-sm space-y-3">
-        <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-        <div className="h-4 bg-gray-200 rounded w-full"></div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-4 bg-gray-200 rounded w-full"></div>
-          ))}
-        </div>
-        <div className="h-4 bg-gray-200 rounded w-1/2 mt-2"></div>
+  const allImages = product
+    ? [
+        ...(product.images || []).map((i) => i.url),
+        ...(product.thumbnail ? [product.thumbnail] : []),
+      ]
+    : [];
 
-        <div className="flex flex-col lg:flex-row gap-4 mt-4">
-          <div className="lg:w-3/4 w-full h-[300px] sm:h-[400px] lg:h-[670px] bg-gray-200 rounded"></div>
-          <div className="lg:w-1/4 w-full flex flex-col gap-3">
-            <div className="h-[150px] sm:h-[180px] lg:h-[220px] bg-gray-200 rounded"></div>
-            <div className="grid grid-cols-4 sm:grid-cols-2 lg:grid-cols-2 gap-2 sm:gap-3">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-[75px] sm:h-[100px] bg-gray-200 rounded"
-                ></div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const prevImg = () => {
+    const ni = (imgIdx - 1 + allImages.length) % allImages.length;
+    setImgIdx(ni);
+    setSelectedImage(allImages[ni]);
+  };
+  const nextImg = () => {
+    const ni = (imgIdx + 1) % allImages.length;
+    setImgIdx(ni);
+    setSelectedImage(allImages[ni]);
+  };
 
-  if (loading) {
+  /* ── Loading ── */
+  if (loading)
     return (
       <DashboardLayout>
         <SkeletonLoader />
       </DashboardLayout>
     );
-  }
 
-  if (error) {
+  /* ── Error ── */
+  if (error || !product)
     return (
       <DashboardLayout>
+        <style>{pageStyles}</style>
         <div className="max-w-[96%] mx-auto mt-4 mb-10">
-          <button
-            onClick={() => navigate(-1)}
-            className="mb-4 flex w-48 items-center justify-center gap-2 px-6 py-2 text-[13px] bg-[#FF7B1D] hover:bg-orange-600 rounded border border-gray-300 transition-colors text-white"
+          <BackBtn navigate={navigate} />
+          <div
+            className={`mt-4 rounded-2xl border p-5 ${error ? "bg-red-50 border-red-200 text-red-700" : "bg-amber-50 border-amber-200 text-amber-700"}`}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            Back
-          </button>
-          <div className="bg-red-50 border border-red-300 text-red-800 px-4 py-3 rounded">
-            <p className="font-semibold mb-2">Error Loading Product</p>
-            <p>{error}</p>
+            <p className="font-semibold mb-1">
+              {error ? "Error Loading Product" : "Product Not Found"}
+            </p>
+            <p className="text-sm">
+              {error || "This product may have been deleted."}
+            </p>
           </div>
         </div>
       </DashboardLayout>
     );
-  }
-
-  if (!product) {
-    return (
-      <DashboardLayout>
-        <div className="max-w-[96%] mx-auto mt-4 mb-10">
-          <button
-            onClick={() => navigate(-1)}
-            className="mb-4 flex w-48 items-center justify-center gap-2 px-6 py-2 text-[13px] bg-[#FF7B1D] hover:bg-orange-600 rounded border border-gray-300 transition-colors text-white"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            Back
-          </button>
-          <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 px-4 py-3 rounded">
-            Product not found
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  // Format date helper
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  // Get approval status badge
-  const getStatusBadge = (status) => {
-    const statusStyles = {
-      approved: "bg-green-100 text-green-800 border-green-300",
-      pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
-      rejected: "bg-red-100 text-red-800 border-red-300",
-    };
-    return statusStyles[status] || statusStyles.pending;
-  };
-
-  // Format status label
-  const getStatusLabel = (status) => {
-    if (!status) return "pending";
-    const statusLower = status.toLowerCase();
-    if (statusLower === "pending") return "pending";
-    if (statusLower === "approved") return "Approved";
-    if (statusLower === "rejected") return "Rejected";
-    return status.toUpperCase();
-  };
-
-  // Handle Edit Product
-  const handleEdit = () => {
-    setIsEditModalOpen(true);
-  };
-
-  // Handle product update success
-  const handleProductUpdated = () => {
-    setIsEditModalOpen(false);
-    // Refresh product data
-    window.location.reload();
-  };
 
   return (
     <DashboardLayout>
-      <div className="max-w-[96%] mx-auto mt-2 mb-10">
-        {/* ---------- Back Button and Edit Button ---------- */}
-        <div className="mb-4 flex items-center justify-between">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex w-48 items-center justify-center gap-2 px-6 py-2 text-[13px] bg-[#FF7B1D] hover:bg-orange-600 rounded border border-gray-300 transition-colors text-white"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            Back
-          </button>
+      <style>{pageStyles}</style>
 
-          {product && (
-            <button
-              onClick={handleEdit}
-              className="flex items-center justify-center gap-2 px-6 py-2 text-[13px] bg-blue-600 hover:bg-blue-700 rounded text-white transition-colors"
-              title="Edit Product"
-            >
-              <Edit size={16} />
-              Edit Product
-            </button>
-          )}
+      <div className="max-w-[96%] mx-auto mt-3 mb-10">
+        {/* ── Top bar ── */}
+        <div className="flex items-center justify-between mb-4 row-animate">
+          <BackBtn navigate={navigate} />
+          <button
+            onClick={() => setIsEditModalOpen(true)}
+            className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-orange-50 hover:text-[#FF7B1D] hover:border-orange-200 transition-all shadow-sm"
+          >
+            <Edit className="w-3.5 h-3.5" /> Edit Product
+          </button>
         </div>
 
-        {/* ---------- Product Detail Section ---------- */}
-        <div className="bg-white border border-gray-300 p-4 text-[13px] rounded shadow-sm">
-          {/* Status Badge */}
-          <div className="mb-3">
-            <span
-              className={`inline-block px-3 py-1 rounded text-xs font-medium border ${getStatusBadge(
-                product.approvalStatus,
-              )}`}
-            >
-              {getStatusLabel(product.approvalStatus || "pending")}
-            </span>
-            {product.isActive && (
-              <span className="ml-2 inline-block px-3 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 border border-blue-300">
-                ACTIVE
-              </span>
-            )}
-            {product.hasOffer && (
-              <span className="ml-2 inline-block px-3 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 border border-purple-300">
-                🔥 OFFER ACTIVE
-              </span>
-            )}
+        {/* ── Page header card (like AllProduct's table card header) ── */}
+        <div
+          className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white mb-4 row-animate"
+          style={{ animationDelay: "40ms" }}
+        >
+          <div className="px-5 py-4 bg-gradient-to-r from-[#FF7B1D] to-orange-400 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                <Package className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-white font-bold text-base leading-tight">
+                  {product.productName}
+                </h1>
+                <p className="text-orange-100 text-xs mt-0.5 font-mono">
+                  {product.productNumber || product._id}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <StatusBadge status={product.approvalStatus} />
+              {product.isActive && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/20 text-white border border-white/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white" /> Active
+                </span>
+              )}
+              {product.hasOffer && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/20 text-white border border-white/30">
+                  🔥 Offer Active
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Product Title */}
-          <p className="font-semibold">
-            Product Title:{" "}
-            <span className="font-normal">
-              {product.productName || "Unnamed Product"}
-            </span>
-          </p>
-
-          {/* Product Number */}
-          <p className="mt-1">
-            <span className="font-semibold">Product Number:</span>{" "}
-            {product.productNumber || product.productno || product._id || "N/A"}
-          </p>
-
-          {/* Product ID (Internal) */}
-          <p className="mt-1 text-xs text-gray-500">
-            <span className="font-semibold">Internal ID:</span>{" "}
-            {product._id || product.id}
-          </p>
-
-          {/* Product Description */}
-          <p className="mt-1 leading-relaxed">
-            <span className="font-semibold">Product Description: </span>
-            {product.description || "No description available"}
-          </p>
-
-          {/* Product Info Grid */}
-          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-1 max-w-4xl text-[13px]">
-            <p>
-              <span className="font-semibold">Inventory:</span>{" "}
-              {product.inventory || 0} units
-            </p>
-            <p>
-              <span className="font-semibold">Initial Inventory:</span>{" "}
-              {product.initialInventory || 0}
-            </p>
-            <p>
-              <span className="font-semibold">Actual Price:</span> ₹
-              {product.actualPrice || 0}
-            </p>
-            <p>
-              <span className="font-semibold">Regular Price:</span> ₹
-              {product.regularPrice || 0}
-            </p>
-            <p>
-              <span className="font-semibold">Sale Price:</span> ₹
-              {product.salePrice || 0}
-            </p>
-            {product.originalSalePrice && (
-              <p>
-                <span className="font-semibold">Original Sale Price:</span> ₹
-                {product.originalSalePrice}
+          {/* Description sub-bar */}
+          {product.description && (
+            <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
+              <p className="text-xs text-gray-500 leading-relaxed">
+                {product.description}
               </p>
-            )}
-            <p>
-              <span className="font-semibold">Discount:</span>{" "}
-              {product.discountPercentage || 0}%
-            </p>
-            <p>
-              <span className="font-semibold">Cashback:</span> ₹
-              {product.cashback || 0}
-            </p>
-            <p>
-              <span className="font-semibold">Tax:</span> {product.tax || 0}%
-            </p>
-            <p>
-              <span className="font-semibold">Category:</span>{" "}
-              {product.category?.name || product.category?.categoryName || "N/A"}
-            </p>
-            <p>
-              <span className="font-semibold">Sub Category:</span>{" "}
-              {product.subCategory?.name || product.subCategory?.subCategoryName || "N/A"}
-            </p>
-            <p>
-              <span className="font-semibold">SKU/HSN:</span>{" "}
-              {product.skuHsn || "N/A"}
-            </p>
-            <p>
-              <span className="font-semibold">Product Type:</span>{" "}
-              {product.productType ? (
-                `${product.productType.value || "N/A"} ${product.productType.unit || ""} (${product.productType.type || "N/A"})`
-              ) : "N/A"}
-            </p>
-            {product.skus && product.skus.length > 0 && (
-              <div className="col-span-full">
-                <span className="font-semibold">SKUs:</span>{" "}
-                <div className="inline-flex flex-wrap gap-2 mt-1">
-                  {product.skus.map((sku, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs"
+            </div>
+          )}
+
+          {/* Quick stats strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-gray-100">
+            {[
+              {
+                label: "Sale Price",
+                value: formatPrice(product.salePrice),
+                icon: ShoppingBag,
+                color: "text-[#FF7B1D]",
+              },
+              {
+                label: "Inventory",
+                value: `${product.inventory} units`,
+                icon: BoxIcon,
+                color: "text-blue-500",
+              },
+              {
+                label: "Discount",
+                value: `${product.discountPercentage}%`,
+                icon: Percent,
+                color: "text-purple-500",
+              },
+              {
+                label: "Cashback",
+                value: formatPrice(product.cashback),
+                icon: Zap,
+                color: "text-emerald-500",
+              },
+            ].map(({ label, value, icon: Icon, color }) => (
+              <div key={label} className="px-5 py-3.5 flex items-center gap-3">
+                <div
+                  className={`w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0`}
+                >
+                  <Icon className={`w-4 h-4 ${color}`} />
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
+                    {label}
+                  </p>
+                  <p className="text-sm font-bold text-gray-800">{value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Main grid ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* LEFT col ─ 2/3 width */}
+          <div className="lg:col-span-2 space-y-4">
+            {/* Pricing Card */}
+            <div className="row-animate" style={{ animationDelay: "80ms" }}>
+              <InfoCard icon={DollarSign} title="Pricing Details">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {[
+                    {
+                      label: "Actual Price",
+                      value: formatPrice(product.actualPrice),
+                    },
+                    {
+                      label: "Regular Price",
+                      value: formatPrice(product.regularPrice),
+                    },
+                    {
+                      label: "Sale Price",
+                      value: formatPrice(product.salePrice),
+                      highlight: true,
+                    },
+                    { label: "Cashback", value: formatPrice(product.cashback) },
+                    { label: "Tax", value: `${product.tax}%` },
+                    {
+                      label: "Discount",
+                      value: `${product.discountPercentage}%`,
+                    },
+                    ...(product.originalSalePrice
+                      ? [
+                          {
+                            label: "Original Sale Price",
+                            value: formatPrice(product.originalSalePrice),
+                          },
+                        ]
+                      : []),
+                  ].map(({ label, value, highlight }) => (
+                    <div
+                      key={label}
+                      className={`rounded-xl px-4 py-3 border ${highlight ? "bg-orange-50 border-orange-200" : "bg-gray-50 border-gray-100"}`}
                     >
-                      {sku.sku}: {sku.inventory} units
-                    </span>
+                      <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium mb-1">
+                        {label}
+                      </p>
+                      <p
+                        className={`text-sm font-bold ${highlight ? "text-[#FF7B1D]" : "text-gray-800"}`}
+                      >
+                        {value}
+                      </p>
+                    </div>
                   ))}
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* Vendor Information */}
-          {product.vendor && (
-            <div className="mt-3 p-3 bg-gray-50 rounded border border-gray-200">
-              <p className="font-semibold mb-1">Vendor Information:</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[13px]">
-                <p>
-                  <span className="font-semibold">Store Name:</span>{" "}
-                  {product.vendor.storeName}
-                </p>
-                <p>
-                  <span className="font-semibold">Vendor Name:</span>{" "}
-                  {product.vendor.vendorName}
-                </p>
-                <p>
-                  <span className="font-semibold">Email:</span>{" "}
-                  {product.vendor.email}
-                </p>
-                <p>
-                  <span className="font-semibold">Contact:</span>{" "}
-                  {product.vendor.contactNumber}
-                </p>
-              </div>
+              </InfoCard>
             </div>
-          )}
 
-          {/* Offer Information */}
-          {product.hasOffer && product.offer && (
-            <div className="mt-3 p-3 bg-purple-50 rounded border border-purple-200">
-              <p className="font-semibold mb-1">🔥 Active Offer:</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 text-[13px]">
-                <p>
-                  <span className="font-semibold">Discount:</span>{" "}
-                  {product.offer.discountPercentage}%
-                </p>
-                <p>
-                  <span className="font-semibold">Start Date:</span>{" "}
-                  {formatDate(product.offer.startDate)}
-                </p>
-                <p>
-                  <span className="font-semibold">End Date:</span>{" "}
-                  {formatDate(product.offer.endDate)}
-                </p>
-                {product.offer.isDailyOffer && (
-                  <p className="text-purple-700 font-semibold">
-                    ⭐ Daily Offer
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Approval Information */}
-          {product.approvedBy && (
-            <div className="mt-3 p-3 bg-green-50 rounded border border-green-200">
-              <p className="font-semibold mb-1">Approval Details:</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[13px]">
-                <p>
-                  <span className="font-semibold">Approved By:</span>{" "}
-                  {product.approvedBy.name}
-                </p>
-                <p>
-                  <span className="font-semibold">Approved At:</span>{" "}
-                  {formatDate(product.approvedAt)}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Tags */}
-          {product.tags && product.tags.length > 0 && (
-            <p className="mt-3 leading-relaxed">
-              <span className="font-semibold">Tags:</span>{" "}
-              <span className="inline-flex flex-wrap gap-1">
-                {product.tags.map((tag, idx) => (
-                  <span
-                    key={idx}
-                    className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </span>
-            </p>
-          )}
-
-          {/* Location */}
-          {product.latitude && product.longitude && (
-            <p className="mt-2">
-              <span className="font-semibold">Location:</span>{" "}
-              {product.latitude}, {product.longitude}
-            </p>
-          )}
-
-          {/* Timestamps */}
-          <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-600">
-            <p>
-              <span className="font-semibold">Created:</span>{" "}
-              {formatDate(product.createdAt)}
-            </p>
-            <p>
-              <span className="font-semibold">Last Updated:</span>{" "}
-              {formatDate(product.updatedAt)}
-            </p>
-          </div>
-
-          {/* ---------- Image Section ---------- */}
-          <div className="mt-4 flex flex-col lg:flex-row gap-4">
-            {/* Left: Large Image */}
-            <div className="lg:w-3/4 w-full border border-gray-300 bg-gray-50 h-[300px] sm:h-[400px] lg:h-[670px] rounded overflow-hidden flex justify-center items-center">
-              {selectedImage ? (
-                <img
-                  src={selectedImage}
-                  alt={product.productName}
-                  className="object-contain h-full w-full"
-                />
-              ) : (
-                <div className="text-gray-400 text-center">
-                  <p>No image available</p>
+            {/* Product Info Card */}
+            <div className="row-animate" style={{ animationDelay: "120ms" }}>
+              <InfoCard icon={Tag} title="Product Information">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {[
+                    {
+                      label: "Category",
+                      value:
+                        product.category?.name ||
+                        product.category?.categoryName ||
+                        "N/A",
+                      pill: "blue",
+                    },
+                    {
+                      label: "Sub Category",
+                      value:
+                        product.subCategory?.name ||
+                        product.subCategory?.subCategoryName ||
+                        "N/A",
+                      pill: "purple",
+                    },
+                    {
+                      label: "SKU / HSN",
+                      value: product.skuHsn || "N/A",
+                      pill: "gray",
+                    },
+                    {
+                      label: "Initial Inventory",
+                      value: `${product.initialInventory} units`,
+                      pill: "gray",
+                    },
+                    {
+                      label: "Product Type",
+                      value: product.productType
+                        ? `${product.productType.value || ""} ${product.productType.unit || ""} (${product.productType.type || ""})`
+                        : "N/A",
+                      pill: "gray",
+                    },
+                  ].map(({ label, value, pill }) => {
+                    const pillCls = {
+                      blue: "bg-blue-50 text-blue-700 border border-blue-100",
+                      purple:
+                        "bg-purple-50 text-purple-700 border border-purple-100",
+                      gray: "bg-gray-50 text-gray-600 border border-gray-100",
+                    }[pill];
+                    return (
+                      <div key={label} className="flex flex-col gap-1.5">
+                        <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium">
+                          {label}
+                        </p>
+                        <span
+                          className={`inline-flex self-start px-2.5 py-1 rounded-full text-xs font-semibold ${pillCls}`}
+                        >
+                          {value}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
 
-            {/* Right: Image Grid */}
-            <div className="lg:w-1/4 w-full flex flex-col">
-              {/* Thumbnail Preview */}
-              {product.thumbnail && (
-                <div className="border border-orange-300 rounded bg-white h-[150px] sm:h-[180px] lg:h-[220px] mb-3 flex justify-center items-center overflow-hidden">
-                  <img
-                    src={product.thumbnail}
-                    alt="thumbnail"
-                    className="object-cover h-full w-full cursor-pointer hover:scale-105 transition-transform"
-                    onClick={() => setSelectedImage(product.thumbnail)}
-                  />
-                </div>
-              )}
-
-              {/* Image Thumbnails */}
-              <div className="grid grid-cols-4 sm:grid-cols-2 lg:grid-cols-2 gap-2 sm:gap-3">
-                {product.images && product.images.length > 0 ? (
-                  product.images.map((img, i) => (
-                    <div
-                      key={i}
-                      className={`border rounded bg-white h-[75px] sm:h-[100px] flex items-center justify-center overflow-hidden cursor-pointer ${
-                        selectedImage === img.url
-                          ? "border-orange-500 border-2"
-                          : "border-orange-300"
-                      }`}
-                      onClick={() => setSelectedImage(img.url)}
-                    >
-                      <img
-                        src={img.url}
-                        alt={`product-${i}`}
-                        className="h-full w-full object-cover hover:scale-105 transition-transform duration-200"
-                      />
+                {/* SKUs */}
+                {product.skus && product.skus.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium mb-2">
+                      SKUs
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {product.skus.map((sku, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 text-xs font-semibold"
+                        >
+                          <Hash className="w-3 h-3" /> {sku.sku}:{" "}
+                          {sku.inventory} units
+                        </span>
+                      ))}
                     </div>
-                  ))
-                ) : (
-                  <div className="col-span-4 sm:col-span-2 text-center text-gray-400 text-sm">
-                    No additional images
                   </div>
                 )}
+
+                {/* Tags */}
+                {product.tags && product.tags.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium mb-2">
+                      Tags
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {product.tags.map((tag, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-100 text-orange-700 text-xs font-semibold"
+                        >
+                          <Tag className="w-3 h-3" /> {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </InfoCard>
+            </div>
+
+            {/* Vendor Card */}
+            {product.vendor && (
+              <div className="row-animate" style={{ animationDelay: "160ms" }}>
+                <InfoCard icon={Store} title="Vendor Information">
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label: "Store Name", value: product.vendor.storeName },
+                      {
+                        label: "Vendor Name",
+                        value: product.vendor.vendorName,
+                      },
+                      { label: "Email", value: product.vendor.email },
+                      { label: "Contact", value: product.vendor.contactNumber },
+                    ].map(({ label, value }) => (
+                      <div
+                        key={label}
+                        className="rounded-xl px-4 py-3 bg-gray-50 border border-gray-100"
+                      >
+                        <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium mb-1">
+                          {label}
+                        </p>
+                        <p className="text-sm font-semibold text-gray-700 truncate">
+                          {value || "N/A"}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </InfoCard>
+              </div>
+            )}
+
+            {/* Offer Card */}
+            {product.hasOffer && product.offer && (
+              <div className="row-animate" style={{ animationDelay: "200ms" }}>
+                <InfoCard
+                  icon={Zap}
+                  title="Active Offer"
+                  accent="bg-purple-500"
+                >
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {[
+                      {
+                        label: "Discount",
+                        value: `${product.offer.discountPercentage}%`,
+                      },
+                      {
+                        label: "Start Date",
+                        value: formatDate(product.offer.startDate),
+                      },
+                      {
+                        label: "End Date",
+                        value: formatDate(product.offer.endDate),
+                      },
+                    ].map(({ label, value }) => (
+                      <div
+                        key={label}
+                        className="rounded-xl px-4 py-3 bg-purple-50 border border-purple-100"
+                      >
+                        <p className="text-[10px] text-purple-400 uppercase tracking-wider font-medium mb-1">
+                          {label}
+                        </p>
+                        <p className="text-sm font-bold text-purple-700">
+                          {value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  {product.offer.isDailyOffer && (
+                    <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-100 border border-purple-200 text-purple-700 text-xs font-semibold">
+                      ⭐ Daily Offer
+                    </div>
+                  )}
+                </InfoCard>
+              </div>
+            )}
+
+            {/* Approval + Timestamps */}
+            <div className="row-animate" style={{ animationDelay: "240ms" }}>
+              <InfoCard icon={Calendar} title="Timeline">
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: "Created", value: formatDate(product.createdAt) },
+                    {
+                      label: "Last Updated",
+                      value: formatDate(product.updatedAt),
+                    },
+                    ...(product.approvedBy
+                      ? [
+                          {
+                            label: "Approved By",
+                            value: product.approvedBy.name,
+                          },
+                          {
+                            label: "Approved At",
+                            value: formatDate(product.approvedAt),
+                          },
+                        ]
+                      : []),
+                    ...(product.latitude
+                      ? [
+                          { label: "Latitude", value: product.latitude },
+                          { label: "Longitude", value: product.longitude },
+                        ]
+                      : []),
+                  ].map(({ label, value }) => (
+                    <div
+                      key={label}
+                      className="rounded-xl px-4 py-3 bg-gray-50 border border-gray-100"
+                    >
+                      <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium mb-1">
+                        {label}
+                      </p>
+                      <p className="text-xs font-semibold text-gray-700">
+                        {value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </InfoCard>
+            </div>
+          </div>
+
+          {/* RIGHT col ─ 1/3 width */}
+          <div className="space-y-4">
+            {/* Main image viewer */}
+            <div className="row-animate" style={{ animationDelay: "60ms" }}>
+              <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+                <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2 bg-gradient-to-r from-gray-50 to-white">
+                  <div className="w-2 h-2 rounded-full bg-[#FF7B1D]" />
+                  <ImageIcon className="w-3.5 h-3.5 text-gray-400" />
+                  <span className="text-sm font-semibold text-gray-700">
+                    Product Images
+                  </span>
+                  {allImages.length > 0 && (
+                    <span className="ml-auto text-xs text-gray-400 font-medium">
+                      {imgIdx + 1} / {allImages.length}
+                    </span>
+                  )}
+                </div>
+
+                {/* Big image */}
+                <div className="relative bg-gray-50 aspect-square flex items-center justify-center overflow-hidden">
+                  {selectedImage ? (
+                    <img
+                      src={selectedImage}
+                      alt={product.productName}
+                      className="object-contain w-full h-full transition-opacity duration-300"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-gray-300">
+                      <ImageIcon className="w-10 h-10" />
+                      <p className="text-xs">No image</p>
+                    </div>
+                  )}
+
+                  {allImages.length > 1 && (
+                    <>
+                      <button
+                        onClick={prevImg}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 shadow-sm border border-gray-100 flex items-center justify-center hover:bg-white transition-all"
+                      >
+                        <ChevronLeft className="w-4 h-4 text-gray-600" />
+                      </button>
+                      <button
+                        onClick={nextImg}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 shadow-sm border border-gray-100 flex items-center justify-center hover:bg-white transition-all"
+                      >
+                        <ChevronRight className="w-4 h-4 text-gray-600" />
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {/* Thumbnail strip */}
+                {allImages.length > 1 && (
+                  <div className="p-3 border-t border-gray-100 grid grid-cols-4 gap-2">
+                    {allImages.map((url, i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          setSelectedImage(url);
+                          setImgIdx(i);
+                        }}
+                        className={`rounded-lg overflow-hidden border-2 transition-all aspect-square ${
+                          selectedImage === url
+                            ? "border-[#FF7B1D] shadow-sm shadow-orange-100"
+                            : "border-gray-100 hover:border-orange-200"
+                        }`}
+                      >
+                        <img
+                          src={url}
+                          alt={`img-${i}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Internal ID card */}
+            <div className="row-animate" style={{ animationDelay: "100ms" }}>
+              <div className="rounded-2xl border border-gray-100 shadow-sm bg-white overflow-hidden">
+                <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2 bg-gradient-to-r from-gray-50 to-white">
+                  <div className="w-2 h-2 rounded-full bg-gray-400" />
+                  <Hash className="w-3.5 h-3.5 text-gray-400" />
+                  <span className="text-sm font-semibold text-gray-700">
+                    Identifiers
+                  </span>
+                </div>
+                <div className="p-5 space-y-3">
+                  {[
+                    {
+                      label: "Product Number",
+                      value:
+                        product.productNumber || product.productno || "N/A",
+                    },
+                    { label: "Internal ID", value: product._id || product.id },
+                  ].map(({ label, value }) => (
+                    <div key={label}>
+                      <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium mb-1">
+                        {label}
+                      </p>
+                      <span className="inline-block font-mono text-xs bg-gray-50 border border-gray-200 px-2.5 py-1.5 rounded-lg text-gray-600 break-all">
+                        {value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Edit Product Modal */}
+      {/* Edit Modal */}
       {product && (
         <AddProduct
           key={`edit-${product._id || product.id}`}
@@ -657,12 +782,39 @@ const SingleProduct = () => {
           onClose={() => setIsEditModalOpen(false)}
           isEditMode={true}
           editingProduct={product}
-          onProductAdded={handleProductUpdated}
-          onProductUpdated={handleProductUpdated}
+          onProductAdded={() => {
+            setIsEditModalOpen(false);
+            window.location.reload();
+          }}
+          onProductUpdated={() => {
+            setIsEditModalOpen(false);
+            window.location.reload();
+          }}
         />
       )}
     </DashboardLayout>
   );
 };
+
+/* ── Shared back button ── */
+const BackBtn = ({ navigate }) => (
+  <button
+    onClick={() => navigate(-1)}
+    className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#FF7B1D] to-orange-400 text-white hover:from-orange-500 hover:to-orange-500 transition-all shadow-sm shadow-orange-200"
+  >
+    <ArrowLeft className="w-3.5 h-3.5" /> Back
+  </button>
+);
+
+/* ── Shared page styles ── */
+const pageStyles = `
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .row-animate {
+    animation: fadeSlideIn 0.25s ease forwards;
+  }
+`;
 
 export default SingleProduct;
