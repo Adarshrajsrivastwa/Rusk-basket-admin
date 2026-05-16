@@ -23,7 +23,7 @@ const AllProduct = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [searchQuery, setSearchQuery] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
@@ -72,7 +72,7 @@ const AllProduct = () => {
           }
           let displayStatus = "In Review";
           if (product.approvalStatus) {
-            const s = product.approvalStatus.toLowerCase();
+            const s = String(product.approvalStatus).toLowerCase();
             if (s === "approved") displayStatus = "Approved";
             else if (s === "pending") displayStatus = "In Review";
             else if (s === "rejected") displayStatus = "Rejected";
@@ -259,12 +259,27 @@ const AllProduct = () => {
     return true;
   });
 
-  const searchedProducts = filteredByTab.filter((product) =>
-    [product.productId, product.vendor, product.category, product.name]
+  const searchedProducts = filteredByTab.filter((product) => {
+    const q = String(searchQuery || "").trim();
+    if (!q) return true;
+    const searchLower = q.toLowerCase();
+    const toStr = (v) => {
+      if (v == null) return "";
+      if (typeof v === "object") return v.name || v.code || "";
+      return String(v);
+    };
+    const haystack = [
+      product.productId,
+      product.vendor,
+      product.category,
+      product.subCategory,
+      product.name,
+    ]
+      .map(toStr)
       .join(" ")
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase()),
-  );
+      .toLowerCase();
+    return haystack.includes(searchLower);
+  });
 
   const totalPages = Math.max(
     1,
