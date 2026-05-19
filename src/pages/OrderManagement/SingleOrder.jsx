@@ -23,6 +23,29 @@ import {
 
 const API_BASE_URL = `${BASE_URL}/api`;
 
+const CANCELLABLE_ORDER_STATUSES = [
+  "pending",
+  "order_placed",
+  "confirmed",
+  "processing",
+  "ready",
+  "rider_assign",
+];
+
+const canCancelOrderStatus = (status) => {
+  if (!status) return false;
+  return CANCELLABLE_ORDER_STATUSES.includes(status.toLowerCase().replace(/\s+/g, "_"));
+};
+
+const normalizeOrderStatus = (status) =>
+  status?.toLowerCase().replace(/\s+/g, "_") || "";
+
+const canAssignRiderToOrder = (status, hasRider) => {
+  if (hasRider) return false;
+  const s = normalizeOrderStatus(status);
+  return !["cancelled", "delivered", "out_for_delivery"].includes(s);
+};
+
 /* ─────────────────────────── helpers ─────────────────────────── */
 const StatusBadge = ({ status }) => {
   if (!status) return null;
@@ -52,6 +75,11 @@ const StatusBadge = ({ status }) => {
       cls: "bg-orange-50 text-orange-700 border border-orange-200 ring-1 ring-orange-100",
       dot: "bg-orange-500",
       label: "Ready",
+    },
+    cancelled: {
+      cls: "bg-red-50 text-red-700 border border-red-200 ring-1 ring-red-100",
+      dot: "bg-red-500",
+      label: "Cancelled",
     },
   };
   const cfg = map[status.toLowerCase()] ||
@@ -207,35 +235,39 @@ const SingleOrder = () => {
   const [selectedRider, setSelectedRider] = useState(null);
   const [assignmentNotes, setAssignmentNotes] = useState("");
   const [assigningRider, setAssigningRider] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancellingOrder, setCancellingOrder] = useState(false);
   const pdfGeneratedRef = useRef(false);
 
+  const fetchOrderData = async ({ silent = false } = {}) => {
+    try {
+      if (!silent) setLoading(true);
+      setError(null);
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const response = await fetch(
+        `${API_BASE_URL}/checkout/vendor/order/${id}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers,
+        },
+      );
+      const result = await response.json();
+      if (!response.ok || !result.success)
+        throw new Error(result.message || "Failed to fetch order data");
+      setOrderData(transformOrderData(result.data));
+    } catch (err) {
+      setError(err.message || "Failed to load order data");
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchOrderData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const token =
-          localStorage.getItem("token") || localStorage.getItem("authToken");
-        const headers = { "Content-Type": "application/json" };
-        if (token) headers["Authorization"] = `Bearer ${token}`;
-        const response = await fetch(
-          `${API_BASE_URL}/checkout/vendor/order/${id}`,
-          {
-            method: "GET",
-            credentials: "include",
-            headers,
-          },
-        );
-        const result = await response.json();
-        if (!response.ok || !result.success)
-          throw new Error(result.message || "Failed to fetch order data");
-        setOrderData(transformOrderData(result.data));
-      } catch (err) {
-        setError(err.message || "Failed to load order data");
-      } finally {
-        setLoading(false);
-      }
-    };
     if (id) fetchOrderData();
   }, [id]);
 
@@ -407,7 +439,12 @@ const SingleOrder = () => {
 
   const handleAssignRider = async () => {
     if (!selectedRider) {
-      alert("⚠️ Please select a rider!");
+      alert("Please select a rider.");
+      return;
+    }
+    const orderId = orderData?._id || id;
+    if (!orderId) {
+      alert("Order ID not available.");
       return;
     }
     try {
@@ -416,33 +453,30 @@ const SingleOrder = () => {
         localStorage.getItem("token") || localStorage.getItem("authToken");
       const headers = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
+      const payload = { riderId: selectedRider.riderId };
+      if (assignmentNotes.trim()) {
+        payload.assignmentNotes = assignmentNotes.trim();
+      }
       const response = await fetch(
-        `${API_BASE_URL}/vendor/orders/${id}/assign-rider`,
+        `${API_BASE_URL}/vendor/orders/${orderId}/assign-rider`,
         {
           method: "PUT",
           credentials: "include",
           headers,
-          body: JSON.stringify({
-            riderId: selectedRider.riderId,
-            assignmentNotes: assignmentNotes || undefined,
-          }),
+          body: JSON.stringify(payload),
         },
       );
-      if (!response.ok) throw new Error(`Server error: ${response.status}`);
       const result = await response.json();
-      if (result.success) {
-        alert("✅ Rider assigned successfully!");
-        setShowAssignRiderModal(false);
-        setSelectedRider(null);
-        setAssignmentNotes("");
-        window.location.reload();
-      } else {
-        alert(
-          `❌ Failed to assign rider: ${result.message || "Unknown error"}`,
-        );
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Failed to assign rider");
       }
+      alert("Rider assigned successfully.");
+      setShowAssignRiderModal(false);
+      setSelectedRider(null);
+      setAssignmentNotes("");
+      await fetchOrderData({ silent: true });
     } catch (error) {
-      alert(`❌ Failed to assign rider. ${error.message}`);
+      alert(error.message || "Failed to assign rider.");
     } finally {
       setAssigningRider(false);
     }
@@ -455,6 +489,45 @@ const SingleOrder = () => {
   const shouldShowActionButtons = () => {
     const allowed = ["order_placed", "pending", "new order", "confirmed"];
     return allowed.includes(orderData?.status?.toLowerCase());
+  };
+
+  const handleCancelOrder = async () => {
+    if (!canCancelOrderStatus(orderData?.status)) {
+      alert("This order cannot be cancelled at its current status.");
+      return;
+    }
+    try {
+      setCancellingOrder(true);
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const body = cancelReason.trim()
+        ? { reason: cancelReason.trim() }
+        : undefined;
+      const orderId = orderData?._id || id;
+      const response = await fetch(
+        `${API_BASE_URL}/vendor/orders/${orderId}/cancel`,
+        {
+          method: "PUT",
+          credentials: "include",
+          headers,
+          ...(body ? { body: JSON.stringify(body) } : {}),
+        },
+      );
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Failed to cancel order");
+      }
+      setShowCancelModal(false);
+      setCancelReason("");
+      alert("Order cancelled successfully.");
+      await fetchOrderData({ silent: true });
+    } catch (err) {
+      alert(err.message || "Failed to cancel order.");
+    } finally {
+      setCancellingOrder(false);
+    }
   };
 
   /* ── loading ── */
@@ -547,19 +620,28 @@ const SingleOrder = () => {
                 </span>
                 <span className="text-gray-300">·</span>
                 <StatusBadge status={orderData.status} />
-                {orderData.status?.toLowerCase() === "ready" &&
-                  !orderData.rider && (
-                    <button
-                      onClick={() => setShowAssignRiderModal(true)}
-                      className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded-full text-xs font-semibold transition-all"
-                    >
-                      <Truck className="w-3 h-3" /> Assign Rider
-                    </button>
-                  )}
               </div>
             </div>
-            {shouldShowActionButtons() && (
-              <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap">
+              {canAssignRiderToOrder(orderData.status, !!orderData.rider) && (
+                <button
+                  type="button"
+                  onClick={() => setShowAssignRiderModal(true)}
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all"
+                >
+                  <Truck className="w-4 h-4" /> Assign Rider
+                </button>
+              )}
+              {canCancelOrderStatus(orderData.status) && (
+                <button
+                  type="button"
+                  onClick={() => setShowCancelModal(true)}
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all"
+                >
+                  <X className="w-4 h-4" /> Cancel Order
+                </button>
+              )}
+              {shouldShowActionButtons() && (
                 <button
                   onClick={() =>
                     navigate(`/orders/${orderData.id}/bag-qr-scan`)
@@ -568,8 +650,8 @@ const SingleOrder = () => {
                 >
                   <QrCode className="w-4 h-4" /> Bag & QR Scan
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
@@ -771,9 +853,18 @@ const SingleOrder = () => {
                     <p className="text-sm font-bold text-gray-700 mb-1">
                       No rider assigned yet
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-400 mb-4">
                       Rider will be assigned automatically or manually
                     </p>
+                    {canAssignRiderToOrder(orderData.status, !!orderData.rider) && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAssignRiderModal(true)}
+                        className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition-all"
+                      >
+                        <Truck className="w-4 h-4" /> Assign Rider
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -890,6 +981,81 @@ const SingleOrder = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />
+
+      {/* ── Cancel Order Modal ── */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border-t-4 border-t-red-500">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-500" /> Cancel Order
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Order {orderData.id} will be cancelled. This cannot be undone.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setCancelReason("");
+                }}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="mb-5">
+              <label className="block text-xs font-semibold text-gray-700 mb-2">
+                Reason (optional)
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm text-gray-700 focus:border-red-400 focus:outline-none resize-none transition-colors"
+                placeholder="e.g. Stock not available"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setCancelReason("");
+                }}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+              >
+                Keep Order
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelOrder}
+                disabled={cancellingOrder}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                  cancellingOrder
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-sm"
+                }`}
+              >
+                {cancellingOrder ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400" />
+                    Cancelling...
+                  </>
+                ) : (
+                  <>
+                    <X className="w-4 h-4" /> Confirm Cancel
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Assign Rider Modal ── */}
       {showAssignRiderModal && (
