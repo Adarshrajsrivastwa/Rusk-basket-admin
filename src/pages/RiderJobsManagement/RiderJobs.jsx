@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import {
@@ -27,11 +27,6 @@ const RiderJobManagement = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  const [showMap, setShowMap] = useState(false);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const mapInstanceRef = useRef(null);
-  const markerInstanceRef = useRef(null);
-
   const [formData, setFormData] = useState({
     jobTitle: "Delivery Executive",
     joiningBonus: "",
@@ -41,8 +36,6 @@ const RiderJobManagement = () => {
     locationPinCode: "",
     locationCity: "",
     locationState: "",
-    locationLatitude: "",
-    locationLongitude: "",
   });
 
   const getAuthHeaders = () => {
@@ -51,205 +44,6 @@ const RiderJobManagement = () => {
     const headers = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
     return headers;
-  };
-
-  useEffect(() => {
-    if (!document.querySelector('link[href*="leaflet.css"]')) {
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = "https://unpkg.com/leaflet@1.7.1/dist/leaflet.css";
-      document.head.appendChild(link);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!window.L) {
-      const script = document.createElement("script");
-      script.src = "https://unpkg.com/leaflet@1.7.1/dist/leaflet.js";
-      script.async = true;
-      script.defer = true;
-      script.onload = () => setMapLoaded(true);
-      script.onerror = () => console.error("Failed to load Leaflet JS");
-      document.head.appendChild(script);
-    } else {
-      setMapLoaded(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isModalOpen && showMap && mapLoaded && window.L) {
-      const timer = setTimeout(() => initializeMap(), 200);
-      return () => {
-        clearTimeout(timer);
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.remove();
-          mapInstanceRef.current = null;
-        }
-        markerInstanceRef.current = null;
-      };
-    }
-  }, [
-    isModalOpen,
-    showMap,
-    mapLoaded,
-    formData.locationLatitude,
-    formData.locationLongitude,
-  ]);
-
-  const initializeMap = () => {
-    const mapContainer = document.getElementById("rider-map-container");
-    if (!mapContainer || !window.L) return;
-
-    if (mapInstanceRef.current) {
-      if (
-        formData.locationLatitude &&
-        formData.locationLongitude &&
-        markerInstanceRef.current
-      ) {
-        const newPos = [
-          parseFloat(formData.locationLatitude),
-          parseFloat(formData.locationLongitude),
-        ];
-        markerInstanceRef.current.setLatLng(newPos);
-        mapInstanceRef.current.setView(
-          newPos,
-          mapInstanceRef.current.getZoom(),
-        );
-      }
-      return;
-    }
-
-    const center =
-      formData.locationLatitude && formData.locationLongitude
-        ? [
-            parseFloat(formData.locationLatitude),
-            parseFloat(formData.locationLongitude),
-          ]
-        : [23.2599, 77.4126];
-
-    const map = window.L.map(mapContainer, {
-      center,
-      zoom: 15,
-      zoomControl: true,
-    });
-    window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(map);
-    mapInstanceRef.current = map;
-    let marker = null;
-
-    if (formData.locationLatitude && formData.locationLongitude) {
-      marker = window.L.marker(
-        [
-          parseFloat(formData.locationLatitude),
-          parseFloat(formData.locationLongitude),
-        ],
-        { draggable: true },
-      ).addTo(map);
-      marker.on("dragend", (e) =>
-        updateLocationFromCoords(
-          e.target.getLatLng().lat,
-          e.target.getLatLng().lng,
-        ),
-      );
-      markerInstanceRef.current = marker;
-    }
-
-    map.on("click", (e) => {
-      const { lat, lng } = e.latlng;
-      updateLocationFromCoords(lat, lng);
-      if (marker) {
-        marker.setLatLng([lat, lng]);
-      } else {
-        marker = window.L.marker([lat, lng], { draggable: true }).addTo(map);
-        marker.on("dragend", (ev) =>
-          updateLocationFromCoords(
-            ev.target.getLatLng().lat,
-            ev.target.getLatLng().lng,
-          ),
-        );
-        markerInstanceRef.current = marker;
-      }
-    });
-
-    const searchInput = document.getElementById("rider-map-search-input");
-    if (searchInput) {
-      searchInput.addEventListener("keydown", async (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          const query = searchInput.value;
-          if (query) {
-            try {
-              const response = await fetch(
-                `https://nominatim.openstreetmap.org/search?format=json&q=${query}`,
-              );
-              const data = await response.json();
-              if (data && data.length > 0) {
-                const place = data[0];
-                const lat = parseFloat(place.lat);
-                const lng = parseFloat(place.lon);
-                updateLocationFromCoords(lat, lng);
-                map.setView([lat, lng], 15);
-                if (marker) {
-                  marker.setLatLng([lat, lng]);
-                } else {
-                  marker = window.L.marker([lat, lng], {
-                    draggable: true,
-                  }).addTo(map);
-                  marker.on("dragend", (ev) =>
-                    updateLocationFromCoords(
-                      ev.target.getLatLng().lat,
-                      ev.target.getLatLng().lng,
-                    ),
-                  );
-                  markerInstanceRef.current = marker;
-                }
-              } else {
-                alert("No results found for your search.");
-              }
-            } catch (error) {
-              console.error("Error searching location:", error);
-              alert("Error searching location. Please try again.");
-            }
-          }
-        }
-      });
-    }
-  };
-
-  const updateLocationFromCoords = async (lat, lng) => {
-    setFormData((prev) => ({
-      ...prev,
-      locationLatitude: lat.toFixed(6),
-      locationLongitude: lng.toFixed(6),
-    }));
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
-      );
-      const data = await response.json();
-      if (data && data.address) {
-        const address = data.address;
-        setFormData((prev) => ({
-          ...prev,
-          locationLine1:
-            address.road ||
-            address.building ||
-            address.house_number ||
-            prev.locationLine1,
-          locationCity:
-            address.city ||
-            address.town ||
-            address.village ||
-            prev.locationCity,
-          locationState: address.state || prev.locationState,
-          locationPinCode: address.postcode || prev.locationPinCode,
-        }));
-      }
-    } catch (error) {
-      console.error("Error reverse geocoding:", error);
-    }
   };
 
   const fetchJobs = async (city = "") => {
@@ -285,10 +79,10 @@ const RiderJobManagement = () => {
     fetchJobs();
   }, []);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  }, []);
 
   const resetForm = () => {
     setFormData({
@@ -300,10 +94,7 @@ const RiderJobManagement = () => {
       locationPinCode: "",
       locationCity: "",
       locationState: "",
-      locationLatitude: "",
-      locationLongitude: "",
     });
-    setShowMap(false);
   };
 
   const handleCreate = () => {
@@ -323,8 +114,6 @@ const RiderJobManagement = () => {
       locationPinCode: job.location?.pinCode || "",
       locationCity: job.location?.city || "",
       locationState: job.location?.state || "",
-      locationLatitude: job.location?.latitude || "",
-      locationLongitude: job.location?.longitude || "",
     });
     setIsEdit(true);
     setCurrentJob(job);
@@ -352,7 +141,16 @@ const RiderJobManagement = () => {
         method,
         credentials: "include",
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          jobTitle: formData.jobTitle,
+          joiningBonus: Number(formData.joiningBonus),
+          onboardingFee: Number(formData.onboardingFee),
+          locationLine1: formData.locationLine1,
+          locationLine2: formData.locationLine2 || "",
+          locationPinCode: formData.locationPinCode,
+          locationCity: formData.locationCity,
+          locationState: formData.locationState,
+        }),
       });
       const result = await response.json();
       if (result.success) {
@@ -361,7 +159,6 @@ const RiderJobManagement = () => {
             `Job ${isEdit ? "updated" : "created"} successfully`,
         );
         setIsModalOpen(false);
-        setShowMap(false);
         fetchJobs(searchCity);
         resetForm();
       } else {
@@ -799,10 +596,7 @@ const RiderJobManagement = () => {
                 </p>
               </div>
               <button
-                onClick={() => {
-                  setIsModalOpen(false);
-                  setShowMap(false);
-                }}
+                onClick={() => setIsModalOpen(false)}
                 className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
               >
                 <X size={16} />
@@ -868,44 +662,12 @@ const RiderJobManagement = () => {
 
               {/* Location Details Section */}
               <div className="space-y-4 pt-2">
-                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-5 rounded-full bg-blue-500" />
-                    <h3 className="font-bold text-gray-800 text-sm">
-                      Location Details
-                    </h3>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowMap(!showMap)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-[#FF7B1D] border border-orange-200 rounded-xl text-xs font-semibold transition-colors"
-                  >
-                    <MapPin size={12} />
-                    {showMap ? "Hide Map" : "Pick on Map"}
-                  </button>
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                  <div className="w-1.5 h-5 rounded-full bg-blue-500" />
+                  <h3 className="font-bold text-gray-800 text-sm">
+                    Location Details
+                  </h3>
                 </div>
-
-                {showMap && (
-                  <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                    <div className="p-2.5 bg-gray-50 border-b border-gray-200">
-                      <input
-                        type="text"
-                        id="rider-map-search-input"
-                        placeholder="Search for a location and press Enter..."
-                        className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 text-sm"
-                      />
-                    </div>
-                    <div
-                      id="rider-map-container"
-                      style={{ height: "360px", width: "100%" }}
-                      className="bg-gray-100"
-                    />
-                    <div className="p-2.5 bg-gray-50 text-xs text-gray-400 flex items-center gap-1.5">
-                      <MapPin className="w-3 h-3 text-[#FF7B1D]" />
-                      Click on the map or drag the marker to select a location
-                    </div>
-                  </div>
-                )}
 
                 <div>
                   <label className="block font-semibold text-gray-700 mb-1.5 text-xs uppercase tracking-wide">
@@ -977,47 +739,13 @@ const RiderJobManagement = () => {
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 text-sm transition-all"
                   />
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-semibold text-gray-700 mb-1.5 text-xs uppercase tracking-wide">
-                      Latitude
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      name="locationLatitude"
-                      value={formData.locationLatitude}
-                      onChange={handleInputChange}
-                      placeholder="23.2599"
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 text-sm transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-gray-700 mb-1.5 text-xs uppercase tracking-wide">
-                      Longitude
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      name="locationLongitude"
-                      value={formData.locationLongitude}
-                      onChange={handleInputChange}
-                      placeholder="77.4126"
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 text-sm transition-all"
-                    />
-                  </div>
-                </div>
               </div>
 
               {/* Footer Buttons */}
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsModalOpen(false);
-                    setShowMap(false);
-                  }}
+                  onClick={() => setIsModalOpen(false)}
                   className="px-5 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors font-semibold text-gray-600 text-sm"
                 >
                   Cancel

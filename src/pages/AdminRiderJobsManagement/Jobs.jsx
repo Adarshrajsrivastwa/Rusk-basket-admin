@@ -1,16 +1,9 @@
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-  useRef,
-} from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { BASE_URL } from "../../api/api";
 import {
   MapPin,
   IndianRupee,
-  Search,
   Plus,
   Edit2,
   Trash2,
@@ -24,6 +17,19 @@ import {
   ChevronRight,
   Building2,
 } from "lucide-react";
+
+const JobFormInput = ({ label, required, ...props }) => (
+  <div>
+    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">
+      {label} {required && <span className="text-red-400">*</span>}
+    </label>
+    <input
+      required={required}
+      {...props}
+      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 transition-all"
+    />
+  </div>
+);
 
 const RiderJobPostManagement = () => {
   const [jobs, setJobs] = useState([]);
@@ -42,11 +48,6 @@ const RiderJobPostManagement = () => {
     message: "",
     type: "",
   });
-  const [showMap, setShowMap] = useState(false);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [mapError, setMapError] = useState("");
-  const mapInstanceRef = useRef(null);
-  const markerInstanceRef = useRef(null);
   const itemsPerPage = 7;
 
   const API_BASE_URL = `${BASE_URL}/api`;
@@ -61,8 +62,6 @@ const RiderJobPostManagement = () => {
     pinCode: "",
     city: "",
     state: "",
-    latitude: "",
-    longitude: "",
   });
 
   const showNotification = useCallback((message, type) => {
@@ -195,10 +194,7 @@ const RiderJobPostManagement = () => {
       pinCode: "",
       city: "",
       state: "",
-      latitude: "",
-      longitude: "",
     });
-    setShowMap(false);
   };
 
   const openEditModal = (job) => {
@@ -213,8 +209,6 @@ const RiderJobPostManagement = () => {
       pinCode: job.location?.pinCode || "",
       city: job.location?.city || "",
       state: job.location?.state || "",
-      latitude: job.location?.latitude || "",
-      longitude: job.location?.longitude || "",
     });
     setIsEditModalOpen(true);
   };
@@ -231,12 +225,6 @@ const RiderJobPostManagement = () => {
       locationPinCode: formData.pinCode,
       locationCity: formData.city,
       locationState: formData.state,
-      locationLatitude: formData.latitude
-        ? Number(formData.latitude)
-        : undefined,
-      locationLongitude: formData.longitude
-        ? Number(formData.longitude)
-        : undefined,
     };
     if (isEditModalOpen && selectedJob) updateJobPost(selectedJob._id, jobData);
     else createJobPost(jobData);
@@ -246,121 +234,6 @@ const RiderJobPostManagement = () => {
     fetchJobs();
     fetchVendors();
   }, [fetchJobs, fetchVendors]);
-
-  useEffect(() => {
-    const loadLeaflet = () => {
-      if (window.L) {
-        setMapLoaded(true);
-        return;
-      }
-      if (!document.querySelector('link[href*="leaflet"]')) {
-        const link = document.createElement("link");
-        link.rel = "stylesheet";
-        link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-        link.integrity = "sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=";
-        link.crossOrigin = "";
-        document.head.appendChild(link);
-      }
-      const script = document.createElement("script");
-      script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-      script.integrity = "sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=";
-      script.crossOrigin = "";
-      script.onload = () => {
-        setMapLoaded(true);
-        setMapError("");
-      };
-      script.onerror = () => setMapError("Failed to load map library.");
-      document.head.appendChild(script);
-    };
-    loadLeaflet();
-  }, []);
-
-  useEffect(() => {
-    if ((isCreateModalOpen || isEditModalOpen) && showMap && mapLoaded) {
-      const timer = setTimeout(() => {
-        if (window.L) initializeOpenStreetMap();
-      }, 200);
-      return () => {
-        clearTimeout(timer);
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.remove();
-          mapInstanceRef.current = null;
-        }
-        markerInstanceRef.current = null;
-      };
-    }
-  }, [isCreateModalOpen, isEditModalOpen, showMap, mapLoaded]);
-
-  const updateLocationFromCoords = async (lat, lng) => {
-    setFormData((prev) => ({
-      ...prev,
-      latitude: lat.toFixed(6),
-      longitude: lng.toFixed(6),
-    }));
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-      );
-      const data = await res.json();
-      if (data?.address) {
-        const addr = data.address;
-        setFormData((prev) => ({
-          ...prev,
-          city: addr.city || addr.town || addr.village || prev.city,
-          state: addr.state || prev.state,
-          pinCode: addr.postcode || prev.pinCode,
-          line1: addr.road || data.display_name?.split(",")[0] || prev.line1,
-        }));
-      }
-    } catch {
-      /* coords still saved */
-    }
-  };
-
-  const initializeOpenStreetMap = () => {
-    const mapContainer = document.getElementById("map-container");
-    if (!mapContainer || !window.L || mapInstanceRef.current) return;
-    const center =
-      formData.latitude && formData.longitude
-        ? [parseFloat(formData.latitude), parseFloat(formData.longitude)]
-        : [23.2599, 77.4126];
-    const map = window.L.map(mapContainer).setView(center, 15);
-    window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap contributors",
-      maxZoom: 19,
-    }).addTo(map);
-    mapInstanceRef.current = map;
-    let marker = null;
-    if (formData.latitude && formData.longitude) {
-      marker = window.L.marker(
-        [parseFloat(formData.latitude), parseFloat(formData.longitude)],
-        { draggable: true },
-      ).addTo(map);
-      marker.on("dragend", (e) =>
-        updateLocationFromCoords(
-          e.target.getLatLng().lat,
-          e.target.getLatLng().lng,
-        ),
-      );
-      markerInstanceRef.current = marker;
-    }
-    map.on("click", (e) => {
-      updateLocationFromCoords(e.latlng.lat, e.latlng.lng);
-      if (marker) marker.setLatLng([e.latlng.lat, e.latlng.lng]);
-      else {
-        marker = window.L.marker([e.latlng.lat, e.latlng.lng], {
-          draggable: true,
-        }).addTo(map);
-        marker.on("dragend", (ev) =>
-          updateLocationFromCoords(
-            ev.target.getLatLng().lat,
-            ev.target.getLatLng().lng,
-          ),
-        );
-        markerInstanceRef.current = marker;
-      }
-    });
-  };
 
   const filteredJobs = useMemo(() => {
     let result = jobs;
@@ -424,22 +297,7 @@ const RiderJobPostManagement = () => {
     </tbody>
   );
 
-  // ── Input helper ──
-  const Input = ({ label, required, ...props }) => (
-    <div>
-      <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">
-        {label} {required && <span className="text-red-400">*</span>}
-      </label>
-      <input
-        required={required}
-        {...props}
-        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 transition-all"
-      />
-    </div>
-  );
-
-  // ── Job Form Modal ──
-  const JobFormModal = () => (
+  const renderJobFormModal = () => (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto border border-gray-100">
         {/* Header */}
@@ -478,34 +336,43 @@ const RiderJobPostManagement = () => {
               </h3>
             </div>
             <div className="space-y-4">
-              <Input
+              <JobFormInput
                 label="Job Title"
                 required
                 type="text"
                 value={formData.jobTitle}
                 onChange={(e) =>
-                  setFormData({ ...formData, jobTitle: e.target.value })
+                  setFormData((prev) => ({
+                    ...prev,
+                    jobTitle: e.target.value,
+                  }))
                 }
                 placeholder="e.g., Delivery Executive"
               />
               <div className="grid grid-cols-2 gap-4">
-                <Input
+                <JobFormInput
                   label="Joining Bonus (₹)"
                   required
                   type="number"
                   value={formData.joiningBonus}
                   onChange={(e) =>
-                    setFormData({ ...formData, joiningBonus: e.target.value })
+                    setFormData((prev) => ({
+                      ...prev,
+                      joiningBonus: e.target.value,
+                    }))
                   }
                   placeholder="1000"
                 />
-                <Input
+                <JobFormInput
                   label="Onboarding Fee (₹)"
                   required
                   type="number"
                   value={formData.onboardingFee}
                   onChange={(e) =>
-                    setFormData({ ...formData, onboardingFee: e.target.value })
+                    setFormData((prev) => ({
+                      ...prev,
+                      onboardingFee: e.target.value,
+                    }))
                   }
                   placeholder="300"
                 />
@@ -518,7 +385,10 @@ const RiderJobPostManagement = () => {
                   required
                   value={formData.vendorId}
                   onChange={(e) =>
-                    setFormData({ ...formData, vendorId: e.target.value })
+                    setFormData((prev) => ({
+                      ...prev,
+                      vendorId: e.target.value,
+                    }))
                   }
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 transition-all bg-white"
                 >
@@ -544,247 +414,59 @@ const RiderJobPostManagement = () => {
               </h3>
             </div>
             <div className="space-y-4">
-              <Input
+              <JobFormInput
                 label="Address Line 1"
                 required
                 type="text"
                 value={formData.line1}
                 onChange={(e) =>
-                  setFormData({ ...formData, line1: e.target.value })
+                  setFormData((prev) => ({ ...prev, line1: e.target.value }))
                 }
                 placeholder="MG Road, Sector 12"
               />
-              <Input
+              <JobFormInput
                 label="Address Line 2"
                 type="text"
                 value={formData.line2}
                 onChange={(e) =>
-                  setFormData({ ...formData, line2: e.target.value })
+                  setFormData((prev) => ({ ...prev, line2: e.target.value }))
                 }
                 placeholder="Opposite City Mall"
               />
               <div className="grid grid-cols-3 gap-4">
-                <Input
+                <JobFormInput
                   label="City"
                   required
                   type="text"
                   value={formData.city}
                   onChange={(e) =>
-                    setFormData({ ...formData, city: e.target.value })
+                    setFormData((prev) => ({ ...prev, city: e.target.value }))
                   }
                   placeholder="Bhopal"
                 />
-                <Input
+                <JobFormInput
                   label="State"
                   required
                   type="text"
                   value={formData.state}
                   onChange={(e) =>
-                    setFormData({ ...formData, state: e.target.value })
+                    setFormData((prev) => ({ ...prev, state: e.target.value }))
                   }
                   placeholder="Madhya Pradesh"
                 />
-                <Input
+                <JobFormInput
                   label="PIN Code"
                   required
                   type="text"
                   value={formData.pinCode}
                   onChange={(e) =>
-                    setFormData({ ...formData, pinCode: e.target.value })
+                    setFormData((prev) => ({
+                      ...prev,
+                      pinCode: e.target.value,
+                    }))
                   }
                   placeholder="462001"
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">
-                    Latitude
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      step="any"
-                      value={formData.latitude}
-                      onChange={(e) =>
-                        setFormData({ ...formData, latitude: e.target.value })
-                      }
-                      className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 transition-all"
-                      placeholder="23.2599"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        navigator.geolocation?.getCurrentPosition(
-                          (p) => {
-                            setFormData((prev) => ({
-                              ...prev,
-                              latitude: p.coords.latitude.toFixed(6),
-                              longitude: p.coords.longitude.toFixed(6),
-                            }));
-                            showNotification("Location fetched!", "success");
-                          },
-                          () =>
-                            showNotification(
-                              "Unable to fetch location.",
-                              "error",
-                            ),
-                        )
-                      }
-                      className="px-3 py-2.5 bg-orange-50 hover:bg-orange-100 text-[#FF7B1D] rounded-xl text-sm transition-colors border border-orange-200"
-                      title="Get Current Location"
-                    >
-                      📍
-                    </button>
-                  </div>
-                </div>
-                <Input
-                  label="Longitude"
-                  type="number"
-                  step="any"
-                  value={formData.longitude}
-                  onChange={(e) =>
-                    setFormData({ ...formData, longitude: e.target.value })
-                  }
-                  placeholder="77.4126"
-                />
-              </div>
-
-              {/* Map Toggle */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Select on Map
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setShowMap(!showMap)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#FF7B1D] to-orange-400 text-white rounded-xl text-xs font-semibold shadow-sm shadow-orange-200 hover:from-orange-500 hover:to-orange-500 transition-all"
-                  >
-                    <MapPin className="w-3.5 h-3.5" />
-                    {showMap ? "Hide Map" : "Show Map"}
-                  </button>
-                </div>
-                {showMap && (
-                  <div className="rounded-xl overflow-hidden border border-gray-200">
-                    <div className="bg-gradient-to-r from-[#FF7B1D] to-orange-400 px-4 py-2 flex items-center justify-between">
-                      <span className="text-white text-xs font-semibold">
-                        Click map to select location
-                      </span>
-                      <span className="text-white/80 text-xs font-mono">
-                        {formData.latitude && formData.longitude
-                          ? `${formData.latitude}, ${formData.longitude}`
-                          : "No location selected"}
-                      </span>
-                    </div>
-                    <div className="bg-gray-50 px-3 py-2 border-b border-gray-200 flex gap-2">
-                      <div className="flex-1 relative">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
-                        <input
-                          type="text"
-                          id="map-search-input"
-                          placeholder="Search address or landmark..."
-                          className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-orange-200 transition-all"
-                          onKeyPress={async (e) => {
-                            if (e.key === "Enter" && window.L) {
-                              const query = e.target.value;
-                              if (query) {
-                                try {
-                                  const res = await fetch(
-                                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
-                                  );
-                                  const d = await res.json();
-                                  if (d?.length > 0) {
-                                    const lat = parseFloat(d[0].lat),
-                                      lng = parseFloat(d[0].lon);
-                                    updateLocationFromCoords(lat, lng);
-                                    if (mapInstanceRef.current) {
-                                      mapInstanceRef.current.setView(
-                                        [lat, lng],
-                                        15,
-                                      );
-                                      if (markerInstanceRef.current)
-                                        markerInstanceRef.current.setLatLng([
-                                          lat,
-                                          lng,
-                                        ]);
-                                      else {
-                                        const mk = window.L.marker([lat, lng], {
-                                          draggable: true,
-                                        }).addTo(mapInstanceRef.current);
-                                        mk.on("dragend", (ev) =>
-                                          updateLocationFromCoords(
-                                            ev.target.getLatLng().lat,
-                                            ev.target.getLatLng().lng,
-                                          ),
-                                        );
-                                        markerInstanceRef.current = mk;
-                                      }
-                                    }
-                                  }
-                                } catch {
-                                  /* ignore */
-                                }
-                              }
-                            }
-                          }}
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          navigator.geolocation?.getCurrentPosition(
-                            (pos) => {
-                              const lat = pos.coords.latitude,
-                                lng = pos.coords.longitude;
-                              updateLocationFromCoords(lat, lng);
-                              if (mapInstanceRef.current) {
-                                mapInstanceRef.current.setView([lat, lng], 15);
-                                if (markerInstanceRef.current)
-                                  markerInstanceRef.current.setLatLng([
-                                    lat,
-                                    lng,
-                                  ]);
-                              }
-                              showNotification("Location fetched!", "success");
-                            },
-                            () =>
-                              showNotification(
-                                "Unable to fetch location.",
-                                "error",
-                              ),
-                          )
-                        }
-                        className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-[#FF7B1D] border border-orange-200 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors"
-                      >
-                        📍 Current
-                      </button>
-                    </div>
-                    <div style={{ height: "360px" }}>
-                      {mapError ? (
-                        <div className="flex items-center justify-center h-full bg-gray-50">
-                          <div className="text-center">
-                            <AlertCircle className="text-red-400 mx-auto mb-2 w-8 h-8" />
-                            <p className="text-sm text-red-500">{mapError}</p>
-                          </div>
-                        </div>
-                      ) : !mapLoaded ? (
-                        <div className="flex items-center justify-center h-full bg-gray-50">
-                          <div className="text-center">
-                            <Loader2 className="animate-spin text-[#FF7B1D] mx-auto mb-2 w-7 h-7" />
-                            <p className="text-sm text-gray-500">
-                              Loading map...
-                            </p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div
-                          id="map-container"
-                          style={{ width: "100%", height: "100%" }}
-                        />
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -1139,7 +821,7 @@ const RiderJobPostManagement = () => {
       )}
 
       {/* ── Create / Edit Modal ── */}
-      {(isCreateModalOpen || isEditModalOpen) && <JobFormModal />}
+      {(isCreateModalOpen || isEditModalOpen) && renderJobFormModal()}
 
       {/* ── View Modal ── */}
       {isViewModalOpen && selectedJob && (
@@ -1228,12 +910,6 @@ const RiderJobPostManagement = () => {
                     {selectedJob.location?.city}, {selectedJob.location?.state}{" "}
                     — {selectedJob.location?.pinCode}
                   </p>
-                  {selectedJob.location?.latitude && (
-                    <p className="text-xs text-gray-400 font-mono mt-1">
-                      {selectedJob.location.latitude},{" "}
-                      {selectedJob.location.longitude}
-                    </p>
-                  )}
                 </div>
               </div>
               <div className="flex justify-end pt-2">
