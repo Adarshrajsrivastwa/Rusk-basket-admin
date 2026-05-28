@@ -38,6 +38,7 @@ import React, { useState, useEffect } from "react";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import VendorSidebar from "./VendorSidebar";
+import VendorNewOrderSoundListener from "./VendorNewOrderSoundListener";
 
 const DashboardLayout = ({ children }) => {
   const [userRole, setUserRole] = useState("admin");
@@ -50,6 +51,7 @@ const DashboardLayout = ({ children }) => {
 
   return (
     <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
+      {userRole === "vendor" && <VendorNewOrderSoundListener />}
       {/* Full-width header — no left offset */}
       <Header />
 
