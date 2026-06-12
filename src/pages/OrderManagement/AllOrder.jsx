@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import {
   Download,
-  Eye,
   ShoppingCart,
   ChevronLeft,
   ChevronRight,
@@ -506,13 +505,6 @@ const AllOrder = () => {
                             title="View Invoice"
                           >
                             <Download className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => navigate(`/order/${order.id}`)}
-                            className="action-btn bg-emerald-50 text-emerald-500 hover:bg-emerald-100 hover:text-emerald-700"
-                            title="View Order Details"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>

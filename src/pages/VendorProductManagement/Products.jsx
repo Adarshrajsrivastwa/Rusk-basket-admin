@@ -19,7 +19,7 @@ import { BASE_URL } from "../../api/api";
 const API_BASE_URL = `${BASE_URL}/api`;
 
 const AllProduct = () => {
-  const [activeTab, setActiveTab] = useState("in_review");
+  const [activeTab, setActiveTab] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -254,7 +254,6 @@ const AllProduct = () => {
   // Filtering + Pagination
   const filteredByTab = products.filter((p) => {
     if (activeTab === "approved") return p.status === "Approved";
-    if (activeTab === "in_review") return p.status === "In Review";
     if (activeTab === "rejected") return p.status === "Rejected";
     return true;
   });
@@ -352,7 +351,7 @@ const AllProduct = () => {
   );
 
   const tabs = [
-    { key: "in_review", label: "In Review" },
+    { key: "all", label: "All" },
     { key: "approved", label: "Approved" },
     { key: "rejected", label: "Rejected" },
   ];
